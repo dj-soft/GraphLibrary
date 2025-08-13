@@ -11,6 +11,7 @@ using Noris.Srv.NrsInternal;
 using DxFilter = DevExpress.Data.Filtering;
 using DevExpress.Pdf.Native.BouncyCastle.Asn1.X509;
 using DevExpress.XtraEditors.Design;
+using System.Reflection.Emit;
 
 namespace Noris.Srv.NrsInternal.DxFiltering
 {
@@ -21,94 +22,72 @@ namespace Noris.Srv.NrsInternal.DxFiltering
     internal class DxFilterConvertor
     {
         #region Public members: ConvertToString, ConvertToPart
-        public static string ConvertToString(string dxExpression, DxExpressionLanguageType language)
+        /// <summary>
+        /// Konvertuje dodaný string (výraz DevExpress filtru) do jazyka MS SQL, bez specifických konverzí.
+        /// </summary>
+        /// <param name="dxExpression"></param>
+        /// <returns></returns>
+        public static string ConvertToString(string dxExpression)
         {
-            if (String.IsNullOrEmpty(dxExpression)) return null;
-            var part = _ConvertToPart(DxFilter.CriteriaOperator.Parse(dxExpression), language, null, null);
-            return part?.ToText(language);
+            var args = new ConvertArgs() { DxExpression = dxExpression };
+            var part = _ConvertToPart(args);
+            return part?.ResultText;
         }
-        public static string ConvertToString(DxFilter.CriteriaOperator filter, DxExpressionLanguageType language)
+        /// <summary>
+        /// Konvertuje dodaný filtrační výraz (výraz DevExpress filtru) do tokenu v jazyce MS SQL, aplikuje specifickované parametry (sloupce, handler, atd)
+        /// </summary>
+        /// <param name="convertArgs"></param>
+        /// <returns></returns>
+        public static DxExpressionToken Convert(ConvertArgs convertArgs)
         {
-            if (filter is null) return null;
-            var part = _ConvertToPart(filter, language, null, null);
-            return part?.ToText(language);
+            return _ConvertToPart(convertArgs);
         }
-        public static string ConvertToString(string dxExpression, DxExpressionLanguageType language, DxConvertorCustomHandler customHandler)
+        /// <summary>
+        /// Konvertuje dodaný filtrační výraz (výraz DevExpress filtru) do tokenu v jazyce MS SQL, aplikuje specifickované parametry (sloupce, handler, atd)
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        private static DxExpressionToken _ConvertToPart(ConvertArgs args)
         {
-            if (String.IsNullOrEmpty(dxExpression)) return null;
-            var part = _ConvertToPart(DxFilter.CriteriaOperator.Parse(dxExpression), language, customHandler, null);
-            return part?.ToText(language);
-        }
-        public static string ConvertToString(DxFilter.CriteriaOperator filter, DxExpressionLanguageType language, DxConvertorCustomHandler customHandler)
-        {
-            if (filter is null) return null;
-            var part = _ConvertToPart(filter, language, customHandler, null);
-            return part?.ToText(language);
-        }
-        public static string ConvertToString(string dxExpression, DxExpressionLanguageType language, IEnumerable<IColumnInfo> columns)
-        {
-            if (String.IsNullOrEmpty(dxExpression)) return null;
-            var part = _ConvertToPart(DxFilter.CriteriaOperator.Parse(dxExpression), language, null, columns);
-            return part?.ToText(language);
-        }
-        public static string ConvertToString(DxFilter.CriteriaOperator filter, DxExpressionLanguageType language, IEnumerable<IColumnInfo> columns)
-        {
-            if (filter is null) return null;
-            var part = _ConvertToPart(filter, language, null, columns);
-            return part?.ToText(language);
-        }
+            if (args is null || !args.IsValid) return null;
 
-        public static DxExpressionPart ConvertToPart(string dxExpression, DxExpressionLanguageType language)
-        {
-            if (String.IsNullOrEmpty(dxExpression)) return null;
-            var part = _ConvertToPart(DxFilter.CriteriaOperator.Parse(dxExpression), language, null, null);
-            return part;
-        }
-        public static DxExpressionPart ConvertToPart(DxFilter.CriteriaOperator filter, DxExpressionLanguageType language)
-        {
-            if (filter is null) return null;
-            var part = _ConvertToPart(filter, language, null, null);
-            return part;
-        }
-        public static DxExpressionPart ConvertToPart(string dxExpression, DxExpressionLanguageType language, DxConvertorCustomHandler customHandler)
-        {
-            if (String.IsNullOrEmpty(dxExpression)) return null;
-            var part = _ConvertToPart(DxFilter.CriteriaOperator.Parse(dxExpression), language, customHandler, null);
-            return part;
-        }
-        public static DxExpressionPart ConvertToPart(DxFilter.CriteriaOperator filter, DxExpressionLanguageType language, DxConvertorCustomHandler customHandler)
-        {
-            if (filter is null) return null;
-            var part = _ConvertToPart(filter, language, customHandler, null);
-            return part;
-        }
-        public static DxExpressionPart ConvertToPart(string dxExpression, DxExpressionLanguageType language, IEnumerable<IColumnInfo> columns)
-        {
-            if (String.IsNullOrEmpty(dxExpression)) return null;
-            var part = _ConvertToPart(DxFilter.CriteriaOperator.Parse(dxExpression), language, null, columns);
-            return part;
-        }
-        public static DxExpressionPart ConvertToPart(DxFilter.CriteriaOperator filter, DxExpressionLanguageType language, IEnumerable<IColumnInfo> columns)
-        {
-            if (filter is null) return null;
-            var part = _ConvertToPart(filter, language, null, columns);
-            return part;
-        }
-
-        private static DxExpressionPart _ConvertToPart(CriteriaOperator filter, DxExpressionLanguageType language, DxConvertorCustomHandler customHandler, IEnumerable<IColumnInfo> columns)
-        {
-            if (filter is null) return null;
-
-            var visitor = new DxCriteriaVisitor(language, customHandler, columns);
-            var result = filter.Accept(visitor);
+            var visitor = new DxCriteriaVisitor(args);
+            var result = args.Filter.Accept(visitor);
+            if (result != null) ((IDxExpressionTokenWorking)result).Language = args.Language;
             return result;
         }
         #endregion
         #region Public members: FormatPropertyName, FormatValue
-        internal static string FormatPropertyName(string propertyName, DxExpressionLanguageType language)
+        /// <summary>
+        /// Formátuje název sloupce
+        /// </summary>
+        /// <param name="propertyToken"></param>
+        /// <returns></returns>
+        internal static string FormatPropertyName(DxExpressionToken propertyToken)
         {
-            return (String.IsNullOrEmpty(propertyName) ? "" : (propertyName.Contains(".") ? propertyName : $"[{propertyName}]"));
+            string resultName = null;
+
+            if (!String.IsNullOrEmpty(propertyToken.PropertyResult))
+                resultName = propertyToken.PropertyResult;                               // Explicitně dodaný text, popisující zdroj dat pro tento "sloupec"
+
+            if (String.IsNullOrEmpty(resultName) && propertyToken.Column != null && !String.IsNullOrEmpty(propertyToken.Column.DisplayValueSource))
+                resultName = propertyToken.Column.DisplayValueSource;                    // Standardně zobrazovaný výraz pro aktuální sloupec
+
+            if (String.IsNullOrEmpty(resultName))
+                resultName = propertyToken.PropertyName;                                 // Název sloupce (ColumnId) tak, jak byl nalezen v podmínce
+
+            if (!String.IsNullOrEmpty(resultName) && propertyToken.Language == DxExpressionLanguageType.MsSqlDatabase &&
+                !(resultName.Contains(".") || resultName.Contains(" ") || resultName.Contains(",") || resultName.Contains("(") || resultName.Contains(")") || resultName.Contains("+") || resultName.Contains("-")))
+                resultName = $"[{resultName}]";
+
+            return resultName;
         }
+        /// <summary>
+        /// Formátuje hodnotu
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="language"></param>
+        /// <returns></returns>
         internal static string FormatValue(object value, DxExpressionLanguageType language)
         {
             if (value is null) return "NULL";
@@ -158,182 +137,119 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// - budou v CodeTable nalezeny hodnoty: 1="Realizován"; 2=Stornován"; a výsledný filtr tedy bude: "<c>dokl.status in (1, 2)</c>"
         /// </summary>
         /// <param name="args"></param>
-        /// <param name="columns"></param>
-        internal static void ConvertRowFilterPartForColumns(DxConvertorCustomArgs args, IEnumerable<IColumnInfo> columns)
+        internal static void ConvertRowFilterPartForColumns(DxConvertorCustomArgs args)
         {
-            var convertType = _GetConvertTypeFor(args, columns, out var column, out DxExpressionPart[] opProperties, out DxExpressionPart[] opValues);
-            switch (convertType)
+            var convertType = _GetConvertedOperationFor(args, out var propertyToken, out var column, out var codeValues);
+            if (convertType == DxCodeTableOperationType.NotCodeTable) return;
+
+            switch (column.SourceType)
             {
-                case ConvertCodeTableType.Binary:
-                    _ConvertCodeTableForOperationBinary(args, column, opProperties, opValues);
+                case FilterColumnSourceType.CodeTable:
+                    _ConvertRowFilterPartForCodeTable(args, propertyToken, column, codeValues, convertType);
                     break;
-                case ConvertCodeTableType.In:
-                    _ConvertCodeTableForOperationIn(args, column, opProperties, opValues);
-                    break;
-                case ConvertCodeTableType.SearchCodes:
-                    _ConvertCodeTableForOperationSearch(args, column, opProperties, opValues);
+                case FilterColumnSourceType.Virtual:
+
+
                     break;
             }
+        }
+        /// <summary>
+        /// Vytvoří standardní Dictionary z dodaných Columns, kde Key = ColumnId, se zadaným CaseSensitive comparerem
+        /// </summary>
+        /// <param name="columns"></param>
+        /// <param name="caseSensitive"></param>
+        /// <returns></returns>
+        internal static Dictionary<string, IFilterColumnInfo> CreateColumnsDictionary(IEnumerable<IFilterColumnInfo> columns, bool caseSensitive)
+        {
+            var dictComparer = (caseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
+            var columnDict = new Dictionary<string, IFilterColumnInfo>(dictComparer);
+            if (columns != null)
+            {
+                foreach (var column in columns)
+                {
+                    var colId = column?.ColumnId;
+                    if (!String.IsNullOrEmpty(colId) && !columnDict.ContainsKey(colId))
+                        columnDict.Add(colId, column);
+                }
+            }
+            return columnDict;
         }
         /// <summary>
         /// Metoda určí, jak specificky konvertovat zadanou operaci, pokud se odvolává na sloupec, který obsahuje CodeTable.
-        /// Určí sloupec <see cref="IColumnInfo"/>, jehož hodnota se bude řešit.
+        /// Určí sloupec <see cref="IFilterColumnInfo"/>, jehož hodnota se bude řešit.
         /// </summary>
         /// <param name="args"></param>
-        /// <param name="columns"></param>
-        /// <param name="column">Sloupec, jehož se výraz filtru týká</param>
-        /// <param name="opProperties">ProperyNames načtené z výrazu, měl by být jen jeden</param>
-        /// <param name="opValues">Values načtené z výrazu, měl by být jeden nebo víc</param>
+        /// <param name="propertyToken">Out token reprezentující sloupec</param>
+        /// <param name="column">Out Sloupec, jehož se výraz filtru týká</param>
+        /// <param name="codeValues">Out Hodnoty typu CodeValue, nalezené v CodeTable daného sloupce, k stringovým hodnotám typu DisplayValue v operátorech dané operace</param>
         /// <returns></returns>
-        private static ConvertCodeTableType _GetConvertTypeFor(DxConvertorCustomArgs args, IEnumerable<IColumnInfo> columns, out IColumnInfo column, out DxExpressionPart[] opProperties, out DxExpressionPart[] opValues)
+        private static DxCodeTableOperationType _GetConvertedOperationFor(DxConvertorCustomArgs args, out DxExpressionToken propertyToken, out IFilterColumnInfo column, out object[] codeValues)
         {
+            // Default out:
+            propertyToken = null;
             column = null;
-            opProperties = null;
-            opValues = null;
+            codeValues = null;
 
+            // Obecně operandy:
             var operation = args.Operation;
             var operandsCount = args.Operands.Count;
-            switch (operation)
+            if (operandsCount < 2)
+                return DxCodeTableOperationType.NotCodeTable;                            // S jedním anebo žádným operandem nemá cenu nic řešit
+
+            // Řešíme tři varianty zadání (tři typy operací): Equals, Regex a InList:
+            bool isEquals = (operation == DxFilterOperationType.Binary_Equal || operation == DxFilterOperationType.Binary_NotEqual);
+            bool isPattern = (operation == DxFilterOperationType.Function_StartsWith || operation == DxFilterOperationType.Function_Contains || operation == DxFilterOperationType.Function_EndsWith || operation == DxFilterOperationType.Binary_Like || operation == DxFilterOperationType.Custom_Like);
+            bool isInList = (operation == DxFilterOperationType.In);
+            if (!(isEquals || isPattern || isInList)) 
+                return DxCodeTableOperationType.NotCodeTable;                            // Ostatní typy operací nemá význam řešit
+
+            // Najdeme sloupec (Property), který musí být jeden a musí být Specific (CodeTable nebo Virtual):
+            var opProperties = args.Operands.Where(op => op.IsPropertyName).ToArray();
+            if (opProperties.Length != 1 || !isColumnSpecific(opProperties[0])) 
+                return DxCodeTableOperationType.NotCodeTable;                            // Tato akce se týká pouze Columnů, které jsou specifické
+
+            // OK.   Máme vhodnou operaci, a máme sloupec se specifickým chováním.   
+            propertyToken = opProperties[0];
+            column = propertyToken.Column;
+
+            //  Načteme datové operandy, které musí nést String. Nic jiného v operandech nemůže být:
+            //  Operandy musí být pouze: 1 sloupec a všechny ostatní ValueString
+            var opValues = args.Operands.Where(op => op.IsValueString).ToArray();        // Stringová hodnota, nese zadanou hodnotu DisplayValue (jiné operandy neberu, a pokud budou - pak skončíme)
+            if ((opValues.Length + 1) != operandsCount)
+                return DxCodeTableOperationType.NotCodeTable;                            // Mezi operandy bylo i něco jiného než String. To bychom nedokázali vyhodnotit, a to je chyba.
+            if ((isEquals || isPattern) && opValues.Length != 1)
+                return DxCodeTableOperationType.NotCodeTable;                            // Operace typu Equals anebo Pattern vyžadují právě jeden operand typu String ( Sloupec = 'Hodnota' nebo StartWith(Sloupec, 'Hodn') )
+
+            if (isEquals || isInList)
+            {   // Pro operace Binary_Equal a Binary_NotEqual, a In:
+                codeValues = getValuesEquals(column.CodeTableItems, opValues);           // POZOR: tady je legální, když pro jeden operand opValues se vrátí více values[], pokud por jednu DisplayValue máme více CodeValue v tabulce CodeTable!!!
+            }
+            else if (isPattern)
+            {   // Vyhledáme CodeValues do out pole values:
+                var regex = getLikePattern(operation, opValues[0].ValueString);          // opValues obsahuje zaručeně právě jen jeden operand, typu ValueString = zadaný textový pattern => vytvořím z něj Regex:
+                codeValues = getValuesRegex(column.CodeTableItems, regex);               // Pro jeden Regex mohu získat vícero CodeValue
+            }
+            // Nyní tedy víme, na který specifický sloupec filtrujeme, a jaké CodeValue ve filtru budou (anebo taky žádná, anebo více hodnot InList).
+
+            // Z kombinace počtu hodnot a zadaného operátoru (NotEqual, In, Equal) určíme, jaký finální operátor (DxFilterOperationType) by měl být aplikován:
+            var valuesCount = codeValues.Length;
+            if (operation == DxFilterOperationType.Binary_NotEqual)
+            {   // Tenhle operátor je jiný => ten říká "nesmí to být něco z tohoto" (values), a zvlášť pokud ve values nic není (zadaná DisplayValue neodpovídá žádné položce CodeTable):
+                if (valuesCount == 0) return DxCodeTableOperationType.True;              // Podmínka zněla "Stav dokladu" <> "Ztracený" a přitom hodnota "Ztracený" v CodeTable není, tedy filtr na základě CodeValue nebude nic omezovat => vynecháme jej zcela:
+                if (valuesCount == 1) return DxCodeTableOperationType.NotEqual;          // Podmínka zněla "Stav dokladu" <> "Aktivní" a hodnotu "Aktivní" v CodeTable máme jedenkrát, filtr bude "dokl.status <> 2"
+                return DxCodeTableOperationType.NotInList;                               // Podmínka zněla "Stav dokladu" <> "Aktivní" a hodnotu "Aktivní" v CodeTable máme vícekrát pro různé CodeValue, filtr bude "dokl.status not in (2,3,4)"
+            }
+            // Ostatní operátory jsou "pozitivní", a říkají tedy že filtru vyhoví ty záíznamy, které v daném sloupci mají jednu nebo více hodnot, anebo žádná hodnotas = nevyhoví žádný záznam:
+            if (valuesCount == 0) return DxCodeTableOperationType.False;                 // Podmínka zněla "Stav dokladu" = "Ztracený" a přitom hodnota "Ztracený" v CodeTable není, tedy filtr na základě CodeValue musí vyřadit všechny záznamy => bude tedy znít (1=0)
+            if (valuesCount == 1) return DxCodeTableOperationType.Equal;                 // Podmínka zněla "Stav dokladu" = "Aktivní" a hodnotu "Aktivní" v CodeTable máme jedenkrát, filtr bude "dokl.status = 2"
+            return DxCodeTableOperationType.InList;                                      // Podmínka zněla "Stav dokladu" like "Akt*" a hodnotu "Akt*" v CodeTable máme vícekrát pro různé CodeValue, filtr bude "dokl.status in (2,3,4)"
+
+
+            // Vrátí true, pokud dodaná token reprezentuje Property, má dohledaný sloupec, a sloupec je typu CodeTable nebo Virtual:
+            bool isColumnSpecific(DxExpressionToken dxToken)
             {
-                case DxFilterOperationType.Binary_Equal:                       // Binární operace
-                case DxFilterOperationType.Binary_NotEqual:                    //  ...
-                case DxFilterOperationType.Function_StartsWith:                // Vyhledávání vhodných CodeTableItems na serveru
-                case DxFilterOperationType.Function_Contains:                  //  ...
-                case DxFilterOperationType.Function_EndsWith:
-                case DxFilterOperationType.Binary_Like:
-                case DxFilterOperationType.Custom_Like:
-                    // Musíme mít jeden sloupec (PropertyName) a jednu zadanou stringovou hodnotu, kterou budeme hledat jako DisplayValue:
-                    if (operandsCount == 2)
-                    {
-                        opProperties = args.Operands.Where(op => op.IsPropertyName).ToArray();               // Property operátor, musí být jeden
-                        opValues = args.Operands.Where(op => op.IsValueString).ToArray();                    // Stringová hodnota, nese zadanou hodnotu DisplayValue, musí být jedna
-                        if (opProperties.Length == 1 && opValues.Length == 1 && trySearchColumn(opProperties[0], columns, out var foundColumn))
-                        {   // V operandech je jeden operand typu Property (=sloupec), a jedna stringová hodnota, 
-                            //  a pro název PropertyName najdeme sloupec IColumnInfo, který má CodeTable:
-                            column = foundColumn;
-                            // OK, vstupní podmínky jsou splněny: výstup je dán typem operace (Equal + NotEqual = Binary, ostatní = SearchCodes):
-                            return ((operation  == DxFilterOperationType.Binary_Equal || operation  == DxFilterOperationType.Binary_NotEqual) ? ConvertCodeTableType.Binary : ConvertCodeTableType.SearchCodes);
-                        }
-                    }
-                    break;
-
-                case DxFilterOperationType.In:
-                    // Musíme mít jeden sloupec (PropertyName) a jednu nebo více zadaných stringových hodnot, které pak budeme hledat jako DisplayValue:
-                    if (operandsCount >= 2)
-                    {
-                        opProperties = args.Operands.Where(op => op.IsPropertyName).ToArray();               // Property operátor, musí být jeden
-                        opValues = args.Operands.Where(op => op.IsValueString).ToArray();                    // Stringové hodnoty, které nesou zadanou hodnotu DisplayValue, musí být jedna a více
-                        // Pokud by bylo mezi operandy něco jiného než Sloupec a StringValue, pak tento postup nelze použít...:
-                        bool hasOnlyValidOperators = ((opProperties.Length + opValues.Length) == operandsCount);
-                        if (hasOnlyValidOperators && opProperties.Length == 1 && opValues.Length >= 1 && trySearchColumn(opProperties[0], columns, out var foundColumn))
-                        {   // V operandech je jeden operand typu Property (=sloupec), a jedna nebo více stringová hodnota (a žádný další operand), 
-                            //  a pro název PropertyName najdeme sloupec IColumnInfo, který má CodeTable:
-                            column = foundColumn;
-                            return ConvertCodeTableType.In;
-                        }
-                    }
-                    break;
+                return (dxToken != null && dxToken.IsPropertyName && dxToken.Column != null && (dxToken.Column.SourceType == FilterColumnSourceType.CodeTable || dxToken.Column.SourceType == FilterColumnSourceType.Virtual));
             }
-
-            // Ostatní operace pro práci s CodeTable nemodifikujeme.
-            //  -->  Až mi analytik sdělí, jak implementovat například  "Stav IOU >= 'Pořízeno'", pak to můžeme zkusit jako další typ operace => další hodnota ConvertCodeTableType => další metoda.
-            //  -->  Ne všechny CodeTable mají lineární charakter, aby bylo možno hodnoty validně setřídit (na lineární ose Od-Do), a pak používat jejich pořadí!!!
-
-            return ConvertCodeTableType.None;
-
-
-            // V poli sloupců (IColumnInfo) vyhledá první, jehož ColumnId odpovídá PropertyName zadaného operátoru, a který má CodeTable:
-            bool trySearchColumn(DxExpressionPart opProperty, IEnumerable<IColumnInfo> cols, out IColumnInfo foundCol)
-            {
-                string columnId = opProperty.PropertyName;
-                return (cols.TryFindFirst(out foundCol, col => String.Equals(col.ColumnId, columnId, StringComparison.OrdinalIgnoreCase) && col.HasCodeTable));
-            }
-        }
-        /// <summary>
-        /// Metoda zajistí konverzi operátoru v řádkovém filtru pro binární podmínky typu <see cref="ConvertCodeTableType.Binary"/>.
-        /// </summary>
-        /// <param name="args"></param>
-        /// <param name="column">Sloupec, jehož se výraz filtru týká</param>
-        /// <param name="opProperties">ProperyNames načtené z výrazu, měl by být jen jeden</param>
-        /// <param name="opValues">Values načtené z výrazu, měl by být jeden nebo víc</param>
-        private static void _ConvertCodeTableForOperationBinary(DxConvertorCustomArgs args, IColumnInfo column, DxExpressionPart[] opProperties, DxExpressionPart[] opValues)
-        {
-            if (!(opProperties.Length == 1 && opValues.Length == 1)) return;
-
-            if (_TrySearchCodeValue(opValues[0].ValueString, column, out var codeValue))
-            {
-                opProperties[0].PropertyName = column.CodeValueSourceText;
-                opValues[0].Value = codeValue;
-            }
-        }
-        /// <summary>
-        /// Metoda zajistí konverzi operátoru v řádkovém filtru pro binární podmínky typu <see cref="ConvertCodeTableType.In"/>.
-        /// </summary>
-        /// <param name="args"></param>
-        /// <param name="column">Sloupec, jehož se výraz filtru týká</param>
-        /// <param name="opProperties">ProperyNames načtené z výrazu, měl by být jen jeden</param>
-        /// <param name="opValues">Values načtené z výrazu, měl by být jeden nebo víc</param>
-        private static void _ConvertCodeTableForOperationIn(DxConvertorCustomArgs args, IColumnInfo column, DxExpressionPart[] opProperties, DxExpressionPart[] opValues)
-        {
-            if (!(opProperties.Length == 1 && opValues.Length >= 1)) return;
-
-            // Vytvoříme si pole, obsahující CodeValus pro zadané DisplayValues:
-            var codeValues = new List<object>();
-            foreach (var opValue in opValues)
-            {   // Projdu zadané DisplayValue hodnoty, a každou musím najít v CodeTable:
-                if (_TrySearchCodeValue(opValue.ValueString, column, out var codeValue))
-                    codeValues.Add(codeValue);
-                else
-                    // Jediná nenalezená položka DisplayValue => končíme, a následující kód se neprovede => podmínka zůstane na textové úrovni (DisplayValue) bez konverze.
-                    break;
-            }
-
-            // Pouze tehdy, když jsem pro každou dodanou ValueString našel odpovídající DisplayValue v dodané CodeTable a tedy její CodeValue,
-            //  pak mohu konvertovat textový výraz z filtru nad DisplayValue do výrazu v CodeValue:
-            if (codeValues.Count == opValues.Length)
-            {
-                opProperties[0].PropertyName = column.CodeValueSourceText;
-                // Hodnoty (CodeValue) vložím do operandů typu Hodnota (opValues); jejichž počet (i pořadí) je shodné jako je v poli codeValues:
-                for (int i = 0; i < codeValues.Count; i++)
-                    opValues[i].Value = codeValues[i];
-            }
-        }
-        /// <summary>
-        /// Metoda zajistí konverzi operátoru v řádkovém filtru pro binární podmínky typu <see cref="ConvertCodeTableType.SearchCodes"/>.
-        /// </summary>
-        /// <param name="args"></param>
-        /// <param name="column">Sloupec, jehož se výraz filtru týká</param>
-        /// <param name="opProperties">ProperyNames načtené z výrazu, měl by být jen jeden</param>
-        /// <param name="opValues">Values načtené z výrazu, měl by být jeden nebo víc</param>
-        private static void _ConvertCodeTableForOperationSearch(DxConvertorCustomArgs args, IColumnInfo column, DxExpressionPart[] opProperties, DxExpressionPart[] opValues)
-        {
-            if (!(opProperties.Length == 1 && opValues.Length == 1)) return;
-
-            var regex = getLikePattern(args.Operation, opValues[0].ValueString);                             // Pattern (v Regex) odpovídající zadanému textu a druhu operátoru
-            var codeValues = column.CodeTableItems.Where(es => isDisplayValue(es.Value, regex)).ToArray();   // V CodeTableItems daného sloupce najde všechny položky, které odpovídají danému textu
-            switch (codeValues.Length)
-            {   // Tak kolik položek jsme našli? Takový filtrační výraz vytvoříme:
-                case 0:
-                    args.Operation = DxFilterOperationType.Binary_Equal;
-                    args.Operands = new List<DxExpressionPart>();
-                    args.Operands.Add(DxExpressionPart.CreateValue(1));
-                    args.Operands.Add(DxExpressionPart.CreateValue(0));
-                    break;
-                case 1:
-                    args.Operation = DxFilterOperationType.Binary_Equal;
-                    args.Operands = new List<DxExpressionPart>();
-                    args.Operands.Add(DxExpressionPart.CreateProperty(column.CodeValueSourceText));
-                    args.Operands.Add(DxExpressionPart.CreateValue(codeValues[0].Key));
-                    break;
-                default:
-                    args.Operation = DxFilterOperationType.In;
-                    args.Operands = new List<DxExpressionPart>();
-                    args.Operands.Add(DxExpressionPart.CreateProperty(column.CodeValueSourceText));
-                    args.Operands.AddRange(codeValues.Select(cvkvp => DxExpressionPart.CreateValue(cvkvp.Key)));
-                    break;
-            }
-
-
             // Vrátí Regex odpovídající danému operátoru (typ podmínky) a zadanému textu podmínky
             System.Text.RegularExpressions.Regex getLikePattern(DxFilterOperationType operation, string filterText)
             {
@@ -404,76 +320,249 @@ namespace Noris.Srv.NrsInternal.DxFiltering
             {
                 if (text.Contains(search)) text = text.Replace(search, replacement);
             }
-            // Vrátí true, pokud konkrétní text DisplayValue (itemDisplayValue) odpovídá aktuální podmínce filtru (args.Operation) a uživatelem zadané hodnotě (filterRegex).
-            bool isDisplayValue(string itemDisplayValue, System.Text.RegularExpressions.Regex filterRegex)
+            // Z dodané CodeTable (která je definovaná položkami { Key=CodeValue, Value=DisplayValue } ) vybere ty položky, jejichž DisplayValue odpovídá kterékoli hodnotě, dodané v poli 'displayValues' jako ValueString.
+            //  Výstupní pole bude tedy v pořadí dle codeTableItems, kde samozřejmě nebudou duplikátní položky - i kdyby byly duplikátní v displayValues.
+            //  A naopak, pokud by více položek v codeTableItems mělo shodný DisplayValue a ten byl zadán v jedném prvku pole 'displayValues', 
+            //     pak ve výstupu bude více CodeValues, které společně odpovídají shodnému DisplayValue, i kdyby byl zadán v jedném prvku v 'displayValues'.
+            object[] getValuesEquals(KeyValuePair<object, string>[] codeTableItems, DxExpressionToken[] displayValues)
             {
-                switch (args.Operation)
-                {
-                    // Tyto operace řešíme pomocí RegEx:
-                    case DxFilterOperationType.Function_StartsWith:
-                    case DxFilterOperationType.Function_Contains:
-                    case DxFilterOperationType.Function_EndsWith:
-                    case DxFilterOperationType.Binary_Like:
-                    case DxFilterOperationType.Custom_Like:
-                        return filterRegex?.IsMatch(itemDisplayValue) ?? false;
-                }
-                return false;
+                if (codeTableItems is null || codeTableItems.Length == 0 || displayValues is null || displayValues.Length == 0) return new object[0];
+
+                return codeTableItems
+                    .Where(cti => displayValues.Any(dv => String.Equals(cti.Value, dv.ValueString, StringComparison.CurrentCultureIgnoreCase)))
+                    .Select(cti => cti.Key)
+                    .ToArray();
+            }
+            // Z dodané CodeTable (která je definovaná položkami { CodeValue, DisplayValue } ) vybere ty položky, jejichž DisplayValue odpovídá dodanému Regex výrazu.
+            object[] getValuesRegex(KeyValuePair<object, string>[] codeTableItems, System.Text.RegularExpressions.Regex regex)
+            {
+                if (codeTableItems is null || codeTableItems.Length == 0 || regex is null) return new object[0];
+
+                return codeTableItems
+                    .Where(cti => regex.IsMatch(cti.Value))
+                    .Select(cti => cti.Key)
+                    .ToArray();
             }
         }
         /// <summary>
-        /// Metoda najde zadaný text <paramref name="displayText"/> v CodeTable dodaného sloupce <paramref name="column"/> jako Value (=DisplayValue),
-        /// a z nalezené položky získá a vrátí jeho Key = CodeValue. Vrací true pokud najde.
+        /// Metoda provede finální sestavení filtračního výrazu pro dodaná data (sloupec, hodnoty, styl výrazu).
         /// </summary>
-        /// <param name="displayText"></param>
+        /// <param name="args"></param>
+        /// <param name="propertyToken"></param>
         /// <param name="column"></param>
-        /// <param name="codeValue"></param>
-        /// <returns></returns>
-        private static bool _TrySearchCodeValue(string displayText, IColumnInfo column, out object codeValue)
+        /// <param name="codeValues"></param>
+        /// <param name="convertType"></param>
+        private static void _ConvertRowFilterPartForCodeTable(DxConvertorCustomArgs args, DxExpressionToken propertyToken, IFilterColumnInfo column, object[] codeValues, DxCodeTableOperationType convertType)
         {
-            if (!String.IsNullOrEmpty(displayText) && column != null && column.HasCodeTable && column.CodeTableItems != null && column.CodeTableItems.Length > 0)
+            var tokenValues = codeValues?.Select(cv => DxExpressionToken.CreateValue(cv)).ToArray();
+            switch (convertType)
             {
-                if (column.CodeTableItems.TryFindFirst(out var foundPair, kvp => String.Equals(kvp.Value, displayText, StringComparison.CurrentCultureIgnoreCase)))
-                {
-                    codeValue = foundPair.Key;
-                    return true;
-                }
+                case DxCodeTableOperationType.False:
+                    args.CustomResult = DxExpressionToken.CreateText("(1=0)");
+                    break;
+                case DxCodeTableOperationType.True:
+                    args.CustomResult = DxExpressionToken.CreateText("(1=1)");
+                    break;
+                case DxCodeTableOperationType.Equal:
+                    propertyToken.PropertyResult = column.CodeValueSource;
+                    args.CustomResult = DxExpressionToken.CreateFrom(propertyToken, " = ", tokenValues[0]);
+                    break;
+                case DxCodeTableOperationType.NotCodeTable:
+                    propertyToken.PropertyResult = column.CodeValueSource;
+                    args.CustomResult = DxExpressionToken.CreateFrom(propertyToken, " <=> ", tokenValues[0]);
+                    break;
+                case DxCodeTableOperationType.InList:
+                    propertyToken.PropertyResult = column.CodeValueSource;
+                    args.CustomResult = DxExpressionToken.CreateFrom(propertyToken, " in (", DxExpressionToken.CreateDelimited(",", tokenValues), ")");
+                    break;
+                case DxCodeTableOperationType.NotInList:
+                    propertyToken.PropertyResult = column.CodeValueSource;
+                    args.CustomResult = DxExpressionToken.CreateFrom(propertyToken, " in (", DxExpressionToken.CreateDelimited(",", tokenValues), ")");
+                    break;
             }
-            codeValue = null;
-            return true;
-        }
-        private enum ConvertCodeTableType
-        {
-            None,
-            Binary,
-            In,
-            SearchCodes
         }
         #endregion
     }
-    #endregion
-    #region class DxCriteriaVisitor : Vlastní konverzní třída pro (rekurzivní) převod DxFilter.CriteriaOperator do výsledných částí DxExpressionPart
     /// <summary>
-    /// <see cref="DxCriteriaVisitor"/> : Rekurzivní konverzní třída pro vlastní převod <see cref="DxFilter.CriteriaOperator"/> do výsledných částí <see cref="DxExpressionPart"/>
+    /// Data pro konverzi
     /// </summary>
-    internal class DxCriteriaVisitor : DxFilter.ICriteriaVisitor<DxExpressionPart>, DxFilter.IClientCriteriaVisitor<DxExpressionPart>
+    internal class ConvertArgs
+    {
+        public ConvertArgs()
+        {
+            Language = DxExpressionLanguageType.MsSqlDatabase;
+        }
+        /// <summary>
+        /// Filtrační výraz jako instance <see cref="DxFilter.CriteriaOperator"/>
+        /// </summary>
+        public DxFilter.CriteriaOperator Filter { get { return __Filter; } set { __Filter = value; } } private DxFilter.CriteriaOperator __Filter;
+        /// <summary>
+        /// Filtrační výraz jako string; ukládá se / čte se z <see cref="Filter"/>
+        /// </summary>
+        public string DxExpression { get { return __Filter?.ToString(); } set { __Filter = (!String.IsNullOrEmpty(value) ? DxFilter.CriteriaOperator.Parse(value) : null); } }
+        /// <summary>
+        /// Jazyk výrazu
+        /// </summary>
+        public DxExpressionLanguageType Language { get { return __Language; } set { __Language = value; } } private DxExpressionLanguageType __Language;
+        /// <summary>
+        /// Kolekce sloupců, která slouží k určení zdrojového textu pro výraz, a pro zpracování editačních stylů
+        /// </summary>
+        public IEnumerable<IFilterColumnInfo> Columns { get { return __Columns; } set { __Columns = value?.ToArray(); } } private IFilterColumnInfo[] __Columns;
+        /// <summary>
+        /// Obsahuje true, pokud kolekce sloupců má alespoň jeden prvek = máme sloupce
+        /// </summary>
+        public bool HasColumns { get { return (__Columns != null && __Columns.Length > 0); } }
+        /// <summary>
+        /// Externí handler, který umožňuje řešit každou konverzi každého operátoru externě
+        /// </summary>
+        public DxConvertorCustomHandler CustomHandler { get { return __CustomHandler; } set { __CustomHandler = value; } } private DxConvertorCustomHandler __CustomHandler;
+        /// <summary>
+        /// Obsahuje true, pokud je dodán externí handler <see cref="CustomHandler"/>
+        /// </summary>
+        public bool HasCustomHandler { get { return (__CustomHandler != null); } }
+
+        /// <summary>
+        /// Obsahuje true, pokud argument je validní a použitelný
+        /// </summary>
+        public bool IsValid { get { return !(__Filter is null); } }
+    }
+    /// <summary>
+    /// Obecná data o sloupci šablony, rozšířená verze
+    /// </summary>
+    internal interface IFilterColumnInfo
+    {
+        /// <summary>
+        /// ID sloupce = jednoznačný alias v načítaných datech, aktuální. Pod tímto názvem se sloupec vyskytuje v zadaném filtračním výrazu.
+        /// </summary>
+        string ColumnId { get; }
+        /// <summary>
+        /// Zdroj pro tento sloupec, pro jeho zobrazovanou hodnotu.
+        /// U sloupce s editačním stylem je zde typicky rozklad editačního stylu:<br/>
+        /// <c>case tab.status when 0 then 'Pořízen' when 1 then 'Aktivován' when 2 then 'Stornován' else 'Jiný' end</c><br/>
+        /// </summary>
+        string DisplayValueSource { get; }
+        /// <summary>
+        /// Zdroj pro CodeValue v tomto sloupci. Je naplněn typicky pro sloupce s editačním stylem, pak zde je jeho podkladová datová hodnota, typicky:<br/>
+        /// <c>tab.status</c>
+        /// </summary>
+        string CodeValueSource { get; }
+        /// <summary>
+        /// Typ zdroje dat v tomto sloupci
+        /// </summary>
+        FilterColumnSourceType SourceType { get; }
+        /// <summary>
+        /// Položky CodeTable (z Editačního stylu anebo z Valuace atributů), kde Key = Code a Value = DisplayText
+        /// </summary>
+        KeyValuePair<object, string>[] CodeTableItems { get; }
+    }
+    /// <summary>
+    /// Typ zdroje dat ve sloupci <see cref="IFilterColumnInfo"/>. Řídí zpracování sloupců specifického typu pro konkrétní typy operátorů.
+    /// </summary>
+    internal enum FilterColumnSourceType
+    {
+        /// <summary>
+        /// Defaultní = co je uvedeno ve filtru, to je řešeno v podmínce. Běžné sloupce, které jednoduše zobrazují datovou hodnotu.
+        /// </summary>
+        Default,
+        /// <summary>
+        /// Sloupec zobrazující DisplayValue z daného Editačního stylu, kde do textu podmínky filtru nebudeme dávat jeho <see cref="IFilterColumnInfo.DisplayValueSource"/>, 
+        /// ale kódovu hodnotu <see cref="IFilterColumnInfo.CodeValueSource"/>.
+        /// </summary>
+        CodeTable,
+        /// <summary>
+        /// Virtuální sloupec, který zobrazuje hodnotu, získanou typicky subselectem, který není uložen v <see cref="IFilterColumnInfo.CodeValueSource"/>, 
+        /// ale je třeba do textu podmínky jej sestavit.
+        /// </summary>
+        Virtual
+    }
+    /// <summary>
+    /// Potřebný typ operace po náhradě podmínky filtru, která se týká operace s CodeTable hodnotami
+    /// </summary>
+    internal enum DxCodeTableOperationType
+    {
+        /// <summary>
+        /// Aktuální podmínka filtru se netýká sloupce s CodeTable
+        /// </summary>
+        NotCodeTable,
+        /// <summary>
+        /// Aktuální podmínka filtru má být nahrazena podmínkou typu False: <c>(1=0)</c>, protože zadané filtrační podmínce nemůže vyhovět žádný záznam
+        /// </summary>
+        False,
+        /// <summary>
+        /// Aktuální podmínka filtru má být nahrazena podmínkou typu True: <c>(1=1)</c>, protože zadané filtrační podmínce vyhovuje každý záznam
+        /// </summary>
+        True,
+        /// <summary>
+        /// Aktuální podmínka filtru má být nahrazena podmínkou typu Equal: <c>CodeValueSource = value[0]</c>, protože zadaná podmínka je "pozitivní" a hodnotě sloupce odpovídá jediná CodeValue
+        /// </summary>
+        Equal,
+        /// <summary>
+        /// Aktuální podmínka filtru má být nahrazena podmínkou typu NotEqual: <c>CodeValueSource != value[0]</c>, protože zadaná podmínka je "negativní" a hodnotě sloupce neodpovídá jediná CodeValue
+        /// </summary>
+        NotEqual,
+        /// <summary>
+        /// Aktuální podmínka filtru má být nahrazena podmínkou typu In List: <c>CodeValueSource in (values...)</c>, protože zadaná podmínka je "pozitivní" a hodnotě sloupce odpovídá více CodeValues
+        /// </summary>
+        InList,
+        /// <summary>
+        /// Aktuální podmínka filtru má být nahrazena podmínkou typu Not In List: <c>CodeValueSource not in (values...)</c>, protože zadaná podmínka je "negativní " a hodnotě sloupce neodpovídá více CodeValues
+        /// </summary>
+        NotInList
+    }
+    #endregion
+    #region class DxCriteriaVisitor : Vlastní konverzní třída pro (rekurzivní) převod DxFilter.CriteriaOperator do výsledných částí DxExpressionToken
+    /// <summary>
+    /// <see cref="DxCriteriaVisitor"/> : Rekurzivní konverzní třída pro vlastní převod <see cref="DxFilter.CriteriaOperator"/> do výsledných částí <see cref="DxExpressionToken"/>
+    /// </summary>
+    internal class DxCriteriaVisitor : DxFilter.ICriteriaVisitor<DxExpressionToken>, DxFilter.IClientCriteriaVisitor<DxExpressionToken>
     {
         #region Konstruktor a jazyk
-        internal DxCriteriaVisitor(DxExpressionLanguageType language, DxConvertorCustomHandler customHandler, IEnumerable<IColumnInfo> columns)
+        internal DxCriteriaVisitor(ConvertArgs args)
         {
-            __Language = language;
-            __CustomHandler = customHandler;
-            __HasCustomHandler = (customHandler != null);
-            __Columns = columns;
-            __HasColumns = (columns != null);
+            __Args = args;
+            __ColumnDict = DxFilterConvertor.CreateColumnsDictionary(args.Columns, false);
         }
-        private DxExpressionLanguageType __Language;
-        private DxConvertorCustomHandler __CustomHandler;
-        private IEnumerable<IColumnInfo> __Columns;
-        private bool __HasCustomHandler;
-        private bool __HasColumns;
+        private ConvertArgs __Args;
+        private Dictionary<string, IFilterColumnInfo> __ColumnDict;
+
+        /// <summary>
+        /// Cílový jazyk konverze
+        /// </summary>
+        private DxExpressionLanguageType _Language { get { return __Args.Language; } }
+        /// <summary>
+        /// Sloupce
+        /// </summary>
+        private IEnumerable<IFilterColumnInfo> _Columns { get { return __Args.Columns; } }
+        /// <summary>
+        /// Obsahuje true, pokud máme dodané sloupce
+        /// </summary>
+        private bool _HasColumns { get { return __Args.HasColumns; } }
+        /// <summary>
+        /// Externí handler operátorů
+        /// </summary>
+        private DxConvertorCustomHandler _CustomHandler { get { return __Args.CustomHandler; } }
+        /// <summary>
+        /// Obsahuje true, pokud máme dodaný externí handler
+        /// </summary>
+        private bool _HasCustomHandler { get { return __Args.HasCustomHandler; } }
+        #endregion
+        #region Sloupce
+        /// <summary>
+        /// Zkusí najít sloupec pro dané ID
+        /// </summary>
+        /// <param name="columnId"></param>
+        /// <param name="column"></param>
+        /// <returns></returns>
+        private bool _TryGetColumn(string columnId, out IFilterColumnInfo column)
+        {
+            if (!String.IsNullOrEmpty(columnId) && __ColumnDict.TryGetValue(columnId, out column)) return true;
+
+            column = null;
+            return false;
+        }
         #endregion
         #region Visitors : jednotlivé typy operací
-        DxExpressionPart DxFilter.ICriteriaVisitor<DxExpressionPart>.Visit(DxFilter.GroupOperator groupOperator)
+        DxExpressionToken DxFilter.ICriteriaVisitor<DxExpressionToken>.Visit(DxFilter.GroupOperator groupOperator)
         {
             var dxOperands = ConvertOperands(ConvertOperandsMode.RemoveEmptyItems, groupOperator.Operands);
             if (dxOperands is null) return null;                                         // null reprezentuje stav, kdy daný fragment vynecháváme.
@@ -481,14 +570,14 @@ namespace Noris.Srv.NrsInternal.DxFiltering
             var operation = ConvertOperation(FamilyType.Group, groupOperator.OperatorType);
             return ConvertToPart(groupOperator, operation, dxOperands);
         }
-        DxExpressionPart DxFilter.ICriteriaVisitor<DxExpressionPart>.Visit(DxFilter.BetweenOperator betweenOperator)
+        DxExpressionToken DxFilter.ICriteriaVisitor<DxExpressionToken>.Visit(DxFilter.BetweenOperator betweenOperator)
         {
             var dxOperands = ConvertOperands(ConvertOperandsMode.StrictlyAllItems, betweenOperator.TestExpression, betweenOperator.BeginExpression, betweenOperator.EndExpression);
             if (dxOperands is null) return null;                                         // null reprezentuje stav, kdy daný fragment vynecháváme.
 
             return ConvertToPart(betweenOperator, DxFilterOperationType.Between, dxOperands);
         }
-        DxExpressionPart DxFilter.ICriteriaVisitor<DxExpressionPart>.Visit(DxFilter.BinaryOperator binaryOperator)
+        DxExpressionToken DxFilter.ICriteriaVisitor<DxExpressionToken>.Visit(DxFilter.BinaryOperator binaryOperator)
         {
             var dxOperands = ConvertOperands(ConvertOperandsMode.StrictlyAllItems, binaryOperator.LeftOperand, binaryOperator.RightOperand);
             if (dxOperands is null) return null;                                         // null reprezentuje stav, kdy daný fragment vynecháváme.
@@ -496,7 +585,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
             var operation = ConvertOperation(FamilyType.Binary, binaryOperator.OperatorType);
             return ConvertToPart(binaryOperator, operation, dxOperands);
         }
-        DxExpressionPart DxFilter.ICriteriaVisitor<DxExpressionPart>.Visit(DxFilter.UnaryOperator unaryOperator)
+        DxExpressionToken DxFilter.ICriteriaVisitor<DxExpressionToken>.Visit(DxFilter.UnaryOperator unaryOperator)
         {
             var dxOperands = ConvertOperands(ConvertOperandsMode.StrictlyAllItems, unaryOperator.Operand);
             if (dxOperands is null) return null;                                         // null reprezentuje stav, kdy daný fragment vynecháváme.
@@ -504,14 +593,14 @@ namespace Noris.Srv.NrsInternal.DxFiltering
             var operation = ConvertOperation(FamilyType.Unary, unaryOperator.OperatorType);
             return ConvertToPart(unaryOperator, operation, dxOperands);
         }
-        DxExpressionPart DxFilter.ICriteriaVisitor<DxExpressionPart>.Visit(DxFilter.InOperator inOperator)
+        DxExpressionToken DxFilter.ICriteriaVisitor<DxExpressionToken>.Visit(DxFilter.InOperator inOperator)
         {
             var dxOperands = ConvertOperands(ConvertOperandsMode.RemoveEmptyItems, inOperator.LeftOperand, inOperator.Operands);
             if (dxOperands is null) return null;                                         // null reprezentuje stav, kdy daný fragment vynecháváme.
 
             return ConvertToPart(inOperator, DxFilterOperationType.In, dxOperands);
         }
-        DxExpressionPart DxFilter.ICriteriaVisitor<DxExpressionPart>.Visit(DxFilter.FunctionOperator functionOperator)
+        DxExpressionToken DxFilter.ICriteriaVisitor<DxExpressionToken>.Visit(DxFilter.FunctionOperator functionOperator)
         {
             var dxOperands = ConvertOperands(ConvertOperandsMode.StrictlyAllItems, functionOperator.Operands);
             if (dxOperands is null) return null;                                         // null reprezentuje stav, kdy daný fragment vynecháváme.
@@ -532,21 +621,25 @@ namespace Noris.Srv.NrsInternal.DxFiltering
 
             return ConvertToPart(functionOperator, operation, dxOperands);
         }
-        DxExpressionPart DxFilter.ICriteriaVisitor<DxExpressionPart>.Visit(DxFilter.OperandValue operandValue)
+        DxExpressionToken DxFilter.ICriteriaVisitor<DxExpressionToken>.Visit(DxFilter.OperandValue operandValue)
         {
-            return DxExpressionPart.CreateValue(operandValue.Value);
+            return DxExpressionToken.CreateValue(operandValue.Value);
         }
-        DxExpressionPart DxFilter.IClientCriteriaVisitor<DxExpressionPart>.Visit(DxFilter.OperandProperty operandProperty)
+        DxExpressionToken DxFilter.IClientCriteriaVisitor<DxExpressionToken>.Visit(DxFilter.OperandProperty operandProperty)
         {
-            return DxExpressionPart.CreateProperty(operandProperty.PropertyName);
+            // OperandProperty = název property, a ve smyslu filtru = název sloupce.
+            // Pokusím se dohledat sloupec podle jeho ColumnId = PropertyName:
+            string columnId = operandProperty.PropertyName;
+            _TryGetColumn(columnId, out var column);
+            return DxExpressionToken.CreateProperty(columnId, column);
         }
-        DxExpressionPart DxFilter.IClientCriteriaVisitor<DxExpressionPart>.Visit(DxFilter.AggregateOperand aggregateOperand)
+        DxExpressionToken DxFilter.IClientCriteriaVisitor<DxExpressionToken>.Visit(DxFilter.AggregateOperand aggregateOperand)
         {
-            return DxExpressionPart.CreateText("aggregateoperand ");
+            return DxExpressionToken.CreateText("aggregateoperand ");
         }
-        DxExpressionPart DxFilter.IClientCriteriaVisitor<DxExpressionPart>.Visit(DxFilter.JoinOperand joinOperand)
+        DxExpressionToken DxFilter.IClientCriteriaVisitor<DxExpressionToken>.Visit(DxFilter.JoinOperand joinOperand)
         {
-            return DxExpressionPart.CreateText("joinoperand ");
+            return DxExpressionToken.CreateText("joinoperand ");
         }
         #endregion
         #region TADY JE  ♥  KONVERTORU  :  Vlastní konvertor všech operací (funkce, operace, porovnání...), s využitím __CustomHandler
@@ -566,22 +659,43 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// <param name="operands"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentException"></exception>
-        private DxExpressionPart ConvertToPart(DxFilter.CriteriaOperator filterOperator, DxFilterOperationType operation, List<DxExpressionPart> operands)
+        private DxExpressionToken ConvertToPart(DxFilter.CriteriaOperator filterOperator, DxFilterOperationType operation, List<DxExpressionToken> operands)
         {
-            if (__HasCustomHandler || __HasColumns)
+            if (_HasCustomHandler || _HasColumns)
             {   // Custom handler nebo sloupce a jejich interní handler:
-                var args = new DxConvertorCustomArgs(__Language, operation, operands);
-                if (__HasColumns)
-                    DxFilterConvertor.ConvertRowFilterPartForColumns(args, __Columns);
-                if (__HasCustomHandler)
-                    __CustomHandler(filterOperator, args);
+                var args = new DxConvertorCustomArgs(_Language, operation, operands);
+                if (_HasColumns)
+                    DxFilterConvertor.ConvertRowFilterPartForColumns(args);
+                if (_HasCustomHandler)
+                    _CustomHandler(filterOperator, args);
                 if (args.Skip) return null;
                 if (args.CustomResult != null) return args.CustomResult;
                 operation = args.Operation;
                 operands = args.Operands;
             }
-            int count = operands?.Count ?? -1;
 
+            switch (this._Language)
+            {
+                case DxExpressionLanguageType.MsSqlDatabase:
+                case DxExpressionLanguageType.Default:
+                    return ConvertToPartMsSqlDatabase(filterOperator, operation, operands);
+                case DxExpressionLanguageType.SystemDataFilter:
+                    return ConvertToPartMsSqlDatabase(filterOperator, operation, operands);
+            }
+
+            throw new NotImplementedException($"DxFilterConvertor.ConvertToPart does not implement language: '{this._Language}'");
+        }
+        /// <summary>
+        /// Fyzická konverze dodaného operátoru, konkrétní operace a operandů, do jazyka MS SQL DATABASE
+        /// </summary>
+        /// <param name="filterOperator"></param>
+        /// <param name="operation"></param>
+        /// <param name="operands"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        private DxExpressionToken ConvertToPartMsSqlDatabase(DxFilter.CriteriaOperator filterOperator, DxFilterOperationType operation, List<DxExpressionToken> operands)
+        {
             // Viz wiki:
 
             //  DxFilter:  https://docs.devexpress.com/CoreLibraries/DevExpress.Data.Filtering.FunctionOperatorType
@@ -589,10 +703,14 @@ namespace Noris.Srv.NrsInternal.DxFiltering
             //  String:    https://learn.microsoft.com/en-us/sql/t-sql/functions/string-functions-transact-sql?view=sql-server-ver17
             //  DateTime:  https://learn.microsoft.com/en-us/sql/t-sql/functions/date-and-time-data-types-and-functions-transact-sql?view=sql-server-ver17
 
+            //  System.Data:  https://learn.microsoft.com/en-us/dotnet/fundamentals/runtime-libraries/system-data-datacolumn-expression
+
             // Řádkový filtr se bude opírat o aktuální čas na serveru, beztak to tak dělal i dříve...
             var now = DateTime.Now;
             DateTime dateBegin, dateEnd;
             int year;
+
+            int count = operands?.Count ?? -1;
             switch (operation)
             {
                 #region Group: And, Or
@@ -608,14 +726,14 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     //   kdežto bez závorek by to dopadlo špatně                       :   c = 10 and  a < 1 or b > 10
                     //   ....  protože AND mívá přednost, takže význam by byl          :  (c = 10 and a < 1) or b > 10 
                     string delimiter = (operation == DxFilterOperationType.Group_And ? " and " : (operation == DxFilterOperationType.Group_Or ? " or " : ", "));
-                    return DxExpressionPart.CreateFrom("(", DxExpressionPart.CreateDelimited(delimiter, operands), ")");
+                    return DxExpressionToken.CreateFrom("(", DxExpressionToken.CreateDelimited(delimiter, operands), ")");
 
                 #endregion
                 #region Between
                 case DxFilterOperationType.Between:
                     //    Operand.0  between  Operand.1  and  Operand.2
                     checkCount(3);
-                    return DxExpressionPart.CreateFrom(operands[0], " between ", operands[1], " and ", operands[2]);
+                    return DxExpressionToken.CreateFrom(operands[0], " between ", operands[1], " and ", operands[2]);
                 #endregion
                 #region Binary: Equal, Greater, Less, Modulo, Multiply...
                 case DxFilterOperationType.Binary_Equal:
@@ -635,30 +753,30 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                 case DxFilterOperationType.Binary_Minus:
                     // Všechny binární vyřešíme najednou:
                     checkCount(2);
-                    return DxExpressionPart.CreateFrom(operands[0], getBinaryOperatorText(operation), operands[1]);
+                    return DxExpressionToken.CreateFrom(operands[0], getBinaryOperatorText(operation), operands[1]);
                 #endregion
                 #region Unary: Not, IsNull, ...
                 case DxFilterOperationType.Unary_BitwiseNot:
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom(" ~", operands[0]);
+                    return DxExpressionToken.CreateFrom(" ~", operands[0]);
                 case DxFilterOperationType.Unary_Plus:
                     checkCount(1);
                     return operands[0];
                 case DxFilterOperationType.Unary_Minus:
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom(" -(", operands[0], ")");
+                    return DxExpressionToken.CreateFrom(" -(", operands[0], ")");
                 case DxFilterOperationType.Unary_Not:
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("not (", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("not (", operands[0], ")");
                 case DxFilterOperationType.Unary_IsNull:
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom(operands[0], " is null");
+                    return DxExpressionToken.CreateFrom(operands[0], " is null");
                 #endregion
                 #region In list
                 case DxFilterOperationType.In:
                     if (count < 2) return null;                                          // null reprezentuje stav, kdy daný fragment vynecháváme.
-                    if (count == 2) return DxExpressionPart.CreateFrom(operands[0], " = ", operands[1]);                                                       // Sloupec in (123)   převedeme na   Sloupec = 123
-                    if (count > 2) return DxExpressionPart.CreateFrom(operands[0], " in (", DxExpressionPart.CreateDelimited(",", operands.Skip(1)), ")");     // Sloupec in (operandy počínaje [1] oddělené , delimiterem)
+                    if (count == 2) return DxExpressionToken.CreateFrom(operands[0], " = ", operands[1]);                                                       // Sloupec in (123)   převedeme na   Sloupec = 123
+                    if (count > 2) return DxExpressionToken.CreateFrom(operands[0], " in (", DxExpressionToken.CreateDelimited(",", operands.Skip(1)), ")");     // Sloupec in (operandy počínaje [1] oddělené , delimiterem)
                     failCount("1 or more");
                     break;
                 #endregion
@@ -681,7 +799,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     if (count == 0) failCount("1 or more");                                        // Bez argumentů = nevalidní
                     if ((count % 2) == 0) failCount("1, 3, 5, 7 .. (=odd count)");                 // Musí jich být lichý počet
                     if (count == 1) return operands[0];                                            // If you pass only one argument, the passed argument is returned.
-                    var iifPart = DxExpressionPart.CreateFrom("(case ");                           // (case when ... 
+                    var iifPart = DxExpressionToken.CreateFrom("(case ");                           // (case when ... 
                     for (int i = 0; i < count; i += 2)
                         iifPart.AddRange("when ", operands[i], " then ", operands[i + 1], " ");    //   ... [Name] = 'Bob' then 1 ...       přičemž operandItems[i] je logický: "[Name] = 'Bob'" a operandItems[i + 1] je hodnota: "1"
                     iifPart.AddRange("else ", operands[count - 1], " end)");                       //   ... else 0 end)
@@ -691,24 +809,24 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     // The returned value depends on the number of arguments (one or two arguments).
                     //  True / False: If a single operand is passed, the function returns True if the operand is null; otherwise, False.
                     //  Value1 / Value2: If two operands are passed, the function returns the first operand if it is not set to NULL; otherwise, the second operand is returned.
-                    if (count == 1) return DxExpressionPart.CreateFrom(operands[0], " is null");                                 // [datum_akce] is null
-                    if (count == 2) return DxExpressionPart.CreateFrom("isnull(", operands[0], ", ", operands[1], ")");          // isnull([datum_akce], [datum_podani])
+                    if (count == 1) return DxExpressionToken.CreateFrom(operands[0], " is null");                                 // [datum_akce] is null
+                    if (count == 2) return DxExpressionToken.CreateFrom("isnull(", operands[0], ", ", operands[1], ")");          // isnull([datum_akce], [datum_podani])
                     failCount("1 or 2");
                     break;
                 case DxFilterOperationType.Function_IsNullOrEmpty:
                     // Returns True if the specified value is null or an empty string. Otherwise, returns False.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("(", operands[0], " is null or len(", operands[0], ") = 0)");
+                    return DxExpressionToken.CreateFrom("(", operands[0], " is null or len(", operands[0], ") = 0)");
                 #endregion
                 #region Function - String 1: Trim. Len, Substring, Upper, Lower, Concat, ...
                 case DxFilterOperationType.Function_Trim:
                     //Returns a string that is a copy of the specified string with all white-space characters removed from the start and end of the specified string.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("trim(", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("trim(", operands[0], ")");
                 case DxFilterOperationType.Function_Len:
                     // Returns the length of the string specified by an operand.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("len(", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("len(", operands[0], ")");
                 case DxFilterOperationType.Function_Substring:
                     // Returns a substring from the specified string. This function requires two or three operands.
                     // If two operands are passed, the substring starts from the beginning of the specified string.The operands are:
@@ -719,38 +837,38 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     //   2 - an integer that specifies the zero - based position at which the substring starts.
                     //   3 - an integer that specifies the length of the substring.
                     if (count == 2)
-                        return DxExpressionPart.CreateFrom("substring(", operands[0], ",", intAsText(operands[1], 1), ",9999)");                           // substring([poznamka], 41, 9999) : DevExpress umožňuje 2 argumenty (string, begin), ale SQL server chce povinně 3, kde třetí = délka
+                        return DxExpressionToken.CreateFrom("substring(", operands[0], ",", intAsText(operands[1], 1), ",9999)");                           // substring([poznamka], 41, 9999) : DevExpress umožňuje 2 argumenty (string, begin), ale SQL server chce povinně 3, kde třetí = délka
                     if (count == 3)
-                        return DxExpressionPart.CreateFrom("substring(", operands[0], ",", intAsText(operands[1], 1), ",", intAsText(operands[2]), ")");   // substring([poznamka], (40+1), 25)   : DevExpress má počátek substringu zero-based ("integer that specifies the zero-based position at which the substring starts."), ale SQL server má base 1
+                        return DxExpressionToken.CreateFrom("substring(", operands[0], ",", intAsText(operands[1], 1), ",", intAsText(operands[2]), ")");   // substring([poznamka], (40+1), 25)   : DevExpress má počátek substringu zero-based ("integer that specifies the zero-based position at which the substring starts."), ale SQL server má base 1
                     failCount("2 or 3");
                     break;
                 case DxFilterOperationType.Function_Upper:
                     // Converts all characters in a string operand to uppercase in an invariant culture.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("upper(", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("upper(", operands[0], ")");
                 case DxFilterOperationType.Function_Lower:
                     // Converts all characters in a string operand to lowercase in an invariant culture.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("lower(", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("lower(", operands[0], ")");
                 case DxFilterOperationType.Function_Concat:
                     // Concatenates the specified strings.
                     // SQL server pro funkci CONCAT vyžaduje nejméně dva parametry; proto pro méně operandů provádím konverze jinak:
-                    if (count <= 0) return DxExpressionPart.CreateText("''");                                                    // concat()                            vrátí ''
+                    if (count <= 0) return DxExpressionToken.CreateText("''");                                                    // concat()                            vrátí ''
                     if (count == 1) return operands[0];                                                                          // concat([nazev])                     vrátí [nazev]
-                    return DxExpressionPart.CreateFrom("concat(", DxExpressionPart.CreateDelimited(",", operands), ")");         // concat([nazev1], ',', [nazev2])     vrátí concat([nazev1], ',', [nazev2])   = to je SQL validní
+                    return DxExpressionToken.CreateFrom("concat(", DxExpressionToken.CreateDelimited(",", operands), ")");         // concat([nazev1], ',', [nazev2])     vrátí concat([nazev1], ',', [nazev2])   = to je SQL validní
                 case DxFilterOperationType.Function_Ascii:
                     // Returns the ASCII code of the first character in a string operand.
                     // If the argument is an empty string, the null value is returned.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("ascii(", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("ascii(", operands[0], ")");
                 case DxFilterOperationType.Function_Char:
                     // Converts a numeric operand to a Unicode character.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("char(", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("char(", operands[0], ")");
                 case DxFilterOperationType.Function_ToStr:
                     // Returns a string representation of the specified value or property.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("cast(", operands[0], " as nvarchar(max))");
+                    return DxExpressionToken.CreateFrom("cast(", operands[0], " as nvarchar(max))");
                 case DxFilterOperationType.Function_Replace:
                     // Returns a new string in which all occurrences of one specified string (string1) in another string (string2) are replaced with the specified string (string3).
                     // The operands are:
@@ -760,11 +878,11 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     //  ... Taky správně chápete, jaký význam má string1 a string2 ?
                     // MS SQL : REPLACE ( string_expression , string_pattern , string_replacement )  
                     checkCount(3);
-                    return DxExpressionPart.CreateFrom("replace(", operands[0], ", ", operands[1], ", ", operands[2], ")");
+                    return DxExpressionToken.CreateFrom("replace(", operands[0], ", ", operands[1], ", ", operands[2], ")");
                 case DxFilterOperationType.Function_Reverse:
                     // Returns a string in which the character order of a specified string is reversed.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("reverse(", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("reverse(", operands[0], ")");
                 case DxFilterOperationType.Function_Insert:
                     // Returns a new string in which a specified string is inserted at a specified index position into another specified string.
                     // The operands are:
@@ -773,11 +891,11 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     //  3 - the string to insert.                                                 například   'ABCD'
                     // GithubCopilot mi navrhnul:
                     // MS SQL : (case when ([nazev_subjektu] is null) then null when (len([nazev_subjektu]) <= 3) then ([nazev_subjektu] + 'ABCD') else (left([nazev_subjektu], 3) + 'ABCD' + right([nazev_subjektu], len([nazev_subjektu]) - 3)) end)
-                    //          return DxExpressionPart.CreateFrom("(case when (", operands[0], " is null) then null when (len(", operands[0], ") <= ", intAsText(operands[1]), ") then (", operands[0], " + ", operands[2], ") else (left(", operands[0], ", ", intAsText(operands[1]), ") + ", operands[2], " + right(", operands[0], ", len(", operands[0], ") - ", intAsText(operands[1]), ")) end)");
+                    //          return DxExpressionToken.CreateFrom("(case when (", operands[0], " is null) then null when (len(", operands[0], ") <= ", intAsText(operands[1]), ") then (", operands[0], " + ", operands[2], ") else (left(", operands[0], ", ", intAsText(operands[1]), ") + ", operands[2], " + right(", operands[0], ", len(", operands[0], ") - ", intAsText(operands[1]), ")) end)");
                     // MS SQL : STUFF ( character_expression , start , length , replace_with_expression )
                     // MS SQL : (case when ([nazev_subjektu] is null) then null when (len([nazev_subjektu]) <= 3) then ([nazev_subjektu] + 'ABCD') else stuff([nazev_subjektu], 4, 0, 'ABCD') end)
                     checkCount(3);
-                    return DxExpressionPart.CreateFrom("(case when (", operands[0], " is null) then null when (len(", operands[0], ") <= ", intAsText(operands[1]), ") then (", operands[0], " + ", operands[2], ") else stuff(", operands[0], ", ", intAsText(operands[1], 1), ", 0, ", operands[2], ") end)");
+                    return DxExpressionToken.CreateFrom("(case when (", operands[0], " is null) then null when (len(", operands[0], ") <= ", intAsText(operands[1]), ") then (", operands[0], " + ", operands[2], ") else stuff(", operands[0], ", ", intAsText(operands[1], 1), ", 0, ", operands[2], ") end)");
                 case DxFilterOperationType.Function_CharIndex:
                     // Returns the index of the first occurrence of a specified string within another string.
                     // The operands are:
@@ -787,8 +905,8 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     //  4 - (optional) an integer that specifies the number of characters to examine, starting from the specified position. If this operand is not specified, the search continues until the end of the string.
                     //     This function performs a word search using the current culture. If a specified substring is found, the function returns its index. Otherwise, -1 is returned.
                     // MS SQL : CHARINDEX ( expressionToFind , expressionToSearch [ , start_location ] )  
-                    if (count == 2) return DxExpressionPart.CreateFrom("charindex(", operands[0], ", ", operands[1], ")");
-                    if (count == 3) return DxExpressionPart.CreateFrom("charindex(", operands[0], ", ", operands[1], ", ", operands[2], ")");
+                    if (count == 2) return DxExpressionToken.CreateFrom("charindex(", operands[0], ", ", operands[1], ")");
+                    if (count == 3) return DxExpressionToken.CreateFrom("charindex(", operands[0], ", ", operands[1], ", ", operands[2], ")");
                     failCount("2 or 3");
                     break;
                 case DxFilterOperationType.Function_Remove:
@@ -800,8 +918,8 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     // MS SQL : STUFF ( character_expression , start , length , replace_with_expression )
                     //        (case when ([nazev_subjektu] is null) then null when (len([nazev_subjektu]) <= 3) then ([nazev_subjektu]) else stuff([nazev_subjektu], 4, 9999, '')  end)
                     //        (case when ([nazev_subjektu] is null) then null when (len([nazev_subjektu]) <= 3) then ([nazev_subjektu]) else stuff([nazev_subjektu], 4, 2, '')  end)
-                    if (count == 2) return DxExpressionPart.CreateFrom("(case when (", operands[0], " is null) then null when (len(", operands[0], ") <= ", intAsText(operands[1]), ") then (", operands[0], ") else stuff(", operands[0], ", ", intAsText(operands[1], 1), ", 9999, '') end)");
-                    if (count == 3) return DxExpressionPart.CreateFrom("(case when (", operands[0], " is null) then null when (len(", operands[0], ") <= ", intAsText(operands[1]), ") then (", operands[0], ") else stuff(", operands[0], ", ", intAsText(operands[1], 1), ", ", intAsText(operands[2]), ", '') end)");
+                    if (count == 2) return DxExpressionToken.CreateFrom("(case when (", operands[0], " is null) then null when (len(", operands[0], ") <= ", intAsText(operands[1]), ") then (", operands[0], ") else stuff(", operands[0], ", ", intAsText(operands[1], 1), ", 9999, '') end)");
+                    if (count == 3) return DxExpressionToken.CreateFrom("(case when (", operands[0], " is null) then null when (len(", operands[0], ") <= ", intAsText(operands[1]), ") then (", operands[0], ") else stuff(", operands[0], ", ", intAsText(operands[1], 1), ", ", intAsText(operands[2]), ", '') end)");
                     failCount("2 or 3");
                     break;
                 #endregion
@@ -809,29 +927,29 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                 case DxFilterOperationType.Function_Abs:
                     // Returns the absolute value of a numeric operand.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("abs(", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("abs(", operands[0], ")");
                 case DxFilterOperationType.Function_Sqr:
                     // Returns the square root of a specified numeric operand.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("sqrt(", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("sqrt(", operands[0], ")");
                 case DxFilterOperationType.Function_Cos:
                     // Returns the cosine of the numeric operand, in radians.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("cos(", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("cos(", operands[0], ")");
                 case DxFilterOperationType.Function_Sin:
                     // Returns the sine of the numeric operand, in radians.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("sin(", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("sin(", operands[0], ")");
                 case DxFilterOperationType.Function_Atn:
                     // Returns the arctangent (the inverse tangent function) of the numeric operand. The arctangent is the angle in the range -π/2 to π/2 radians, whose tangent is the numeric operand.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("atan(", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("atan(", operands[0], ")");
                 case DxFilterOperationType.Function_Exp:
                     // Returns the number e raised to the power specified by a numeric operand.
                     //   If the specified operand cannot be converted to Double, the NotSupportedException is thrown.
                     // The Exp function reverses the FunctionOperatorType.Log function. Use the FunctionOperatorType.Power operand to calculate powers of other bases.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("exp(", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("exp(", operands[0], ")");
                 case DxFilterOperationType.Function_Log:
                     // Returns the logarithm of the specified numeric operand. The return value depends upon the number of operands.
                     // If one operand is passed, the function returns the natural(base e) logarithm of a specified operand.
@@ -840,17 +958,17 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     //   2 - the base of the logarithm.
                     // If the operand cannot be converted to Double, the NotSupportedException is thrown.
                     // The Log function reverses the FunctionOperatorType.Exp function. To calculate the base - 10 logarithm, use the FunctionOperatorType.Log10 function.
-                    if (count == 1) return DxExpressionPart.CreateFrom("log(", operands[0], ")");
-                    if (count == 2) return DxExpressionPart.CreateFrom("log(", operands[0], ",", operands[1], ")");
+                    if (count == 1) return DxExpressionToken.CreateFrom("log(", operands[0], ")");
+                    if (count == 2) return DxExpressionToken.CreateFrom("log(", operands[0], ",", operands[1], ")");
                     failCount("1 or 2");
                     break;
                 case DxFilterOperationType.Function_Rnd:
                     // Returns a random number greater than or equal to 0.0, and less than 1.0.
-                    return DxExpressionPart.CreateText("rand()");
+                    return DxExpressionToken.CreateText("rand()");
                 case DxFilterOperationType.Function_Tan:
                     // Returns the tangent of the specified numeric operand that is an angle in radians.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("tan(", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("tan(", operands[0], ")");
                 case DxFilterOperationType.Function_Power:
                     // Returns a specified numeric operand raised to a specified power.
                     // The operands are:
@@ -859,56 +977,56 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     // If the operand cannot be converted to Double, the NotSupportedException is thrown.
                     // The Power function reverses the FunctionOperatorType.Log or FunctionOperatorType.Log10 function. Use the FunctionOperatorType.Exp operand to calculate powers of the number e.
                     checkCount(2);
-                    return DxExpressionPart.CreateFrom("power(", operands[0], ",", operands[1], ")");
+                    return DxExpressionToken.CreateFrom("power(", operands[0], ",", operands[1], ")");
                 case DxFilterOperationType.Function_Sign:
                     // Returns an integer that indicates the sign of a number. The function returns 1 for positive numbers, -1 for negative numbers, and 0 (zero) if a number is equal to zero.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("sign(", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("sign(", operands[0], ")");
                 case DxFilterOperationType.Function_Round:
                     // Rounds a specified numeric operand to the nearest integer or to a specified number of fractional digits.
                     // The operands are:
                     // 1 - a value to round.
                     // 2 - (optional)the number of decimal places to which to round. 0 indicates that the first operand is rounded to the nearest integer.
-                    if (count == 1) return DxExpressionPart.CreateFrom("round(", operands[0], ", 0)");
-                    if (count == 2) return DxExpressionPart.CreateFrom("round(", operands[0], ",", intAsText(operands[1]), ")");
+                    if (count == 1) return DxExpressionToken.CreateFrom("round(", operands[0], ", 0)");
+                    if (count == 2) return DxExpressionToken.CreateFrom("round(", operands[0], ",", intAsText(operands[1]), ")");
                     failCount("1 or 2");
                     break;
                 case DxFilterOperationType.Function_Ceiling:
                     // Returns the smallest integral value greater than or equal to the specified numeric operand.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("ceiling(", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("ceiling(", operands[0], ")");
                 case DxFilterOperationType.Function_Floor:
                     // Returns the largest integral value less than or equal to the specified numeric operand.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("floor(", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("floor(", operands[0], ")");
                 case DxFilterOperationType.Function_Max:
                     // Returns the larger of two numeric values.
                     checkCount(2);
-                    return DxExpressionPart.CreateFrom("(case when ", operands[0], " > ", operands[1], " then ", operands[0], " else ", operands[1], " end)");   // (case when pocet1 > pocet2 then pocet1 else pocet2 end)
+                    return DxExpressionToken.CreateFrom("(case when ", operands[0], " > ", operands[1], " then ", operands[0], " else ", operands[1], " end)");   // (case when pocet1 > pocet2 then pocet1 else pocet2 end)
                 case DxFilterOperationType.Function_Min:
                     // Returns the smaller of two numeric values.
                     checkCount(2);
-                    return DxExpressionPart.CreateFrom("(case when ", operands[0], " < ", operands[1], " then ", operands[0], " else ", operands[1], " end)");   // (case when pocet1 < pocet2 then pocet1 else pocet2 end)
+                    return DxExpressionToken.CreateFrom("(case when ", operands[0], " < ", operands[1], " then ", operands[0], " else ", operands[1], " end)");   // (case when pocet1 < pocet2 then pocet1 else pocet2 end)
                 case DxFilterOperationType.Function_Acos:
                     // Returns the arccosine of the numeric operand. The arccosine is the angle in the range 0 (zero) to π radians, whose cosine is the numeric operand.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("acos(", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("acos(", operands[0], ")");
                 case DxFilterOperationType.Function_Asin:
                     // Returns the arcsine of the numeric operand. The arcsine is the angle in the range -π/2 to π/2 radians, whose sine is the numeric operand.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("asin(", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("asin(", operands[0], ")");
                 case DxFilterOperationType.Function_Atn2:
                     // Returns the arctangent (the inverse tangent function) of the quotient of the two specified numeric operands. The arctangent is the angle in the range -π/2 to π/2 radians.
                     // The operands are:
                     //  1 - the y coordinate of a point in Cartesian coordinates (x, y).
                     //  2 - the x coordinate of a point in Cartesian coordinates (x, y).
                     checkCount(2);
-                    return DxExpressionPart.CreateFrom("atn2(", operands[0], ",", operands[1], ")");
+                    return DxExpressionToken.CreateFrom("atn2(", operands[0], ",", operands[1], ")");
                 case DxFilterOperationType.Function_BigMul:
                     // Calculates the full product of two integer operands.
                     // MS SQL : (cast(op1 as bigint) * cast(op2 as bigint)) 
                     checkCount(2);
-                    return DxExpressionPart.CreateFrom("(cast(", operands[0], " as bigint) * cast(", operands[1], " as bigint))");
+                    return DxExpressionToken.CreateFrom("(cast(", operands[0], " as bigint) * cast(", operands[1], " as bigint))");
                 case DxFilterOperationType.Function_Cosh:
                     // Returns the hyperbolic cosine of the numeric operand, in radians.
 
@@ -920,7 +1038,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     // If the operand cannot be converted to Double, the NotSupportedException is thrown.
                     // The Log10 function reverses the FunctionOperatorType.Power function. Use the FunctionOperatorType.Log 
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("log10(", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("log10(", operands[0], ")");
                 case DxFilterOperationType.Function_Sinh:
                     // Returns the hyperbolic sine of the numeric operand, in radians.
 
@@ -942,8 +1060,8 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     //  2 - the total number of characters in the resulting string, including padding characters.
                     //  3 - (optional) a Unicode padding character. If not specified, the space character is used for padding. If a string is passed as this operand, its first character is used for padding.
                     // MS SQL : right(replicate('=', 80) + nazev_subjektu, 80) as padleft     zachovává NULL hodnotu
-                    if (count == 2) return DxExpressionPart.CreateFrom("right(replicate(' ', ", intAsText(operands[1]), ") + ", operands[0], ", ", intAsText(operands[1]), ")");
-                    if (count == 3) return DxExpressionPart.CreateFrom("right(replicate(", operands[2], ", ", intAsText(operands[1]), ") + ", operands[0], ", ", intAsText(operands[1]), ")");
+                    if (count == 2) return DxExpressionToken.CreateFrom("right(replicate(' ', ", intAsText(operands[1]), ") + ", operands[0], ", ", intAsText(operands[1]), ")");
+                    if (count == 3) return DxExpressionToken.CreateFrom("right(replicate(", operands[2], ", ", intAsText(operands[1]), ") + ", operands[0], ", ", intAsText(operands[1]), ")");
                     failCount("2 or 3");
                     break;
                 case DxFilterOperationType.Function_PadRight:
@@ -953,108 +1071,108 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     //  2 - the total number of characters in the resulting string, including padding characters.
                     //  3 - (optional) a Unicode padding character. If not specified, the space character is used for padding. If a string is passed as this operand, its first character is used for padding.
                     // MS SQL : left(nazev_subjektu + replicate('=', 80), 80) as padright     zachovává NULL hodnotu
-                    if (count == 2) return DxExpressionPart.CreateFrom("left(", operands[0], " + replicate(' ', ", intAsText(operands[1]), "), ", intAsText(operands[1]), ")");
-                    if (count == 3) return DxExpressionPart.CreateFrom("left(", operands[0], " + replicate(", operands[2], ", ", intAsText(operands[1]), "), ", intAsText(operands[1]), ")");
+                    if (count == 2) return DxExpressionToken.CreateFrom("left(", operands[0], " + replicate(' ', ", intAsText(operands[1]), "), ", intAsText(operands[1]), ")");
+                    if (count == 3) return DxExpressionToken.CreateFrom("left(", operands[0], " + replicate(", operands[2], ", ", intAsText(operands[1]), "), ", intAsText(operands[1]), ")");
                     failCount("2 or 3");
                     break;
                 case DxFilterOperationType.Function_StartsWith:
                     checkCount(2);
-                    return DxExpressionPart.CreateFrom(operands[0], " like ", stringAsValue(operands[1], null, "%"));            // [nazev] like 'adr%'     nebo    [nazev] like (Funkce(x,y) + '%')
+                    return DxExpressionToken.CreateFrom(operands[0], " like ", stringAsValue(operands[1], null, "%"));            // [nazev] like 'adr%'     nebo    [nazev] like (Funkce(x,y) + '%')
                 case DxFilterOperationType.Function_EndsWith:
                     checkCount(2);
-                    return DxExpressionPart.CreateFrom(operands[0], " like ", stringAsValue(operands[1], "%", null));            // [nazev] like '%adr'     nebo    [nazev] like ('%' + Funkce(x,y))
+                    return DxExpressionToken.CreateFrom(operands[0], " like ", stringAsValue(operands[1], "%", null));            // [nazev] like '%adr'     nebo    [nazev] like ('%' + Funkce(x,y))
                 case DxFilterOperationType.Function_Contains:
                     checkCount(2);
-                    return DxExpressionPart.CreateFrom(operands[0], " like ", stringAsValue(operands[1], "%", "%"));             // [nazev] like '%adr%'    nebo    [nazev] like ('%' + Funkce(x,y) + '%')
+                    return DxExpressionToken.CreateFrom(operands[0], " like ", stringAsValue(operands[1], "%", "%"));             // [nazev] like '%adr%'    nebo    [nazev] like ('%' + Funkce(x,y) + '%')
                 case DxFilterOperationType.Function_ToInt:
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("cast(", operands[0], " as int)");
+                    return DxExpressionToken.CreateFrom("cast(", operands[0], " as int)");
                 case DxFilterOperationType.Function_ToLong:
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("cast(", operands[0], " as bigint)");
+                    return DxExpressionToken.CreateFrom("cast(", operands[0], " as bigint)");
                 case DxFilterOperationType.Function_ToFloat:
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("cast(", operands[0], " as decimal(19,6))");
+                    return DxExpressionToken.CreateFrom("cast(", operands[0], " as decimal(19,6))");
                 case DxFilterOperationType.Function_ToDouble:
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("cast(", operands[0], " as decimal(19,6))");
+                    return DxExpressionToken.CreateFrom("cast(", operands[0], " as decimal(19,6))");
                 case DxFilterOperationType.Function_ToDecimal:
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("cast(", operands[0], " as decimal(19,6))");
+                    return DxExpressionToken.CreateFrom("cast(", operands[0], " as decimal(19,6))");
                 #endregion
                 #region Function - DateTime 1: LocalDateTime
                 case DxFilterOperationType.Function_LocalDateTimeThisYear:
                     // Returns the DateTime value with the date part that is the first day of the current year, and the time part of 00:00:00.
                     dateBegin = new DateTime(now.Year, 1, 1, 0, 0, 0);
-                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));                           // convert(datetime, '2025-01-01 00:00:00.000', 121)
+                    return DxExpressionToken.CreateFrom(dateTimeAsText(dateBegin));                           // convert(datetime, '2025-01-01 00:00:00.000', 121)
                 case DxFilterOperationType.Function_LocalDateTimeThisMonth:
                     // Returns the DateTime value with the date part that is the first day of the current month, and the time part of 00:00:00.
                     dateBegin = new DateTime(now.Year, now.Month, 1, 0, 0, 0);
-                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));                           // convert(datetime, '2025-08-01 00:00:00.000', 121)
+                    return DxExpressionToken.CreateFrom(dateTimeAsText(dateBegin));                           // convert(datetime, '2025-08-01 00:00:00.000', 121)
                 case DxFilterOperationType.Function_LocalDateTimeLastWeek:
                     // Returns the DateTime value that has the date part that is 7 days before the start of the current week, and the time part of 00:00:00.
                     dateBegin = getWeekBegin(now).AddDays(-7);
-                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));                           // convert(datetime, '2025-07-28 00:00:00.000', 121)        pokud dnes je 2025-08-05 (úterý), pak aktuální pondělí je 2025-08-04  a minulé pondělí je 2025-07-28 !
+                    return DxExpressionToken.CreateFrom(dateTimeAsText(dateBegin));                           // convert(datetime, '2025-07-28 00:00:00.000', 121)        pokud dnes je 2025-08-05 (úterý), pak aktuální pondělí je 2025-08-04  a minulé pondělí je 2025-07-28 !
                 case DxFilterOperationType.Function_LocalDateTimeThisWeek:
                     // Returns the DateTime value with the date part that is the first day of the current week, and the time part of 00:00:00.
                     dateBegin = getWeekBegin(now);
-                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));                           // convert(datetime, '2025-08-04 00:00:00.000', 121)        pokud dnes je 2025-08-05 (úterý), pak aktuální pondělí je 2025-08-04
+                    return DxExpressionToken.CreateFrom(dateTimeAsText(dateBegin));                           // convert(datetime, '2025-08-04 00:00:00.000', 121)        pokud dnes je 2025-08-05 (úterý), pak aktuální pondělí je 2025-08-04
                 case DxFilterOperationType.Function_LocalDateTimeYesterday:
                     // Returns the DateTime value with the date part that is the previous day, and the time part of 00:00:00.
                     dateBegin = now.Date.AddDays(-1);
-                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));                           // convert(datetime, '2025-08-04 00:00:00.000', 121)        pokud dnes je 2025-08-05 (úterý), pak včerejšek je 2025-08-04
+                    return DxExpressionToken.CreateFrom(dateTimeAsText(dateBegin));                           // convert(datetime, '2025-08-04 00:00:00.000', 121)        pokud dnes je 2025-08-05 (úterý), pak včerejšek je 2025-08-04
                 case DxFilterOperationType.Function_LocalDateTimeToday:
                     // Returns the DateTime value with the date part that is the start of the current day, and the time part of 00:00:00.
                     dateBegin = now.Date;
-                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));                           // convert(datetime, '2025-08-05 00:00:00.000', 121)        pokud dnes je 2025-08-05 (úterý), pak to je dnešek (bez času)
+                    return DxExpressionToken.CreateFrom(dateTimeAsText(dateBegin));                           // convert(datetime, '2025-08-05 00:00:00.000', 121)        pokud dnes je 2025-08-05 (úterý), pak to je dnešek (bez času)
                 case DxFilterOperationType.Function_LocalDateTimeNow:
                     // Returns the DateTime value that is the current moment in time.
                     dateBegin = now;
-                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));                           // convert(datetime, '2025-08-05 09:59:26.453', 121)
+                    return DxExpressionToken.CreateFrom(dateTimeAsText(dateBegin));                           // convert(datetime, '2025-08-05 09:59:26.453', 121)
                 case DxFilterOperationType.Function_LocalDateTimeTomorrow:
                     // Returns the DateTime value with the date part that is the next day, and the time part of 00:00:00.
                     dateBegin = now.Date.AddDays(1);
-                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));
+                    return DxExpressionToken.CreateFrom(dateTimeAsText(dateBegin));
                 case DxFilterOperationType.Function_LocalDateTimeDayAfterTomorrow:
                     // Returns the DateTime value that has the date part that is two days after the current date, and the time part of 00:00:00.
                     dateBegin = now.Date.AddDays(2);
-                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));
+                    return DxExpressionToken.CreateFrom(dateTimeAsText(dateBegin));
                 case DxFilterOperationType.Function_LocalDateTimeNextWeek:
                     // Returns the DateTime value that has the date part that is 7 days after the start of the current week, and the time part of 00:00:00.
                     dateBegin = getWeekBegin(now).AddDays(7);
-                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));
+                    return DxExpressionToken.CreateFrom(dateTimeAsText(dateBegin));
                 case DxFilterOperationType.Function_LocalDateTimeTwoWeeksAway:
                     // Returns the DateTime value with the date part that is the first day of the week after the next week, and the time part of 00:00:00.
                     dateBegin = getWeekBegin(now).AddDays(14);
-                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));
+                    return DxExpressionToken.CreateFrom(dateTimeAsText(dateBegin));
                 case DxFilterOperationType.Function_LocalDateTimeNextMonth:
                     // Returns the DateTime value that has the date part that is the first day of the next month, and the time part of 00:00:00.
                     dateBegin = new DateTime(now.Year, now.Month, 1, 0, 0, 0).AddMonths(1);
-                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));
+                    return DxExpressionToken.CreateFrom(dateTimeAsText(dateBegin));
                 case DxFilterOperationType.Function_LocalDateTimeNextYear:
                     // Returns the DateTime value with the date part that corresponds to the first day of the next year, and the time part of 00:00:00.
                     dateBegin = new DateTime(now.Year + 1, 1, 1, 0, 0, 0);
-                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));
+                    return DxExpressionToken.CreateFrom(dateTimeAsText(dateBegin));
                 case DxFilterOperationType.Function_LocalDateTimeTwoMonthsAway:
                     // Returns the DateTime value with the date part that is the first day of the month after the next month, and the time part of 00:00:00.
                     dateBegin = new DateTime(now.Year, now.Month, 1, 0, 0, 0).AddMonths(2);
-                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));
+                    return DxExpressionToken.CreateFrom(dateTimeAsText(dateBegin));
                 case DxFilterOperationType.Function_LocalDateTimeTwoYearsAway:
                     // Returns the DateTime value with the date part that is the first day of the year after the next year, and the time part of 00:00:00.
                     dateBegin = new DateTime(now.Year + 2, 1, 1, 0, 0, 0);
-                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));
+                    return DxExpressionToken.CreateFrom(dateTimeAsText(dateBegin));
                 case DxFilterOperationType.Function_LocalDateTimeLastMonth:
                     // Returns the DateTime value that has the date part that is one month before the current date, and the time part of 00:00:00.
                     dateBegin = now.AddMonths(-1).Date;
-                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));
+                    return DxExpressionToken.CreateFrom(dateTimeAsText(dateBegin));
                 case DxFilterOperationType.Function_LocalDateTimeLastYear:
                     // Returns the DateTime value that has the date part that is the first day of the previous year, and the time part of 00:00:00.
                     dateBegin = new DateTime(now.Year - 1, 1, 1, 0, 0, 0);
-                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));
+                    return DxExpressionToken.CreateFrom(dateTimeAsText(dateBegin));
                 case DxFilterOperationType.Function_LocalDateTimeYearBeforeToday:
                     // Returns the DateTime value with the date part that is the date one year ago, and the time part of 00:00:00.
                     dateBegin = now.AddMonths(-12).Date;
-                    return DxExpressionPart.CreateFrom(dateTimeAsText(dateBegin));
+                    return DxExpressionToken.CreateFrom(dateTimeAsText(dateBegin));
                 #endregion
                 #region Function - DateTime 2: IsOutlookInterval
                 case DxFilterOperationType.Function_IsOutlookIntervalBeyondThisYear:
@@ -1062,7 +1180,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     // The operator is defined as follows: date >= First Day of Next Year
                     checkCount(1);
                     dateBegin = new DateTime(now.Year + 1, 1, 1);                        // Začátek příštího roku
-                    return DxExpressionPart.CreateFrom(operands[0], " >= ", dateTimeAsText(dateBegin));            // [datum_akce] >= '2026-01-01 00:00:00'
+                    return DxExpressionToken.CreateFrom(operands[0], " >= ", dateTimeAsText(dateBegin));            // [datum_akce] >= '2026-01-01 00:00:00'
                 case DxFilterOperationType.Function_IsOutlookIntervalLaterThisYear:
                     // The Boolean Is Later This Year operator for date/time values. Requires one argument.
                     // The operator is defined as follows: First Day of Next Month <= date < First Day of Next Year
@@ -1145,7 +1263,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     // The operator is defined as follows: date < First Day of This Year
                     checkCount(1);
                     dateEnd = new DateTime(now.Year, 1, 1);                              // Začátek tohoto roku
-                    return DxExpressionPart.CreateFrom(operands[0], " < ", dateTimeAsText(dateEnd));            // [datum_akce] < '2025-01-01 00:00:00'
+                    return DxExpressionToken.CreateFrom(operands[0], " < ", dateTimeAsText(dateEnd));            // [datum_akce] < '2025-01-01 00:00:00'
                 #endregion
                 #region Function - DateTime 3: Is... (IsThisWeek, IsLastYear, IsJanuary, ...)
                 case DxFilterOperationType.Function_IsThisWeek:
@@ -1176,7 +1294,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     // Celý budoucí rok:
                     checkCount(1);
                     year = now.Year + 1;                                                 // Příští rok: pokud letos je 2025, pak year = 2026
-                    return DxExpressionPart.CreateFrom("year(", operands[0], ") = " + year.ToString());       // Rok(datum_akce) = 2026
+                    return DxExpressionToken.CreateFrom("year(", operands[0], ") = " + year.ToString());       // Rok(datum_akce) = 2026
                 case DxFilterOperationType.Function_IsLastMonth:
                     // Celý minulý měsíc:
                     checkCount(1);
@@ -1187,7 +1305,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     // Celý minulý rok:
                     checkCount(1);
                     year = now.Year - 1;                                                 // Minulý rok: pokud letos je 2025, pak year = 2024
-                    return DxExpressionPart.CreateFrom("year(", operands[0], ") = " + year.ToString());       // Rok(datum_akce) = 2024
+                    return DxExpressionToken.CreateFrom("year(", operands[0], ") = " + year.ToString());       // Rok(datum_akce) = 2024
                 case DxFilterOperationType.Function_IsYearToDate:
                     // Od 1.1. tohoto roku do dnešního večera:
                     checkCount(1);
@@ -1198,51 +1316,51 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     // Určitý den (ve sloupci [0]) je stejný den, jako je zadán v parametru [1]
                     checkCount(2);
                     // Prostě porovnám Date část obou výrazů:
-                    return DxExpressionPart.CreateFrom("cast(", operands[0], " as date) = cast(", operands[1], " as date)");       // cast(datum0 as date) = cast(datum1 as date)
+                    return DxExpressionToken.CreateFrom("cast(", operands[0], " as date) = cast(", operands[1], " as date)");       // cast(datum0 as date) = cast(datum1 as date)
                 case DxFilterOperationType.Function_InRange:
                     // Obecně v rozmezí [ od včetně ... do mimo ): jak datumy, tak čísla...
                     checkCount(3);
-                    return DxExpressionPart.CreateFrom("(", operands[0], " >= ", operands[1], " and ", operands[0], " < ", operands[2], ")");
+                    return DxExpressionToken.CreateFrom("(", operands[0], " >= ", operands[1], " and ", operands[0], " < ", operands[2], ")");
                 case DxFilterOperationType.Function_InDateRange:
                     // Den v rozmezí od - do, ale zadaný v proměnných Od-Do:
                     checkCount(3);
-                    return DxExpressionPart.CreateFrom("(", operands[0], " >= cast(", operands[1], " as date) and ", operands[0], " < dateadd(day, 1, cast(", operands[2], " as date)))");
+                    return DxExpressionToken.CreateFrom("(", operands[0], " >= cast(", operands[1], " as date) and ", operands[0], " < dateadd(day, 1, cast(", operands[2], " as date)))");
                 case DxFilterOperationType.Function_IsJanuary:
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("month(", operands[0], ") = 1");
+                    return DxExpressionToken.CreateFrom("month(", operands[0], ") = 1");
                 case DxFilterOperationType.Function_IsFebruary:
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("month(", operands[0], ") = 2");
+                    return DxExpressionToken.CreateFrom("month(", operands[0], ") = 2");
                 case DxFilterOperationType.Function_IsMarch:
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("month(", operands[0], ") = 3");
+                    return DxExpressionToken.CreateFrom("month(", operands[0], ") = 3");
                 case DxFilterOperationType.Function_IsApril:
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("month(", operands[0], ") = 4");
+                    return DxExpressionToken.CreateFrom("month(", operands[0], ") = 4");
                 case DxFilterOperationType.Function_IsMay:
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("month(", operands[0], ") = 5");
+                    return DxExpressionToken.CreateFrom("month(", operands[0], ") = 5");
                 case DxFilterOperationType.Function_IsJune:
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("month(", operands[0], ") = 6");
+                    return DxExpressionToken.CreateFrom("month(", operands[0], ") = 6");
                 case DxFilterOperationType.Function_IsJuly:
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("month(", operands[0], ") = 7");
+                    return DxExpressionToken.CreateFrom("month(", operands[0], ") = 7");
                 case DxFilterOperationType.Function_IsAugust:
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("month(", operands[0], ") = 8");
+                    return DxExpressionToken.CreateFrom("month(", operands[0], ") = 8");
                 case DxFilterOperationType.Function_IsSeptember:
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("month(", operands[0], ") = 9");
+                    return DxExpressionToken.CreateFrom("month(", operands[0], ") = 9");
                 case DxFilterOperationType.Function_IsOctober:
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("month(", operands[0], ") = 10");
+                    return DxExpressionToken.CreateFrom("month(", operands[0], ") = 10");
                 case DxFilterOperationType.Function_IsNovember:
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("month(", operands[0], ") = 11");
+                    return DxExpressionToken.CreateFrom("month(", operands[0], ") = 11");
                 case DxFilterOperationType.Function_IsDecember:
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("month(", operands[0], ") = 12");
+                    return DxExpressionToken.CreateFrom("month(", operands[0], ") = 12");
                 #endregion
                 #region Function - DateTime 4: DateDiff...
                 case DxFilterOperationType.Function_DateDiffTick:
@@ -1251,56 +1369,56 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     //  1 - the DateTime value that is the start date.
                     //  2 - the DateTime value that is the end date.                    
                     checkCount(2);
-                    return DxExpressionPart.CreateFrom("datediff(microsecond, ", operands[0], ",", operands[1], ")");  // DATEDIFF ( datepart , startdate , enddate );  microsecond
+                    return DxExpressionToken.CreateFrom("datediff(microsecond, ", operands[0], ",", operands[1], ")");  // DATEDIFF ( datepart , startdate , enddate );  microsecond
                 case DxFilterOperationType.Function_DateDiffSecond:
                     // Returns the number of second boundaries between the specified dates/ times.
                     // The operands are:
                     //  1 - the DateTime value that is the start date.
                     //  2 - the DateTime value that is the end date.                    
                     checkCount(2);
-                    return DxExpressionPart.CreateFrom("datediff(second, ", operands[0], ",", operands[1], ")");       // DATEDIFF ( datepart , startdate , enddate );  second
+                    return DxExpressionToken.CreateFrom("datediff(second, ", operands[0], ",", operands[1], ")");       // DATEDIFF ( datepart , startdate , enddate );  second
                 case DxFilterOperationType.Function_DateDiffMilliSecond:
                     // Returns the number of millisecond boundaries between the specified dates/ times.
                     // The operands are:
                     //  1 - the DateTime value that is the start date.
                     //  2 - the DateTime value that is the end date.                    
                     checkCount(2);
-                    return DxExpressionPart.CreateFrom("datediff(millisecond, ", operands[0], ",", operands[1], ")");  // DATEDIFF ( datepart , startdate , enddate );  millisecond
+                    return DxExpressionToken.CreateFrom("datediff(millisecond, ", operands[0], ",", operands[1], ")");  // DATEDIFF ( datepart , startdate , enddate );  millisecond
                 case DxFilterOperationType.Function_DateDiffMinute:
                     // Returns the number of minute boundaries between the specified dates/ times.
                     // The operands are:
                     //  1 - the DateTime value that is the start date.
                     //  2 - the DateTime value that is the end date.                    
                     checkCount(2);
-                    return DxExpressionPart.CreateFrom("datediff(minute, ", operands[0], ",", operands[1], ")");       // DATEDIFF ( datepart , startdate , enddate );  minute
+                    return DxExpressionToken.CreateFrom("datediff(minute, ", operands[0], ",", operands[1], ")");       // DATEDIFF ( datepart , startdate , enddate );  minute
                 case DxFilterOperationType.Function_DateDiffHour:
                     // Returns the number of hour boundaries between the specified dates/ times.
                     // The operands are:
                     //  1 - the DateTime value that is the start date.
                     //  2 - the DateTime value that is the end date.                    
                     checkCount(2);
-                    return DxExpressionPart.CreateFrom("datediff(hour, ", operands[0], ",", operands[1], ")");         // DATEDIFF ( datepart , startdate , enddate );  hour
+                    return DxExpressionToken.CreateFrom("datediff(hour, ", operands[0], ",", operands[1], ")");         // DATEDIFF ( datepart , startdate , enddate );  hour
                 case DxFilterOperationType.Function_DateDiffDay:
                     // Returns the number of day boundaries between the specified dates/ times.
                     // The operands are:
                     //  1 - the DateTime value that is the start date.
                     //  2 - the DateTime value that is the end date.                    
                     checkCount(2);
-                    return DxExpressionPart.CreateFrom("datediff(day, ", operands[0], ",", operands[1], ")");          // DATEDIFF ( datepart , startdate , enddate );  day
+                    return DxExpressionToken.CreateFrom("datediff(day, ", operands[0], ",", operands[1], ")");          // DATEDIFF ( datepart , startdate , enddate );  day
                 case DxFilterOperationType.Function_DateDiffMonth:
                     // Returns the number of month boundaries between the specified dates/ times.
                     // The operands are:
                     //  1 - the DateTime value that is the start date.
                     //  2 - the DateTime value that is the end date.                    
                     checkCount(2);
-                    return DxExpressionPart.CreateFrom("datediff(month, ", operands[0], ",", operands[1], ")");        // DATEDIFF ( datepart , startdate , enddate );  month
+                    return DxExpressionToken.CreateFrom("datediff(month, ", operands[0], ",", operands[1], ")");        // DATEDIFF ( datepart , startdate , enddate );  month
                 case DxFilterOperationType.Function_DateDiffYear:
                     // Returns the number of year boundaries between the specified dates/ times.
                     // The operands are:
                     //  1 - the DateTime value that is the start date.
                     //  2 - the DateTime value that is the end date.                    
                     checkCount(2);
-                    return DxExpressionPart.CreateFrom("datediff(year, ", operands[0], ",", operands[1], ")");         // DATEDIFF ( datepart , startdate , enddate );  year
+                    return DxExpressionToken.CreateFrom("datediff(year, ", operands[0], ",", operands[1], ")");         // DATEDIFF ( datepart , startdate , enddate );  year
                 #endregion
                 #region Function - DateTime 5: GetPart...
                 case DxFilterOperationType.Function_GetDate:
@@ -1308,61 +1426,61 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     // The operand must be of the DateTime / DateOnly type.
                     // The return value is a DateTime object with the same date part where the time part is 00:00:00, or DateOnly. The return value type depends on the operand type.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("cast(", operands[0], " as date)");                             // cast(datum_akce as date)
+                    return DxExpressionToken.CreateFrom("cast(", operands[0], " as date)");                             // cast(datum_akce as date)
                 case DxFilterOperationType.Function_GetMilliSecond:
                     // Returns the milliseconds value in the specified date/time.
                     // The operand must be of the DateTime / TimeOnly type.
                     // The return value is an integer in the range between 0 and 999.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("datepart(millisecond, ", operands[0], ")");                    // DATEPART ( datepart , date ) ;  millisecond
+                    return DxExpressionToken.CreateFrom("datepart(millisecond, ", operands[0], ")");                    // DATEPART ( datepart , date ) ;  millisecond
                 case DxFilterOperationType.Function_GetSecond:
                     // Returns the seconds value in the specified date/time.
                     // The operand must be of the DateTime / TimeOnly type.
                     // The return value is an integer in the range between 0 and 59.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("datepart(seconds, ", operands[0], ")");                        // DATEPART ( datepart , date ) ;  seconds
+                    return DxExpressionToken.CreateFrom("datepart(seconds, ", operands[0], ")");                        // DATEPART ( datepart , date ) ;  seconds
                 case DxFilterOperationType.Function_GetMinute:
                     // Returns the minute value in the specified date/time.
                     // The operand must be of the DateTime / TimeOnly type.
                     // The return value is an integer in the range between 0 and 59.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("datepart(minute, ", operands[0], ")");                         // DATEPART ( datepart , date ) ;  minute
+                    return DxExpressionToken.CreateFrom("datepart(minute, ", operands[0], ")");                         // DATEPART ( datepart , date ) ;  minute
                 case DxFilterOperationType.Function_GetHour:
                     // Returns the hour value in the specified date/time.
                     // The operand must be of the DateTime / TimeOnly type.
                     // The return value is an integer in the range between 0 and 23.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("datepart(hour, ", operands[0], ")");                           // DATEPART ( datepart , date ) ;  hour
+                    return DxExpressionToken.CreateFrom("datepart(hour, ", operands[0], ")");                           // DATEPART ( datepart , date ) ;  hour
                 case DxFilterOperationType.Function_GetDay:
                     // Returns the day value in the specified date/time.
                     // The operand must be of the DateTime / TimeOnly type.
                     // The return value is an integer in the range between 1 and 31.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("datepart(day, ", operands[0], ")");                            // DATEPART ( datepart , date ) ;  day
+                    return DxExpressionToken.CreateFrom("datepart(day, ", operands[0], ")");                            // DATEPART ( datepart , date ) ;  day
                 case DxFilterOperationType.Function_GetMonth:
                     // Returns the month value in the specified date/time.
                     // The operand must be of the DateTime / TimeOnly type.
                     // The return value is an integer and depends on the current calendar.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("datepart(month, ", operands[0], ")");                         // DATEPART ( datepart , date ) ;  month
+                    return DxExpressionToken.CreateFrom("datepart(month, ", operands[0], ")");                         // DATEPART ( datepart , date ) ;  month
                 case DxFilterOperationType.Function_GetYear:
                     // Returns the year value in the specified date/time.
                     // The operand must be of the DateTime / TimeOnly type.
                     // The return value is an integer in the range between 0 and 9999.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("datepart(year, ", operands[0], ")");                          // DATEPART ( datepart , date ) ;  year
+                    return DxExpressionToken.CreateFrom("datepart(year, ", operands[0], ")");                          // DATEPART ( datepart , date ) ;  year
                 case DxFilterOperationType.Function_GetDayOfWeek:
                     // Returns the day of the week value in the specified date/time.
                     // The operand must be of the DateTime / TimeOnly type.
                     // The return value is an integer value of the DayOfWeek enumeration. It does not depend on the current culture.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("datepart(weekday, ", operands[0], ")");                        // DATEPART ( datepart , date ) ;  weekday
+                    return DxExpressionToken.CreateFrom("datepart(weekday, ", operands[0], ")");                        // DATEPART ( datepart , date ) ;  weekday
                 case DxFilterOperationType.Function_GetDayOfYear:
                     // Gets the day of the year in the specified date.
                     // The operand must be of the DateTime / TimeOnly type.
                     // The return value is an integer in the range between 1 and 366.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("datepart(dayofyear, ", operands[0], ")");                      // DATEPART ( datepart , date ) ;  dayofyear
+                    return DxExpressionToken.CreateFrom("datepart(dayofyear, ", operands[0], ")");                      // DATEPART ( datepart , date ) ;  dayofyear
                 case DxFilterOperationType.Function_GetTimeOfDay:
                     // Gets the time part of the specified date.
                     // The operand must be of the DateTime type.
@@ -1373,18 +1491,18 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                 #region Function - DateTime 6: Current
                 case DxFilterOperationType.Function_Now:
                     // Returns the DateTime value that is the current date and time.
-                    return DxExpressionPart.CreateText("getdate()");
+                    return DxExpressionToken.CreateText("getdate()");
                 case DxFilterOperationType.Function_UtcNow:
                     // Returns a DateTime object that is the current date and time in Universal Coordinated Time (UTC).
-                    return DxExpressionPart.CreateText("getutcdate()");
+                    return DxExpressionToken.CreateText("getutcdate()");
                 case DxFilterOperationType.Function_Today:
                     // Returns a DateTime value that is the current date. The time part is set to 00:00:00.
-                    return DxExpressionPart.CreateText("datetrunc(d, getdate())");
+                    return DxExpressionToken.CreateText("datetrunc(d, getdate())");
                 case DxFilterOperationType.Function_TruncateToMinute:
                     // For internal use.
                     checkCount(1);
-                    if (count == 0) DxExpressionPart.CreateText("datetrunc(mi, getdate())");
-                    if (count == 1) DxExpressionPart.CreateFrom("datetrunc(mi, ", operands[0], ")");
+                    if (count == 0) DxExpressionToken.CreateText("datetrunc(mi, getdate())");
+                    if (count == 1) DxExpressionToken.CreateFrom("datetrunc(mi, ", operands[0], ")");
                     failCount("1 or 2");
                     break;
                 #endregion
@@ -1393,34 +1511,34 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                 case DxFilterOperationType.Function_IsSameHour:
                     // Returns True if the specified time falls within the same hour.
                     checkCount(2);
-                    return DxExpressionPart.CreateFrom("datepart(hour, ", operands[0], ") = datepart(hour, ", operands[1], ")");
+                    return DxExpressionToken.CreateFrom("datepart(hour, ", operands[0], ") = datepart(hour, ", operands[1], ")");
                 case DxFilterOperationType.Function_IsSameTime:
                     // Returns True if the specified time falls within the same time of day (hour and minute).
-                    return DxExpressionPart.CreateFrom("(datepart(hour, ", operands[0], ") = datepart(hour, ", operands[1], ") and datepart(minute, ", operands[0], ") = datepart(minute, ", operands[1], ")");
+                    return DxExpressionToken.CreateFrom("(datepart(hour, ", operands[0], ") = datepart(hour, ", operands[1], ") and datepart(minute, ", operands[0], ") = datepart(minute, ", operands[1], ")");
                 case DxFilterOperationType.Function_BeforeMidday:
                     // Returns True if the specified time is before 12:00 PM.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("datepart(hour,", operands[0], ") < 12");
+                    return DxExpressionToken.CreateFrom("datepart(hour,", operands[0], ") < 12");
                 case DxFilterOperationType.Function_AfterMidday:
                     // Returns True if the specified time is after 12:00 PM.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("datepart(hour,", operands[0], ") >= 12");
+                    return DxExpressionToken.CreateFrom("datepart(hour,", operands[0], ") >= 12");
                 case DxFilterOperationType.Function_IsNight:
                     // Returns True if the specified time falls between 9:00 PM and 9:00 AM.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("(datepart(hour,", operands[0], ") < 9 or datepart(hour,", operands[0], ") >= 21)");
+                    return DxExpressionToken.CreateFrom("(datepart(hour,", operands[0], ") < 9 or datepart(hour,", operands[0], ") >= 21)");
                 case DxFilterOperationType.Function_IsMorning:
                     // Returns True if the specified time falls within between 6:00 AM and 12:00 PM.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("(datepart(hour,", operands[0], ") >= 6 and datepart(hour,", operands[0], ") < 12)");
+                    return DxExpressionToken.CreateFrom("(datepart(hour,", operands[0], ") >= 6 and datepart(hour,", operands[0], ") < 12)");
                 case DxFilterOperationType.Function_IsAfternoon:
                     // Returns True if the specified time falls between 12:00 PM and 6:00 PM.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("(datepart(hour,", operands[0], ") >= 12 and datepart(hour,", operands[0], ") < 18)");
+                    return DxExpressionToken.CreateFrom("(datepart(hour,", operands[0], ") >= 12 and datepart(hour,", operands[0], ") < 18)");
                 case DxFilterOperationType.Function_IsEvening:
                     // Returns True if the specified time falls between 6:00 PM and 9:00 PM.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("(datepart(hour,", operands[0], ") >= 18 and datepart(hour,", operands[0], ") < 21)");
+                    return DxExpressionToken.CreateFrom("(datepart(hour,", operands[0], ") >= 18 and datepart(hour,", operands[0], ") < 21)");
                 case DxFilterOperationType.Function_IsLastHour:
                     // Returns True if the specified time falls within the last hour.
                     checkCount(1);
@@ -1444,19 +1562,19 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     //   ... co já vím, kdy je pracovní doba ???
                     //   ... prostě bude se pracovat od pondělí do pátku od 7 do 16 hodin...   Poznámka: datepart(weekday, [datum]) vrací 2 = pondělí, 6 = pátek.   A svátky neslavíme.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("(datepart(weekday,", operands[0], ") >= 2 and datepart(weekday,", operands[0], ") < 7 and datepart(hour,", operands[0], ") >= 7 and datepart(hour,", operands[0], ") < 16)");
+                    return DxExpressionToken.CreateFrom("(datepart(weekday,", operands[0], ") >= 2 and datepart(weekday,", operands[0], ") < 7 and datepart(hour,", operands[0], ") >= 7 and datepart(hour,", operands[0], ") < 16)");
                 case DxFilterOperationType.Function_IsFreeTime:
                     // Returns True if the specified time falls within free time.
                     //   ... co já vím, kdy je pracovní doba ???
                     //   ... prostě bude se pracovat od pondělí do pátku od 7 do 16 hodin...   Poznámka: datepart(weekday, [datum]) vrací 2 = pondělí, 6 = pátek.   A svátky neslavíme.
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("(not (datepart(weekday,", operands[0], ") >= 2 and datepart(weekday,", operands[0], ") < 7 and datepart(hour,", operands[0], ") >= 7 and datepart(hour,", operands[0], ") < 16))");
+                    return DxExpressionToken.CreateFrom("(not (datepart(weekday,", operands[0], ") >= 2 and datepart(weekday,", operands[0], ") < 7 and datepart(hour,", operands[0], ") >= 7 and datepart(hour,", operands[0], ") < 16))");
                 case DxFilterOperationType.Function_IsLunchTime:
                     // Returns True if the specified time falls within the lunch time.
                     //   ... zase dobrý. Třeba hobiti mají LunchTime určitě delší, než Čech pracující v montovně.
                     //   ... Dáme tedy čas oběda mezi 11:00 až 12:59    ( < 13)
                     checkCount(1);
-                    return DxExpressionPart.CreateFrom("(datepart(hour,", operands[0], ") > 11 and datepart(hour,", operands[0], ") < 13)");
+                    return DxExpressionToken.CreateFrom("(datepart(hour,", operands[0], ") > 11 and datepart(hour,", operands[0], ") < 13)");
                 case DxFilterOperationType.Function_AddTimeSpan:
                     // Returns a DateTime value that differs by a specified amount of time from a specified date.
                     // The operands are:
@@ -1473,7 +1591,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     //  2 - the integer number that is the number of 100-nanosecond ticks. This number can be negative or positive.
                     checkCount(2);
                     // MS SQL : DATEADD (datepart , number , date )
-                    return DxExpressionPart.CreateFrom("(dateadd(nanosecond,", intAsText(operands[1], 0, 100), ",", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("(dateadd(nanosecond,", intAsText(operands[1], 0, 100), ",", operands[0], ")");
                 case DxFilterOperationType.Function_AddMilliSeconds:
                     // Returns a DateTime/TimeOnly value that is the specified number of milliseconds before or after a specified start date/time.
                     // The operands are:
@@ -1484,49 +1602,49 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     //  1 - the DateTime value that is the start date.
                     //  2 - the integer number that is the number of 100-nanosecond ticks. This number can be negative or positive.
                     checkCount(2);
-                    return DxExpressionPart.CreateFrom("(dateadd(millisecond,", operands[1], ",", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("(dateadd(millisecond,", operands[1], ",", operands[0], ")");
                 case DxFilterOperationType.Function_AddSeconds:
                     // Returns a DateTime/TimeOnly value that is the specified number of seconds before or after a specified start date/time.
                     // The operands are:
                     //  1 - the DateTime/TimeOnly value that is the start date.
                     //  2 - the Double value that is the number of seconds before or after the start date. This number can be negative or positive. Its decimal part is a fraction of a second.
                     checkCount(2);
-                    return DxExpressionPart.CreateFrom("(dateadd(second,", operands[1], ",", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("(dateadd(second,", operands[1], ",", operands[0], ")");
                 case DxFilterOperationType.Function_AddMinutes:
                     // Returns a DateTime/TimeOnly value that is the specified number of minutes before or after a specified start date/time.
                     // The operands are:
                     //  1 - the DateTime/TimeOnly value that is the start date.
                     //  2 - the Double value that is the number of minutes before or after the start date. This number can be negative or positive. Its decimal part is a fraction of a minute.
                     checkCount(2);
-                    return DxExpressionPart.CreateFrom("(dateadd(minute,", operands[1], ",", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("(dateadd(minute,", operands[1], ",", operands[0], ")");
                 case DxFilterOperationType.Function_AddHours:
                     // Returns a DateTime/TimeOnly value that is the specified number of hours before or after a specified start date/time.
                     // The operands are:
                     //  1 - the DateTime/TimeOnly value that is the start date.
                     //  2 - the Double value that is the number of hours before or after the start date. This number can be negative or positive. Its decimal part is a fraction of an hour.
                     checkCount(2);
-                    return DxExpressionPart.CreateFrom("(dateadd(hour,", operands[1], ",", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("(dateadd(hour,", operands[1], ",", operands[0], ")");
                 case DxFilterOperationType.Function_AddDays:
                     // Returns a DateTime/DateOnly value that is the specified number of days before or after a specified start date.
                     // The operands are:
                     //  1 - the DateTime/DateOnly value that is the start date.
                     //  2 - the Double value that is the number of days before or after the start date. This number can be negative or positive. Its decimal part is a fraction of a day.
                     checkCount(2);
-                    return DxExpressionPart.CreateFrom("(dateadd(day,", operands[1], ",", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("(dateadd(day,", operands[1], ",", operands[0], ")");
                 case DxFilterOperationType.Function_AddMonths:
                     // Returns a DateTime/DateOnly value that is the specified number of months before or after a specified start date.
                     // The operands are:
                     //  1 - the DateTime/DateOnly value that is the start date.
                     //  2 - the integer value that is the number of months before or after the start date. This number can be negative or positive.
                     checkCount(2);
-                    return DxExpressionPart.CreateFrom("(dateadd(month,", operands[1], ",", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("(dateadd(month,", operands[1], ",", operands[0], ")");
                 case DxFilterOperationType.Function_AddYears:
                     // Returns a DateTime/DateOnly value that is the specified number of years before or after a specified start date.
                     // The operands are:
                     //  1 - the DateTime/DateOnly value that is the start date.
                     //  2 - the integer value that is the number of years before or after the start date. This number can be negative or positive.
                     checkCount(2);
-                    return DxExpressionPart.CreateFrom("(dateadd(year,", operands[1], ",", operands[0], ")");
+                    return DxExpressionToken.CreateFrom("(dateadd(year,", operands[1], ",", operands[0], ")");
                 case DxFilterOperationType.Function_DateTimeFromParts:
                     // Returns a date value constructed from the specified Year, Month, Day, Hour, Minute, Second, and Millisecond.
                     // The operands are:
@@ -1539,11 +1657,11 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     //  7 - (Optional) - a millisecond value.
                     // MS SQL : DATEFROMPARTS ( year, month, day ) 
                     // MS SQL : DATETIMEFROMPARTS ( year , month , day , hour , minute , seconds , milliseconds )
-                    if (count == 3) return DxExpressionPart.CreateFrom("(datefromparts(", operands[0], ",", operands[1], ",", operands[2], ")");
-                    if (count == 4) return DxExpressionPart.CreateFrom("(datetimefromparts(", operands[0], ",", operands[1], ",", operands[2], ",", operands[3], ", 0, 0, 0)");
-                    if (count == 5) return DxExpressionPart.CreateFrom("(datetimefromparts(", operands[0], ",", operands[1], ",", operands[2], ",", operands[3], ",", operands[4], ", 0, 0)");
-                    if (count == 6) return DxExpressionPart.CreateFrom("(datetimefromparts(", operands[0], ",", operands[1], ",", operands[2], ",", operands[3], ",", operands[4], ",", operands[5], ", 0)");
-                    if (count == 7) return DxExpressionPart.CreateFrom("(datetimefromparts(", operands[0], ",", operands[1], ",", operands[2], ",", operands[3], ",", operands[4], ",", operands[5], ",", operands[6], ")");
+                    if (count == 3) return DxExpressionToken.CreateFrom("(datefromparts(", operands[0], ",", operands[1], ",", operands[2], ")");
+                    if (count == 4) return DxExpressionToken.CreateFrom("(datetimefromparts(", operands[0], ",", operands[1], ",", operands[2], ",", operands[3], ", 0, 0, 0)");
+                    if (count == 5) return DxExpressionToken.CreateFrom("(datetimefromparts(", operands[0], ",", operands[1], ",", operands[2], ",", operands[3], ",", operands[4], ", 0, 0)");
+                    if (count == 6) return DxExpressionToken.CreateFrom("(datetimefromparts(", operands[0], ",", operands[1], ",", operands[2], ",", operands[3], ",", operands[4], ",", operands[5], ", 0)");
+                    if (count == 7) return DxExpressionToken.CreateFrom("(datetimefromparts(", operands[0], ",", operands[1], ",", operands[2], ",", operands[3], ",", operands[4], ",", operands[5], ",", operands[6], ")");
                     failCount("3 to 7");
                     break;
                 case DxFilterOperationType.Function_DateOnlyFromParts:
@@ -1554,13 +1672,13 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     //  3 - an integer value that is the day of the month (1-31).
                     // MS SQL : DATEFROMPARTS ( year, month, day ) 
                     checkCount(3);
-                    return DxExpressionPart.CreateFrom("(datefromparts(", operands[0], ",", operands[1], ",", operands[2], ")");
+                    return DxExpressionToken.CreateFrom("(datefromparts(", operands[0], ",", operands[1], ",", operands[2], ")");
                 case DxFilterOperationType.Function_TimeOnlyFromParts:
                     // Returns a TimeOnly value constructed from the specified hour, minute, seconds (optional), and milliseconds (optional).
                     // MS SQL : TIMEFROMPARTS ( hour, minute, seconds, fractions, precision ) 
-                    if (count == 2) return DxExpressionPart.CreateFrom("(timefromparts(", operands[0], ",", operands[1], ", 0, 0, 0)");
-                    if (count == 3) return DxExpressionPart.CreateFrom("(timefromparts(", operands[0], ",", operands[1], ",", operands[2], ", 0, 0)");
-                    if (count == 4) return DxExpressionPart.CreateFrom("(timefromparts(", operands[0], ",", operands[1], ",", operands[2], ",", operands[3], ",", operands[4], ", 3)");
+                    if (count == 2) return DxExpressionToken.CreateFrom("(timefromparts(", operands[0], ",", operands[1], ", 0, 0, 0)");
+                    if (count == 3) return DxExpressionToken.CreateFrom("(timefromparts(", operands[0], ",", operands[1], ",", operands[2], ", 0, 0)");
+                    if (count == 4) return DxExpressionToken.CreateFrom("(timefromparts(", operands[0], ",", operands[1], ",", operands[2], ",", operands[3], ",", operands[4], ", 3)");
                     failCount("2 to 4");
                     break;
                 #endregion
@@ -1571,13 +1689,13 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     checkCount(2);
                     // v této operaci NEPŘIDÁVÁM prefix % ; ani suffix %   ten by měl být dodán v hodnotě od uživatele. Proto jsme LIKE, ne jako v operaci:  Function_Contains atd.
                     // Jsme obdoba Binary_Like, tam se taky prefix nepřidává.
-                    return DxExpressionPart.CreateFrom(operands[0], " like ", stringAsValue(operands[1]));        // [nazev] like '%hodnota%';
+                    return DxExpressionToken.CreateFrom(operands[0], " like ", stringAsValue(operands[1]));        // [nazev] like '%hodnota%';
                     #endregion
             }
 
-            if (System.Diagnostics.Debugger.IsAttached) return DxExpressionPart.CreateFrom("/* NotConverted: ", operation.ToString(), "(", DxExpressionPart.CreateDelimited(",", operands), ") */");
+            if (System.Diagnostics.Debugger.IsAttached) return DxExpressionToken.CreateFrom("/* NotConverted: ", operation.ToString(), "(", DxExpressionToken.CreateDelimited(",", operands), ") */");
 
-            throw new NotImplementedException($"DxCriteriaVisitor: Operation '{operation}' is not implemented! ({(DxExpressionPart.CreateDelimited(",", operands))})");
+            throw new NotImplementedException($"DxCriteriaVisitor: Operation '{operation}' is not implemented! ({(DxExpressionToken.CreateDelimited(",", operands))})");
 
 
             // Vrátí text binárního operátoru
@@ -1604,7 +1722,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                 return " " + binOp.ToString() + " ";
             }
             // Pokud daná část obsahuje value, typu Int, pak výstupem je Text s touto hodnotou. Používá se u konstant, které NECHCEME řešit pomocí DB parametrů. Např. délka čísla atd.
-            object intAsText(DxExpressionPart part, int addValue = 0, int mulValue = 1)
+            object intAsText(DxExpressionToken part, int addValue = 0, int mulValue = 1)
             {
                 // Pokud 'part' je IsValueInt32, pak výstupem bude string obsahující zadanou hodnotu [s přičteným modifikátorem], 
                 //   z toho pak bude obyčejný text = součást textu filtr, a nikoli Value (=DB parametr):
@@ -1645,10 +1763,10 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     tx4 = $" - {(-addValue)})";
                 }
                 // Složený výraz (pokud vkládám null, pak nebude vloženo):
-                return DxExpressionPart.CreateFrom(tx1, tx2, part, tx3, tx4);
+                return DxExpressionToken.CreateFrom(tx1, tx2, part, tx3, tx4);
             }
             // Pokud daná část obsahuje value, typu String, pak výstupem je Value s touto hodnotou, s možností přidání textu před/po. Používá se u proměnných, které chceme modifikovat.
-            object stringAsValue(DxExpressionPart part, string addBefore = null, string addAfter = null)
+            object stringAsValue(DxExpressionToken part, string addBefore = null, string addAfter = null)
             {
                 bool hasBefore = !String.IsNullOrEmpty(addBefore);
                 bool hasAfter = !String.IsNullOrEmpty(addAfter);
@@ -1666,7 +1784,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                 }
                 if (part.IsText)
                 {   // Obsahuje Text => vytvoříme new instanci typu Value (obsahující Before + Text + After), a tu pak vrátíme:
-                    var valuePart = DxExpressionPart.CreateValue(mergeText(part.Text, addBefore, addAfter));
+                    var valuePart = DxExpressionToken.CreateValue(mergeText(part.Text, addBefore, addAfter));
                     return valuePart;
                 }
 
@@ -1675,7 +1793,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                 if (!hasBefore && !hasAfter) return part;
 
                 // Sestavíme container (přičemž vstupní objekty, které jsou null, nebudou do containeru vloženy):
-                return DxExpressionPart.CreateFrom("(", (hasBefore ? $"'{addBefore}' + " : null), part, (hasAfter ? $" + '{addAfter}'" : null), ")");
+                return DxExpressionToken.CreateFrom("(", (hasBefore ? $"'{addBefore}' + " : null), part, (hasAfter ? $" + '{addAfter}'" : null), ")");
             }
             // Dané datum vrátí jako string (text), který lze použít ve filtru a reprezentuje přesně zadaný čas, ve formě:  "convert(datetime, '2025-08-03 12:34:56.789', 121)"
             object dateTimeAsText(DateTime dateTime)
@@ -1702,10 +1820,10 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                 var dBegin = (subtract == 0 ? dateTime.Date : dateTime.AddDays(-subtract).Date);
                 return dBegin;
             }
-            // Vrátí DxExpressionPart obsahující výraz pro DateTime: "(value >= dBegin and value < dEnd)"
-            DxExpressionPart createDateTimeInterval(DxExpressionPart value, DateTime dBegin, DateTime dEnd)
+            // Vrátí DxExpressionToken obsahující výraz pro DateTime: "(value >= dBegin and value < dEnd)"
+            DxExpressionToken createDateTimeInterval(DxExpressionToken value, DateTime dBegin, DateTime dEnd)
             {
-                return DxExpressionPart.CreateFrom("(", value, " >= ", dateTimeAsText(dBegin), " and ", value, " < ", dateTimeAsText(dEnd), ")");
+                return DxExpressionToken.CreateFrom("(", value, " >= ", dateTimeAsText(dBegin), " and ", value, " < ", dateTimeAsText(dEnd), ")");
             }
             // Pokud počet operandů == daný počet, pak vrátí řízení. POkud není rovno, vyhodí chybu pomocí failCount().
             void checkCount(int validCount)
@@ -1749,7 +1867,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
             Custom
         }
         #endregion
-        #region Konverze operandu DxFilter.CriteriaOperator do DxExpressionPart, jednotlivě i kolekce
+        #region Konverze operandu DxFilter.CriteriaOperator do DxExpressionToken, jednotlivě i kolekce
         /// <summary>
         /// Z dodaného pole operandů <paramref name="operands"/> konvertuje jejich obsah do stringů a vrátí. 
         /// Nevalidní operandy buď vynechává, anebo při jejich výskytu vrátí null, podle <paramref name="mode"/>.
@@ -1757,9 +1875,9 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// <param name="mode"></param>
         /// <param name="operands">Neomezené pole operandů</param>
         /// <returns></returns>
-        private List<DxExpressionPart> ConvertOperands(ConvertOperandsMode mode, DxFilter.CriteriaOperatorCollection operands)
+        private List<DxExpressionToken> ConvertOperands(ConvertOperandsMode mode, DxFilter.CriteriaOperatorCollection operands)
         {
-            var operandItems = new List<DxExpressionPart>();
+            var operandItems = new List<DxExpressionToken>();
             if (!ConvertAllOperand(operandItems, mode, operands)) return null;
             return operandItems;
         }
@@ -1770,9 +1888,9 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// <param name="mode"></param>
         /// <param name="operand0">První fixní operand</param>
         /// <returns></returns>
-        private List<DxExpressionPart> ConvertOperands(ConvertOperandsMode mode, DxFilter.CriteriaOperator operand0)
+        private List<DxExpressionToken> ConvertOperands(ConvertOperandsMode mode, DxFilter.CriteriaOperator operand0)
         {
-            var operandItems = new List<DxExpressionPart>();
+            var operandItems = new List<DxExpressionToken>();
             if (!ConvertOneOperand(operandItems, mode, operand0)) return null;
             return operandItems;
         }
@@ -1784,9 +1902,9 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// <param name="operand0">První fixní operand</param>
         /// <param name="operands">Neomezené pole operandů, vkládají se až po: <paramref name="operand0"/></param>
         /// <returns></returns>
-        private List<DxExpressionPart> ConvertOperands(ConvertOperandsMode mode, DxFilter.CriteriaOperator operand0, DxFilter.CriteriaOperatorCollection operands)
+        private List<DxExpressionToken> ConvertOperands(ConvertOperandsMode mode, DxFilter.CriteriaOperator operand0, DxFilter.CriteriaOperatorCollection operands)
         {
-            var operandItems = new List<DxExpressionPart>();
+            var operandItems = new List<DxExpressionToken>();
             if (!ConvertOneOperand(operandItems, mode, operand0)) return null;
             if (!ConvertAllOperand(operandItems, mode, operands)) return null;
             return operandItems;
@@ -1799,9 +1917,9 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// <param name="operand0">První fixní operand</param>
         /// <param name="operand1">Druhý fixní operand</param>
         /// <returns></returns>
-        private List<DxExpressionPart> ConvertOperands(ConvertOperandsMode mode, DxFilter.CriteriaOperator operand0, DxFilter.CriteriaOperator operand1)
+        private List<DxExpressionToken> ConvertOperands(ConvertOperandsMode mode, DxFilter.CriteriaOperator operand0, DxFilter.CriteriaOperator operand1)
         {
-            var operandItems = new List<DxExpressionPart>();
+            var operandItems = new List<DxExpressionToken>();
             if (!ConvertOneOperand(operandItems, mode, operand0)) return null;
             if (!ConvertOneOperand(operandItems, mode, operand1)) return null;
             return operandItems;
@@ -1815,9 +1933,9 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// <param name="operand1">Druhý fixní operand</param>
         /// <param name="operands">Neomezené pole operandů, vkládají se až po: <paramref name="operand0"/>, <paramref name="operand1"/></param>
         /// <returns></returns>
-        private List<DxExpressionPart> ConvertOperands(ConvertOperandsMode mode, DxFilter.CriteriaOperator operand0, DxFilter.CriteriaOperator operand1, DxFilter.CriteriaOperatorCollection operands)
+        private List<DxExpressionToken> ConvertOperands(ConvertOperandsMode mode, DxFilter.CriteriaOperator operand0, DxFilter.CriteriaOperator operand1, DxFilter.CriteriaOperatorCollection operands)
         {
-            var operandItems = new List<DxExpressionPart>();
+            var operandItems = new List<DxExpressionToken>();
             if (!ConvertOneOperand(operandItems, mode, operand0)) return null;
             if (!ConvertOneOperand(operandItems, mode, operand1)) return null;
             if (!ConvertAllOperand(operandItems, mode, operands)) return null;
@@ -1832,9 +1950,9 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// <param name="operand1">Druhý fixní operand</param>
         /// <param name="operand2">Třetí fixní operand</param>
         /// <returns></returns>
-        private List<DxExpressionPart> ConvertOperands(ConvertOperandsMode mode, DxFilter.CriteriaOperator operand0, DxFilter.CriteriaOperator operand1, DxFilter.CriteriaOperator operand2)
+        private List<DxExpressionToken> ConvertOperands(ConvertOperandsMode mode, DxFilter.CriteriaOperator operand0, DxFilter.CriteriaOperator operand1, DxFilter.CriteriaOperator operand2)
         {
-            var operandItems = new List<DxExpressionPart>();
+            var operandItems = new List<DxExpressionToken>();
             if (!ConvertOneOperand(operandItems, mode, operand0)) return null;
             if (!ConvertOneOperand(operandItems, mode, operand1)) return null;
             if (!ConvertOneOperand(operandItems, mode, operand2)) return null;
@@ -1847,7 +1965,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// <param name="mode"></param>
         /// <param name="operands"></param>
         /// <returns></returns>
-        private bool ConvertAllOperand(List<DxExpressionPart> operandItems, ConvertOperandsMode mode, DxFilter.CriteriaOperatorCollection operands)
+        private bool ConvertAllOperand(List<DxExpressionToken> operandItems, ConvertOperandsMode mode, DxFilter.CriteriaOperatorCollection operands)
         {
             if (operands is null) return (mode == ConvertOperandsMode.RemoveEmptyItems);        // Pokud na vstupu je null, pak vracím true = OK jen tehdy, když režim je volnější (Remove empty items)
             foreach (var operand in operands)
@@ -1864,10 +1982,19 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// <param name="mode"></param>
         /// <param name="operand"></param>
         /// <returns></returns>
-        private bool ConvertOneOperand(List<DxExpressionPart> operandItems, ConvertOperandsMode mode, DxFilter.CriteriaOperator operand)
+        private bool ConvertOneOperand(List<DxExpressionToken> operandItems, ConvertOperandsMode mode, DxFilter.CriteriaOperator operand)
         {
             if (operand is null) return (mode == ConvertOperandsMode.RemoveEmptyItems);        // Pokud na vstupu je null, pak vracím true = OK jen tehdy, když režim je volnější (Remove empty items)
+
+            // V tomto řádku se provede:
+            //  Operand podle svého konkrétního typu vyvolá metodu Visit dodaného Visitoru (kterým jsme my),
+            //  a tedy se vyvolá určitá konkrétní metoda nahoře v této třídě, např:
+            //     DxExpressionToken DxFilter.ICriteriaVisitor<DxExpressionToken>.Visit(DxFilter.BinaryOperator binaryOperator)
+            //  v té metodě se (rekurzivně) konvertují její operandy z třídy DxFilter.CriteriaOperator (z konkrétního potomka) do jednotlivých DxExpressionToken,
+            //  a poté se z operátorů a z textu odpovídajícího dané operaci sestaví nový DxExpressionToken typu Container, který bude obsahovat operátory a texty.
             var operandItem = operand.Accept(this);
+
+            // 
             if (operandItem != null)
             {   // Toto je validní operand:
                 operandItems.Add(operandItem);
@@ -1896,20 +2023,20 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         #endregion
     }
     #endregion
-    #region class DxExpressionPart  : Část výrazu v procesu skládání výsledku z filtru do cílového jazyka
+    #region class DxExpressionToken  : Část výrazu v procesu skládání výsledku z filtru do cílového jazyka
     /// <summary>
-    /// <see cref="DxExpressionPart"/> : Část výrazu v procesu skládání výsledku z filtru do cílového jazyka
+    /// <see cref="DxExpressionToken"/> : Část výrazu v procesu skládání výsledku z filtru do cílového jazyka
     /// </summary>
-    internal class DxExpressionPart
+    internal class DxExpressionToken : IDxExpressionTokenWorking
     {
         #region Public members : Create + Add
         /// <summary>
         /// Vytvoří prvek typu Container
         /// </summary>
         /// <returns></returns>
-        internal static DxExpressionPart CreateContainer()
+        internal static DxExpressionToken CreateContainer()
         {
-            var part = new DxExpressionPart(PartType.Container);
+            var part = new DxExpressionToken(PartType.Container);
             return part;
         }
         /// <summary>
@@ -1917,21 +2044,24 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// </summary>
         /// <param name="text"></param>
         /// <returns></returns>
-        internal static DxExpressionPart CreateText(string text)
+        internal static DxExpressionToken CreateText(string text)
         {
-            var part = new DxExpressionPart(PartType.Text);
+            var part = new DxExpressionToken(PartType.Text);
             part.__Text = text;
             return part;
         }
         /// <summary>
         /// Vytvoří prvek typu Property = sloupec databáze
         /// </summary>
-        /// <param name="propertyName"></param>
+        /// <param name="propertyName">Jméno sloupce = ColumnId</param>
+        /// <param name="column">Nalezený sloupec</param>
         /// <returns></returns>
-        internal static DxExpressionPart CreateProperty(string propertyName)
+        internal static DxExpressionToken CreateProperty(string propertyName, IFilterColumnInfo column)
         {
-            var part = new DxExpressionPart(PartType.PropertyName);
+            var part = new DxExpressionToken(PartType.PropertyName);
             part.__PropertyName = propertyName;
+            part.__Column = column;
+            part.__PropertyResult = column?.DisplayValueSource;
             return part;
         }
         /// <summary>
@@ -1939,9 +2069,9 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        internal static DxExpressionPart CreateValue(object value)
+        internal static DxExpressionToken CreateValue(object value)
         {
-            var part = new DxExpressionPart(PartType.Value);
+            var part = new DxExpressionToken(PartType.Value);
             part.__Value = value;
             return part;
         }
@@ -1950,9 +2080,9 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// </summary>
         /// <param name="parts"></param>
         /// <returns></returns>
-        internal static DxExpressionPart CreateFrom(params object[] parts)
+        internal static DxExpressionToken CreateFrom(params object[] parts)
         {
-            var part = new DxExpressionPart(PartType.Container);
+            var part = new DxExpressionToken(PartType.Container);
             part._AddRange(parts);
             return part;
         }
@@ -1961,9 +2091,9 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// </summary>
         /// <param name="parts"></param>
         /// <returns></returns>
-        internal static DxExpressionPart CreateFrom(IEnumerable<object> parts)
+        internal static DxExpressionToken CreateFrom(IEnumerable<object> parts)
         {
-            var part = new DxExpressionPart(PartType.Container);
+            var part = new DxExpressionToken(PartType.Container);
             part._AddRange(parts);
             return part;
         }
@@ -1973,9 +2103,9 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// <param name="delimiter"></param>
         /// <param name="parts"></param>
         /// <returns></returns>
-        internal static DxExpressionPart CreateDelimited(string delimiter, IEnumerable<object> parts)
+        internal static DxExpressionToken CreateDelimited(string delimiter, IEnumerable<object> parts)
         {
-            var part = new DxExpressionPart(PartType.Container);
+            var part = new DxExpressionToken(PartType.Container);
             part._AddRange(parts, delimiter);
             return part;
         }
@@ -2003,18 +2133,22 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// <returns></returns>
         public override string ToString()
         {
-            return this.ToText(DxExpressionLanguageType.MsSqlDatabase);
+            return this.ResultText;
         }
         /// <summary>
-        /// Konvertuje obsah this prvku (podle jeho typu, tedy i včetně subprvků v Containeru) do textu v daném jazyce. Jazyk ovlivní formátování názvů sloupců a hodnot.
+        /// Konvertuje obsah this prvku (podle jeho typu, tedy i včetně subprvků v Containeru) do textu v jeho výstupním jazyce.
+        /// Jazyk je dodán jako vstupní údaj do konvertoru.
+        /// Jazyk ovlivní konverzi, formátování názvů sloupců a hodnot.
         /// </summary>
-        /// <param name="language"></param>
-        /// <returns></returns>
-        internal string ToText(DxExpressionLanguageType language)
+        internal string ResultText
         {
-            StringBuilder sb = new StringBuilder();
-            this._AddText(sb, language);
-            return sb.ToString();
+            get
+            {
+                StringBuilder sb = new StringBuilder();
+                var language = this.Language;
+                this._AddText(sb, language);
+                return sb.ToString();
+            }
         }
         /// <summary>
         /// Přidá obsah this prvku do dodaného <see cref="StringBuilder"/>, v zadaném jazyce <paramref name="language"/>.
@@ -2029,7 +2163,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     sb.Append(this.__Text);
                     break;
                 case PartType.PropertyName:
-                    sb.Append(DxFilterConvertor.FormatPropertyName(this.__PropertyName, language));
+                    sb.Append(DxFilterConvertor.FormatPropertyName(this));
                     break;
                 case PartType.Value:
                     sb.Append(DxFilterConvertor.FormatValue(this.__Value, language));
@@ -2054,16 +2188,20 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         }
         #endregion
         #region Private members : Konstruktor, proměné, přidávání, slučování, mergování...
-        private DxExpressionPart(PartType partType)
+        private DxExpressionToken(PartType partType)
         {
+            __Language = null;
             __PartType = partType;
             if (partType == PartType.Container)
-                __Items = new List<DxExpressionPart>();
+                __Items = new List<DxExpressionToken>();
         }
+        private DxExpressionLanguageType? __Language;
         private PartType __PartType;
-        private List<DxExpressionPart> __Items;
+        private List<DxExpressionToken> __Items;
         private string __Text;
         private string __PropertyName;
+        private string __PropertyResult;
+        private IFilterColumnInfo __Column;
         private object __Value;
         /// <summary>
         /// Do this prvku, který je/bude Container, přidá další prvky, volitelně s delimiterem
@@ -2094,7 +2232,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// </summary>
         /// <param name="targetItems"></param>
         /// <param name="addItems"></param>
-        private static void _AddItemsTo(List<DxExpressionPart> targetItems, object[] addItems)
+        private static void _AddItemsTo(List<DxExpressionToken> targetItems, object[] addItems)
         {
             for (int i = 0; i < addItems.Length; i++)
             {
@@ -2105,7 +2243,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                 var targetCount = targetItems.Count;
                 var targetLastItem = (targetCount > 0 ? targetItems[targetCount - 1] : null);
                 bool canMergeText = (targetCount > 0 && targetLastItem.IsText);
-                if (addItem is DxExpressionPart addPart)
+                if (addItem is DxExpressionToken addPart)
                 {   // Přidáváme DxToExpressionPart:
                     // Pak postupujeme podle toho, co přidávaný prvek reálně obsahuje:
                     switch (addPart.__PartType)
@@ -2163,13 +2301,13 @@ namespace Noris.Srv.NrsInternal.DxFiltering
             var isContainer = IsContainer;
 
             // Pokud this obsahuje jednoduchou hodnotu, pak jí zde zkopíruji do new objektu:
-            DxExpressionPart simple = (isSimple ? this.MemberwiseClone() as DxExpressionPart : null);
+            DxExpressionToken simple = (isSimple ? this.MemberwiseClone() as DxExpressionToken : null);
 
             // Pokud this dosud NENÍ Container, pak this změním tak, aby byl Container:
             if (!isContainer)
             {
                 this.__PartType = PartType.Container;
-                this.__Items = new List<DxExpressionPart>();
+                this.__Items = new List<DxExpressionToken>();
                 this.__Text = null;
                 this.__PropertyName = null;
                 this.__Value = null;
@@ -2180,7 +2318,31 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                 this.__Items.Add(simple);
         }
         #endregion
+        #region Private : IDxExpressionTokenWorking
+        DxExpressionLanguageType? IDxExpressionTokenWorking.Language 
+        {
+            get { return __Language; }
+            set { _SetLanguage(value); } 
+        }
+        /// <summary>
+        /// Nastaví daný jazyk do this a do mách Child items
+        /// </summary>
+        /// <param name="language"></param>
+        private void _SetLanguage(DxExpressionLanguageType? language)
+        {
+            this.__Language = language;
+            if (this.IsContainer && this.__Items != null)
+            {
+                foreach (var item in this.__Items)
+                    item._SetLanguage(language);
+            }
+        }
+        #endregion
         #region Public informace
+        /// <summary>
+        /// Jazyk výrazu
+        /// </summary>
+        public DxExpressionLanguageType Language { get { return __Language ?? DxExpressionLanguageType.Default; } }
         /// <summary>
         /// Tato částice reprezentuje fixní text? Typicky kód výrazu, závorky, název funkce, operátor...
         /// </summary>
@@ -2194,9 +2356,22 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// </summary>
         public bool IsPropertyName { get { return (this.__PartType == PartType.PropertyName); } }
         /// <summary>
-        /// Sloupec s daty, jeho jméno, bez hranatých závorek. Na vstupu se mu říká PropertyName, reprezentuje databázový sloupec.
+        /// Sloupec s daty z databáze, zde je uvedeno jeho = ColumnId, bez hranatých závorek. Na vstupu se mu říká PropertyName, reprezentuje databázový sloupec.
         /// </summary>
         public string PropertyName { get { return (IsPropertyName ? __PropertyName : null); } set { if (IsPropertyName) __PropertyName = value; } }
+        /// <summary>
+        /// Sloupec s daty z databáze, zde je dohledán objekt sloupce, pokud byly sloupce dodány v poli sloupců v <see cref="ConvertArgs.Columns"/>
+        /// </summary>
+        public IFilterColumnInfo Column { get { return (IsPropertyName ? __Column : null); } set { if (IsPropertyName) __Column = value; } }
+        /// <summary>
+        /// Sloupec s daty z databáze: zde je uveden výraz v cílovém jazyce, který bude umístěn do výsledného filtru.
+        /// Pokud tedy filtr pracuje se sloupcem [nazev], což je alias (ColumnId) sloupce, a sloupec je dohledán v <see cref="Column"/>, 
+        /// pak do této property je vložen odpovídající výraz, který ve filtru WHERE získá data očekávaná pro podmínku filtru.<br/>
+        /// Povětšinou je zde uvedena základní hodnota <see cref="IFilterColumnInfo.DisplayValueSource"/>.<br/>
+        /// Pokud sloupec reprezentuje CodeTable, pak zde je <see cref="IFilterColumnInfo.CodeValueSource"/>.<br/>
+        /// Pokud sloupec je virtuální, pak zde je uveden odpovídající výraz (subselect), načítající data.
+        /// </summary>
+        public string PropertyResult { get { return (IsPropertyName ? __PropertyResult : null); } set { if (IsPropertyName) __PropertyResult = value; } }
         /// <summary>
         /// Tato částice reprezentuje hodnotu, typicky proměnnou, kterou je možno umístit do DB parametru?
         /// </summary>
@@ -2226,36 +2401,46 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// </summary>
         public bool IsSimple { get { return (this.__PartType == PartType.Text || this.__PartType == PartType.PropertyName || this.__PartType == PartType.Value); } }
         /// <summary>
-        /// Tato částice reprezentuje pole dalších hodnot?
+        /// Tato částice reprezentuje pole dalších hodnot? Pokud ano, jsou v <see cref="Items"/>.
         /// </summary>
         public bool IsContainer { get { return (this.__PartType == PartType.Container); } }
         /// <summary>
-        /// Pole dalších vnořených hodnot.
+        /// Pole dalších vnořených hodnot, pouze pokud this je Container.
         /// </summary>
-        public DxExpressionPart[] Items { get { return (IsContainer ? __Items.ToArray() : null); } }
+        public DxExpressionToken[] Items { get { return (IsContainer ? __Items.ToArray() : null); } }
         /// <summary>
         /// Druh částice
         /// </summary>
         public enum PartType
         {
             /// <summary>
-            /// Container: obsahuje další prvky, viz <see cref="DxExpressionPart.Items"/>
+            /// Container: obsahuje další prvky, viz <see cref="DxExpressionToken.Items"/>
             /// </summary>
             Container,
             /// <summary>
-            /// Prostý text: klíčová slova, oddělovače, závorky, atd, viz <see cref="DxExpressionPart.Text"/>
+            /// Prostý text: klíčová slova, oddělovače, závorky, atd, viz <see cref="DxExpressionToken.Text"/>
             /// </summary>
             Text,
             /// <summary>
-            /// Název datového sloupce / property, viz <see cref="DxExpressionPart.PropertyName"/>
+            /// Název datového sloupce / property, viz <see cref="DxExpressionToken.PropertyName"/>
             /// </summary>
             PropertyName,
             /// <summary>
-            /// Hodnota: obsahuje zadanou hodnotu / konstantu / proměnnou / parametr, viz <see cref="DxExpressionPart.Value"/>
+            /// Hodnota: obsahuje zadanou hodnotu / konstantu / proměnnou / parametr, viz <see cref="DxExpressionToken.Value"/>
             /// </summary>
             Value
         }
         #endregion
+    }
+    /// <summary>
+    /// Pracovní rozhraní do <see cref="DxExpressionToken"/>
+    /// </summary>
+    internal interface IDxExpressionTokenWorking
+    {
+        /// <summary>
+        /// Jazyk výrazu
+        /// </summary>
+        DxExpressionLanguageType? Language { get; set; }
     }
     #endregion
     #region Enumy a další
@@ -2289,7 +2474,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// <param name="language"></param>
         /// <param name="operation"></param>
         /// <param name="operands"></param>
-        public DxConvertorCustomArgs(DxExpressionLanguageType language, DxFilterOperationType operation, List<DxExpressionPart> operands)
+        public DxConvertorCustomArgs(DxExpressionLanguageType language, DxFilterOperationType operation, List<DxExpressionToken> operands)
         {
             this.Language = language;
             this.Operation = operation;
@@ -2307,7 +2492,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// <summary>
         /// Jednotlivé operandy. Jejich význam a počet je dán typem operace.
         /// </summary>
-        public List<DxExpressionPart> Operands { get; set; }
+        public List<DxExpressionToken> Operands { get; set; }
         /// <summary>
         /// Externí aplikace si přeje tuto funkci přeskočit, výsledkem bude null. Může to být v pořádku jen tehdy, když operace je členem vyšší operace, která nemá povinné operandy.
         /// </summary>
@@ -2315,7 +2500,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// <summary>
         /// Externí aplikace sama určila výsledný tvar výrazu
         /// </summary>
-        public DxExpressionPart CustomResult { get; set; }
+        public DxExpressionToken CustomResult { get; set; }
     }
     /// <summary>
     /// Typ operace.
@@ -2515,53 +2700,4 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         Custom_Like
     }
     #endregion
-}
-
-namespace Noris.Srv.NrsInternal
-{ 
-    // Doplnit do Noris ...
-
-    /// <summary>
-    /// Obecná data o sloupci šablony, rozšířená verze
-    /// </summary>
-    internal interface IColumnInfo
-    {
-        /// <summary>
-        /// ID sloupce = jednoznačný alias v načítaných datech, aktuální
-        /// </summary>
-        string ColumnId { get; }
-        /// <summary>
-        /// Obsahuje kompletní text SQL výrazu, který reprezentuje tento sloupec v SQL příkazu jako jeho zdroj. 
-        /// Tedy obsahuje výraz nebo DB sloupec s patřičnými aliasy, případně i DbParametry uvedené namísto Argumentů.
-        /// <para/>
-        /// U editačního stylu (kde <see cref="HasCodeTable"/> je true) jde o DisplayValue.
-        /// </summary>
-        string SourceText { get; }
-
-        // Přidané:
-
-        /// <summary>
-        /// Obsahuje true, pokud tento sloupec je zobrazován jako CodeTable (editační styl anebo valuace atributu). 
-        /// </summary>
-        bool HasCodeTable { get; }
-        /// <summary>
-        /// Obsahuje kompletní text SQL výrazu, který reprezentuje hodnotu pro <b><u>CodeValue</u></b> tohoto sloupce = typicky <b><u>alias tabulky.sloupec atributu</u></b> .
-        /// <para/>
-        /// Je naplněno pouze pokud tehdy, pokud sloupec má CodeTable (<see cref="HasCodeTable"/> je true).<br/>
-        /// Příklad: šablona obsahuje atribut <b><u>Stav dokladu</u></b> ze sloupce <see cref="CodeValueSourceText"/> = <c>dokl.status</c>; <br/>
-        /// ale uživateli zobrazujeme DisplayValue z property <see cref="SourceText"/> = <c>(case dokl.status when '1' then 'Pořízeno' when 'S' then 'Stornováno' else 'Jiný' end)</c> s aliasem = ColumnId <c>status</c>.<br/>
-        /// Řádkový filtr bude tedy zadán ve formě: <c>status = 'Pořízeno'</c>.<br/>
-        /// My pak detekujeme, že sloupec se zadaným <c>ColumnId</c> = <c>status</c> zobrazuje Editační styl, najdeme jeho CodeTable, v té tabulce najdeme hodnotu pro zadaný text <c>'Pořízeno'</c> => <c>'1'</c>, 
-        /// najdeme zdejší <c>CodeValueSourceText</c> => <c>dokl.status</c> a sestavíme výslednou SQL podmínku: <c>dokl.status = '1'</c>.
-        /// <para/>
-        /// Složitější případy nemají naplněnu hodnotu <see cref="CodeValueSourceText"/>, ale <see cref="CodeValueSubselect"/>!
-        /// </summary>
-        string CodeValueSourceText { get; }
-
-        string CodeValueSubselect { get; }
-        /// <summary>
-        /// Položky CodeTable (z Editačního stylu anebo z Valuace atributů), kde Key = Code a Value = DisplayText
-        /// </summary>
-        KeyValuePair<object, string>[] CodeTableItems { get; }
-    }
 }

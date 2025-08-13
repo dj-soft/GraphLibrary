@@ -888,14 +888,16 @@ namespace TestDevExpress.Forms
         private void View_SubstituteFilter(object sender, DevExpress.Data.SubstituteFilterEventArgs e)
         {
             var filter = e.Filter;
-            var dxExpression = filter?.ToString();
-            var msExpression = NrsDxf.DxFilterConvertor.ConvertToString(filter, NrsDxf.DxExpressionLanguageType.MsSqlDatabase, this._Columns);
-            var msExprParts = NrsDxf.DxFilterConvertor.ConvertToPart(filter, NrsDxf.DxExpressionLanguageType.MsSqlDatabase, this._Columns);
+
+            var msExprPart = NrsDxf.DxFilterConvertor.Convert(new NrsDxf.ConvertArgs() { Filter = filter, Language = NrsDxf.DxExpressionLanguageType.MsSqlDatabase, Columns = this._Columns });
+            var msExpression = msExprPart?.ResultText;
+
             var oldExpression = DevExpress.Data.Filtering.CriteriaToWhereClauseHelper.GetMsSqlWhere(filter, c => c.PropertyName);
 
             var tab = "\t";
             var eol = Environment.NewLine;
             if (_AllRowFilters is null) _AllRowFilters = "";
+            var dxExpression = filter?.ToString();
             _AllRowFilters = _AllRowFilters + $"DxFilter:{tab}{dxExpression}{eol}NewConvert:{tab}{msExpression}{eol}OldConvert:{tab}{oldExpression}{eol}{eol}";
 
             var sbDelimiter = "  |◘◘|◘◘|  ";
@@ -917,7 +919,7 @@ namespace TestDevExpress.Forms
         /// <summary>
         /// Sloupce šablony poskytované pro algoritmy Řádkového filtru DevExpress
         /// </summary>
-        private NrsInt.IColumnInfo[] _Columns
+        private NrsDxf.IFilterColumnInfo[] _Columns
         {
             get 
             {
@@ -926,22 +928,22 @@ namespace TestDevExpress.Forms
                 return __Columns;
             }
         }
-        private NrsInt.IColumnInfo[] __Columns;
+        private NrsDxf.IFilterColumnInfo[] __Columns;
         /// <summary>
         /// Metoda vytvoří testovací pole sloupců a informací o nich, pro řádkový filtr
         /// </summary>
         /// <returns></returns>
         private void _CreateIColumns()
         {
-            var columns = new List<NrsInt.IColumnInfo>();
+            var columns = new List<NrsDxf.IFilterColumnInfo>();
 
-            columns.Add(new DxColumnInfo() { ColumnId = "id" });
-            columns.Add(new DxColumnInfo() { ColumnId = "refer" });
-            columns.Add(new DxColumnInfo() { ColumnId = "nazev" });
-            columns.Add(new DxColumnInfo() { ColumnId = "category", ColumnSourceValue = "tab.catg", HasEditStyle = true, EditStyleValues = createCodeTableCategory() });
-            columns.Add(new DxColumnInfo() { ColumnId = "status_code" });
-            columns.Add(new DxColumnInfo() { ColumnId = "status" });
-            columns.Add(new DxColumnInfo() { ColumnId = "period", ColumnSourceValue = "tab.perd", HasEditStyle = true, EditStyleValues = createCodeTablePeriod() });
+            columns.Add(new DxColumnInfo() { ColumnId = "id", DisplayValueSource = "tab.pk", SourceType = NrsDxf.FilterColumnSourceType.Virtual });
+            columns.Add(new DxColumnInfo() { ColumnId = "refer", DisplayValueSource = "tab.ref" });
+            columns.Add(new DxColumnInfo() { ColumnId = "nazev", DisplayValueSource = "tab.name" });
+            columns.Add(new DxColumnInfo() { ColumnId = "category", DisplayValueSource = "nf_getperioddisplay(tab.catg)", CodeValueSource = "tab.catg", SourceType = NrsDxf.FilterColumnSourceType.CodeTable, EditStyleValues = createCodeTableCategory() });
+            columns.Add(new DxColumnInfo() { ColumnId = "status_code", DisplayValueSource = "tab.sts" });
+            columns.Add(new DxColumnInfo() { ColumnId = "status", DisplayValueSource = "tab.sts" });
+            columns.Add(new DxColumnInfo() { ColumnId = "period", DisplayValueSource = "case tab.perd when 'E' then 'EXPORT' when 'I' then 'IMPORT' ... else 'xxx' end", CodeValueSource = "tab.perd", SourceType = NrsDxf.FilterColumnSourceType.CodeTable, EditStyleValues = createCodeTablePeriod() });
             columns.Add(new DxColumnInfo() { ColumnId = "date_inp" });
             columns.Add(new DxColumnInfo() { ColumnId = "date_out" });
             columns.Add(new DxColumnInfo() { ColumnId = "quantity" });
@@ -974,9 +976,9 @@ namespace TestDevExpress.Forms
             }
         }
         /// <summary>
-        /// Sloupec, implementuje <see cref="NrsInt.IColumnInfo"/> pro řádkový filtr DevExpress
+        /// Sloupec, implementuje <see cref="NrsDxf.IFilterColumnInfo"/> pro řádkový filtr DevExpress
         /// </summary>
-        internal class DxColumnInfo : NrsInt.IColumnInfo
+        internal class DxColumnInfo : NrsDxf.IFilterColumnInfo
         {
             /// <summary>
             /// Alias sloupce
@@ -986,26 +988,26 @@ namespace TestDevExpress.Forms
             /// Zdroj dat ve sloupci: DisplayText, typicky výraz:
             /// <code>(case dokl.status when '1' then 'Pořízeno' when '2' then 'Zaúčtováno' when '3' then 'Stornováno' else 'Jiný' end) = 'Zaúčtováno'</code>
             /// </summary>
-            public string ColumnSourceDisplay;
+            public string DisplayValueSource;
             /// <summary>
             /// Zdroj dat ve sloupci: CodeValue, typicky sloupec tabulky:
             /// <code>dokl.status</code>
             /// </summary>
-            public string ColumnSourceValue;
+            public string CodeValueSource;
             /// <summary>
-            /// Obsahuje true, pokud tento sloupec zobrazuje editační styl
+            /// Typ zdroje dat v tomto sloupci
             /// </summary>
-            public bool HasEditStyle;
+            public NrsDxf.FilterColumnSourceType SourceType;
             /// <summary>
             /// Položky editačního stylu: Key = CodeValue; Value = DisplayText
             /// </summary>
             public KeyValuePair<object, string>[] EditStyleValues;
             #region Implementace NrsDxf.IColumnInfo
-            string NrsInt.IColumnInfo.ColumnId { get { return this.ColumnId; } }
-            string NrsInt.IColumnInfo.SourceText { get { return this.ColumnSourceDisplay; } }
-            bool NrsInt.IColumnInfo.HasCodeTable { get { return this.HasEditStyle; } }
-            string NrsInt.IColumnInfo.CodeValueSourceText { get { return this.ColumnSourceValue; } }
-            KeyValuePair<object, string>[] NrsInt.IColumnInfo.CodeTableItems { get { return this.EditStyleValues; } }
+            string NrsDxf.IFilterColumnInfo.ColumnId { get { return this.ColumnId; } }
+            string NrsDxf.IFilterColumnInfo.DisplayValueSource { get { return this.DisplayValueSource; } }
+            string NrsDxf.IFilterColumnInfo.CodeValueSource { get { return this.CodeValueSource; } }
+            NrsDxf.FilterColumnSourceType NrsDxf.IFilterColumnInfo.SourceType { get { return this.SourceType; } }
+            KeyValuePair<object, string>[] NrsDxf.IFilterColumnInfo.CodeTableItems { get { return this.EditStyleValues; } }
             #endregion
         }
         #endregion
