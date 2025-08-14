@@ -57,7 +57,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
             return result;
         }
         #endregion
-        #region Public members: FormatPropertyName, FormatValue
+        #region Public members: FormatPropertyName, FormatValue (formátování do stringu)
         /// <summary>
         /// Formátuje název sloupce
         /// </summary>
