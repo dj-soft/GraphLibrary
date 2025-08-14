@@ -92,25 +92,25 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         {
             if (value is null) return "NULL";
 
-            if (value is Byte) return ((Byte)value).ToString();
-            if (value is SByte) return ((SByte)value).ToString();
+            if (value is Byte vib) return vib.ToString();
+            if (value is SByte vsb) return vsb.ToString();
 
-            if (value is UInt16) return ((UInt16)value).ToString();
-            if (value is UInt32) return ((UInt32)value).ToString();
-            if (value is UInt64) return ((UInt64)value).ToString();
-            if (value is Int16) return ((Int16)value).ToString();
-            if (value is Int32) return ((Int32)value).ToString();
-            if (value is Int64) return ((Int64)value).ToString();
+            if (value is UInt16 vu16) return vu16.ToString();
+            if (value is UInt32 vu32) return vu32.ToString();
+            if (value is UInt64 vu64) return vu64.ToString();
+            if (value is Int16 vi16) return vi16.ToString();
+            if (value is Int32 vi32) return vi32.ToString();
+            if (value is Int64 vi64) return vi64.ToString();
 
-            if (value is Single) return ((Single)value).ToString().Replace(",", ".");
-            if (value is Double) return ((Double)value).ToString().Replace(",", ".");
-            if (value is Decimal) return ((Decimal)value).ToString().Replace(",", ".");
+            if (value is Single vsng) return vsng.ToString().Replace(",", ".");
+            if (value is Double vdbl) return vdbl.ToString().Replace(",", ".");
+            if (value is Decimal vdec) return vdec.ToString().Replace(",", ".");
 
-            if (value is DateTime) { var dt = (DateTime)value; return $"convert(datetime, '{dt.Year:D4}-{dt.Month:D2}-{dt.Day:D2} {dt.Hour:D2}:{dt.Minute:D2}:{dt.Second:D2}.{dt.Millisecond:D3}', 121)"; }
+            if (value is DateTime vdtm) { return $"convert(datetime, '{vdtm.Year:D4}-{vdtm.Month:D2}-{vdtm.Day:D2} {vdtm.Hour:D2}:{vdtm.Minute:D2}:{vdtm.Second:D2}.{vdtm.Millisecond:D3}', 121)"; }
 
-            if (value is Boolean) { var bv = (Boolean)value; return bv ? "1" : "0"; }
+            if (value is Boolean vbln) { return vbln ? "1" : "0"; }
 
-            if (value is String) { var sv = (String)value; return "'" + sv.Replace("'", "''") + "'"; }
+            if (value is String vstr) { return "'" + vstr.Replace("'", "''") + "'"; }
 
             return $"'{value}'";
         }
@@ -139,17 +139,19 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// <param name="args"></param>
         internal static void ConvertRowFilterPartForColumns(DxConvertorCustomArgs args)
         {
-            var convertType = _GetConvertedOperationFor(args, out var propertyToken, out var column, out var codeValues);
-            if (convertType == DxCodeTableOperationType.NotCodeTable) return;
+            var codeValueOperation = _GetConvertedOperationFor(args, out var propertyToken, out var column, out var codeValues);
 
+            // Bez nalezeného sloupce vůbec nemá smysl pokračovat:
+            if (column is null) return;
+
+            // Zpracujeme podle typu sloupce:
             switch (column.SourceType)
             {
                 case FilterColumnSourceType.CodeTable:
-                    _ConvertRowFilterPartForCodeTable(args, propertyToken, column, codeValues, convertType);
+                    _ConvertRowFilterPartForCodeTable(args, codeValueOperation, propertyToken, column, codeValues);
                     break;
                 case FilterColumnSourceType.Virtual:
-
-
+                    _ConvertRowFilterPartForVirtual(args, codeValueOperation, propertyToken, column, codeValues);
                     break;
             }
         }
@@ -193,56 +195,75 @@ namespace Noris.Srv.NrsInternal.DxFiltering
             // Obecně operandy:
             var operation = args.Operation;
             var operandsCount = args.Operands.Count;
-            if (operandsCount < 2)
-                return DxCodeTableOperationType.NotCodeTable;                            // S jedním anebo žádným operandem nemá cenu nic řešit
-
-            // Řešíme tři varianty zadání (tři typy operací): Equals, Regex a InList:
-            bool isEquals = (operation == DxFilterOperationType.Binary_Equal || operation == DxFilterOperationType.Binary_NotEqual);
-            bool isPattern = (operation == DxFilterOperationType.Function_StartsWith || operation == DxFilterOperationType.Function_Contains || operation == DxFilterOperationType.Function_EndsWith || operation == DxFilterOperationType.Binary_Like || operation == DxFilterOperationType.Custom_Like);
-            bool isInList = (operation == DxFilterOperationType.In);
-            if (!(isEquals || isPattern || isInList)) 
-                return DxCodeTableOperationType.NotCodeTable;                            // Ostatní typy operací nemá význam řešit
+            if (operandsCount == 0)
+                return DxCodeTableOperationType.NotCodeTable;                            // Úplně bez operandů nemá cenu nic řešit (musíme najít alespoň sloupec)!
 
             // Najdeme sloupec (Property), který musí být jeden a musí být Specific (CodeTable nebo Virtual):
             var opProperties = args.Operands.Where(op => op.IsPropertyName).ToArray();
-            if (opProperties.Length != 1 || !isColumnSpecific(opProperties[0])) 
-                return DxCodeTableOperationType.NotCodeTable;                            // Tato akce se týká pouze Columnů, které jsou specifické
+            if (opProperties.Length != 1 || !isColumnSpecific(opProperties[0]))
+                return DxCodeTableOperationType.NotCodeTable;                            // Tato akce se týká pouze Columnů, které jsou specifické (CodeTable nebo Virtual)
 
-            // OK.   Máme vhodnou operaci, a máme sloupec se specifickým chováním.   
+            // OK.   Máme sloupec se specifickým chováním. 
+            //  Nalézt sloupec je zapotřebí i bez ohledu na typ operace, protože sloupec může být Virtual a těm sloupcům potřebuji zavolat jejich Virtual metodu i pro typy operací, které zde neřešíme!
             propertyToken = opProperties[0];
             column = propertyToken.Column;
+
+            // Řešíme tyto varianty zadání (typy operací): Empty, Equals, Regex a InList:
+            bool isSingle = (operation == DxFilterOperationType.Unary_IsNull || operation == DxFilterOperationType.Function_IsNull || operation == DxFilterOperationType.Function_IsNullOrEmpty);
+            bool isEquals = (operation == DxFilterOperationType.Binary_Equal || operation == DxFilterOperationType.Binary_NotEqual);
+            bool isPattern = (operation == DxFilterOperationType.Function_StartsWith || operation == DxFilterOperationType.Function_Contains || operation == DxFilterOperationType.Function_EndsWith || operation == DxFilterOperationType.Binary_Like || operation == DxFilterOperationType.Custom_Like);
+            bool isInList = (operation == DxFilterOperationType.In);
+            if (!(isSingle || isEquals || isPattern || isInList)) 
+                return DxCodeTableOperationType.NotCodeTable;                            // Ostatní typy operací nemá význam řešit
 
             //  Načteme datové operandy, které musí nést String. Nic jiného v operandech nemůže být:
             //  Operandy musí být pouze: 1 sloupec a všechny ostatní ValueString
             var opValues = args.Operands.Where(op => op.IsValueString).ToArray();        // Stringová hodnota, nese zadanou hodnotu DisplayValue (jiné operandy neberu, a pokud budou - pak skončíme)
-            if ((opValues.Length + 1) != operandsCount)
-                return DxCodeTableOperationType.NotCodeTable;                            // Mezi operandy bylo i něco jiného než String. To bychom nedokázali vyhodnotit, a to je chyba.
+            if (!isSingle && (opValues.Length + 1) != operandsCount)
+                return DxCodeTableOperationType.NotCodeTable;                            // Mezi operandy bylo i něco jiného než String. To bychom nedokázali vyhodnotit, a to je chyba. Platí kromě Single operátoru, tam je přípustná varianta ISNULL(CodeValue, Other value) kde 'Other value' může být cokoliv...
             if ((isEquals || isPattern) && opValues.Length != 1)
                 return DxCodeTableOperationType.NotCodeTable;                            // Operace typu Equals anebo Pattern vyžadují právě jeden operand typu String ( Sloupec = 'Hodnota' nebo StartWith(Sloupec, 'Hodn') )
 
+            bool isCSens = column.CodeTableDisplayValuesAreCaseSensitive;
             if (isEquals || isInList)
             {   // Pro operace Binary_Equal a Binary_NotEqual, a In:
-                codeValues = getValuesEquals(column.CodeTableItems, opValues);           // POZOR: tady je legální, když pro jeden operand opValues se vrátí více values[], pokud por jednu DisplayValue máme více CodeValue v tabulce CodeTable!!!
+                codeValues = getValuesEquals(column.CodeTableItems, opValues, isCSens);  // POZOR: tady je legální, když pro jeden operand opValues se vrátí více values[], pokud por jednu DisplayValue máme více CodeValue v tabulce CodeTable!!!
             }
             else if (isPattern)
             {   // Vyhledáme CodeValues do out pole values:
-                var regex = getLikePattern(operation, opValues[0].ValueString);          // opValues obsahuje zaručeně právě jen jeden operand, typu ValueString = zadaný textový pattern => vytvořím z něj Regex:
+                var regex = getLikePattern(operation, opValues[0].ValueString, isCSens); // opValues obsahuje zaručeně právě jen jeden operand, typu ValueString = zadaný textový pattern => vytvořím z něj Regex:
                 codeValues = getValuesRegex(column.CodeTableItems, regex);               // Pro jeden Regex mohu získat vícero CodeValue
             }
             // Nyní tedy víme, na který specifický sloupec filtrujeme, a jaké CodeValue ve filtru budou (anebo taky žádná, anebo více hodnot InList).
 
-            // Z kombinace počtu hodnot a zadaného operátoru (NotEqual, In, Equal) určíme, jaký finální operátor (DxFilterOperationType) by měl být aplikován:
+            // Z kombinace počtu hodnot a zadaného operátoru (NotEqual, In, Equal, atd) určíme, jaký finální operátor (DxFilterOperationType) by měl být aplikován:
             var valuesCount = codeValues.Length;
+            if (isSingle)
+            {   // Nejprve single operátory => IsNull atd:
+                return operation switch
+                {
+                    DxFilterOperationType.Unary_IsNull => DxCodeTableOperationType.IsNull,
+                    DxFilterOperationType.Function_IsNull => DxCodeTableOperationType.IsNullOrSecond,
+                    DxFilterOperationType.Function_IsNextMonth => DxCodeTableOperationType.IsNull,
+                    _ => DxCodeTableOperationType.IsNull                                 // Sem nikdy nepropadnu, protože 'isSingle' je true jen pro tři výše vyřešené operátory.
+                };
+            }
             if (operation == DxFilterOperationType.Binary_NotEqual)
             {   // Tenhle operátor je jiný => ten říká "nesmí to být něco z tohoto" (values), a zvlášť pokud ve values nic není (zadaná DisplayValue neodpovídá žádné položce CodeTable):
-                if (valuesCount == 0) return DxCodeTableOperationType.True;              // Podmínka zněla "Stav dokladu" <> "Ztracený" a přitom hodnota "Ztracený" v CodeTable není, tedy filtr na základě CodeValue nebude nic omezovat => vynecháme jej zcela:
-                if (valuesCount == 1) return DxCodeTableOperationType.NotEqual;          // Podmínka zněla "Stav dokladu" <> "Aktivní" a hodnotu "Aktivní" v CodeTable máme jedenkrát, filtr bude "dokl.status <> 2"
-                return DxCodeTableOperationType.NotInList;                               // Podmínka zněla "Stav dokladu" <> "Aktivní" a hodnotu "Aktivní" v CodeTable máme vícekrát pro různé CodeValue, filtr bude "dokl.status not in (2,3,4)"
+                return valuesCount switch
+                {
+                    0 => DxCodeTableOperationType.True,                                  // Podmínka zněla "Stav dokladu" <> "Ztracený" a přitom hodnota "Ztracený" v CodeTable není, tedy filtr na základě CodeValue nebude nic omezovat => vynecháme jej zcela:
+                    1 => DxCodeTableOperationType.NotEqual,                              // Podmínka zněla "Stav dokladu" <> "Aktivní" a hodnotu "Aktivní" v CodeTable máme jedenkrát, filtr bude "dokl.status <> 2"
+                    _ => DxCodeTableOperationType.NotInList                              // Podmínka zněla "Stav dokladu" <> "Aktivní" a hodnotu "Aktivní" v CodeTable máme vícekrát pro různé CodeValue, filtr bude "dokl.status not in (2,3,4)"
+                };
             }
             // Ostatní operátory jsou "pozitivní", a říkají tedy že filtru vyhoví ty záíznamy, které v daném sloupci mají jednu nebo více hodnot, anebo žádná hodnotas = nevyhoví žádný záznam:
-            if (valuesCount == 0) return DxCodeTableOperationType.False;                 // Podmínka zněla "Stav dokladu" = "Ztracený" a přitom hodnota "Ztracený" v CodeTable není, tedy filtr na základě CodeValue musí vyřadit všechny záznamy => bude tedy znít (1=0)
-            if (valuesCount == 1) return DxCodeTableOperationType.Equal;                 // Podmínka zněla "Stav dokladu" = "Aktivní" a hodnotu "Aktivní" v CodeTable máme jedenkrát, filtr bude "dokl.status = 2"
-            return DxCodeTableOperationType.InList;                                      // Podmínka zněla "Stav dokladu" like "Akt*" a hodnotu "Akt*" v CodeTable máme vícekrát pro různé CodeValue, filtr bude "dokl.status in (2,3,4)"
+            return valuesCount switch
+            {
+                0 => DxCodeTableOperationType.False,                                     // Podmínka zněla "Stav dokladu" = "Ztracený" a přitom hodnota "Ztracený" v CodeTable není, tedy filtr na základě CodeValue musí vyřadit všechny záznamy => bude tedy znít (1=0)
+                1 => DxCodeTableOperationType.Equal,                                     // Podmínka zněla "Stav dokladu" = "Aktivní" a hodnotu "Aktivní" v CodeTable máme jedenkrát, filtr bude "dokl.status = 2"
+                _ => DxCodeTableOperationType.InList                                     // Podmínka zněla "Stav dokladu" like "Akt*" a hodnotu "Akt*" v CodeTable máme vícekrát pro různé CodeValue, filtr bude "dokl.status in (2,3,4)"
+            };
 
 
             // Vrátí true, pokud dodaná token reprezentuje Property, má dohledaný sloupec, a sloupec je typu CodeTable nebo Virtual:
@@ -251,7 +272,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                 return (dxToken != null && dxToken.IsPropertyName && dxToken.Column != null && (dxToken.Column.SourceType == FilterColumnSourceType.CodeTable || dxToken.Column.SourceType == FilterColumnSourceType.Virtual));
             }
             // Vrátí Regex odpovídající danému operátoru (typ podmínky) a zadanému textu podmínky
-            System.Text.RegularExpressions.Regex getLikePattern(DxFilterOperationType operation, string filterText)
+            System.Text.RegularExpressions.Regex getLikePattern(DxFilterOperationType operation, string filterText, bool isCaseSensitive)
             {
                 string pattern = "";
                 switch (operation)
@@ -292,13 +313,14 @@ namespace Noris.Srv.NrsInternal.DxFiltering
 
                 // Výčet znaků [abcd] se nekonvertuje, je v SQL i v RegEx shodný.
 
-                // Hotovo, case - insensitive:
+                // Hotovo, case - insensitive?
+                var regexOptions = (isCaseSensitive ? System.Text.RegularExpressions.RegexOptions.None : System.Text.RegularExpressions.RegexOptions.IgnoreCase);
                 System.Text.RegularExpressions.Regex regex = null;
 
                 try
                 {   // try-catch, abych ohlídal nevalidní pattern:
                     // Exact pattern:
-                    regex = new System.Text.RegularExpressions.Regex(pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                    regex = new System.Text.RegularExpressions.Regex(pattern, regexOptions);
                 }
                 catch
                 {   // Chyba? Odeberu řídící znaky [výčtů] (ostatní jsem escapoval nahoře):
@@ -306,11 +328,11 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                     replace(ref pattern, @"]", @"\]");
                     try
                     {   // Náhradní pattern:
-                        regex = new System.Text.RegularExpressions.Regex(pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                        regex = new System.Text.RegularExpressions.Regex(pattern, regexOptions);
                     }
                     catch
                     {   // Beru cokoliv:
-                        regex = new System.Text.RegularExpressions.Regex(".*", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                        regex = new System.Text.RegularExpressions.Regex(".*", regexOptions);
                     }
                 }
                 return regex;
@@ -324,12 +346,13 @@ namespace Noris.Srv.NrsInternal.DxFiltering
             //  Výstupní pole bude tedy v pořadí dle codeTableItems, kde samozřejmě nebudou duplikátní položky - i kdyby byly duplikátní v displayValues.
             //  A naopak, pokud by více položek v codeTableItems mělo shodný DisplayValue a ten byl zadán v jedném prvku pole 'displayValues', 
             //     pak ve výstupu bude více CodeValues, které společně odpovídají shodnému DisplayValue, i kdyby byl zadán v jedném prvku v 'displayValues'.
-            object[] getValuesEquals(KeyValuePair<object, string>[] codeTableItems, DxExpressionToken[] displayValues)
+            object[] getValuesEquals(KeyValuePair<object, string>[] codeTableItems, DxExpressionToken[] displayValues, bool isCaseSensitive)
             {
                 if (codeTableItems is null || codeTableItems.Length == 0 || displayValues is null || displayValues.Length == 0) return new object[0];
 
+                var comparison = (isCaseSensitive ? StringComparison.CurrentCulture : StringComparison.CurrentCultureIgnoreCase);
                 return codeTableItems
-                    .Where(cti => displayValues.Any(dv => String.Equals(cti.Value, dv.ValueString, StringComparison.CurrentCultureIgnoreCase)))
+                    .Where(cti => displayValues.Any(dv => String.Equals(cti.Value, dv.ValueString, comparison)))
                     .Select(cti => cti.Key)
                     .ToArray();
             }
@@ -348,14 +371,14 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// Metoda provede finální sestavení filtračního výrazu pro dodaná data (sloupec, hodnoty, styl výrazu).
         /// </summary>
         /// <param name="args"></param>
+        /// <param name="codeValueOperation"></param>
         /// <param name="propertyToken"></param>
         /// <param name="column"></param>
         /// <param name="codeValues"></param>
-        /// <param name="convertType"></param>
-        private static void _ConvertRowFilterPartForCodeTable(DxConvertorCustomArgs args, DxExpressionToken propertyToken, IFilterColumnInfo column, object[] codeValues, DxCodeTableOperationType convertType)
+        private static void _ConvertRowFilterPartForCodeTable(DxConvertorCustomArgs args, DxCodeTableOperationType codeValueOperation, DxExpressionToken propertyToken, IFilterColumnInfo column, object[] codeValues)
         {
-            var tokenValues = codeValues?.Select(cv => DxExpressionToken.CreateValue(cv)).ToArray();
-            switch (convertType)
+            DxExpressionToken[] tokenValues;
+            switch (codeValueOperation)
             {
                 case DxCodeTableOperationType.False:
                     args.CustomResult = DxExpressionToken.CreateText("(1=0)");
@@ -363,23 +386,59 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                 case DxCodeTableOperationType.True:
                     args.CustomResult = DxExpressionToken.CreateText("(1=1)");
                     break;
+                case DxCodeTableOperationType.IsNull:
+                    propertyToken.PropertyResult = column.CodeValueSource;
+                    args.CustomResult = DxExpressionToken.CreateFrom(propertyToken, " is null");
+                    break;
+                case DxCodeTableOperationType.IsNullOrSecond:
+                    propertyToken.PropertyResult = column.CodeValueSource;
+                    if (args.Operands.Count == 1)
+                        args.CustomResult = DxExpressionToken.CreateFrom(propertyToken, " is null");                             // [dokl.status] is null
+                    else
+                        args.CustomResult = DxExpressionToken.CreateFrom("isnull(", propertyToken, ", ", args.Operands[1], ")"); // isnull([dokl.status], [datum_podani]), kde druhý operand použijeme napřímo
+                    break;
                 case DxCodeTableOperationType.Equal:
+                    prepareTokenValues();
                     propertyToken.PropertyResult = column.CodeValueSource;
                     args.CustomResult = DxExpressionToken.CreateFrom(propertyToken, " = ", tokenValues[0]);
                     break;
                 case DxCodeTableOperationType.NotCodeTable:
+                    prepareTokenValues();
                     propertyToken.PropertyResult = column.CodeValueSource;
                     args.CustomResult = DxExpressionToken.CreateFrom(propertyToken, " <=> ", tokenValues[0]);
                     break;
                 case DxCodeTableOperationType.InList:
+                    prepareTokenValues();
                     propertyToken.PropertyResult = column.CodeValueSource;
                     args.CustomResult = DxExpressionToken.CreateFrom(propertyToken, " in (", DxExpressionToken.CreateDelimited(",", tokenValues), ")");
                     break;
                 case DxCodeTableOperationType.NotInList:
+                    prepareTokenValues();
                     propertyToken.PropertyResult = column.CodeValueSource;
                     args.CustomResult = DxExpressionToken.CreateFrom(propertyToken, " in (", DxExpressionToken.CreateDelimited(",", tokenValues), ")");
                     break;
             }
+
+            // Připraví pole tokenů tokenValues (typu Value), z hodnot (CodeValue) dodaných v codeValues
+            void prepareTokenValues()
+            {
+                tokenValues = codeValues?.Select(cv => DxExpressionToken.CreateValue(cv)).ToArray();
+            }
+        }
+        /// <summary>
+        /// Metoda provede finální sestavení filtračního výrazu pro dodaná data (sloupec, hodnoty, styl výrazu).
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="codeValueOperation"></param>
+        /// <param name="propertyToken"></param>
+        /// <param name="column"></param>
+        /// <param name="codeValues"></param>
+        private static void _ConvertRowFilterPartForVirtual(DxConvertorCustomArgs args, DxCodeTableOperationType codeValueOperation, DxExpressionToken propertyToken, IFilterColumnInfo column, object[] codeValues)
+        {
+            // Zabalit args + další parametry do nového virtualArgs:
+            var virtualArgs = new FilterColumnVirtualColumnArgs(args, codeValueOperation, propertyToken, codeValues);
+            // Zavolat column a jeho virtuální metodu:
+            column.VirtualHandler(virtualArgs);
         }
         #endregion
     }
@@ -451,9 +510,82 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// </summary>
         FilterColumnSourceType SourceType { get; }
         /// <summary>
-        /// Položky CodeTable (z Editačního stylu anebo z Valuace atributů), kde Key = Code a Value = DisplayText
+        /// Editační styl má DisplayValue v <see cref="CodeTableItems"/> ve stylu 'CaseSensitive'?  Většinou false = nemá.
+        /// </summary>
+        bool CodeTableDisplayValuesAreCaseSensitive { get; }
+        /// <summary>
+        /// Položky CodeTable (z Editačního stylu anebo z Valuace atributů), kde Key = Code a Value = DisplayText.
+        /// Pokud nejsou naplněny, nebude fungovat konverze pro <see cref="SourceType"/> == <see cref="FilterColumnSourceType.CodeTable"/>.
+        /// Nemusí být naplněny pro sloupec s typem <see cref="SourceType"/> == <see cref="FilterColumnSourceType.Virtual"/>: jeho metoda se vyvolá, ale nedostane zpracovaný editační styl.
         /// </summary>
         KeyValuePair<object, string>[] CodeTableItems { get; }
+        /// <summary>
+        /// Metoda, kterou konvertor zavolá při nalezení sloupce typu <see cref="SourceType"/> == <see cref="FilterColumnSourceType.Virtual"/>
+        /// </summary>
+        FilterColumnVirtualColumnHandler VirtualHandler { get; }
+    }
+    internal delegate void FilterColumnVirtualColumnHandler(FilterColumnVirtualColumnArgs args);
+    /// <summary>
+    /// Data dodaná do handleru virtuálního sloupce
+    /// </summary>
+    internal class FilterColumnVirtualColumnArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="convertorArgs"></param>
+        /// <param name="codeValueOperation"></param>
+        /// <param name="propertyToken"></param>
+        /// <param name="codeValues"></param>
+        public FilterColumnVirtualColumnArgs(DxConvertorCustomArgs convertorArgs, DxCodeTableOperationType codeValueOperation, DxExpressionToken propertyToken, object[] codeValues)
+        {
+            this.__ConvertorArgs = convertorArgs;
+            this.CodeValueOperation = codeValueOperation;
+            this.PropertyToken = propertyToken;
+            this.CodeValues = codeValues;
+        }
+        /// <summary>
+        /// Vstupní argumenty
+        /// </summary>
+        private DxConvertorCustomArgs __ConvertorArgs;
+        /// <summary>
+        /// Jazyk konverze
+        /// </summary>
+        public DxExpressionLanguageType Language { get { return __ConvertorArgs.Language; } }
+        /// <summary>
+        /// Druh konkrétní operace, zadané ve vstupním filtru.
+        /// </summary>
+        public DxFilterOperationType FilterOperation { get { return __ConvertorArgs.Operation; } }
+        /// <summary>
+        /// Jednotlivé operandy, zadané ve vstupním filtru. Jejich význam a počet je dán typem operace.
+        /// </summary>
+        public List<DxExpressionToken> FilterOperands { get { return __ConvertorArgs.Operands; } }
+
+        /// <summary>
+        /// Doporučený typ výsledné operace, určený na základě vstupní operace (<see cref="FilterOperation"/>) a podle počtu nalezených <see cref="CodeValues"/>.
+        /// Pokud např. vstupní filtr byl "Contains([DispVal], 'a')" a pro filtr <c>*a*</c> jsme našli pět položek v CodeTable a máme jejich CodeValue (2,5,6,7,12), pak SQL podmínka nebude Contains ale InList.
+        /// </summary>
+        public DxCodeTableOperationType CodeValueOperation { get; private set; }
+        /// <summary>
+        /// Token, který obsahuje sloupec jehož se tato operace týká
+        /// </summary>
+        public DxExpressionToken PropertyToken { get; private set; }
+        /// <summary>
+        /// Nalezené CodeValues pro zadané texty DisplayValues, v CodeTable tohoto sloupce
+        /// </summary>
+        public object[] CodeValues { get; private set; }
+
+        /// <summary>
+        /// Výsledná hodnota:<br/>
+        /// Externí aplikace si přeje tuto funkci přeskočit, výsledkem bude null. Může to být v pořádku jen tehdy, když operace je členem vyšší operace, která nemá povinné operandy.
+        /// </summary>
+        public bool Skip { get { return __ConvertorArgs.Skip; } set { __ConvertorArgs.Skip = value; } }
+        /// <summary>
+        /// Výsledná hodnota:<br/>
+        /// Externí aplikace sama určila výsledný tvar výrazu, zcela odlišný od výchozí podmínky filtru.<br/>
+        /// Sem se typicky umísťuje výsledek konvertované funkce nebo přepracované znění pro jiný typ argumentu (CodeValue, VirtualHandler).
+        /// </summary>
+        public DxExpressionToken CustomResult { get { return __ConvertorArgs.CustomResult; } set { __ConvertorArgs.CustomResult = value; } }
     }
     /// <summary>
     /// Typ zdroje dat ve sloupci <see cref="IFilterColumnInfo"/>. Řídí zpracování sloupců specifického typu pro konkrétní typy operátorů.
@@ -492,6 +624,14 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// Aktuální podmínka filtru má být nahrazena podmínkou typu True: <c>(1=1)</c>, protože zadané filtrační podmínce vyhovuje každý záznam
         /// </summary>
         True,
+        /// <summary>
+        /// Aktuální podmínka filtru má být nahrazena podmínkou typu IS NULL: <c>CodeValueSource is null</c> (namísto funkce IS NULL nebo IS NULL OR EMPTY)
+        /// </summary>
+        IsNull,
+        /// <summary>
+        /// Aktuální podmínka filtru má být nahrazena podmínkou typu IS NULL nebo IsNull() : <c>CodeValueSource is null</c> (namísto funkce IS NULL nebo IS NULL OR EMPTY) pokud nemáme další operátor, jinak řešit jako dvouparametrový ISNULL.
+        /// </summary>
+        IsNullOrSecond,
         /// <summary>
         /// Aktuální podmínka filtru má být nahrazena podmínkou typu Equal: <c>CodeValueSource = value[0]</c>, protože zadaná podmínka je "pozitivní" a hodnotě sloupce odpovídá jediná CodeValue
         /// </summary>
@@ -2065,6 +2205,20 @@ namespace Noris.Srv.NrsInternal.DxFiltering
             return part;
         }
         /// <summary>
+        /// Vytvoří prvek typu Property = sloupec databáze
+        /// </summary>
+        /// <param name="propertyName">Jméno sloupce = ColumnId</param>
+        /// <param name="sourceExpression">Zdroj sloupce v SQL dotazu</param>
+        /// <returns></returns>
+        internal static DxExpressionToken CreateProperty(string propertyName, string sourceExpression)
+        {
+            var part = new DxExpressionToken(PartType.PropertyName);
+            part.__PropertyName = propertyName;
+            part.__Column = null;
+            part.__PropertyResult = sourceExpression;
+            return part;
+        }
+        /// <summary>
         /// Vytvoří prvek typu Value = hodnota
         /// </summary>
         /// <param name="value"></param>
@@ -2494,11 +2648,14 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         /// </summary>
         public List<DxExpressionToken> Operands { get; set; }
         /// <summary>
+        /// Výsledná hodnota:<br/>
         /// Externí aplikace si přeje tuto funkci přeskočit, výsledkem bude null. Může to být v pořádku jen tehdy, když operace je členem vyšší operace, která nemá povinné operandy.
         /// </summary>
         public bool Skip { get; set; }
         /// <summary>
-        /// Externí aplikace sama určila výsledný tvar výrazu
+        /// Výsledná hodnota:<br/>
+        /// Externí aplikace sama určila výsledný tvar výrazu, zcela odlišný od výchozí podmínky filtru.<br/>
+        /// Sem se typicky umísťuje výsledek konvertované funkce nebo přepracované znění pro jiný typ argumentu (CodeValue, VirtualHandler).
         /// </summary>
         public DxExpressionToken CustomResult { get; set; }
     }

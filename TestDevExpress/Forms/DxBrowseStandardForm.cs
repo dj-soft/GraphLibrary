@@ -12,6 +12,7 @@ using TestDevExpress.Components;
 
 using NrsInt = Noris.Srv.NrsInternal;
 using NrsDxf = Noris.Srv.NrsInternal.DxFiltering;
+using Noris.Srv.NrsInternal.DxFiltering;
 
 namespace TestDevExpress.Forms
 {
@@ -937,14 +938,14 @@ namespace TestDevExpress.Forms
         {
             var columns = new List<NrsDxf.IFilterColumnInfo>();
 
-            columns.Add(new DxColumnInfo() { ColumnId = "id", DisplayValueSource = "tab.pk", SourceType = NrsDxf.FilterColumnSourceType.Virtual });
+            columns.Add(new DxColumnInfo() { ColumnId = "id", DisplayValueSource = "tab.pk" });
             columns.Add(new DxColumnInfo() { ColumnId = "refer", DisplayValueSource = "tab.ref" });
             columns.Add(new DxColumnInfo() { ColumnId = "nazev", DisplayValueSource = "tab.name" });
             columns.Add(new DxColumnInfo() { ColumnId = "category", DisplayValueSource = "nf_getperioddisplay(tab.catg)", CodeValueSource = "tab.catg", SourceType = NrsDxf.FilterColumnSourceType.CodeTable, EditStyleValues = createCodeTableCategory() });
             columns.Add(new DxColumnInfo() { ColumnId = "status_code", DisplayValueSource = "tab.sts" });
             columns.Add(new DxColumnInfo() { ColumnId = "status", DisplayValueSource = "tab.sts" });
             columns.Add(new DxColumnInfo() { ColumnId = "period", DisplayValueSource = "case tab.perd when 'E' then 'EXPORT' when 'I' then 'IMPORT' ... else 'xxx' end", CodeValueSource = "tab.perd", SourceType = NrsDxf.FilterColumnSourceType.CodeTable, EditStyleValues = createCodeTablePeriod() });
-            columns.Add(new DxColumnInfo() { ColumnId = "date_inp" });
+            columns.Add(new DxColumnInfo() { ColumnId = "date_inp", SourceType = NrsDxf.FilterColumnSourceType.Virtual });
             columns.Add(new DxColumnInfo() { ColumnId = "date_out" });
             columns.Add(new DxColumnInfo() { ColumnId = "quantity" });
             columns.Add(new DxColumnInfo() { ColumnId = "price_unit" });
@@ -999,15 +1000,25 @@ namespace TestDevExpress.Forms
             /// </summary>
             public NrsDxf.FilterColumnSourceType SourceType;
             /// <summary>
+            /// Editační styl má hodnoty DisplayValue 'CaseSensitive'?  Většinou false = nemá
+            /// </summary>
+            public bool EditStyleCaseSensitive;
+            /// <summary>
             /// Položky editačního stylu: Key = CodeValue; Value = DisplayText
             /// </summary>
             public KeyValuePair<object, string>[] EditStyleValues;
+            void _PrepareVirtualColumn(FilterColumnVirtualColumnArgs args)
+            {
+                args.CustomResult = DxExpressionToken.CreateFrom("exists (select * from lcs.priznaky f where f.class_number = 46 and f.record_number = ", DxExpressionToken.CreateProperty("recordkey", "lcs.subjekty.cislo_subjektu"), " and f.kategorie = 2 and f.value = 25)");
+            }
             #region Implementace NrsDxf.IColumnInfo
             string NrsDxf.IFilterColumnInfo.ColumnId { get { return this.ColumnId; } }
             string NrsDxf.IFilterColumnInfo.DisplayValueSource { get { return this.DisplayValueSource; } }
             string NrsDxf.IFilterColumnInfo.CodeValueSource { get { return this.CodeValueSource; } }
             NrsDxf.FilterColumnSourceType NrsDxf.IFilterColumnInfo.SourceType { get { return this.SourceType; } }
+            bool IFilterColumnInfo.CodeTableDisplayValuesAreCaseSensitive  { get { return this.EditStyleCaseSensitive; } }
             KeyValuePair<object, string>[] NrsDxf.IFilterColumnInfo.CodeTableItems { get { return this.EditStyleValues; } }
+            FilterColumnVirtualColumnHandler IFilterColumnInfo.VirtualHandler => _PrepareVirtualColumn;
             #endregion
         }
         #endregion
