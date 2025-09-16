@@ -340,6 +340,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public string EditDataExecuteInAdminModeText { get { return _GetText("Oprávnění Admin"); } }
         public string EditDataOnlyOneInstanceText { get { return _GetText("Jen jeden proces"); } }
         public string EditDataOpenMaximizedText { get { return _GetText("Maximalizované okno"); } }
+
+        public string EditSettingsAppearanceText { get { return _GetText("Výběr vzhledu"); } }
+        public string EditSettingsMinimizeOnRunText { get { return _GetText("Minimalizovat Launcher po spuštění aplikace"); } }
+
         public string ExecutableFileIsNotSpecified { get { return _GetText("Aplikaci nelze spustit, není zadán její soubor."); } }
         public string ExecutableFileIsNotExists { get { return _GetText("Aplikaci nelze spustit, její soubor neexistuje."); } }
 

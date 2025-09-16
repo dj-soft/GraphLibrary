@@ -183,6 +183,7 @@ namespace DjSoft.Tools.ProgramLauncher
             panel.AddCell(Components.ControlType.ChoiceBox, App.Messages.EditDataTitleText, nameof(AppearanceName), x1, y, w1); y += s2;
 
 
+            panel.AddCell(Components.ControlType.CheckBox, App.Messages.EditSettingsMinimizeOnRunText, nameof(MinimizeLauncherAfterAppStart), x1, y, w1); y += s2;
 
 
             panel.Buttons = new Components.DialogButtonType[] { Components.DialogButtonType.Ok, Components.DialogButtonType.Cancel };
@@ -300,6 +301,11 @@ namespace DjSoft.Tools.ProgramLauncher
         /// Název jazyka
         /// </summary>
         public string LanguageCode { get { return __LanguageCode; } set { __LanguageCode = value; SetChanged(nameof(LanguageCode)); } } private string __LanguageCode;
+        /// <summary>
+        /// Minimalizovat Launcher po spuštění aplikace
+        /// </summary>
+        public bool MinimizeLauncherAfterAppStart { get { return __MinimizeLauncherAfterAppStart; } set { __MinimizeLauncherAfterAppStart = value; SetChanged(nameof(MinimizeLauncherAfterAppStart)); } } private bool __MinimizeLauncherAfterAppStart;
+
         public bool TrayInfoIsAccepted { get { return __TrayInfoIsAccepted; } set { __TrayInfoIsAccepted = value; SetChanged(nameof(TrayInfoIsAccepted)); } } private bool __TrayInfoIsAccepted;
 
         /// <summary>
