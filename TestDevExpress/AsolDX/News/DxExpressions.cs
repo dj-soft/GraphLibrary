@@ -1837,7 +1837,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
 
             throw new NotImplementedException($"DxCriteriaVisitor: Operation '{operation}' is not implemented! ({(DxExpressionToken.CreateDelimited(",", operands))})");
 
-
+            #region Lokální podpůrné metody
             // Vrátí text binárního operátoru
             string getBinaryOperatorText(DxFilterOperationType binOp)
             {
@@ -1979,6 +1979,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                 else
                     throw new ArgumentException($"Filter condition '{operation}' requires {countInfo} operators, but {count} valid operators are passed.");
             }
+            #endregion
         }
         /// <summary>
         /// Konvertuje DX operaci na zdejší operaci, na základě názvu grupy a názvu DX operace (string TryParse <see cref="DxFilterOperationType"/>).
@@ -2163,7 +2164,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         #endregion
     }
     #endregion
-    #region class DxExpressionToken  : Část výrazu v procesu skládání výsledku z filtru do cílového jazyka
+    #region class DxExpressionToken : Část výrazu v procesu skládání výsledku z filtru do cílového jazyka
     /// <summary>
     /// <see cref="DxExpressionToken"/> : Část výrazu v procesu skládání výsledku z filtru do cílového jazyka
     /// </summary>
