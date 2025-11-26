@@ -208,28 +208,28 @@ namespace Noris.Srv.NrsInternal.DxFiltering
             propertyToken = opProperties[0];
             column = propertyToken.Column;
 
-            // Řešíme tyto varianty zadání (typy operací): Empty, Equals, Regex a InList:
+            // Řešíme tyto varianty zadání (typy operací): Empty, Equals, InList a Regex:
             bool isSingle = (operation == DxFilterOperationType.Unary_IsNull || operation == DxFilterOperationType.Function_IsNull || operation == DxFilterOperationType.Function_IsNullOrEmpty);
             bool isEquals = (operation == DxFilterOperationType.Binary_Equal || operation == DxFilterOperationType.Binary_NotEqual);
-            bool isPattern = (operation == DxFilterOperationType.Function_StartsWith || operation == DxFilterOperationType.Function_Contains || operation == DxFilterOperationType.Function_EndsWith || operation == DxFilterOperationType.Binary_Like || operation == DxFilterOperationType.Custom_Like);
             bool isInList = (operation == DxFilterOperationType.In);
-            if (!(isSingle || isEquals || isPattern || isInList)) 
+            bool isRegex = (operation == DxFilterOperationType.Function_StartsWith || operation == DxFilterOperationType.Function_Contains || operation == DxFilterOperationType.Function_EndsWith || operation == DxFilterOperationType.Binary_Like || operation == DxFilterOperationType.Custom_Like);
+            if (!(isSingle || isEquals || isInList || isRegex )) 
                 return DxCodeTableOperationType.NotCodeTable;                            // Ostatní typy operací nemá význam řešit
 
             //  Načteme datové operandy, které musí nést String. Nic jiného v operandech nemůže být:
-            //  Operandy musí být pouze: 1 sloupec a všechny ostatní ValueString
+            //  Operandy tedy musí být pouze: 1 sloupec a všechny ostatní ValueString:
             var opValues = args.Operands.Where(op => op.IsValueString).ToArray();        // Stringová hodnota, nese zadanou hodnotu DisplayValue (jiné operandy neberu, a pokud budou - pak skončíme)
             if (!isSingle && (opValues.Length + 1) != operandsCount)
                 return DxCodeTableOperationType.NotCodeTable;                            // Mezi operandy bylo i něco jiného než String. To bychom nedokázali vyhodnotit, a to je chyba. Platí kromě Single operátoru, tam je přípustná varianta ISNULL(CodeValue, Other value) kde 'Other value' může být cokoliv...
-            if ((isEquals || isPattern) && opValues.Length != 1)
+            if ((isEquals || isRegex) && opValues.Length != 1)
                 return DxCodeTableOperationType.NotCodeTable;                            // Operace typu Equals anebo Pattern vyžadují právě jeden operand typu String ( Sloupec = 'Hodnota' nebo StartWith(Sloupec, 'Hodn') )
 
             bool isCSens = column.CodeTableDisplayValuesAreCaseSensitive;
             if (isEquals || isInList)
             {   // Pro operace Binary_Equal a Binary_NotEqual, a In:
-                codeValues = getValuesEquals(column.CodeTableItems, opValues, isCSens);  // POZOR: tady je legální, když pro jeden operand opValues se vrátí více values[], pokud por jednu DisplayValue máme více CodeValue v tabulce CodeTable!!!
+                codeValues = getValuesEquals(column.CodeTableItems, opValues, isCSens);  // POZOR: tady je legální, když pro jeden operand opValues se vrátí více values[], pokud pro jednu DisplayValue máme více CodeValue v tabulce CodeTable!!!
             }
-            else if (isPattern)
+            else if (isRegex)
             {   // Vyhledáme CodeValues do out pole values:
                 var regex = getLikePattern(operation, opValues[0].ValueString, isCSens); // opValues obsahuje zaručeně právě jen jeden operand, typu ValueString = zadaný textový pattern => vytvořím z něj Regex:
                 codeValues = getValuesRegex(column.CodeTableItems, regex);               // Pro jeden Regex mohu získat vícero CodeValue
@@ -244,7 +244,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                 {
                     DxFilterOperationType.Unary_IsNull => DxCodeTableOperationType.IsNull,
                     DxFilterOperationType.Function_IsNull => DxCodeTableOperationType.IsNullOrSecond,
-                    DxFilterOperationType.Function_IsNextMonth => DxCodeTableOperationType.IsNull,
+                    DxFilterOperationType.Function_IsNullOrEmpty => DxCodeTableOperationType.IsNull,
                     _ => DxCodeTableOperationType.IsNull                                 // Sem nikdy nepropadnu, protože 'isSingle' je true jen pro tři výše vyřešené operátory.
                 };
             }
@@ -1837,7 +1837,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
 
             throw new NotImplementedException($"DxCriteriaVisitor: Operation '{operation}' is not implemented! ({(DxExpressionToken.CreateDelimited(",", operands))})");
 
-
+            #region Lokální podpůrné metody
             // Vrátí text binárního operátoru
             string getBinaryOperatorText(DxFilterOperationType binOp)
             {
@@ -1979,6 +1979,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
                 else
                     throw new ArgumentException($"Filter condition '{operation}' requires {countInfo} operators, but {count} valid operators are passed.");
             }
+            #endregion
         }
         /// <summary>
         /// Konvertuje DX operaci na zdejší operaci, na základě názvu grupy a názvu DX operace (string TryParse <see cref="DxFilterOperationType"/>).
@@ -2163,7 +2164,7 @@ namespace Noris.Srv.NrsInternal.DxFiltering
         #endregion
     }
     #endregion
-    #region class DxExpressionToken  : Část výrazu v procesu skládání výsledku z filtru do cílového jazyka
+    #region class DxExpressionToken : Část výrazu v procesu skládání výsledku z filtru do cílového jazyka
     /// <summary>
     /// <see cref="DxExpressionToken"/> : Část výrazu v procesu skládání výsledku z filtru do cílového jazyka
     /// </summary>

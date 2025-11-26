@@ -893,6 +893,9 @@ namespace TestDevExpress.Forms
             var msExprPart = NrsDxf.DxFilterConvertor.Convert(new NrsDxf.ConvertArgs() { Filter = filter, Language = NrsDxf.DxExpressionLanguageType.MsSqlDatabase, Columns = this._Columns });
             var msExpression = msExprPart?.ResultText;
 
+            var dtExprPart = NrsDxf.DxFilterConvertor.Convert(new NrsDxf.ConvertArgs() { Filter = filter, Language = NrsDxf.DxExpressionLanguageType.SystemDataFilter, Columns = this._Columns });
+            var dtExpression = dtExprPart?.ResultText;
+
             var oldExpression = DevExpress.Data.Filtering.CriteriaToWhereClauseHelper.GetMsSqlWhere(filter, c => c.PropertyName);
 
             var tab = "\t";
@@ -902,7 +905,8 @@ namespace TestDevExpress.Forms
             _AllRowFilters = _AllRowFilters + $"DxFilter:{tab}{dxExpression}{eol}NewConvert:{tab}{msExpression}{eol}OldConvert:{tab}{oldExpression}{eol}{eol}";
 
             var sbDelimiter = "  |◘◘|◘◘|  ";
-            this.StatusText = $"DX:  {dxExpression}{sbDelimiter}SQL:  {msExpression}{sbDelimiter}OLD:  {oldExpression}";
+            // this.StatusText = $"DX:  {dxExpression}{sbDelimiter}SQL:  {msExpression}{sbDelimiter}OLD:  {oldExpression}";
+            this.StatusText = $"DX:  {dxExpression}{sbDelimiter}SYS:  {dtExpression}";
 
             /*
             string testExpr = "PadLeft([reference_subjektu], 50) <> PadRight([nazev_subjektu], 80, '-')";
