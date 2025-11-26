@@ -2313,8 +2313,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _CoreWeb_WebResourceResponseReceived(object sender, Microsoft.Web.WebView2.Core.CoreWebView2WebResourceResponseReceivedEventArgs e)
         {
-            if (!DxComponent.LogIsRepeated(5, "WebViewCore.WebResourceResponseReceived"))
+            if (DxComponent.LogActivities.HasFlag(LogActivityKind.WinMessage))
+            {
+                var headers = e.Response.Headers.Select(h => h.Key).ToOneString("; ");
+                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebViewCore.WebResourceResponseReceived (Headers: {headers})");
+            }
+            else if (!DxComponent.LogIsRepeated(5, "WebViewCore.WebResourceResponseReceived"))
+            {   // Nelogujeme detaily? => vepíšeme tento řádek jen tehdy, když jsme podobný neměli v posledních 5 milisekundách:
                 DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.WebResourceResponseReceived");
+            }
 
             _CheckDelayedResponse();                       // Tam se ověří, zda budeme čekat na doběhnutí dalších Responses (odpovědi ze serveru, které přicházejí po NavigationCompleted)
         }
