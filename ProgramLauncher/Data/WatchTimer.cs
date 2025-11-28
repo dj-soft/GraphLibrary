@@ -118,8 +118,25 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <param name="id"></param>
         public static void Remove(Guid? id)
         {
-            if (id.HasValue)
-                Timer._RemoveItem(id.Value);
+            Timer._RemoveItem(id);
+        }
+        /// <summary>
+        /// Odebere časovač dle jeho <see cref="Guid"/>. Pokud na vstupu není null, pak je tam null uloženo.
+        /// ID časovače je vráceno ze všech metod, které časovač přidávají.
+        /// Pokud byl přidán časovač typu "jedno volání" (např. metodou <see cref="CallMeAfter(Action, int, bool, Guid?)"/>, 
+        /// pak není třeba jej odebírat po jeho proběhnutí - časovač je odebrán automaticky.
+        /// Takový časovač je ale možno odebrat před jeho aktivací - pak k aktivaci nedojde.
+        /// Lze odebrat časovač cyklický, typu "volej mě každých 100 milisekund".
+        /// </summary>
+        /// <param name="timerId"></param>
+        public static void RemoveRef(ref Guid? timerId)
+        {
+            if (timerId.HasValue)
+            {
+                Guid id = timerId.Value;
+                timerId = null;
+                Timer._RemoveItem(id);
+            }
         }
         /// <summary>
         /// Přesnost časového rozlišení v milisekundách.
@@ -198,12 +215,24 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             this._AppExit = false;
             this._Semaphore = new System.Threading.AutoResetEvent(false);
             System.Windows.Forms.Application.ApplicationExit += Application_ApplicationExit;
+            App.ApplicationStateChanged += _ApplicationStateChanged;
             this._Thread = new System.Threading.Thread(_ThreadRun)
             {
                 Name = "WatchTimer",
                 IsBackground = true
             };
             this._Thread.Start();
+        }
+        /// <summary>
+        /// Po změně stavu aplikace do stavu Konec může být ukončen WatchTimer
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ApplicationStateChanged(object sender, EventArgs e)
+        {
+            var appState = App.ApplicationState;
+            if (appState == ApplicationState.Exited)
+                _ThreadExit();
         }
         /// <summary>
         /// Eventhandler události <see cref="System.Windows.Forms.Application.ApplicationExit"/>.
@@ -213,7 +242,15 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <param name="e"></param>
         private void Application_ApplicationExit(object sender, EventArgs e)
         {
+            _ThreadExit();
+        }
+        /// <summary>
+        /// Zajistí ukončení threadu WatchTimer
+        /// </summary>
+        private void _ThreadExit()
+        {
             this._AppExit = true;
+            this._RemoveAllItems();
             this._Semaphore.Set();
         }
         /// <summary>
@@ -240,6 +277,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             WatchItem[] items = this._LockedItems;         // Beru všechny prvky, abych mohl najít deaktivované a ty pak vyhodit ze seznamu
             foreach (WatchItem item in items)
             {
+                if (this._AppExit) break;
                 if (item.IsActive && item.NeedRun)
                     item.Run();
                 if (!item.IsActive)
@@ -312,17 +350,36 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             this._Semaphore.Set();               // Rozsvítíme semafor, probudíme výkonný thread, ten si prověří zda má něco dělat a hlavně si nastaví vhodný interval na spánek
         }
         /// <summary>
-        /// Ze seznamu odebere budík dle daného ID.
+        /// Ze seznamu odebere všechny budíky.
         /// </summary>
-        /// <param name="guid"></param>
-        private void _RemoveItem(Guid guid)
+        private void _RemoveAllItems()
         {
             lock (_Items)
             {
-                if (_Items.TryGetValue(guid, out var watchItem))
+                foreach (var watchItem in _Items.Values)
                 {
                     watchItem.Disable();
-                    _Items.Remove(guid);
+                    watchItem.Dispose();
+                }
+
+                _Items.Clear();
+            }
+        }
+        /// <summary>
+        /// Ze seznamu odebere budík dle daného ID.
+        /// </summary>
+        /// <param name="guid"></param>
+        private void _RemoveItem(Guid? guid)
+        {
+            if (!guid.HasValue) return;
+
+            lock (_Items)
+            {
+                if (_Items.TryGetValue(guid.Value, out var watchItem))
+                {
+                    watchItem.Disable();
+                    watchItem.Dispose();
+                    _Items.Remove(guid.Value);
                     watchItem.Owner = null;
                 }
             }
@@ -338,6 +395,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 if (_Items.ContainsKey(watchItem.Guid))
                 {
                     watchItem.Disable();
+                    watchItem.Dispose();
                     _Items.Remove(watchItem.Guid);
                     watchItem.Owner = null;
                 }
@@ -348,7 +406,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// WatchItem : jeden časovač
         /// </summary>
-        private class WatchItem
+        private class WatchItem : IDisposable
         {
             #region Konstrukce, statická data (proměnné)
             /// <summary>
@@ -396,6 +454,21 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 this._TargetTime = targetTime;
                 this._WatchType = WatchItemType.TargetTime;
                 this._SynchronizeUI = synchronizeUI;
+            }
+            /// <summary>
+            /// Dispose
+            /// </summary>
+            public void Dispose()
+            {
+                this._Action = null;
+                this._ActionParam = null;
+                this._Param = null;
+                this._Miliseconds = null;
+                this._ActiveTime = null;
+                this._TargetTime = null;
+                this._WatchType = WatchItemType.None;
+                this._SynchronizeUI = false;
+                this.Owner = null;
             }
             /// <summary>
             /// Vygeneruje nový <see cref="Guid"/>. Smí se volat pouze před zařazením do kolekce (Dictionary).
@@ -479,7 +552,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             /// </summary>
             private object _Param;
             /// <summary>
-            /// Volat v synchronizovaném threadu, pomocí invokace do GUI threadu
+            /// Volat v synchronizovaném threadu, pomocí <see cref="UiSynchronizationHelper.Invoke{TSender, TArgument}(TSender, TArgument, Action{TSender, TArgument}, Action)"/>
             /// </summary>
             private bool _SynchronizeUI;
             /// <summary>
@@ -667,10 +740,15 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             /// </summary>
             private void _RunAction()
             {
-                if (this._SynchronizeUI && _TryGetGuiControl(out System.Windows.Forms.Control control))
-                    _RunInGuiThread(_RunActionThread);
+                // Po zavření aplikace už nic nedělej:
+                var appState = App.ApplicationState;
+                if (appState == ApplicationState.Exited)
+                    return;
+
+                if (this._SynchronizeUI)
+                    App.RunInGuiThread(_RunActionThread);
                 else
-                    this._RunActionThread();
+                    _RunActionThread();
             }
             /// <summary>
             /// Metoda provede vlastní akci budíku. Metoda je již volána v potřebném threadu.

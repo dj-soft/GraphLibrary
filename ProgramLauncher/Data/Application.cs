@@ -715,6 +715,29 @@ namespace DjSoft.Tools.ProgramLauncher
             }
         }
         /// <summary>
+        /// Znovu načte funkční objekty odpovídající nastavení dle Settings do aplikace
+        /// </summary>
+        /// <param name="propertyName"></param>
+        public static void ReloadFromSettings(string propertyName = null) { Current._ReloadFromSettings(propertyName); }
+        /// <summary>
+        /// Znovu načte funkční objekty odpovídající nastavení dle Settings do aplikace
+        /// </summary>
+        /// <param name="propertyName"></param>
+        private void _ReloadFromSettings(string propertyName)
+        {
+            bool setAll = (propertyName is null);
+            var settings = App.Settings;
+            
+            if (setAll || String.Equals(propertyName, nameof(DjSoft.Tools.ProgramLauncher.Settings.AppearanceName)))
+                App.CurrentAppearance = AppearanceInfo.GetItem(settings.AppearanceName, true);                    // Aktivuje posledně aktivní, anebo defaultní vzhled
+
+            if (setAll || String.Equals(propertyName, nameof(DjSoft.Tools.ProgramLauncher.Settings.LayoutSetName)))
+                App.CurrentLayoutSet = LayoutSetInfo.GetItem(App.Settings.LayoutSetName, true);
+
+            if (setAll || String.Equals(propertyName, nameof(DjSoft.Tools.ProgramLauncher.Settings.LanguageCode)))
+                App.CurrentLanguage = LanguageSet.GetItem(App.Settings.LanguageCode, true);
+        }
+        /// <summary>
         /// Proměnná pro Konfigurace aplikace
         /// </summary>
         private Settings __Settings;

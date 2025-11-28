@@ -1,4 +1,5 @@
-﻿using DjSoft.Tools.ProgramLauncher.Data;
+﻿using DjSoft.Tools.ProgramLauncher.Components;
+using DjSoft.Tools.ProgramLauncher.Data;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -188,25 +189,20 @@ namespace DjSoft.Tools.ProgramLauncher
             panel.BackColor = Color.AntiqueWhite;
 
             panel.DataObject = this;
-            panel.DataStoreAfter += dataStoreAfter;
+
             return panel;
 
-
+            // Do daného prvku, pokud je to 
             void initComboItems(Control control, object[] items)
             {
-                if (control is ComboBox comboBox)
+                if (control is DComboBox comboBox)
                 {
                     comboBox.DropDownStyle = ComboBoxStyle.DropDownList;
                     comboBox.Items.Clear();
                     comboBox.Items.AddRange(items);
                 }
             }
-            void dataStoreAfter(object sender, EventArgs e)
-            {
-                
-            }
         }
-
         #endregion
         #region Save
         /// <summary>
@@ -258,6 +254,7 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             __IsChanged = true;
 
+            _ApplyToApp(changedProperty);
             _RunChanged(changedProperty);
 
             int milisecs = (int)AutoSaveDelay.TotalMilliseconds;
@@ -322,6 +319,14 @@ namespace DjSoft.Tools.ProgramLauncher
 
         public bool TrayInfoIsAccepted { get { return __TrayInfoIsAccepted; } set { __TrayInfoIsAccepted = value; SetChanged(nameof(TrayInfoIsAccepted)); } } private bool __TrayInfoIsAccepted;
 
+        /// <summary>
+        /// Po změně zdejší property daného jména (ta už byla setována) provede uložení odpovídajícího objektu do App.
+        /// </summary>
+        /// <param name="changedProperty"></param>
+        private void _ApplyToApp(string changedProperty)
+        {
+            App.ReloadFromSettings(changedProperty);
+        }
         /// <summary>
         /// Vyvolá event <see cref="Changed"/>
         /// </summary>

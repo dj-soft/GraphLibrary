@@ -6,13 +6,19 @@ using System.Threading.Tasks;
 
 namespace DjSoft.Tools.ProgramLauncher.Components
 {
-    #region class WatchTimer : budík ("Vzbuď mě za ... milisekund; zavolej mě každých ... milisekund; ...")   [DAJ 0064307 2020-01-17]
+    #region class WatchTimerComp : budík ("Vzbuď mě za ... milisekund; zavolej mě každých ... milisekund; ...")   [DAJ 0064307 2020-01-17]
     /// <summary>
-    /// WatchTimer : budík ("Vzbuď mě za ... milisekund; zavolej mě každých ... milisekund; ...")
+    /// WatchTimerComp : budík ("Vzbuď mě za ... milisekund; zavolej mě každých ... milisekund; ...")
     /// </summary>
-    public class WatchTimer
+    public class WatchTimerComp
     {
         #region Public static rozhraní
+        /// <summary>
+        /// Control, který hraje roli GUI Invokeru
+        /// </summary>
+        public static System.Windows.Forms.Control MainForm { get { return Timer._MainForm; } set { Timer._MainForm = value; } }
+        /// <summary>Control, který hraje roli GUI Invokeru</summary>
+        private System.Windows.Forms.Control _MainForm;
         /// <summary>
         /// Zavolej mě (danou akci) za daný počet milisekund
         /// </summary>
@@ -144,7 +150,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <summary>
         /// Instance (singleton)
         /// </summary>
-        private static WatchTimer Timer
+        private static WatchTimerComp Timer
         {
             get
             {
@@ -153,18 +159,18 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                     lock (__Lock)
                     {
                         if (__Timer is null)
-                            __Timer = new WatchTimer();
+                            __Timer = new WatchTimerComp();
                     }
                 }
                 return __Timer;
             }
         }
-        private static WatchTimer __Timer;
+        private static WatchTimerComp __Timer;
         private static readonly object __Lock = new object();
         /// <summary>
         /// Jediný a privátní konstruktor
         /// </summary>
-        private WatchTimer()
+        private WatchTimerComp()
         {
             this._Items = new Dictionary<Guid, WatchItem>();
             this._TimeBase = new System.Diagnostics.Stopwatch();
@@ -212,13 +218,13 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             App.ApplicationStateChanged += _ApplicationStateChanged;
             this._Thread = new System.Threading.Thread(_ThreadRun)
             {
-                Name = "WatchTimer",
+                Name = "WatchTimerComp",
                 IsBackground = true
             };
             this._Thread.Start();
         }
         /// <summary>
-        /// Po změně stavu aplikace do stavu Konec může být ukončen WatchTimer
+        /// Po změně stavu aplikace do stavu Konec může být ukončen WatchTimerComp
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -239,7 +245,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             _ThreadExit();
         }
         /// <summary>
-        /// Zajistí ukončení threadu WatchTimer
+        /// Zajistí ukončení threadu WatchTimerComp
         /// </summary>
         private void _ThreadExit()
         {
@@ -482,7 +488,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             {
                 lock (this)
                 {
-                    // Do sourceItem vložím náš permanentní Guid, pod kterým jsem vedený ve WatchTimer v Dictionary _Items:
+                    // Do sourceItem vložím náš permanentní Guid, pod kterým jsem vedený ve WatchTimerComp v Dictionary _Items:
                     sourceItem._Guid = this._Guid;
                     // Ostatní data přepíšu do zdejšího permanentního prvku:
                     this._Action = sourceItem._Action;
@@ -503,7 +509,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             /// <summary>
             /// Vlastník = správce budíků
             /// </summary>
-            public WatchTimer Owner { get; set; }
+            public WatchTimerComp Owner { get; set; }
             /// <summary>
             /// Obsahuje true pro aktivní budík, false pro neaktivní. 
             /// Aktivní budíky jsou všechny zadané, které ještě neproběhly, opakovací budíky jsou aktivní stále.
@@ -762,6 +768,32 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                     this.Activate();
                 else
                     this.Disable();
+            }
+            /// <summary>
+            /// Spustí danou akci v GUI threadu, pokud to lze a pokud je to vhodné
+            /// </summary>
+            /// <param name="action"></param>
+            private void _RunInGuiThread(Action action)
+            {
+                if (_TryGetGuiControl(out var control, true))
+                    control.Invoke(action);
+                else
+                    action();
+            }
+            /// <summary>
+            /// Pokusí se získat GUI control pro invokaci GUI threadu
+            /// </summary>
+            /// <param name="control"></param>
+            /// <param name="onlyWhenGuiInvokeRequired"></param>
+            /// <returns></returns>
+            private bool _TryGetGuiControl(out System.Windows.Forms.Control control, bool onlyWhenGuiInvokeRequired = false)
+            {
+                control = null;
+                var mainForm = WatchTimerComp.MainForm;
+                if (mainForm is null || mainForm.IsDisposed || mainForm.Disposing) return false;
+                if (onlyWhenGuiInvokeRequired || !mainForm.InvokeRequired) return false;
+                control = mainForm;
+                return true;
             }
             #endregion
         }

@@ -186,9 +186,7 @@ Help => {App.Messages.HelpInfoHelp}{eol}
             App.CurrentLanguageChanged += CurrentLanguageChanged;
             App.Settings.Changed += _SettingsChanged;
 
-            App.CurrentAppearance = AppearanceInfo.GetItem(App.Settings.AppearanceName, true);     // Aktivuje posledně aktivní, anebo defaultní vzhled
-            App.CurrentLayoutSet = LayoutSetInfo.GetItem(App.Settings.LayoutSetName, true);
-            App.CurrentLanguage = LanguageSet.GetItem(App.Settings.LanguageCode, true);
+            App.ReloadFromSettings();
 
             this.StatusLabelVersion.Text = "DjSoft";
         }
