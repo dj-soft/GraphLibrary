@@ -149,16 +149,18 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         private void _RunLayoutContent(Rectangle contentBounds)
         {
+            this.MinimalContentSize = Size.Empty;
+
             this.__LastParentContentBounds = contentBounds;
 
             var buttons = this.__DButtons;
             int buttonsCount = buttons?.Length ?? 0;
             if (buttonsCount == 0)
             {
-                this.Visible = false;
+                if (this.Visible) this.Visible = false;
                 return;
             }
-
+            
             // Umístění panelu a buttonů určíme na základě zdejších hodnot:
             var alignment = this.PanelContentAlignment;
             var buttonSize = this.ButtonsSize;
@@ -167,9 +169,12 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             var side = ((PanelContentAlignmentPart)alignment) & PanelContentAlignmentPart.MaskSides;
             bool isControlsVertical = (side == PanelContentAlignmentPart.LeftSide || side == PanelContentAlignmentPart.RightSide);
 
-            // Velikost obsahu = velikost controlů + mezery mezi nimi:
+            // Velikost obsahu = velikost controlů + mezery mezi nimi, bez Padding:
             int contentWidth = (isControlsVertical ? buttonSize.Width : (buttonsCount * buttonSize.Width) + ((buttonsCount - 1) * spacing.Width));
             int contentHeight = (isControlsVertical ? (buttonsCount * buttonSize.Height) + ((buttonsCount - 1) * spacing.Height) : buttonSize.Height);
+
+            // Nejmenší velikost panelu = velikost obsahu (buttony) + padding:
+            this.MinimalContentSize = new Size(contentWidth + padding.Horizontal, contentHeight + padding.Vertical);
 
             // Umístit celý panel: podle velikosti obsahu a zarovnání panelu v parentu:
             var panelWidth = (isControlsVertical ? contentWidth + padding.Horizontal : contentBounds.Width);
@@ -248,8 +253,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <summary>
         /// Přítomné buttony v odpovídajícím pořadí
         /// </summary>
-        public DialogButtonType[] Buttons { get { return __ButtonTypes; } set { _SetButtons(value); } }
-        private DialogButtonType[] __ButtonTypes;
+        public DialogButtonType[] Buttons { get { return __ButtonTypes; } set { _SetButtons(value); } } private DialogButtonType[] __ButtonTypes;
         /// <summary>
         /// Vrátí fyzický button daného typu, anebo null.
         /// Typy přítomných buttonů lze setovat do <see cref="Buttons"/>.
@@ -267,23 +271,24 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <summary>
         /// Zarovnání panelu v rámci Parenta a umístění obsahu v něm
         /// </summary>
-        public PanelContentAlignment PanelContentAlignment { get { return __PanelContentAlignment; } set { __PanelContentAlignment = value; LayoutContent(true); } }
-        private PanelContentAlignment __PanelContentAlignment;
+        public PanelContentAlignment PanelContentAlignment { get { return __PanelContentAlignment; } set { __PanelContentAlignment = value; LayoutContent(true); } } private PanelContentAlignment __PanelContentAlignment;
         /// <summary>
         /// Velikost buttonů
         /// </summary>
-        public Size ButtonsSize { get { return __ButtonsSize; } set { __ButtonsSize = value; LayoutContent(true); } }
-        private Size __ButtonsSize;
+        public Size ButtonsSize { get { return __ButtonsSize; } set { __ButtonsSize = value; LayoutContent(true); } } private Size __ButtonsSize;
         /// <summary>
         /// Mezery mezi buttony
         /// </summary>
-        public Size ButtonsSpacing { get { return __ButtonsSpacing; } set { __ButtonsSpacing = value; LayoutContent(true); } }
-        private Size __ButtonsSpacing;
+        public Size ButtonsSpacing { get { return __ButtonsSpacing; } set { __ButtonsSpacing = value; LayoutContent(true); } } private Size __ButtonsSpacing;
         /// <summary>
         /// Mezery mezi buttony
         /// </summary>
-        public Padding ContentPadding { get { return __ContentPadding; } set { __ContentPadding = value; LayoutContent(true); } }
-        private Padding __ContentPadding;
+        public Padding ContentPadding { get { return __ContentPadding; } set { __ContentPadding = value; LayoutContent(true); } } private Padding __ContentPadding;
+        /// <summary>
+        /// Nejmenší velikost panelu, kterou by měl this panel mít tak, aby v něm byly správně zobrazeny jeho prvky.
+        /// Když bude mít panel buttonů tuto velikost (nebo větší), budou v něm buttony správně zobrazeny.
+        /// </summary>
+        public Size? MinimalContentSize { get { return __MinimalContentSize; } private set { __MinimalContentSize = value; } } private Size? __MinimalContentSize;
         /// <summary>
         /// Umístí this panel v rámci svého Parenta, a poté umístí svoje Buttony v rámci this panelu. 
         /// Vlastní akci provede jen při <paramref name="force"/> = true nebo po změně prostoru v parentu.
@@ -1090,6 +1095,165 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         #endregion
     }
     #endregion
+    #region DComboBox
+    /// <summary>
+    /// ComboBox
+    /// </summary>
+    public class DComboBox : ComboBox, IControlExtended, IValueStorage
+    {
+        #region Konstruktor a IControlExtended
+        public DComboBox()
+        {
+            this.DropDownStyle = ComboBoxStyle.DropDownList;
+            this.ItemHeight = 18;
+            this.Margin = new Padding(0);
+            this._InitDrawing();
+        }
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsVisibleInternal(); } set { this.Visible = value; } }
+        #endregion
+        #region Vykreslení spolu s ikonou
+        private void _InitDrawing()
+        {
+            this.DrawMode = DrawMode.OwnerDrawVariable; // DrawMode.OwnerDrawFixed;
+            this.MeasureItem += _MeasureItem;
+            this.DrawItem += _DrawItem;
+        }
+        private void _MeasureItem(object sender, MeasureItemEventArgs e)
+        {
+            if (e.Index >= 0 && e.Index < this.Items.Count)
+            {
+                e.ItemHeight = this.ItemHeight;
+                e.ItemWidth = this.DropDownWidth;
+            }
+        }
+        private void _DrawItem(object sender, DrawItemEventArgs e)
+        {
+            // nothing to draw
+            if (e.Index < 0 || e.Index >= this.Items.Count)
+            {
+                // when SelectedIndex == -1, draw empty or default text
+                e.DrawBackground();
+                e.DrawFocusRectangle();
+                return;
+            }
+
+            // Co kreslit a co psát?
+            var item = this.Items[e.Index];
+            string text;
+            Image icon;
+            if (item is IMenuItem menuItem)
+            {
+                text = menuItem.Text ?? "";
+                icon = menuItem.Image;
+            }
+            else
+            {
+                text = item?.ToString() ?? "";
+                icon = null;
+            }
+
+            // Kam kreslit a kam psát?
+            var itemBounds = e.Bounds;
+            var padding = new Padding(2, 0, 0, 2);
+            int iconSize = Math.Min(itemBounds.Height - padding.Vertical, 16);
+            Rectangle iconBounds = Rectangle.Empty;
+            Rectangle textBounds = itemBounds;
+
+            if (icon != null)
+            {
+                iconBounds = new Rectangle(itemBounds.Left + padding.Left, itemBounds.Top + (itemBounds.Height - iconSize) / 2, iconSize, iconSize);
+                textBounds = new Rectangle(iconBounds.Right + padding.Right, itemBounds.Top, (itemBounds.Width - iconBounds.Right - padding.Right), itemBounds.Height);
+            }
+            else
+            {
+                textBounds = new Rectangle(itemBounds.Left + padding.Left, itemBounds.Top, itemBounds.Width - padding.Horizontal, itemBounds.Height);
+            }
+
+            // selection colors
+            bool isSelected = e.State.HasFlag(DrawItemState.Selected);
+            Color foreColor = isSelected ? SystemColors.HighlightText : this.ForeColor;
+            Color backColor = isSelected ? SystemColors.Highlight : this.BackColor;
+            using (var backBrush = new SolidBrush(backColor))
+            {
+                e.Graphics.FillRectangle(backBrush, itemBounds);
+            }
+
+            // draw icon (if present)
+            if (icon != null)
+            {
+                // keep aspect ratio, draw in iconRect
+                e.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                e.Graphics.DrawImage(icon, iconBounds);
+            }
+
+            // draw text
+            TextFormatFlags flags = TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis;
+            TextRenderer.DrawText(e.Graphics, text, this.Font, textBounds, foreColor, flags);
+
+            e.DrawFocusRectangle();
+        }
+        #endregion
+        #region IValueStorage
+        /// <summary>
+        /// Přístup na hodnotu
+        /// </summary>
+        object IValueStorage.Value { get { return _GetValue(); } set { _SetValue(value); } }
+        private object _GetValue()
+        {
+            var selectedItem = this.SelectedItem;
+            if (selectedItem is null) return null;
+            if (__UseStringValue)
+            {
+                if (selectedItem is IMenuItem menuItem)
+                    return menuItem.Text;
+                return selectedItem.ToString();
+            }
+            else
+            {
+                return selectedItem;
+            }
+        }
+        private void _SetValue(object value)
+        {
+            if (value is null)
+            {
+                this.SelectedItem = null;
+                return;
+            }
+            var itemsArray = this.Items.OfType<object>().ToArray();
+            if (itemsArray.TryFindFirst(i => Object.Equals(i, value), out var currentItem))
+            {   // Nalezen náš prvek s pomocí nativního Equals:
+                this.SelectedItem = currentItem;
+                this.__UseStringValue = false;
+                return;
+            }
+            if (value is string text && (itemsArray.TryFindFirst(i => isEqualText(i, text), out var currentTextItem)))
+            {   // Nalezen náš prvek s pomocí textu s pomocí IMenuItem.Text nebo ToString():
+                this.SelectedItem = currentTextItem;
+                this.__UseStringValue = true;
+                return;
+            }
+
+            // Vrátí true, pokud text daného prvku je roven hledanému textu
+            bool isEqualText(object item, string searchText)
+            {
+                if (item is IMenuItem menuItem)
+                    return String.Equals(menuItem.Text, text, StringComparison.CurrentCulture);
+                return String.Equals(item?.ToString(), text, StringComparison.CurrentCulture);
+            }
+        }
+        private bool __UseStringValue;
+        #endregion
+    }
+    #endregion
     #region DCheckBox
     /// <summary>
     /// CheckBox
@@ -1427,14 +1591,16 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         Hsv
     }
     #endregion
-
     #region DChoiceBox
     /// <summary>
-    /// CheckBox
+    /// DChoiceBox : panel s výběrem jedné hodnoty z několika
     /// </summary>
     public class DChoiceBox : DPanel, IControlExtended, IValueStorage
     {
-
+        public DChoiceBox()
+        {
+            this.Size = new Size(320, 24);
+        }
         public object Value;
         #region IValueStorage
         /// <summary>
@@ -2703,6 +2869,10 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                     var fileBox = new DFileBox() { Text = text };
                     control = fileBox;
                     break;
+                case ControlType.ComboBox:
+                    var comboBox = new DComboBox();
+                    control = comboBox;
+                    break;
                 case ControlType.CheckBox:
                     var checkBox = new DCheckBox() { Text = text };
                     control = checkBox;
@@ -2783,6 +2953,9 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Zaškrtávátko
         /// </summary>
         CheckBox,
+        /// <summary>
+        /// Barvičky
+        /// </summary>
         ColorBox,
         /// <summary>
         /// Image

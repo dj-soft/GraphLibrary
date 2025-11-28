@@ -174,25 +174,39 @@ namespace DjSoft.Tools.ProgramLauncher
         {
             var panel = new Components.DataControlPanel();
 
-            int x1 = 0;
-            int w1 = 220;
-            int y0 = 20;
-            int s2 = 38;
+            int x1 = panel.SpacingX;
+            int y0 = panel.SpacingY + panel.LabelHeight;
+            int w1 = 320;
 
             int y = y0;
-            panel.AddCell(Components.ControlType.ChoiceBox, App.Messages.EditDataTitleText, nameof(AppearanceName), x1, y, w1); y += s2;
-
-
-            panel.AddCell(Components.ControlType.CheckBox, App.Messages.EditSettingsMinimizeOnRunText, nameof(MinimizeLauncherAfterAppStart), x1, y, w1); y += s2;
-
+            panel.AddCell(Components.ControlType.ComboBox, App.Messages.EditSettingsAppearanceText, nameof(AppearanceName), x1, ref y, w1, initializer: c => initComboItems(c, AppearanceInfo.Collection));
+            panel.AddCell(Components.ControlType.ComboBox, App.Messages.EditSettingsLayoutSetText, nameof(LayoutSetName), x1, ref y, w1, initializer: c => initComboItems(c, LayoutSetInfo.Collection));
+            panel.AddCell(Components.ControlType.ComboBox, App.Messages.EditSettingsLanguageText, nameof(LanguageCode), x1, ref y, w1, initializer: c => initComboItems(c, LanguageSet.Collection));
+            panel.AddCell(Components.ControlType.CheckBox, App.Messages.EditSettingsMinimizeOnRunText, nameof(MinimizeLauncherAfterAppStart), x1, ref y, w1);
 
             panel.Buttons = new Components.DialogButtonType[] { Components.DialogButtonType.Ok, Components.DialogButtonType.Cancel };
             panel.BackColor = Color.AntiqueWhite;
 
             panel.DataObject = this;
-
+            panel.DataStoreAfter += dataStoreAfter;
             return panel;
+
+
+            void initComboItems(Control control, object[] items)
+            {
+                if (control is ComboBox comboBox)
+                {
+                    comboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+                    comboBox.Items.Clear();
+                    comboBox.Items.AddRange(items);
+                }
+            }
+            void dataStoreAfter(object sender, EventArgs e)
+            {
+                
+            }
         }
+
         #endregion
         #region Save
         /// <summary>

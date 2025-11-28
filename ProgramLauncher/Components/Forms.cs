@@ -34,16 +34,16 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         protected virtual void InitializeForm()
         {
-            this.__DataPanelHost = new DPanel();
+            this.__DataPanelHost = new DPanel() { Name = "DataPanelHost" };
             this.__DataPanelHost.BackColor = SystemColors.ControlDark;
             this.__DataPanelHost.TabIndex = 0;
 
-            this.__DialogButtonPanel = new DialogButtonPanel() { Buttons = new DialogButtonType[] { DialogButtonType.Ok, DialogButtonType.Cancel } };
+            this.__DialogButtonPanel = new DialogButtonPanel() { Buttons = new DialogButtonType[] { DialogButtonType.Ok, DialogButtonType.Cancel }, Name = "DialogButtonPanel" };
             this.__DialogButtonPanel.DialogButtonClick += _PanelDialogButtonClick;
             this.__DialogButtonPanel.BackColor = SystemColors.Window;
             this.__DialogButtonPanel.TabIndex = 1;
 
-            this.__StatusStrip = new DStatusStrip();
+            this.__StatusStrip = new DStatusStrip() { Name = "StatusStrip" };
             this.__StatusStrip.TabIndex = 2;
 
             this.Controls.Add(this.__DataPanelHost);
@@ -98,22 +98,42 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         private void ApplyOptimalBounds()
         {
-            var formBounds = this.Bounds;
-            Rectangle? newFormBounds = null;
+            // DataControl = obsah formuláře v horním panelu:
             var dataControl = this.DataControl;
+            int dataChangeWidth = 0;
+            int dataChangeHeight = 0;
             if (dataControl != null && dataControl is IDataControl iDataControl)
-            {
-                var dataSize = iDataControl.OptimalSize ?? iDataControl.ContentSize;
-                if (dataSize.HasValue)
+            {   // Pokud najdu DataControl a jeho optimální velikost, pak zjistím, jaký rozdíl velikosti oproti stávající reálné velikosti tak, aby DataControl měl svoji optimální velikost:
+                var dataContentSize = iDataControl.OptimalSize ?? iDataControl.ContentSize;
+                if (dataContentSize.HasValue)
                 {
-                    var currentSize = dataControl.Size;
-                    int diffWidth = formBounds.Width - currentSize.Width;
-                    int diffHeight = formBounds.Height  - currentSize.Height;
-                    newFormBounds = new Rectangle(this.Location, new Size(dataSize.Value.Width + diffWidth, dataSize.Value.Height + diffHeight));
+                    var dataCurrentSize = dataControl.Size;
+                    dataChangeWidth = dataContentSize.Value.Width - dataCurrentSize.Width;
+                    dataChangeHeight = dataContentSize.Value.Height - dataCurrentSize.Height;
                 }
             }
-            if (newFormBounds.HasValue && newFormBounds.Value != formBounds)
-                this.Bounds = newFormBounds.Value.AlignToNearestMonitor(false);
+
+            // ButtonPanel = panel s tlačítky dole:
+            var buttonPanel = this.DialogButtonPanel;
+            int buttonChangeWidth = 0;
+            int buttonChangeHeight = 0;
+            if (buttonPanel != null && buttonPanel.Buttons != null && buttonPanel.Buttons.Length > 0 && buttonPanel.MinimalContentSize.HasValue)
+            {   // Pokud máme panel pro Buttony a v něm reálně jsou buttony a známe jejich minimální velikost:
+                var buttonContentSize = buttonPanel.MinimalContentSize.Value;
+                var buttonCurrentSize = buttonPanel.ClientSize;
+                buttonChangeWidth = buttonContentSize.Width - buttonCurrentSize.Width;
+                buttonChangeHeight = buttonContentSize.Height - buttonCurrentSize.Height;
+            }
+
+            // Jakým způsobem změníme veliksot formuláře? Tak, aby se nám vešly oba panely:
+            int contentChangeWidth = dataChangeWidth > buttonChangeWidth ? dataChangeWidth : buttonChangeWidth;        // Šířka = Max(): pokud jeden nebo druhý potřebuje více prostoru, akceptujeme to větší přání
+            int contentChangeHeight = dataChangeHeight + buttonChangeHeight;                                           // Výška = součet změn, vyhovéme každému podle jeho přání
+            if (contentChangeWidth != 0 || contentChangeHeight != 0)
+            {
+                var formCurrentBounds = this.Bounds;
+                var formNewBounds = new Rectangle(formCurrentBounds.Location, new Size(formCurrentBounds.Width + contentChangeWidth, formCurrentBounds.Height + contentChangeHeight));
+                this.Bounds = formNewBounds.AlignToNearestMonitor(false);
+            }
         }
         /// <summary>
         /// Umístí svůj datový panel do disponibilního prostoru

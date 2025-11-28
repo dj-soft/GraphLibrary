@@ -111,23 +111,79 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <summary>
         /// Do this panelu přidá další buňku pro zobrazení dat: label, control, jméno datové property, pozice.
         /// </summary>
-        /// <param name="controlType"></param>
-        /// <param name="label"></param>
-        /// <param name="propertyName"></param>
-        /// <param name="left"></param>
-        /// <param name="top"></param>
+        /// <param name="controlType">Typ prvku</param>
+        /// <param name="label">Textový popisek</param>
+        /// <param name="propertyName">Název property z datového objektu, na který je buňka navázaná</param>
+        /// <param name="left">Souřadnice Left</param>
+        /// <param name="top">Souřadnice Top</param>
+        /// <param name="width">Šířka</param>
+        /// <param name="height">Výška</param>
+        /// <param name="initializer">Metoda, která inicializuje control</param>
+        /// <param name="validator">Metoda, která validuje zadanou textovou hodnotu</param>
+        public Control AddCell(ControlType controlType, string label, string propertyName, int left, int top, int width, int? height = null, Action<Control> initializer = null, Func<string, string> validator = null)
+        {
+            int x = left;
+            int y = top;
+            return _AddCell(controlType, label, propertyName, ref x, ref y, width, height, initializer, validator);
+        }
+        /// <summary>
+        /// Do this panelu přidá další buňku pro zobrazení dat: label, control, jméno datové property, pozice.
+        /// </summary>
+        /// <param name="controlType">Typ prvku</param>
+        /// <param name="label">Textový popisek</param>
+        /// <param name="propertyName">Název property z datového objektu, na který je buňka navázaná</param>
+        /// <param name="y">ref Souřadnice Y</param>
+        /// <param name="top">Souřadnice Top</param>
+        /// <param name="width">Šířka</param>
+        /// <param name="height">Výška</param>
+        /// <param name="initializer">Metoda, která inicializuje control</param>
+        /// <param name="validator">Metoda, která validuje zadanou textovou hodnotu</param>
+        public Control AddCell(ControlType controlType, string label, string propertyName, ref int x, int top, int width, int? height = null, Action<Control> initializer = null, Func<string, string> validator = null)
+        {
+            int y = top;
+            return _AddCell(controlType, label, propertyName, ref x, ref y, width, height, initializer, validator);
+        }
+        /// <summary>
+        /// Do this panelu přidá další buňku pro zobrazení dat: label, control, jméno datové property, pozice.
+        /// </summary>
+        /// <param name="controlType">Typ prvku</param>
+        /// <param name="label">Textový popisek</param>
+        /// <param name="propertyName">Název property z datového objektu, na který je buňka navázaná</param>
+        /// <param name="left">Souřadnice Left</param>
+        /// <param name="x">ref Souřadnice X</param>
+        /// <param name="width">Šířka</param>
+        /// <param name="height">Výška</param>
+        /// <param name="initializer">Metoda, která inicializuje control</param>
+        /// <param name="validator">Metoda, která validuje zadanou textovou hodnotu</param>
+        public Control AddCell(ControlType controlType, string label, string propertyName, int left, ref int y, int width, int? height = null, Action<Control> initializer = null, Func<string, string> validator = null)
+        {
+            int x = left;
+            return _AddCell(controlType, label, propertyName, ref x, ref y, width, height, initializer, validator);
+        }
+        /// <summary>
+        /// Do this panelu přidá další buňku pro zobrazení dat: label, control, jméno datové property, pozice.
+        /// </summary>
+        /// <param name="controlType">Typ prvku</param>
+        /// <param name="label">Textový popisek</param>
+        /// <param name="propertyName">Název property z datového objektu, na který je buňka navázaná</param>
+        /// <param name="x">Souřadnice X vlastního controlu. Pokud control bude mít samostatný control pro Label, pak bude Label na souřadnici X + 2</param>
+        /// <param name="y">Souřadnice Y vlastního controlu. Pokud control bude mít samostatný control pro Label, pak bude Label na souřadnici Y - <see cref="LabelHeight"/> = 15</param>
         /// <param name="width"></param>
-        public Control AddCell(ControlType controlType, string label, string propertyName, int left, int top, int width, int? height = null, Func<string, string> validator = null)
+        /// <param name="height">Výška</param>
+        /// <param name="initializer">Metoda, která inicializuje control</param>
+        /// <param name="validator">Metoda, která validuje zadanou textovou hodnotu</param>
+        private Control _AddCell(ControlType controlType, string textLabel, string propertyName, ref int x, ref int y, int width, int? height, Action<Control> initializer, Func<string, string> validator)
         {
             Control result = null;
             CellInfo cell = new CellInfo(propertyName, controlType);
             cell.Validator = validator;
             
             // Pokud daný typ controlu použije Label, přidáme jej nyní (tj. pokud je dán text Labelu, a typ controlu je jiný než (Label + CheckBox):
-            if (!String.IsNullOrEmpty(label) && (!(controlType == ControlType.Label || controlType == ControlType.CheckBox)))
+            bool addLabelControl = (!String.IsNullOrEmpty(textLabel) && (!(controlType == ControlType.Label || controlType == ControlType.CheckBox)));
+            if (addLabelControl)
             {
-                cell.LabelControl = ControlSupport.CreateControl(ControlType.Label, label, this);
-                cell.LabelBounds = new Rectangle(left + 2, top - 15, width - 8, 15);
+                cell.LabelControl = ControlSupport.CreateControl(ControlType.Label, textLabel, this);
+                cell.LabelBounds = new Rectangle(x + 2, y - LabelHeight, width - 6, LabelHeight);
                 LayoutContentOne(cell.LabelControl, cell.LabelBounds.Value);
                 result = cell.LabelControl;
             }
@@ -135,19 +191,42 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             // Vlastní control:
             if (controlType != ControlType.None)
             {
-                string text = (controlType == ControlType.Label || controlType == ControlType.CheckBox) ? label : "";
+                string text = (addLabelControl ? "" : textLabel);
                 cell.InputControl = ControlSupport.CreateControl(controlType, text, this);
                 cell.InputControl.Validating += cell.InputControlValidating;
                 if (cell.InputControl != null && height.HasValue) cell.InputControl.Height = height.Value;
-                cell.InputBounds = new Rectangle(left, top, width, cell.InputControl?.Height ?? 20);
+                cell.InputBounds = new Rectangle(x, y, width, cell.InputControl?.Height ?? 20);
                 LayoutContentOne(cell.InputControl, cell.InputBounds.Value);
                 result = cell.InputControl;
+
+                initializer?.Invoke(cell.InputControl);
+
+                // Posunu souřadnice X a Y na konec controlu:
+                x = cell.InputBounds.Value.Right + SpacingX;
+                y = cell.InputBounds.Value.Bottom + SpacingY;
+            }
+            else if (addLabelControl)
+            {   // Pokud nemám vlastní control, ale mám Label, pak posunu X a Y podle velikosti Labelu:
+                x = cell.LabelBounds.Value.Right + SpacingX;
+                y = cell.LabelBounds.Value.Bottom + SpacingY;
             }
 
             __Cells.Add(propertyName, cell);
 
             return result;
         }
+        /// <summary>
+        /// Výška samostatného controlu Label, definuje víceméně vertikální odstup Labelu nad Controlem ve směru Y = svisle
+        /// </summary>
+        public int LabelHeight { get { return __LabelHeight; } set { __LabelHeight = (value < 7 ? 7 : (value > 24 ? 24 : value)); } } private int __LabelHeight = 15;
+        /// <summary>
+        /// Odstup dvou sousedních prvků ve směru X = vodorovně
+        /// </summary>
+        public int SpacingX { get { return __SpacingX; } set { __SpacingX = (value < 0 ? 0 : (value > 24 ? 24 : value)); } } private int __SpacingX = 8;
+        /// <summary>
+        /// Odstup dvou sousedních prvků ve směru Y = svisle
+        /// </summary>
+        public int SpacingY { get { return __SpacingY; } set { __SpacingY = (value < 0 ? 0 : (value > 24 ? 24 : value)); } } private int __SpacingY = 4;
         /// <summary>
         /// Vyhledá vstupní control pro danou property.
         /// </summary>
@@ -321,7 +400,13 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                     mapItem.Item2.SetValue(dataObject, value);
                 }
             }
+
+            this.DataStoreAfter?.Invoke(this, EventArgs.Empty);
         }
+        /// <summary>
+        /// Událost vyvolaná po uložení dat
+        /// </summary>
+        public event EventHandler DataStoreAfter;
         /// <summary>
         /// Metoda vrátí pole obsahující pár informací: Item1 = data o buňce, Item2 = PropertyInfo pro aktuální datový objekt
         /// </summary>

@@ -1413,6 +1413,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             {
                 App.MainForm.StatusLabelApplicationRunText = null;
                 App.MainForm.StatusLabelApplicationRunImage = null;
+
+                App.MainForm.HideByConfig();
             }
         }
         /// <summary>

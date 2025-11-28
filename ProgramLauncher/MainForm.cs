@@ -147,6 +147,15 @@ Help => {App.Messages.HelpInfoHelp}{eol}
         private DToolStrip _ToolStrip;
         private DStatusStrip _StatusStrip;
         /// <summary>
+        /// Skryje okno aplikace (minimalizuje do TaskBaru Windows) po spuštění nějaké další aplikace, pokud je to dáno v konfiguraci.
+        /// </summary>
+        public void HideByConfig()
+        {
+            var isMinimize = App.Settings.MinimizeLauncherAfterAppStart;
+            if (!isMinimize) return;
+            this.WindowState = FormWindowState.Minimized;
+        }
+        /// <summary>
         /// Clean up any resources being used.
         /// </summary>
         /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
