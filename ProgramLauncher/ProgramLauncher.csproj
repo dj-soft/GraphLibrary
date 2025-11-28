@@ -62,7 +62,6 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Components\InteractiveItem.cs" />
-    <Compile Include="Components\WatchTimer.cs" />
     <Compile Include="Data\Application.cs" />
     <Compile Include="Components\BufferedGraphics.cs">
       <SubType>Component</SubType>
