@@ -1519,9 +1519,10 @@ namespace DjSoft.Tools.ProgramLauncher
         public static DataMenuItem CreateHeader(string text) { return new DataMenuItem() { ItemType = MenuItemType.Header, Text = text}; }
 
         public virtual string Text { get; set; }
+        public virtual Image Image { get; set; }
+        public virtual object Code { get; set; }
         public virtual string ToolTip { get; set; }
         public virtual MenuItemType ItemType { get; set; }
-        public virtual Image Image { get; set; }
         public virtual bool Enabled { get; set; }
         public virtual FontStyle? FontStyle { get; set; }
         public virtual object ToolItem { get; set; }
@@ -1538,6 +1539,14 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         string Text { get; }
         /// <summary>
+        /// Image = ikona v menu
+        /// </summary>
+        Image Image { get; }
+        /// <summary>
+        /// Code = hodnota, kterou reprezentuje tento prvek v datech
+        /// </summary>
+        object Code { get; }
+        /// <summary>
         /// Tooltip v menu
         /// </summary>
         string ToolTip { get; }
@@ -1545,10 +1554,6 @@ namespace DjSoft.Tools.ProgramLauncher
         /// Druh položky v menu
         /// </summary>
         MenuItemType ItemType { get; }
-        /// <summary>
-        /// Image = ikona v menu
-        /// </summary>
-        Image Image { get; }
         /// <summary>
         /// Prvek v menu je Enabled?
         /// </summary>

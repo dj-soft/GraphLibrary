@@ -521,9 +521,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         #endregion
         #region Implementace IMenuItem
         string IMenuItem.Text { get { return this.Name; } }
+        Image IMenuItem.Image { get { return this.ImageSmall; } }
+        object IMenuItem.Code { get { return this.Name; } }
         string IMenuItem.ToolTip { get { return null; } }
         MenuItemType IMenuItem.ItemType { get { return MenuItemType.Button; } }
-        Image IMenuItem.Image { get { return this.ImageSmall; } }
         bool IMenuItem.Enabled { get { return true; } }
         FontStyle? IMenuItem.FontStyle { get { return (Object.ReferenceEquals(this, App.CurrentAppearance) ? (FontStyle?)FontStyle.Bold : (FontStyle?)null); } }
         object IMenuItem.ToolItem { get; set; }

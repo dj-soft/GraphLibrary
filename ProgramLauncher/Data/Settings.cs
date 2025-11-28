@@ -105,6 +105,11 @@ namespace DjSoft.Tools.ProgramLauncher
         /// Implicitní jméno souboru - bez adresáře, s příponou.
         /// </summary>
         private const string File = "Settings.dat";
+        /// <summary>
+        /// Hodnota říká, že objekt je již načten z serial dat.<br/>
+        /// V době deserializace je false, neukládá se do serializace, na true se nastaví po dokončení deserializace.
+        /// </summary>
+        private bool __SettingsIsLoaded;
         #endregion
         #region Validate, eventy BeforeSave a AfterLoad a jejich obsluha
         /// <summary>
@@ -113,6 +118,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="fileName"></param>
         private void _RunAfterCreate(string fileName = null)
         {
+            __SettingsIsLoaded = true;
             if (fileName != null) this.__FileName = fileName;
             AfterCreate?.Invoke(this, EventArgs.Empty);
         }
@@ -122,6 +128,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="fileName"></param>
         private void _RunAfterLoad(string fileName = null)
         {
+            __SettingsIsLoaded = true;
             if (fileName != null) this.__FileName = fileName;
             AfterLoad?.Invoke(this, EventArgs.Empty);
         }
@@ -176,13 +183,14 @@ namespace DjSoft.Tools.ProgramLauncher
             var panel = new Components.DataControlPanel();
 
             int x1 = panel.SpacingX;
-            int y0 = panel.SpacingY + panel.LabelHeight;
+            int lh = panel.LabelHeight;
+            int y0 = panel.SpacingY + lh;
             int w1 = 320;
 
             int y = y0;
-            panel.AddCell(Components.ControlType.ComboBox, App.Messages.EditSettingsAppearanceText, nameof(AppearanceName), x1, ref y, w1, initializer: c => initComboItems(c, AppearanceInfo.Collection));
-            panel.AddCell(Components.ControlType.ComboBox, App.Messages.EditSettingsLayoutSetText, nameof(LayoutSetName), x1, ref y, w1, initializer: c => initComboItems(c, LayoutSetInfo.Collection));
-            panel.AddCell(Components.ControlType.ComboBox, App.Messages.EditSettingsLanguageText, nameof(LanguageCode), x1, ref y, w1, initializer: c => initComboItems(c, LanguageSet.Collection));
+            panel.AddCell(Components.ControlType.ComboBox, App.Messages.EditSettingsAppearanceText, nameof(AppearanceName), x1, ref y, w1, initializer: c => initComboItems(c, AppearanceInfo.Collection)); y += lh;
+            panel.AddCell(Components.ControlType.ComboBox, App.Messages.EditSettingsLayoutSetText, nameof(LayoutSetName), x1, ref y, w1, initializer: c => initComboItems(c, LayoutSetInfo.Collection)); y += lh;
+            panel.AddCell(Components.ControlType.ComboBox, App.Messages.EditSettingsLanguageText, nameof(LanguageCode), x1, ref y, w1, initializer: c => initComboItems(c, LanguageSet.Collection)); 
             panel.AddCell(Components.ControlType.CheckBox, App.Messages.EditSettingsMinimizeOnRunText, nameof(MinimizeLauncherAfterAppStart), x1, ref y, w1);
 
             panel.Buttons = new Components.DialogButtonType[] { Components.DialogButtonType.Ok, Components.DialogButtonType.Cancel };
@@ -252,6 +260,9 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         public void SetChanged(string changedProperty)
         {
+            // Pokud dosud není objekt plně načten v procesu deserializace, pak se další akce nesmí provádět... 
+            if (!__SettingsIsLoaded) return;
+
             __IsChanged = true;
 
             _ApplyToApp(changedProperty);

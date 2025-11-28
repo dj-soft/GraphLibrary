@@ -720,7 +720,8 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="propertyName"></param>
         public static void ReloadFromSettings(string propertyName = null) { Current._ReloadFromSettings(propertyName); }
         /// <summary>
-        /// Znovu načte funkční objekty odpovídající nastavení dle Settings do aplikace
+        /// Znovu načte funkční objekty odpovídající nastavení dle Settings do aplikace.
+        /// V objektu Settings jsou názvy vybraných položek (vzhled, layout, jazyk), zde se podle těchto názvů najdou odpovídající objekty (<see cref="AppearanceInfo"/>, <see cref="LayoutSetInfo"/> atd) a nastaví se do App.
         /// </summary>
         /// <param name="propertyName"></param>
         private void _ReloadFromSettings(string propertyName)

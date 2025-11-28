@@ -1206,42 +1206,46 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// Přístup na hodnotu
         /// </summary>
         object IValueStorage.Value { get { return _GetValue(); } set { _SetValue(value); } }
-        private object _GetValue()
-        {
-            var selectedItem = this.SelectedItem;
-            if (selectedItem is null) return null;
-            if (__UseStringValue)
-            {
-                if (selectedItem is IMenuItem menuItem)
-                    return menuItem.Text;
-                return selectedItem.ToString();
-            }
-            else
-            {
-                return selectedItem;
-            }
-        }
+        /// <summary>
+        /// Setování hodnoty do ComboBoxu: vyhledá odpovídající Item, a přitom určí, podle čeho byl nalezen (podle objektu nebo podle textu nebo Code hodnoty). 
+        /// Tento údaj si poté uloží do <see cref="__ValueSource"/>, a pozdějí jej použije při čtení hodnoty v <see cref="_GetValue()"/>.
+        /// </summary>
+        /// <param name="value"></param>
         private void _SetValue(object value)
         {
             if (value is null)
-            {
+            {   // Setování hodnoty null nezmění druh hodnoty v __ValueSource:
                 this.SelectedItem = null;
                 return;
             }
+
             var itemsArray = this.Items.OfType<object>().ToArray();
             if (itemsArray.TryFindFirst(i => Object.Equals(i, value), out var currentItem))
             {   // Nalezen náš prvek s pomocí nativního Equals:
                 this.SelectedItem = currentItem;
-                this.__UseStringValue = false;
+                this.__ValueSource = ValueSourceType.Object;
+                return;
+            }
+            if (itemsArray.TryFindFirst(i => isEqualCode(i, value), out var currentCodeItem))
+            {   // Najdeme prvek IMenuItem se shodnou Code hodnotou?
+                this.SelectedItem = currentCodeItem;
+                this.__ValueSource = ValueSourceType.Code;
                 return;
             }
             if (value is string text && (itemsArray.TryFindFirst(i => isEqualText(i, text), out var currentTextItem)))
             {   // Nalezen náš prvek s pomocí textu s pomocí IMenuItem.Text nebo ToString():
                 this.SelectedItem = currentTextItem;
-                this.__UseStringValue = true;
+                this.__ValueSource = ValueSourceType.Text;
                 return;
             }
 
+            // Vrátí true, pokud daný prvek je IMenuItem a jeho Code je rovna dané hodnotě
+            bool isEqualCode(object item, object searchCode)
+            {
+                if (item is IMenuItem menuItem)
+                    return Object.Equals(menuItem.Code, searchCode);
+                return false;
+            }
             // Vrátí true, pokud text daného prvku je roven hledanému textu
             bool isEqualText(object item, string searchText)
             {
@@ -1250,7 +1254,44 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 return String.Equals(item?.ToString(), text, StringComparison.CurrentCulture);
             }
         }
-        private bool __UseStringValue;
+        /// <summary>
+        /// Vrátí odpovídající hodnotu z aktuálního SelectedItem z ComboBoxu podle toho, jaký druh hodnoty byl nastaven v <see cref="__ValueSource"/>.
+        /// </summary>
+        /// <returns></returns>
+        private object _GetValue()
+        {
+            var selectedItem = this.SelectedItem;
+            if (selectedItem is null) return null;
+
+            switch (__ValueSource)
+            {
+                case ValueSourceType.Object:
+                    return selectedItem;
+                case ValueSourceType.Code:
+                    if (selectedItem is IMenuItem menuItemCode)
+                        return menuItemCode.Code;
+                    return null;
+                case ValueSourceType.Text:
+                    if (selectedItem is IMenuItem menuItemText)
+                        return menuItemText.Text;
+                    else
+                        return selectedItem.ToString();
+            }
+            return null;
+        }
+        /// <summary>
+        /// Jaký druh údaje byl setován a rozpoznán v SelectedItem ?
+        /// </summary>
+        private ValueSourceType __ValueSource = ValueSourceType.Object;
+        /// <summary>
+        /// Možné druhy rozpoznání zdrojové hodnoty
+        /// </summary>
+        private enum ValueSourceType
+        {
+            Object = 0,
+            Text,
+            Code
+        }
         #endregion
     }
     #endregion
