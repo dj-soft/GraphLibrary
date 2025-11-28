@@ -201,8 +201,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         object IMenuItem.UserData { get; set; }
         void IMenuItem.Process()
         {
-            App.CurrentLayoutSet = this;
-            App.Settings.LayoutSetName = this.Name;
+            App.Settings.LayoutSetName = this.Name;                  // Tato property zajistí i aktivaci this objektu do App objektu, není tedy třeba explicitně provádět: { App.CurrentLayoutSet = this; }
         }
         #endregion
     }

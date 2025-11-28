@@ -422,7 +422,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <summary>
         /// Vrátí položky do menu, které definují varianty ToolTipu
         /// </summary>
-        public static IEnumerable<IMenuItem> ToolTipMenuItems
+        public static IMenuItem[] ToolTipMenuItems
         {
             get
             {
@@ -432,7 +432,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 menuItems.Add(createMenuItem(App.Messages.ToolTipTypeDefaultText, ToolTipType.Default));
                 menuItems.Add(createMenuItem(App.Messages.ToolTipTypeFastText, ToolTipType.Fast));
                 menuItems.Add(createMenuItem(App.Messages.ToolTipTypeSlowText, ToolTipType.Slow));
-                return menuItems;
+                return menuItems.ToArray();
 
                 IMenuItem createMenuItem(string text, ToolTipType tipType)
                 {
@@ -440,6 +440,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                     {
                         Text = text,
                         ToolTipType = tipType,
+                        Code = tipType,
                         FontStyle = (toolTipType == tipType ? FontStyle.Bold : FontStyle.Regular)
                     };
                     return menuItem;
@@ -755,9 +756,9 @@ namespace DjSoft.Tools.ProgramLauncher.Components
 
 namespace DjSoft.Tools.ProgramLauncher
 {
+    #region Část Settings, která ukládá a načítá pozici a stav formulářů, a nastavení Tooltipů
     partial class Settings
     {
-        #region Část Settings, která ukládá a načítá pozici a stav formulářů
         /// <summary>
         /// Uloží dodanou pozici formuláře do Settings pro aktuální / obecnou konfiguraci monitorů.<br/>
         /// Dodanou pozici <paramref name="positionData"/> uloží pod daným jménem <paramref name="settingsName"/>, 
@@ -837,7 +838,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// Druh tooltipu
         /// </summary>
         [PropertyName("tooltips")]
-        public ToolTipType CurrentToolTip { get { return __CurrentToolTip; } set { __CurrentToolTip = value; SetChanged(nameof(CurrentToolTip)); } } private ToolTipType __CurrentToolTip;
+        public ToolTipType CurrentToolTip { get { return __CurrentToolTip; } set { __CurrentToolTip = value; SetChanged(); } } private ToolTipType __CurrentToolTip;
         /// <summary>
         /// Druh zobrazení ToolTipu
         /// </summary>
@@ -848,11 +849,6 @@ namespace DjSoft.Tools.ProgramLauncher
             Fast,
             Slow
         }
-        /// <summary>
-        /// Viditelnost stránky "Hesla"
-        /// </summary>
-        [PropertyName("passwordpagevisible")]
-        public bool PasswordPageVisible { get { return __PasswordPageVisible; } set { __PasswordPageVisible = value; SetChanged(nameof(PasswordPageVisible)); } } private bool __PasswordPageVisible;
-        #endregion
     }
+    #endregion
 }

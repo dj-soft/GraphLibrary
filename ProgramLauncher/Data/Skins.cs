@@ -531,8 +531,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         object IMenuItem.UserData { get; set; }
         void IMenuItem.Process()
         {
-            App.CurrentAppearance = this;
-            App.Settings.AppearanceName = this.Name;
+            App.Settings.AppearanceName = this.Name;                 // Tato property zajistí i aktivaci this objektu do App objektu, není tedy třeba explicitně provádět: { App.CurrentAppearance = this; }
         }
         #endregion
     }

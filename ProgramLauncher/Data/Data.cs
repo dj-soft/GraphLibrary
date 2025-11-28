@@ -282,7 +282,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
 
             if (isEdited)
             {
-                App.Settings.SetChanged("PageSet");
+                App.Settings.SetChanged(nameof(Settings.PageSet));
                 App.UndoRedo.Add(pageSetClone);
             }
         }
@@ -331,7 +331,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
 
             if (isEdited)
             {
-                App.Settings.SetChanged("PageSet");
+                App.Settings.SetChanged(nameof(Settings.PageSet));
                 App.UndoRedo.Add(pageSetClone);
             }
         }
@@ -413,7 +413,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
 
             if (isEdited)
             {
-                App.Settings.SetChanged("PageSet");
+                App.Settings.SetChanged(nameof(Settings.PageSet));
                 App.UndoRedo.Add(pageSetClone);
             }
         }
@@ -2230,7 +2230,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// Setování vyvolá event <see cref="Changed"/>, ale nezapisuje se do UndoRedo containeru.
         /// </summary>
         [PersistingEnabled(false)]
-        public PageSetData PageSet { get { return _GetPageSet(); } set { _PageSet = value; App.Settings.SetChanged("PageSet"); } }
+        public PageSetData PageSet { get { return _GetPageSet(); } set { _PageSet = value; App.Settings.SetChanged(); } }
         /// <summary>
         /// Vrátí data sady stránek. Zajistí jejich případnou tvorbu a naplnění.
         /// </summary>

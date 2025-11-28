@@ -1201,6 +1201,26 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             e.DrawFocusRectangle();
         }
         #endregion
+        #region IMenuItems
+        /// <summary>
+        /// Položky comboboxu typované jako <see cref="IMenuItem"/>
+        /// </summary>
+        public IMenuItem[] MenuItems 
+        {
+            get { return this.Items.OfType<IMenuItem>().ToArray(); }
+            set
+            {
+                this.Items.Clear();
+                if (value != null)
+                    this.Items.AddRange(value);
+                this.SelectedItem = null;
+            }
+        }
+        /// <summary>
+        /// Aktivní prvek comboboxu typovaný jako <see cref="IMenuItem"/>
+        /// </summary>
+        public IMenuItem SelectedMenuItem { get { return this.SelectedItem as IMenuItem; } set { this.SelectedItem = value; } }
+        #endregion
         #region IValueStorage
         /// <summary>
         /// Přístup na hodnotu

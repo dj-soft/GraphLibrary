@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Management;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -188,9 +189,11 @@ namespace DjSoft.Tools.ProgramLauncher
             int w1 = 320;
 
             int y = y0;
+            panel.AddCell(Components.ControlType.ComboBox, App.Messages.EditSettingsLanguageText, nameof(LanguageCode), x1, ref y, w1, initializer: c => initComboItems(c, LanguageSet.Collection)); y += lh;
             panel.AddCell(Components.ControlType.ComboBox, App.Messages.EditSettingsAppearanceText, nameof(AppearanceName), x1, ref y, w1, initializer: c => initComboItems(c, AppearanceInfo.Collection)); y += lh;
             panel.AddCell(Components.ControlType.ComboBox, App.Messages.EditSettingsLayoutSetText, nameof(LayoutSetName), x1, ref y, w1, initializer: c => initComboItems(c, LayoutSetInfo.Collection)); y += lh;
-            panel.AddCell(Components.ControlType.ComboBox, App.Messages.EditSettingsLanguageText, nameof(LanguageCode), x1, ref y, w1, initializer: c => initComboItems(c, LanguageSet.Collection)); 
+            panel.AddCell(Components.ControlType.ComboBox, App.Messages.EditSettingsToolTipText, nameof(CurrentToolTip), x1, ref y, w1, initializer: c => initComboItems(c, BaseForm.ToolTipMenuItems)); y += lh;
+            panel.AddCell(Components.ControlType.ComboBox, App.Messages.EditSettingsPasswordsText, nameof(PasswordPageMode), x1, ref y, w1, initializer: c => initComboItems(c, Passwords.MenuActions));
             panel.AddCell(Components.ControlType.CheckBox, App.Messages.EditSettingsMinimizeOnRunText, nameof(MinimizeLauncherAfterAppStart), x1, ref y, w1);
 
             panel.Buttons = new Components.DialogButtonType[] { Components.DialogButtonType.Ok, Components.DialogButtonType.Cancel };
@@ -201,14 +204,10 @@ namespace DjSoft.Tools.ProgramLauncher
             return panel;
 
             // Do daného prvku, pokud je to 
-            void initComboItems(Control control, object[] items)
+            void initComboItems(Control control, IMenuItem[] items)
             {
-                if (control is DComboBox comboBox)
-                {
-                    comboBox.DropDownStyle = ComboBoxStyle.DropDownList;
-                    comboBox.Items.Clear();
-                    comboBox.Items.AddRange(items);
-                }
+                if (control is DComboBox dComboBox)
+                    dComboBox.MenuItems = items;
             }
         }
         #endregion
@@ -258,7 +257,7 @@ namespace DjSoft.Tools.ProgramLauncher
         /// Nastaví příznak <see cref="IsChanged"/> = true a zahájí odpočet času do provedení AutoSave.
         /// Vyvolá event <see cref="Changed"/>.
         /// </summary>
-        public void SetChanged(string changedProperty)
+        public void SetChanged([CallerMemberName] string changedProperty = null)
         {
             // Pokud dosud není objekt plně načten v procesu deserializace, pak se další akce nesmí provádět... 
             if (!__SettingsIsLoaded) return;
@@ -314,21 +313,21 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <summary>
         /// Název vzhledu = barvy
         /// </summary>
-        public string AppearanceName { get { return __AppearanceName; } set { __AppearanceName = value; SetChanged(nameof(AppearanceName)); } } private string __AppearanceName;
+        public string AppearanceName { get { return __AppearanceName; } set { __AppearanceName = value; SetChanged(); } } private string __AppearanceName;
         /// <summary>
         /// Název rozložení = velikosti
         /// </summary>
-        public string LayoutSetName { get { return __LayoutSetName; } set { __LayoutSetName = value; SetChanged(nameof(LayoutSetName)); } } private string __LayoutSetName;
+        public string LayoutSetName { get { return __LayoutSetName; } set { __LayoutSetName = value; SetChanged(); } } private string __LayoutSetName;
         /// <summary>
         /// Název jazyka
         /// </summary>
-        public string LanguageCode { get { return __LanguageCode; } set { __LanguageCode = value; SetChanged(nameof(LanguageCode)); } } private string __LanguageCode;
+        public string LanguageCode { get { return __LanguageCode; } set { __LanguageCode = value; SetChanged(); } } private string __LanguageCode;
         /// <summary>
         /// Minimalizovat Launcher po spuštění aplikace
         /// </summary>
-        public bool MinimizeLauncherAfterAppStart { get { return __MinimizeLauncherAfterAppStart; } set { __MinimizeLauncherAfterAppStart = value; SetChanged(nameof(MinimizeLauncherAfterAppStart)); } } private bool __MinimizeLauncherAfterAppStart;
+        public bool MinimizeLauncherAfterAppStart { get { return __MinimizeLauncherAfterAppStart; } set { __MinimizeLauncherAfterAppStart = value; SetChanged(); } } private bool __MinimizeLauncherAfterAppStart;
 
-        public bool TrayInfoIsAccepted { get { return __TrayInfoIsAccepted; } set { __TrayInfoIsAccepted = value; SetChanged(nameof(TrayInfoIsAccepted)); } } private bool __TrayInfoIsAccepted;
+        public bool TrayInfoIsAccepted { get { return __TrayInfoIsAccepted; } set { __TrayInfoIsAccepted = value; SetChanged(); } } private bool __TrayInfoIsAccepted;
 
         /// <summary>
         /// Po změně zdejší property daného jména (ta už byla setována) provede uložení odpovídajícího objektu do App.

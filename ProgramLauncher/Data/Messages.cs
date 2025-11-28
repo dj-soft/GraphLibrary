@@ -341,9 +341,11 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public string EditDataOnlyOneInstanceText { get { return _GetText("Jen jeden proces"); } }
         public string EditDataOpenMaximizedText { get { return _GetText("Maximalizované okno"); } }
 
+        public string EditSettingsLanguageText { get { return _GetText("Jazyk"); } }
         public string EditSettingsAppearanceText { get { return _GetText("Barevná paleta"); } }
         public string EditSettingsLayoutSetText { get { return _GetText("Velikost a rozložení"); } }
-        public string EditSettingsLanguageText { get { return _GetText("Jazyk"); } }
+        public string EditSettingsToolTipText { get { return _GetText("Způsob zobrazení tooltipu"); } }
+        public string EditSettingsPasswordsText { get { return _GetText("Zobrazovat seznam s hesly"); } }
         public string EditSettingsMinimizeOnRunText { get { return _GetText("Minimalizovat Launcher po spuštění aplikace"); } }
 
         public string ExecutableFileIsNotSpecified { get { return _GetText("Aplikaci nelze spustit, není zadán její soubor."); } }
@@ -759,8 +761,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         object IMenuItem.UserData { get; set; }
         void IMenuItem.Process()
         {
-            App.CurrentLanguage = this;
-            App.Settings.LanguageCode = this.Code;
+            App.Settings.LanguageCode = this.Code;                   // Tato property zajistí i aktivaci this objektu do App objektu, není tedy třeba explicitně provádět: { App.CurrentLanguage = this; }
         }
         #endregion
     }
