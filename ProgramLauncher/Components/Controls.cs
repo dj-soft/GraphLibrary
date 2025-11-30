@@ -1259,6 +1259,22 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 return;
             }
 
+            // Nenašli jsme zadanou hodnotu, tak využijeme zadaný typ k odvození ValueSource:
+            this.SelectedItem = null;
+            if (value is IMenuItem || itemsArray.Any(i => i is IMenuItem))
+            {
+                this.__ValueSource = ValueSourceType.Code;
+                return;
+            }
+            if (value is string || itemsArray.Any(i => i is string))
+            {
+                this.__ValueSource = ValueSourceType.Text;
+                return;
+            }
+            this.__ValueSource = ValueSourceType.Object;
+            return;
+
+
             // Vrátí true, pokud daný prvek je IMenuItem a jeho Code je rovna dané hodnotě
             bool isEqualCode(object item, object searchCode)
             {

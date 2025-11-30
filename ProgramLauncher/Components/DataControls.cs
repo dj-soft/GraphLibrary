@@ -364,7 +364,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
             }
         }
         #endregion
-        #region Datový objekt, načtení a uložení dat
+        #region Datový objekt - načtení dat z datového objektu přes definici buněk do vizuálních controlů, a zpětné uložení z controlů do datového objektu
         /// <summary>
         /// Datový objekt obsahující data
         /// </summary>
@@ -441,7 +441,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         protected enum PropertyMode { None, Read, Write, Both }
         /// <summary>
-        /// Metoda vloží dodanou hodnotu (načtenou z datového objektu) do daného vizuálního controlu
+        /// Metoda vloží dodanou jednu hodnotu (načtenou z property datového objektu) do daného vizuálního controlu
         /// </summary>
         /// <param name="inputType"></param>
         /// <param name="inputControl"></param>
@@ -454,7 +454,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                 inputControl.Text = Conversion.ToString(value);
         }
         /// <summary>
-        /// Metoda načte hodnotu zadanou do daného vizuálního controlu a vrátí ji konvertovanou do cílového datového typu
+        /// Metoda načte hodnotu vepsanou v daném vizuálním controlu a vrátí ji konvertovanou do cílového datového typu
         /// </summary>
         /// <param name="inputType"></param>
         /// <param name="inputControl"></param>

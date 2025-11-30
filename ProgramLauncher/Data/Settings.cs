@@ -189,11 +189,14 @@ namespace DjSoft.Tools.ProgramLauncher
             int w1 = 320;
 
             int y = y0;
+
             panel.AddCell(Components.ControlType.ComboBox, App.Messages.EditSettingsLanguageText, nameof(LanguageCode), x1, ref y, w1, initializer: c => initComboItems(c, LanguageSet.Collection)); y += lh;
             panel.AddCell(Components.ControlType.ComboBox, App.Messages.EditSettingsAppearanceText, nameof(AppearanceName), x1, ref y, w1, initializer: c => initComboItems(c, AppearanceInfo.Collection)); y += lh;
             panel.AddCell(Components.ControlType.ComboBox, App.Messages.EditSettingsLayoutSetText, nameof(LayoutSetName), x1, ref y, w1, initializer: c => initComboItems(c, LayoutSetInfo.Collection)); y += lh;
             panel.AddCell(Components.ControlType.ComboBox, App.Messages.EditSettingsToolTipText, nameof(CurrentToolTip), x1, ref y, w1, initializer: c => initComboItems(c, BaseForm.ToolTipMenuItems)); y += lh;
-            panel.AddCell(Components.ControlType.ComboBox, App.Messages.EditSettingsPasswordsText, nameof(PasswordPageMode), x1, ref y, w1, initializer: c => initComboItems(c, Passwords.MenuActions));
+            panel.AddCell(Components.ControlType.ComboBox, App.Messages.EditSettingsPasswordsText, nameof(PasswordPageMode), x1, ref y, w1, initializer: c => initComboItems(c, Passwords.MenuActions)); y += lh;
+
+            y -= lh;
             panel.AddCell(Components.ControlType.CheckBox, App.Messages.EditSettingsMinimizeOnRunText, nameof(MinimizeLauncherAfterAppStart), x1, ref y, w1);
 
             panel.Buttons = new Components.DialogButtonType[] { Components.DialogButtonType.Ok, Components.DialogButtonType.Cancel };
