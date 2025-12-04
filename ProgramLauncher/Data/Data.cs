@@ -1413,8 +1413,6 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             {
                 App.MainForm.StatusLabelApplicationRunText = null;
                 App.MainForm.StatusLabelApplicationRunImage = null;
-
-                App.MainForm.HideByConfig();
             }
         }
         /// <summary>
@@ -1510,6 +1508,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <param name="executeInAdminMode"></param>
         private void _RunNewProcess(bool? executeInAdminMode)
         {
+            App.MainForm.HideByConfig();
+
             System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo()
             {
                 FileName = _CurrentFileName,

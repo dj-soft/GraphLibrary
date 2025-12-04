@@ -1233,6 +1233,8 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="value"></param>
         private void _SetValue(object value)
         {
+            __Value = value;
+
             if (value is null)
             {   // Setování hodnoty null nezmění druh hodnoty v __ValueSource:
                 this.SelectedItem = null;
@@ -1313,8 +1315,13 @@ namespace DjSoft.Tools.ProgramLauncher.Components
                     else
                         return selectedItem.ToString();
             }
+
             return null;
         }
+        /// <summary>
+        /// Naposledy setovaná hodnota. Poslouží v případě, kdy nebyla nalezena v Items, ale při Get metodě v SelectedItem je něco obsaženo. Pak poslouží jako etalon typu.
+        /// </summary>
+        private object __Value;
         /// <summary>
         /// Jaký druh údaje byl setován a rozpoznán v SelectedItem ?
         /// </summary>
