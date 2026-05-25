@@ -354,7 +354,6 @@ namespace TestDevExpress.Forms
         private DxListBoxPanel _Sample3ListA;
         private DxListBoxPanel _Sample3ListB;
         #endregion
-
         #region Sample 11
         /// <summary>
         /// Metoda je volaná reflexí v <see cref="DxMainContentPrepare"/> na základě atributu [Initializer()] !!!
