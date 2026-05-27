@@ -12,12 +12,491 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using DevExpress.Utils;
+using DevExpress.XtraBars.Alerter;
 using DevExpress.XtraEditors;
 using DevExpress.XtraEditors.Controls;
 using DevExpress.XtraEditors.TableLayout;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
+    #region class DxDblListBoxPanel : Panel obsahující dva panely s nativní obsluhou přenášení položek listů
+    /// <summary>
+    /// <see cref="DxDblListBoxPanel"/> : Panel obsahující dva panely s nativní obsluhou přenášení položek listů ze Source do Target
+    /// </summary>
+    public class DxDblListBoxPanel : DxSplitContainerControl
+    {
+        #region Konstruktor, tvorba, privátní proměnné, layout celkový
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxDblListBoxPanel()
+        {
+            this.Initialize();
+        }
+        /// <summary>
+        /// Inicializace komponent a hodnot
+        /// </summary>
+        private void Initialize()
+        {
+            this.SplitterOrientation = Orientation.Horizontal;
+            this.FixedPanel = SplitFixedPanel.Panel1;
+            this.SplitterPosition = 300;
+
+            var listPanelSource = new DxListBoxPanel();
+            listPanelSource.Dock = DockStyle.Fill;
+            this.Panel1.Controls.Add(listPanelSource);
+            this.Panel1.MinSize = 120;
+            __SourceListPanel = listPanelSource;
+
+            var listPanelTarget = new DxListBoxPanel();
+            listPanelTarget.Dock = DockStyle.Fill;
+            this.Panel2.Controls.Add(listPanelTarget);
+            this.Panel2.MinSize = 120;
+            __TargetListPanel = listPanelTarget;
+
+            _InitProperties();
+        }
+        /// <summary>
+        /// Dispose panelu
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            try
+            {
+                __SourceListPanel?.Dispose();
+                __TargetListPanel?.Dispose();
+            }
+            catch { /* Chyby v Dispose občas nastanou v DevExpress, který něco likviduje v GC threadu a nemá přístup do GUI. */ }
+        }
+        /// <summary>
+        /// Instance ListBoxPanelu pro levý = Source
+        /// </summary>
+        private DxListBoxPanel __SourceListPanel;
+        /// <summary>
+        /// Instance ListBoxPanelu pro levý = Source
+        /// </summary>
+        private DxListBoxPanel __TargetListPanel;
+        #endregion
+        #region Definice vzhledu a chování - základní
+        /// <summary>
+        /// Inicializace vlastností
+        /// </summary>
+        private void _InitProperties()
+        {
+            // Základní vlastnosti:
+            SourceDuplicityEnabled = true;
+            SourceSelectionMode = SelectionMode.MultiExtended;
+
+            TargetDuplicityEnabled = true;
+            TargetSelectionMode = SelectionMode.MultiExtended;
+
+            // DoubleListBox vlastnosti:
+            __ButtonsPosition = ButtonsPositionType.Center;
+            __SourceListReadOnly = true;
+            __ClipboardActionsEnabled = true;
+            __ReorderItemsEnabled = true;
+            _AcceptSourceListStyles();
+            _AcceptTargetListStyles();
+
+            // Eventy:
+            this.__SourceListPanel.ListActionBefore += __SourceListPanel_ListActionBefore;
+            this.__TargetListPanel.ListActionAfter += __TargetListPanel_ListActionAfter;
+        }
+
+        private void __SourceListPanel_ListActionBefore(object sender, DxListBoxActionCancelEventArgs e)
+        {
+            switch (e.Action)
+            {
+                case ControlKeyActionType.CopyToRightOne:
+                    insertItemsToTarget(SourceSelectedMenuItems);
+                    break;
+                case ControlKeyActionType.CopyToRightAll:
+                    insertItemsToTarget(SourceMenuItems);
+                    break;
+            }
+
+            // Dané prvky umístí do Listu Target
+            void insertItemsToTarget(IMenuItem[] menuItems)
+            {
+                if (menuItems != null && menuItems.Length > 0)
+                    TargetListBox.InsertItems(menuItems, true, true);
+            }
+        }
+        private void __TargetListPanel_ListActionAfter(object sender, DxListBoxActionEventArgs e)
+        {
+        }
+
+        /// <summary>
+        /// Instance ListBoxPanelu pro levý = Source panel
+        /// </summary>
+        public DxListBoxPanel SourceListPanel { get { return __SourceListPanel; } }
+        /// <summary>
+        /// Instance ListBox Controlu pro levý = Source panel
+        /// </summary>
+        public DxListBoxControl SourceListBox { get { return __SourceListPanel.ListBox; } }
+        /// <summary>
+        /// Pokud obsahuje true, pak List vlevo = Source smí obsahovat duplicitní klíče (defaultní hodnota je true).
+        /// Pokud je false, pak vložení dalšího záznamu s klíčem, který už v Listu je, bude ignorováno.
+        /// Pozor, pokud List obsahuje nějaké duplicitní záznamy a poté bude nastaveno <see cref="SourceDuplicityEnabled"/> na false, NEBUDOU duplicitní záznamy odstraněny.
+        /// </summary>
+        public bool SourceDuplicityEnabled { get { return __SourceListPanel.DuplicityEnabled; } set { __SourceListPanel.DuplicityEnabled = value; } }
+        /// <summary>
+        /// Režim označování prvků, pro List vlevo = Source.
+        /// </summary>
+        public SelectionMode SourceSelectionMode { get { return __SourceListPanel.SelectionMode; } set { __SourceListPanel.SelectionMode = value; } }
+        /// <summary>
+        /// Umístění tlačítek, pro List vlevo = Source.
+        /// </summary>
+        public ToolbarPosition SourceButtonsPosition { get { return __SourceListPanel.ButtonsPosition; } set { __SourceListPanel.ButtonsPosition = value; __ButtonsPosition = ButtonsPositionType.Custom; } }
+        /// <summary>
+        /// Typy dostupných tlačítek, pro List vlevo = Source.
+        /// <para/>
+        /// Nadeklarujme zde jednotlivá tlačítka v požadovaném pořadí.
+        /// Pokud bude definice obsahovat vícekrát jedno stejné tlačítko, bude fyzicky přidáno pouze jedenkrát, poprvé.
+        /// <para/>
+        /// Pokud jeden prvek v tomto poli bude obsahovat více hodnot (jde o Flags), budou jednotlivé buttony přidány postupně v jejich nativním pořadí.
+        /// </summary>
+        public ControlKeyActionType[] SourceButtonsTypes { get { return __SourceListPanel.ButtonsTypes; } set { __SourceListPanel.ButtonsTypes = value; } }
+        /// <summary>
+        /// Povolené akce dané klávesami v ListBoxu, pro List vlevo = Source.
+        /// Výchozí je <see cref="ControlKeyActionType.None"/>
+        /// </summary>
+        public ControlKeyActionType SourceEnabledKeyActions { get { return __SourceListPanel.EnabledKeyActions; } set { __SourceListPanel.EnabledKeyActions = value; } }
+        /// <summary>
+        /// Souhrn povolených akcí Drag and Drop, pro List vlevo = Source.
+        /// </summary>
+        public DxDragDropActionType SourceDragDropActions { get { return __SourceListPanel.DragDropActions; } set { __SourceListPanel.DragDropActions = value; } }
+        /// <summary>
+        /// Varianta řádkového filtru. Default = None
+        /// </summary>
+        public DxListBoxPanel.FilterRowMode SourceRowFilterMode { get { return __SourceListPanel.RowFilterMode; } set { __SourceListPanel.RowFilterMode = value; } }
+     
+        /// <summary>
+        /// Instance ListBoxPanelu pro levý = Target panel
+        /// </summary>
+        public DxListBoxPanel TargetListPanel { get { return __TargetListPanel; } }
+        /// <summary>
+        /// Instance ListBox Controlu pro levý = Target panel
+        /// </summary>
+        public DxListBoxControl TargetListBox { get { return __TargetListPanel.ListBox; } }
+        /// <summary>
+        /// Pokud obsahuje true, pak zdrojový List vpravo = Target smí obsahovat duplicitní klíče (defaultní hodnota je true).
+        /// Pokud je false, pak vložení dalšího záznamu s klíčem, který už v Listu je, bude ignorováno.
+        /// Pozor, pokud List obsahuje nějaké duplicitní záznamy a poté bude nastaveno <see cref="TargetDuplicityEnabled"/> na false, NEBUDOU duplicitní záznamy odstraněny.
+        /// </summary>
+        public bool TargetDuplicityEnabled { get { return __TargetListPanel.DuplicityEnabled; } set { __TargetListPanel.DuplicityEnabled = value; } }
+        /// <summary>
+        /// Režim označování prvků, pro List vpravo = Target.
+        /// </summary>
+        public SelectionMode TargetSelectionMode { get { return __TargetListPanel.SelectionMode; } set { __TargetListPanel.SelectionMode = value; } }
+        /// <summary>
+        /// Umístění tlačítek, pro List vpravo = Target.
+        /// </summary>
+        public ToolbarPosition TargetButtonsPosition { get { return __TargetListPanel.ButtonsPosition; } set { __TargetListPanel.ButtonsPosition = value; __ButtonsPosition = ButtonsPositionType.Custom; } }
+        /// <summary>
+        /// Typy dostupných tlačítek, pro List vpravo = Target.
+        /// <para/>
+        /// Nadeklarujme zde jednotlivá tlačítka v požadovaném pořadí.
+        /// Pokud bude definice obsahovat vícekrát jedno stejné tlačítko, bude fyzicky přidáno pouze jedenkrát, poprvé.
+        /// <para/>
+        /// Pokud jeden prvek v tomto poli bude obsahovat více hodnot (jde o Flags), budou jednotlivé buttony přidány postupně v jejich nativním pořadí.
+        /// </summary>
+        public ControlKeyActionType[] TargetButtonsTypes { get { return __TargetListPanel.ButtonsTypes; } set { __TargetListPanel.ButtonsTypes = value; } }
+        /// <summary>
+        /// Povolené akce dané klávesami v ListBoxu, pro List vpravo = Target.
+        /// Výchozí je <see cref="ControlKeyActionType.None"/>
+        /// </summary>
+        public ControlKeyActionType TargetEnabledKeyActions { get { return __TargetListPanel.EnabledKeyActions; } set { __TargetListPanel.EnabledKeyActions = value; } }
+        /// <summary>
+        /// Souhrn povolených akcí Drag and Drop, pro List vpravo = Target.
+        /// </summary>
+        public DxDragDropActionType TargetDragDropActions { get { return __TargetListPanel.DragDropActions; } set { __TargetListPanel.DragDropActions = value; } }
+        /// <summary>
+        /// Varianta řádkového filtru. Default = None
+        /// </summary>
+        public DxListBoxPanel.FilterRowMode TargetRowFilterMode { get { return __TargetListPanel.RowFilterMode; } set { __TargetListPanel.RowFilterMode = value; } }
+        #endregion
+        #region Definice vzhledu a chování - propojené pro oba ListBoxy
+        /// <summary>
+        /// Umístění buttonů v rámci <see cref="DxDblListBoxPanel"/>.
+        /// </summary>
+        public ButtonsPositionType ButtonsPosition { get { return __ButtonsPosition; } set { _SetButtonsPosition(value); } } private ButtonsPositionType __ButtonsPosition;
+        /// <summary>
+        /// Akceptuje hodnotu do <see cref="ButtonsPosition"/>
+        /// </summary>
+        /// <param name="position"></param>
+        private void _SetButtonsPosition(ButtonsPositionType position)
+        {
+            switch (position)
+            {
+                case ButtonsPositionType.None:
+                    __SourceListPanel.ButtonsPosition = ToolbarPosition.None;
+                    __TargetListPanel.ButtonsPosition = ToolbarPosition.None;
+                    break;
+                case ButtonsPositionType.Bottom:
+                    __SourceListPanel.ButtonsPosition = ToolbarPosition.BottomSideCenter;
+                    __TargetListPanel.ButtonsPosition = ToolbarPosition.BottomSideCenter;
+                    break;
+                case ButtonsPositionType.Center:
+                    __SourceListPanel.ButtonsPosition = ToolbarPosition.RightSideCenter;
+                    __TargetListPanel.ButtonsPosition = ToolbarPosition.LeftSideCenter;
+                    break;
+                case ButtonsPositionType.Right:
+                    __SourceListPanel.ButtonsPosition = ToolbarPosition.RightSideCenter;
+                    __TargetListPanel.ButtonsPosition = ToolbarPosition.RightSideCenter;
+                    break;
+
+            }
+            __ButtonsPosition = position;
+        }
+        /// <summary>
+        /// Source List (vlevo) je ReadOnly? Pak nemá povoleno Delete, Reorder a pro Clipboard nemá povoleno Cut ani Paste
+        /// </summary>
+        public bool SourceListReadOnly { get { return __SourceListReadOnly; } set { _SetSourceListReadOnly(value); } } private bool __SourceListReadOnly;
+        /// <summary>
+        /// Akceptuje hodnotu do <see cref="SourceListReadOnly"/>
+        /// </summary>
+        /// <param name="sourceListReadOnly"></param>
+        /// <returns></returns>
+        private void _SetSourceListReadOnly(bool sourceListReadOnly)
+        {
+            __SourceListReadOnly = sourceListReadOnly;
+            _AcceptSourceListStyles();
+        }
+        /// <summary>
+        /// Jsou povoleny akce přenesení prvků pomocí Clipboardu?
+        /// </summary>
+        public bool ClipboardActionsEnabled { get { return __ClipboardActionsEnabled; } set { _SetClipboardActionsEnabled(value); } } private bool __ClipboardActionsEnabled;
+        /// <summary>
+        /// Akceptuje hodnotu do <see cref="ClipboardActionsEnabled"/>
+        /// </summary>
+        /// <param name="clipboardActionsEnabled"></param>
+        /// <returns></returns>
+        private void _SetClipboardActionsEnabled(bool clipboardActionsEnabled)
+        {
+            __ClipboardActionsEnabled = clipboardActionsEnabled;
+            _AcceptSourceListStyles();
+            _AcceptTargetListStyles();
+        }
+        /// <summary>
+        /// Jsou povoleny akce změny pořadí prvků?
+        /// </summary>
+        public bool ReorderItemsEnabled { get { return __ReorderItemsEnabled; } set { _SetReorderItemsEnabled(value); } } private bool __ReorderItemsEnabled;
+        /// <summary>
+        /// Akceptuje hodnotu do <see cref="ReorderItemsEnabled"/>
+        /// </summary>
+        /// <param name="reorderItemsEnabled"></param>
+        /// <returns></returns>
+        private void _SetReorderItemsEnabled(bool reorderItemsEnabled)
+        {
+            __ReorderItemsEnabled = reorderItemsEnabled;
+            _AcceptSourceListStyles();
+            _AcceptTargetListStyles();
+        }
+        /// <summary>
+        /// Podle hodnot <see cref="SourceListReadOnly"/> a <see cref="ClipboardActionsEnabled"/> a <see cref="ReorderItemsEnabled"/> 
+        /// vloží patřičné hodnoty do <see cref="SourceButtonsTypes"/> a <see cref="SourceEnabledKeyActions"/> a <see cref="SourceDragDropActions"/>.
+        /// </summary>
+        private void _AcceptSourceListStyles()
+        {
+            bool sourceListReadOnly = __SourceListReadOnly;
+            bool clipboardActionsEnabled = __ClipboardActionsEnabled;
+            bool reorderItemsEnabled = __ReorderItemsEnabled;
+
+            var buttonTypes = new List<ControlKeyActionType>();
+            var keyActions = ControlKeyActionType.None;
+            var dragDropActions = DxDragDropActionType.None;
+            var exchangeCrossType = DataExchangeCrossType.None;
+            var exchangeSourceId = "";
+
+            // SelectAll je povolen vždy:
+            buttonTypes.Add(ControlKeyActionType.SelectAll);
+            keyActions |= ControlKeyActionType.SelectAll;
+            dragDropActions |= DxDragDropActionType.CopyItemsFrom;
+
+            // Pokud je povolen ClipBoard, pak přidáme Delimiter a ClipCopy [a možná podle editovatelnosti i Cut a Paste]:
+            if (clipboardActionsEnabled)
+            {
+                buttonTypes.Add(ControlKeyActionType.Delimiter);
+                buttonTypes.Add(ControlKeyActionType.ClipCopy);
+
+                keyActions |= ControlKeyActionType.ClipCopy;
+
+                if (!sourceListReadOnly)
+                {
+                    buttonTypes.Add(ControlKeyActionType.ClipCut);
+                    buttonTypes.Add(ControlKeyActionType.ClipPaste);
+
+                    keyActions |= ControlKeyActionType.ClipCut;
+                    keyActions |= ControlKeyActionType.ClipPaste;
+
+                    exchangeCrossType = DataExchangeCrossType.OwnControlOnly;
+                }
+            }
+
+            // Pokud SourceList NENÍ ReadOnly, tak přidáme button a akci Delete hned za ClipBoard (anebo za SelectAll bez Delimiteru):
+            if (!sourceListReadOnly)
+            {
+                buttonTypes.Add(ControlKeyActionType.Delete);
+                keyActions |= ControlKeyActionType.Delete;
+            }
+
+            // CopyToRight a DragFrom je u Source povolen vždy:
+            buttonTypes.Add(ControlKeyActionType.Delimiter);
+            buttonTypes.Add(ControlKeyActionType.CopyToRightOne);
+            buttonTypes.Add(ControlKeyActionType.CopyToRightAll);
+            keyActions |= ControlKeyActionType.CopyToRightOne | ControlKeyActionType.CopyToRightAll;
+            dragDropActions |= DxDragDropActionType.CopyItemsFrom;
+
+
+            // Pokud není ReadOnly a máme povoleno Reorder:
+            if (!sourceListReadOnly && reorderItemsEnabled)
+            {
+                buttonTypes.Add(ControlKeyActionType.Delimiter);
+                buttonTypes.Add(ControlKeyActionType.MoveTop);
+                buttonTypes.Add(ControlKeyActionType.MoveUp);
+                buttonTypes.Add(ControlKeyActionType.MoveDown);
+                buttonTypes.Add(ControlKeyActionType.MoveBottom);
+                keyActions |= ControlKeyActionType.Move_All;
+                dragDropActions |= DxDragDropActionType.ReorderItems;
+            }
+
+            // Výsledky:
+            SourceButtonsTypes = buttonTypes.ToArray();
+            SourceEnabledKeyActions = keyActions;
+            SourceDragDropActions = dragDropActions;
+            this.__SourceListPanel.ListBox.DataExchangeCrossType = exchangeCrossType;
+            this.__SourceListPanel.ListBox.DataExchangeAcceptSourceControlId = exchangeSourceId;
+        }
+        /// <summary>
+        /// Podle hodnot <see cref="ClipboardActionsEnabled"/> a <see cref="ReorderItemsEnabled"/> 
+        /// vloží patřičné hodnoty do <see cref="SourceButtonsTypes"/> a <see cref="SourceEnabledKeyActions"/> a <see cref="SourceDragDropActions"/>.
+        /// </summary>
+
+        private void _AcceptTargetListStyles()
+        {
+            bool sourceListReadOnly = __SourceListReadOnly;
+            bool clipboardActionsEnabled = __ClipboardActionsEnabled;
+            bool reorderItemsEnabled = __ReorderItemsEnabled;
+
+            var buttonTypes = new List<ControlKeyActionType>();
+            var keyActions = ControlKeyActionType.None;
+            var dragDropActions = DxDragDropActionType.None;
+            var exchangeCrossType = DataExchangeCrossType.None;
+            var exchangeSourceId = "";
+
+            // SelectAll je povolen vždy:
+            buttonTypes.Add(ControlKeyActionType.SelectAll);
+            keyActions |= ControlKeyActionType.SelectAll;
+            dragDropActions |= DxDragDropActionType.CopyItemsFrom;
+
+            // Pokud je povolen ClipBoard, pak přidáme Delimiter a ClipCopy a Cut a Paste:
+            if (clipboardActionsEnabled)
+            {
+                buttonTypes.Add(ControlKeyActionType.Delimiter);
+                buttonTypes.Add(ControlKeyActionType.ClipCopy);
+                buttonTypes.Add(ControlKeyActionType.ClipCut);
+                buttonTypes.Add(ControlKeyActionType.ClipPaste);
+
+                keyActions |= ControlKeyActionType.ClipCopy;
+                keyActions |= ControlKeyActionType.ClipCut;
+                keyActions |= ControlKeyActionType.ClipPaste;
+
+                exchangeCrossType = DataExchangeCrossType.CurrentApplication | DataExchangeCrossType.OwnControl | DataExchangeCrossType.OtherSelectedControls;
+                exchangeSourceId = this.__SourceListPanel.ListBox.DataExchangeCurrentControlId + Environment.NewLine + this.__TargetListPanel.ListBox.DataExchangeCurrentControlId;
+            }
+
+            // Přidáme button a akci Delete hned za ClipBoard (anebo za SelectAll bez Delimiteru):
+            buttonTypes.Add(ControlKeyActionType.Delete);
+            keyActions |= ControlKeyActionType.Delete;
+
+            // DragDrop akceptuje prvky Dragované ze zdroje:
+            dragDropActions |= DxDragDropActionType.ImportItemsInto;
+
+            // Pokud máme povoleno Reorder:
+            if (reorderItemsEnabled)
+            {
+                buttonTypes.Add(ControlKeyActionType.Delimiter);
+                buttonTypes.Add(ControlKeyActionType.MoveTop);
+                buttonTypes.Add(ControlKeyActionType.MoveUp);
+                buttonTypes.Add(ControlKeyActionType.MoveDown);
+                buttonTypes.Add(ControlKeyActionType.MoveBottom);
+                keyActions |= ControlKeyActionType.Move_All;
+                dragDropActions |= DxDragDropActionType.ReorderItems;
+            }
+
+            // Výsledky:
+            TargetButtonsTypes = buttonTypes.ToArray();
+            TargetEnabledKeyActions = keyActions;
+            TargetDragDropActions = dragDropActions;
+            this.__TargetListPanel.ListBox.DataExchangeCrossType = exchangeCrossType;
+            this.__TargetListPanel.ListBox.DataExchangeAcceptSourceControlId = exchangeSourceId;
+        }
+        /// <summary>
+        /// Druh umístění buttonů v rámci <see cref="DxDblListBoxPanel"/>.
+        /// </summary>
+        public enum ButtonsPositionType
+        {
+            /// <summary>
+            /// Nezobrazovat
+            /// </summary>
+            None,
+            /// <summary>
+            /// Na spodní straně každého Listu
+            /// </summary>
+            Bottom,
+            /// <summary>
+            /// Uprostřed
+            /// </summary>
+            Center,
+            /// <summary>
+            /// Vždy na pravé straně Listů
+            /// </summary>
+            Right,
+            /// <summary>
+            /// Nastaveno manuálně pro každý List
+            /// </summary>
+            Custom
+        }
+        #endregion
+        #region Data ListBoxů
+        /// <summary>
+        /// Prvky zdrojového Listu (vlevo) typované na <see cref="IMenuItem"/>.
+        /// </summary>
+        public IMenuItem[] SourceMenuItems { get { return __SourceListPanel.ListItems; } set { __SourceListPanel.ListItems = value; } }
+        /// <summary>
+        /// Obsahuje pole prvků zdrojového Listu (vlevo), které jsou aktuálně Selected. 
+        /// Lze setovat. Setování nastaví stav Selected na těch prvcích this.Items, které jsou Object.ReferenceEquals() shodné s některým dodaným prvkem. Ostatní budou not selected.
+        /// </summary>
+        public IMenuItem[] SourceSelectedMenuItems { get { return __SourceListPanel.SelectedMenuItems; } set { __SourceListPanel.SelectedMenuItems= value; } }
+        /// <summary>
+        /// Aktuálně vybraný prvek zdrojového Listu (vlevo) typu <see cref="IMenuItem"/>. Lze setovat, ale pouze takový prvek, kteý je přítomen (hledá se <see cref="Object.ReferenceEquals(object, object)"/>).
+        /// </summary>
+        public IMenuItem SourceSelectedMenuItem { get { return __SourceListPanel.SelectedMenuItem; } set { __SourceListPanel.SelectedMenuItem = value; } }
+
+        /// <summary>
+        /// Prvky cílového Listu (vpravo) typované na <see cref="IMenuItem"/>.
+        /// </summary>
+        public IMenuItem[] TargetMenuItems { get { return __TargetListPanel.ListItems; } set { __TargetListPanel.ListItems = value; } }
+        /// <summary>
+        /// Obsahuje pole prvků cílového Listu (vpravo), které jsou aktuálně Selected. 
+        /// Lze setovat. Setování nastaví stav Selected na těch prvcích this.Items, které jsou Object.ReferenceEquals() shodné s některým dodaným prvkem. Ostatní budou not selected.
+        /// </summary>
+        public IMenuItem[] TargetSelectedMenuItems { get { return __TargetListPanel.SelectedMenuItems; } set { __TargetListPanel.SelectedMenuItems = value; } }
+        /// <summary>
+        /// Aktuálně vybraný prvek cílového Listu (vpravo) typu <see cref="IMenuItem"/>. Lze setovat, ale pouze takový prvek, kteý je přítomen (hledá se <see cref="Object.ReferenceEquals(object, object)"/>).
+        /// </summary>
+        public IMenuItem TargetSelectedMenuItem { get { return __TargetListPanel.SelectedMenuItem; } set { __TargetListPanel.SelectedMenuItem = value; } }
+
+        #endregion
+        #region Public data
+
+        #endregion
+    }
+    #endregion
+    #region class DxListBoxPanel : Panel obsahující jeden DxListBoxControl + pole buttonů
     /// <summary>
     /// Panel obsahující <see cref="DxListBoxControl"/> (potomek <see cref="DevExpress.XtraEditors.ImageListBoxControl"/>) plus tlačítka pro přesuny nahoru / dolů
     /// </summary>
@@ -39,7 +518,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             __ListBox = new DxListBoxControl();
             __Buttons = new List<DxSimpleButton>();
             __ButtonsPosition = ToolbarPosition.RightSideCenter;
-            __ButtonsTypes = ControlKeyActionType.None;
+            __ButtonsTypes = null;
             __ButtonsSize = ResourceImageSizeType.Medium;
             this.Controls.Add(__ListBox);
             this.Padding = new Padding(0);
@@ -163,9 +642,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public FilterRowMode RowFilterMode { get { return __RowFilterMode; } set { _SetRowFilterMode(value); } }
         /// <summary>
-        /// Typy dostupných tlačítek
+        /// Typy dostupných tlačítek.
+        /// <para/>
+        /// Nadeklarujme zde jednotlivá tlačítka v požadovaném pořadí.
+        /// Pokud bude definice obsahovat vícekrát jedno stejné tlačítko, bude fyzicky přidáno pouze jedenkrát, poprvé.
+        /// <para/>
+        /// Pokud jeden prvek v tomto poli bude obsahovat více hodnot (jde o Flags), budou jednotlivé buttony přidány postupně v jejich nativním pořadí.
         /// </summary>
-        public ControlKeyActionType ButtonsTypes { get { return __ButtonsTypes; } set { __ButtonsTypes = value; _AcceptButtonsType(); DoLayout(); } }
+        public ControlKeyActionType[] ButtonsTypes { get { return __ButtonsTypes; } set { __ButtonsTypes = value; _AcceptButtonsType(); DoLayout(); } }
         /// <summary>
         /// Umístění tlačítek
         /// </summary>
@@ -195,9 +679,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public IMenuItem[] ListItems { get { return __ListBox.MenuItems; } set { __ListBox.MenuItems = value; } }
         /// <summary>
+        /// Obsahuje pole prvků, které jsou aktuálně Selected. 
+        /// Lze setovat. Setování nastaví stav Selected na těch prvcích this.Items, které jsou Object.ReferenceEquals() shodné s některým dodaným prvkem. Ostatní budou not selected.
+        /// </summary>
+        public IMenuItem[] SelectedMenuItems { get { return __ListBox.SelectedMenuItems; } set { __ListBox.SelectedMenuItems = value; } }
+        /// <summary>
         /// Aktuálně vybraný prvek typu <see cref="IMenuItem"/>. Lze setovat, ale pouze takový prvek, kteý je přítomen (hledá se <see cref="Object.ReferenceEquals(object, object)"/>).
         /// </summary>
-        public IMenuItem SelectedListItem { get { return __ListBox.SelectedMenuItem; } set { __ListBox.SelectedMenuItem = value; } }
+        public IMenuItem SelectedMenuItem { get { return __ListBox.SelectedMenuItem; } set { __ListBox.SelectedMenuItem = value; } }
         /// <summary>
         /// Prvky Listu
         /// </summary>
@@ -348,7 +837,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxDragDropActionType DragDropActions { get { return __ListBox.DragDropActions; } set { __ListBox.DragDropActions = value; } }
         /// <summary>
-        /// Povolené akce. Výchozí je <see cref="ControlKeyActionType.None"/>
+        /// Povolené akce dané klávesami v ListBoxu.
+        /// Výchozí je <see cref="ControlKeyActionType.None"/>
         /// </summary>
         public ControlKeyActionType EnabledKeyActions { get { return __ListBox.EnabledKeyActions; } set { __ListBox.EnabledKeyActions = value; } }
 
@@ -788,32 +1278,58 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private ControlItemLayoutInfo[] _GetButtonsInfo()
         {
+            var layoutInfos = new List<ControlItemLayoutInfo>();
+
             var buttons = __Buttons;
             if (buttons == null || buttons.Count == 0) return null;
 
             Size buttonSize = DxComponent.GetImageSize(__ButtonsSize, true, this.CurrentDpi).Add(4, 4);
-            Size spaceSize = new Size(buttonSize.Width / 8, buttonSize.Height / 8);
-            List<ControlItemLayoutInfo> layoutInfos = new List<ControlItemLayoutInfo>();
-            ControlKeyActionType group1 = ControlKeyActionType.MoveTop | ControlKeyActionType.MoveUp | ControlKeyActionType.MoveDown | ControlKeyActionType.MoveBottom;
-            ControlKeyActionType group2 = ControlKeyActionType.Refresh | ControlKeyActionType.SelectAll | ControlKeyActionType.Delete;
-            ControlKeyActionType group3 = ControlKeyActionType.ClipCopy | ControlKeyActionType.ClipCut | ControlKeyActionType.ClipPaste;
-            int currentGroup = 0;
+            Size spaceSize = new Size(buttonSize.Width / 6, buttonSize.Height / 6);
+
+            // Pokud mezi Buttony najdeme nějaký Delimiter (prvek pole, který je null), pak oddělovače skupin nebudeme řešit implicitně, ale exaktně pomocí těchto Buttonů...
+            bool useDelimiters = buttons.Any(b => b is null);
+            ControlKeyActionType[] groups = new ControlKeyActionType[]
+            {
+                ControlKeyActionType.Clipboard_All, 
+                ControlKeyActionType.Others_All, 
+                ControlKeyActionType.Go_All, 
+                ControlKeyActionType.Move_All, 
+                ControlKeyActionType.UndoRedo_All, 
+                ControlKeyActionType.Filter_All, 
+                ControlKeyActionType.Copy_All
+            };
+            int currentGroupIndex = -1;
             for (int b = 0; b < buttons.Count; b++)
             {
                 var button = buttons[b];
+                var isDelimiter = (button is null);
+                var buttonType = (isDelimiter ? ControlKeyActionType.Delimiter : (button != null && button.Tag is ControlKeyActionType bt) ? bt : ControlKeyActionType.None);
+                if (buttonType == ControlKeyActionType.Delimiter) isDelimiter = true;
 
-                // Zkusíme oddělit jednotlivé grupy od sebe:
-                ControlKeyActionType buttonType = ((button.Tag is ControlKeyActionType) ? ((ControlKeyActionType)button.Tag) : ControlKeyActionType.None);
-                int buttonGroup = (((buttonType & group1) != 0) ? 1 :
-                                  (((buttonType & group2) != 0) ? 2 :
-                                  (((buttonType & group3) != 0) ? 3 : 0)));
-                if (currentGroup != 0 && buttonGroup != currentGroup)
-                    // Změna grupy = vložíme před nynější button menší mezírku:
-                    layoutInfos.Add(new ControlItemLayoutInfo() { Size = spaceSize });
-               
-                // Přidám button:
-                layoutInfos.Add(new ControlItemLayoutInfo() { Control = buttons[b], Size = buttonSize });
-                currentGroup = buttonGroup;
+                if (buttonType != ControlKeyActionType.None)
+                {
+                    if (!useDelimiters)
+                    {   // Pokud sada buttonů NEobshauje Delimitery, pak řeším, zda před aktuální button předsadím mezeru:
+                        // Najdu index skupiny akcí (v poli groups), do které patří aktuální button:
+                        if (groups.TryFindFirstIndex(g => ((g & buttonType) != 0), out var buttonGroupIndex))
+                        {
+                            if (currentGroupIndex >= 0 && buttonGroupIndex != currentGroupIndex)
+                                // Aktuálně už máme nějakou grupu, a aktuální button patří do jiné?
+                                //  => Změna grupy => vložíme před nynější button menší mezírku:
+                                layoutInfos.Add(new ControlItemLayoutInfo() { Size = spaceSize });
+                            currentGroupIndex = buttonGroupIndex;
+                        }
+                    }
+                    else
+                    {   // Používáme Delimitery : pokud nyní je button typu Delimiter, pak do pole layoutu vložíme mezeru právě nyní:
+                        if (isDelimiter)
+                            layoutInfos.Add(new ControlItemLayoutInfo() { Size = spaceSize });
+                    }
+
+                    // Vložíme vlastní button, kromě buttonu typu Delimtier:
+                    if (!isDelimiter)
+                        layoutInfos.Add(new ControlItemLayoutInfo() { Control = button, Size = buttonSize });
+                }
             }
 
             return layoutInfos.ToArray();
@@ -823,76 +1339,92 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _AcceptButtonsType()
         {
-            ControlKeyActionType validButtonsTypes = __ButtonsTypes;
-
-            // Buttony z _ButtonsType převedu na povolené akce v ListBoxu a sloučím s akcemi dosud povolenými:
-            ControlKeyActionType oldActions = __ListBox.EnabledKeyActions;
-            ControlKeyActionType newActions = ConvertButtonsToActions(validButtonsTypes);
-            __ListBox.EnabledKeyActions = (newActions | oldActions);
+            var requestedActionsArray = __ButtonsTypes;
+            var enabledButtonsActions = ControlKeyActionType.None;
 
             // Odstraním stávající buttony:
             _RemoveButtons(true);
 
-            // Vytvořím potřebné buttony:
-            //   (vytvoří se jen ty buttony, které jsou vyžádané proměnné buttonsTypes, fyzické pořadí buttonů je dané pořadím těchto řádků)
-            _AcceptButtonType(ControlKeyActionType.MoveTop, validButtonsTypes, "@arrowsmall|top|blue", MsgCode.DxKeyActionMoveTopTitle, MsgCode.DxKeyActionMoveTopText);
-            _AcceptButtonType(ControlKeyActionType.MoveUp, validButtonsTypes, "@arrowsmall|up|blue", MsgCode.DxKeyActionMoveUpTitle, MsgCode.DxKeyActionMoveUpText);
-            _AcceptButtonType(ControlKeyActionType.MoveDown, validButtonsTypes, "@arrowsmall|down|blue", MsgCode.DxKeyActionMoveDownTitle, MsgCode.DxKeyActionMoveDownText);
-            _AcceptButtonType(ControlKeyActionType.MoveBottom, validButtonsTypes, "@arrowsmall|bottom|blue", MsgCode.DxKeyActionMoveBottomTitle, MsgCode.DxKeyActionMoveBottomText);
-            _AcceptButtonType(ControlKeyActionType.Refresh, validButtonsTypes, "devav/actions/refresh.svg", MsgCode.DxKeyActionRefreshTitle, MsgCode.DxKeyActionRefreshText);   // qqq
-            _AcceptButtonType(ControlKeyActionType.SelectAll, validButtonsTypes, "@editsmall|all|blue", MsgCode.DxKeyActionSelectAllTitle, MsgCode.DxKeyActionSelectAllText);
-            _AcceptButtonType(ControlKeyActionType.Delete, validButtonsTypes, "@editsmall|del|red", MsgCode.DxKeyActionDeleteTitle, MsgCode.DxKeyActionDeleteText);       // "devav/actions/delete.svg"
-            _AcceptButtonType(ControlKeyActionType.ClipCopy, validButtonsTypes, "devav/actions/copy.svg", MsgCode.DxKeyActionClipCopyTitle, MsgCode.DxKeyActionClipCopyText);
-            _AcceptButtonType(ControlKeyActionType.ClipCut, validButtonsTypes, "devav/actions/cut.svg", MsgCode.DxKeyActionClipCutTitle, MsgCode.DxKeyActionClipCutText);
-            _AcceptButtonType(ControlKeyActionType.ClipPaste, validButtonsTypes, "devav/actions/paste.svg", MsgCode.DxKeyActionClipPasteTitle, MsgCode.DxKeyActionClipPasteText);
+            // Vytvořím požadované buttony:
+            if (requestedActionsArray != null && requestedActionsArray.Length > 0)
+            {
+                foreach (var requestedActions in requestedActionsArray)
+                {
+                    addOneButton(ControlKeyActionType.Delimiter, requestedActions, "", MsgCode.None, MsgCode.None);
 
-            _AcceptButtonType(ControlKeyActionType.CopyToRightOne, validButtonsTypes, "@arrowsmall|right|blue", MsgCode.DxKeyActionClipPasteTitle, MsgCode.DxKeyActionClipPasteText);
-            _AcceptButtonType(ControlKeyActionType.CopyToRightAll, validButtonsTypes, "@arrow|right|blue", MsgCode.DxKeyActionClipPasteTitle, MsgCode.DxKeyActionClipPasteText);
-            _AcceptButtonType(ControlKeyActionType.CopyToLeftOne, validButtonsTypes, "@arrowsmall|left|blue", MsgCode.DxKeyActionClipPasteTitle, MsgCode.DxKeyActionClipPasteText);
-            _AcceptButtonType(ControlKeyActionType.CopyToLeftAll, validButtonsTypes, "@arrow|left|blue", MsgCode.DxKeyActionClipPasteTitle, MsgCode.DxKeyActionClipPasteText);
+                    addOneButton(ControlKeyActionType.MoveTop, requestedActions, "@arrowsmall|top|blue", MsgCode.DxKeyActionMoveTopTitle, MsgCode.DxKeyActionMoveTopText);
+                    addOneButton(ControlKeyActionType.MoveUp, requestedActions, "@arrowsmall|up|blue", MsgCode.DxKeyActionMoveUpTitle, MsgCode.DxKeyActionMoveUpText);
+                    addOneButton(ControlKeyActionType.MoveDown, requestedActions, "@arrowsmall|down|blue", MsgCode.DxKeyActionMoveDownTitle, MsgCode.DxKeyActionMoveDownText);
+                    addOneButton(ControlKeyActionType.MoveBottom, requestedActions, "@arrowsmall|bottom|blue", MsgCode.DxKeyActionMoveBottomTitle, MsgCode.DxKeyActionMoveBottomText);
+                    addOneButton(ControlKeyActionType.Refresh, requestedActions, "devav/actions/refresh.svg", MsgCode.DxKeyActionRefreshTitle, MsgCode.DxKeyActionRefreshText);   // qqq
+                    addOneButton(ControlKeyActionType.SelectAll, requestedActions, "@editsmall|all|blue", MsgCode.DxKeyActionSelectAllTitle, MsgCode.DxKeyActionSelectAllText);
+                    addOneButton(ControlKeyActionType.Delete, requestedActions, "@editsmall|del|red", MsgCode.DxKeyActionDeleteTitle, MsgCode.DxKeyActionDeleteText);       // "devav/actions/delete.svg"
+                    addOneButton(ControlKeyActionType.ClipCopy, requestedActions, "devav/actions/copy.svg", MsgCode.DxKeyActionClipCopyTitle, MsgCode.DxKeyActionClipCopyText);
+                    addOneButton(ControlKeyActionType.ClipCut, requestedActions, "devav/actions/cut.svg", MsgCode.DxKeyActionClipCutTitle, MsgCode.DxKeyActionClipCutText);
+                    addOneButton(ControlKeyActionType.ClipPaste, requestedActions, "devav/actions/paste.svg", MsgCode.DxKeyActionClipPasteTitle, MsgCode.DxKeyActionClipPasteText);
 
-            _AcceptButtonType(ControlKeyActionType.Undo, validButtonsTypes, "svgimages/dashboards/undo.svg", MsgCode.DxKeyActionUndoTitle, MsgCode.DxKeyActionUndoText);
-            _AcceptButtonType(ControlKeyActionType.Redo, validButtonsTypes, "svgimages/dashboards/redo.svg", MsgCode.DxKeyActionRedoTitle, MsgCode.DxKeyActionRedoText);
+                    addOneButton(ControlKeyActionType.CopyToRightOne, requestedActions, "@arrowsmall|right|blue", MsgCode.DxKeyActionCopyToRightOneTitle, MsgCode.DxKeyActionCopyToRightOneText);
+                    addOneButton(ControlKeyActionType.CopyToRightAll, requestedActions, "@arrow|right|blue", MsgCode.DxKeyActionCopyToRightAllTitle, MsgCode.DxKeyActionCopyToRightAllText);
+                    addOneButton(ControlKeyActionType.CopyToLeftOne, requestedActions, "@arrowsmall|left|blue", MsgCode.DxKeyActionCopyToLeftOneTitle, MsgCode.DxKeyActionCopyToLeftOneText);
+                    addOneButton(ControlKeyActionType.CopyToLeftAll, requestedActions, "@arrow|left|blue", MsgCode.DxKeyActionCopyToLeftAllTitle, MsgCode.DxKeyActionCopyToLeftAllText);
+
+                    addOneButton(ControlKeyActionType.Undo, requestedActions, "svgimages/dashboards/undo.svg", MsgCode.DxKeyActionUndoTitle, MsgCode.DxKeyActionUndoText);
+                    addOneButton(ControlKeyActionType.Redo, requestedActions, "svgimages/dashboards/redo.svg", MsgCode.DxKeyActionRedoTitle, MsgCode.DxKeyActionRedoText);
+                }
+            }
+
+            // Povolené akce ListBoxu dané Buttony:
+            __ListBox.EnabledButtonsActions = enabledButtonsActions;
 
             // Pokud bylo povoleno UndoRedo, pak povolím i odpovídající funkcionalitu:
-            if ((newActions.HasFlag(ControlKeyActionType.Undo) || newActions.HasFlag(ControlKeyActionType.Redo)) || !this.UndoRedoEnabled)
+            var isEnabledUndoRedo = (enabledButtonsActions.HasFlag(ControlKeyActionType.Undo) || enabledButtonsActions.HasFlag(ControlKeyActionType.Redo));
+            if (isEnabledUndoRedo && !this.UndoRedoEnabled)
                 this.UndoRedoEnabled = true;
 
+            // Enabled na Buttony podle jejich akce a podle stavu ListBoxu:
             _SetButtonsEnabled();
-        }
-        /// <summary>
-        /// Metoda vytvoří Button, pokud má být vytvořen. Tedy pokud typ buttonu v <paramref name="buttonType"/> bude přítomen v povolených buttonech v <paramref name="validButtonsTypes"/>.
-        /// Pak vygeneruje odpovídající button a přidá jej do pole <see cref="__Buttons"/>.
-        /// </summary>
-        /// <param name="buttonType">Typ konkrétního jednoho buttonu</param>
-        /// <param name="validButtonsTypes">Soupis požadovaných buttonů</param>
-        /// <param name="imageName"></param>
-        /// <param name="msgToolTipTitle"></param>
-        /// <param name="msgToolTipText"></param>
-        private void _AcceptButtonType(ControlKeyActionType buttonType, ControlKeyActionType validButtonsTypes, string imageName, MsgCode msgToolTipTitle, MsgCode msgToolTipText)
-        {
-            if (!validButtonsTypes.HasFlag(buttonType)) return;
 
-            string toolTipTitle = DxComponent.Localize(msgToolTipTitle);
-            string toolTipText = DxComponent.Localize(msgToolTipText);
-            DxSimpleButton dxButton = DxComponent.CreateDxMiniButton(0, 0, 24, 24, this, this._ButtonClick, resourceName: imageName, toolTipTitle: toolTipTitle, toolTipText: toolTipText, tabStop: false, allowFocus: false, tag: buttonType);
-            __Buttons.Add(dxButton);
+
+            // Přidá jeden button
+            void addOneButton(ControlKeyActionType buttonType, ControlKeyActionType requestTypes, string imageName, MsgCode msgToolTipTitle, MsgCode msgToolTipText)
+            {
+                // Pokud tento typ buttonu není požadován, skončíme:
+                if (!requestTypes.HasFlag(buttonType)) return;
+
+                if (buttonType == ControlKeyActionType.Delimiter)
+                {   // Oddělovač = mezírka mezi Buttony: tu přidáváme vždy, i když už tam nějaká je, a neevidujeme ji jako enabledButtonsActions:
+                    //  realizujeme ji jako prvek null = mezera mezi buttony:
+                    __Buttons.Add(null);
+                }
+                else if (!enabledButtonsActions.HasFlag(buttonType))
+                {   // Jiný button než Delimiter => přidáme button, pouze pokud dosud nebyl přidán (přidané typy střádáme do enabledButtonsActions):
+                    string toolTipTitle = DxComponent.Localize(msgToolTipTitle);
+                    string toolTipText = DxComponent.Localize(msgToolTipText);
+                    DxSimpleButton dxButton = DxComponent.CreateDxMiniButton(0, 0, 24, 24, this, this._ButtonClick, resourceName: imageName, toolTipTitle: toolTipTitle, toolTipText: toolTipText, tabStop: false, allowFocus: false, tag: buttonType);
+                    __Buttons.Add(dxButton);
+                    enabledButtonsActions |= buttonType;
+                }
+            }
         }
         /// <summary>
         /// Odebere všechny buttony přítomné v poli <see cref="__Buttons"/>
         /// </summary>
         private void _RemoveButtons(bool createEmptyList = false)
         {
-            if (__Buttons != null && __Buttons.Count > 0)
+            var buttons = __Buttons;
+            if (buttons != null && buttons.Count > 0)
             {
-                foreach (var button in __Buttons)
+                foreach (var button in buttons)
                 {
-                    button.RemoveControlFromParent();
-                    button.Dispose();
+                    if (button != null)
+                    {
+                        button.RemoveControlFromParent();
+                        button.Dispose();
+                    }
                 }
-                __Buttons.Clear();
+                buttons.Clear();
             }
-            if (__Buttons is null && createEmptyList)
+            if (buttons is null && createEmptyList)
                 __Buttons = new List<DxSimpleButton>();
         }
         /// <summary>
@@ -959,7 +1491,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="enabled"></param>
         private void _SetButtonEnabled(ControlKeyActionType buttonType, bool enabled)
         {
-            if (__Buttons.TryGetFirst(b => b.Tag is ControlKeyActionType bt && bt == buttonType, out var button))
+            if (__Buttons.TryGetFirst(b => (b != null && b.Tag is ControlKeyActionType bt && bt == buttonType), out var button))
                 button.Enabled = enabled;
         }
         /// <summary>
@@ -969,68 +1501,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="args"></param>
         private void _ButtonClick(object sender, EventArgs args)
         {
-            if (sender is DxSimpleButton dxButton && dxButton.Tag is ControlKeyActionType buttonType)
+            if (sender is DxSimpleButton dxButton && dxButton.Tag is ControlKeyActionType keyAction)
             {
-                ControlKeyActionType action = ConvertButtonsToActions(buttonType);
-                __ListBox.DoKeyActions(action);
+                __ListBox.DoKeyActions(keyAction);
             }
         }
         /// <summary>
-        /// Konvertuje hodnoty z typu <see cref="ControlKeyActionType"/> na hodnoty typu <see cref="ControlKeyActionType"/>
+        /// Typy dostupných tlačítek.
+        /// <para/>
+        /// Nadeklarujme zde jednotlivá tlačítka v požadovaném pořadí.
+        /// Pokud bude definice obsahovat vícekrát jedno stejné tlačítko, bude fyzicky přidáno pouze jedenkrát, poprvé.
+        /// <para/>
+        /// Pokud jeden prvek v tomto poli bude obsahovat více hodnot (jde o Flags), budou jednotlivé buttony přidány postupně v jejich nativním pořadí.
         /// </summary>
-        /// <param name="buttons"></param>
-        /// <returns></returns>
-        public static ControlKeyActionType ConvertButtonsToActions(ControlKeyActionType buttons)
-        {
-            ControlKeyActionType actions =
-                (buttons.HasFlag(ControlKeyActionType.ClipCopy) ? ControlKeyActionType.ClipCopy : ControlKeyActionType.None) |
-                (buttons.HasFlag(ControlKeyActionType.ClipCut) ? ControlKeyActionType.ClipCut : ControlKeyActionType.None) |
-                (buttons.HasFlag(ControlKeyActionType.ClipPaste) ? ControlKeyActionType.ClipPaste : ControlKeyActionType.None) |
-                (buttons.HasFlag(ControlKeyActionType.Delete) ? ControlKeyActionType.Delete : ControlKeyActionType.None) |
-                (buttons.HasFlag(ControlKeyActionType.Refresh) ? ControlKeyActionType.Refresh: ControlKeyActionType.None) |
-                (buttons.HasFlag(ControlKeyActionType.SelectAll) ? ControlKeyActionType.SelectAll : ControlKeyActionType.None) |
-                (buttons.HasFlag(ControlKeyActionType.GoBegin) ? ControlKeyActionType.GoBegin : ControlKeyActionType.None) |
-                (buttons.HasFlag(ControlKeyActionType.GoEnd) ? ControlKeyActionType.GoEnd : ControlKeyActionType.None) |
-                (buttons.HasFlag(ControlKeyActionType.MoveTop) ? ControlKeyActionType.MoveTop : ControlKeyActionType.None) |
-                (buttons.HasFlag(ControlKeyActionType.MoveUp) ? ControlKeyActionType.MoveUp : ControlKeyActionType.None) |
-                (buttons.HasFlag(ControlKeyActionType.MoveDown) ? ControlKeyActionType.MoveDown : ControlKeyActionType.None) |
-                (buttons.HasFlag(ControlKeyActionType.MoveBottom) ? ControlKeyActionType.MoveBottom : ControlKeyActionType.None) |
-                (buttons.HasFlag(ControlKeyActionType.CopyToRightOne) ? ControlKeyActionType.CopyToRightOne : ControlKeyActionType.None) |
-                (buttons.HasFlag(ControlKeyActionType.CopyToRightAll) ? ControlKeyActionType.CopyToRightAll : ControlKeyActionType.None) |
-                (buttons.HasFlag(ControlKeyActionType.CopyToLeftOne) ? ControlKeyActionType.CopyToLeftOne : ControlKeyActionType.None) |
-                (buttons.HasFlag(ControlKeyActionType.CopyToLeftAll) ? ControlKeyActionType.CopyToLeftAll : ControlKeyActionType.None) |
-                (buttons.HasFlag(ControlKeyActionType.Undo) ? ControlKeyActionType.Undo : ControlKeyActionType.None) |
-                (buttons.HasFlag(ControlKeyActionType.Redo) ? ControlKeyActionType.Redo : ControlKeyActionType.None);
-            return actions;
-        }
-        /// <summary>
-        /// Konvertuje hodnoty z typu <see cref="ControlKeyActionType"/> na hodnoty typu <see cref="ControlKeyActionType"/>
-        /// </summary>
-        /// <param name="actions"></param>
-        /// <returns></returns>
-        public static ControlKeyActionType ConvertActionsToButtons(ControlKeyActionType actions)
-        {
-            ControlKeyActionType buttons =
-                (actions.HasFlag(ControlKeyActionType.ClipCopy) ? ControlKeyActionType.ClipCopy : ControlKeyActionType.None) |
-                (actions.HasFlag(ControlKeyActionType.ClipCut) ? ControlKeyActionType.ClipCut : ControlKeyActionType.None) |
-                (actions.HasFlag(ControlKeyActionType.ClipPaste) ? ControlKeyActionType.ClipPaste : ControlKeyActionType.None) |
-                (actions.HasFlag(ControlKeyActionType.Delete) ? ControlKeyActionType.Delete : ControlKeyActionType.None) |
-                (actions.HasFlag(ControlKeyActionType.Refresh) ? ControlKeyActionType.Refresh : ControlKeyActionType.None) |
-                (actions.HasFlag(ControlKeyActionType.SelectAll) ? ControlKeyActionType.SelectAll : ControlKeyActionType.None) |
-                (actions.HasFlag(ControlKeyActionType.GoBegin) ? ControlKeyActionType.GoBegin : ControlKeyActionType.None) |
-                (actions.HasFlag(ControlKeyActionType.GoEnd) ? ControlKeyActionType.GoEnd : ControlKeyActionType.None) |
-                (actions.HasFlag(ControlKeyActionType.MoveTop) ? ControlKeyActionType.MoveTop : ControlKeyActionType.None) |
-                (actions.HasFlag(ControlKeyActionType.MoveUp) ? ControlKeyActionType.MoveUp : ControlKeyActionType.None) |
-                (actions.HasFlag(ControlKeyActionType.MoveDown) ? ControlKeyActionType.MoveDown : ControlKeyActionType.None) |
-                (actions.HasFlag(ControlKeyActionType.MoveBottom) ? ControlKeyActionType.MoveBottom : ControlKeyActionType.None) |
-                (actions.HasFlag(ControlKeyActionType.Undo) ? ControlKeyActionType.Undo : ControlKeyActionType.None) |
-                (actions.HasFlag(ControlKeyActionType.Redo) ? ControlKeyActionType.Redo : ControlKeyActionType.None);
-            return buttons;
-        }
-        /// <summary>
-        /// Typy dostupných tlačítek
-        /// </summary>
-        private ControlKeyActionType __ButtonsTypes;
+        private ControlKeyActionType[] __ButtonsTypes;
         /// <summary>
         /// Umístění tlačítek
         /// </summary>
@@ -1058,6 +1542,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         public UndoRedoController UndoRedoController { get { return __ListBox.UndoRedoController; } set { __ListBox.UndoRedoController = value; } }
         #endregion
     }
+    #endregion
+    #region class DxListBoxControl : samotný ListBox, potomek DevExpress.XtraEditors.ImageListBoxControl
     /// <summary>
     /// ListBoxControl s podporou pro drag and drop a reorder
     /// </summary>
@@ -1296,7 +1782,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Obsahuje pole prvků, které jsou aktuálně Selected. 
         /// Lze setovat. Setování nastaví stav Selected na těch prvcích this.Items, které jsou Object.ReferenceEquals() shodné s některým dodaným prvkem. Ostatní budou not selected.
         /// </summary>
-        public IEnumerable<IMenuItem> SelectedMenuItems
+        public IMenuItem[] SelectedMenuItems
         {
             get
             {
@@ -1308,13 +1794,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             set
             {
-                var selectedItems = (value?.ToList() ?? new List<IMenuItem>());
+                var selectedItems = value;
                 var listItems = this.MenuItems;
                 int count = this.ItemCount;
                 for (int i = 0; i < count; i++)
                 {
                     object item = listItems[i];
-                    bool isSelected = selectedItems.Any(s => Object.ReferenceEquals(s, item));
+                    bool isSelected = selectedItems != null && selectedItems.Any(s => Object.ReferenceEquals(s, item));
                     this.SetSelected(i, isSelected);
                 }
             }
@@ -2035,9 +2521,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region DoKeyActions; CtrlA, CtrlC, CtrlX, CtrlV, Delete; Move, Insert, Remove
         /// <summary>
-        /// Povolené akce. Výchozí je <see cref="ControlKeyActionType.None"/>
+        /// Povolené akce dané klávesami v ListBoxu.
+        /// Výchozí je <see cref="ControlKeyActionType.None"/>
         /// </summary>
         public ControlKeyActionType EnabledKeyActions { get; set; }
+        /// <summary>
+        /// Povolené akce dané buttony. Buttony přidává Panel, o nich ListBox netuší. Proto se mu externě dodává pole povolených akcí od Buttonů, aby ListBox věděl, co může provádět za akce.
+        /// Výchozí je <see cref="ControlKeyActionType.None"/>
+        /// </summary>
+        public ControlKeyActionType EnabledButtonsActions { get; set; }
+        /// <summary>
+        /// Souhrn povolených akcí přímo Listu <see cref="EnabledKeyActions"/> + akcí tlačítek <see cref="EnabledButtonsActions"/>. Toto se používá interně v ListBoxu pro filtrování akcí.
+        /// </summary>
+        protected ControlKeyActionType EnabledActions { get { return this.EnabledKeyActions | this.EnabledButtonsActions; } }
         /// <summary>
         /// Provede zadané akce v pořadí jak jsou zadány. Pokud v jedné hodnotě je více akcí (<see cref="ControlKeyActionType"/> je typu Flags), pak jsou prováděny v pořadí bitů od nejnižšího.
         /// Upozornění: požadované akce budou provedeny i tehdy, když v <see cref="EnabledKeyActions"/> nejsou povoleny = tamní hodnota má za úkol omezit uživatele, ale ne aplikační kód, který danou akci může provést i tak.
@@ -2055,6 +2551,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             this.KeyDown += _KeyDown;
             this.EnabledKeyActions = ControlKeyActionType.None;
+            this.EnabledButtonsActions = ControlKeyActionType.None;
         }
         /// <summary>
         /// Obsluha kláves
@@ -2065,7 +2562,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             //  DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"KeyDown: KeyData: [{e.KeyData}]; KeyCode: [{e.KeyCode}]");
 
-            var enabledActions = EnabledKeyActions;
             bool isHandled = false;
             switch (e.KeyData)
             {
@@ -2134,7 +2630,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool handled = false;
             
             // Akce okolo řádkového filtru jsou povoleny vždy:
-            var enabledKeyActions = EnabledKeyActions | ControlKeyActionType.ActivateFilter | ControlKeyActionType.FillKeyToFilter;
+            var enabledActions = EnabledActions | ControlKeyActionType.ActivateFilter | ControlKeyActionType.FillKeyToFilter;
 
             doSingleAction(ControlKeyActionType.Refresh, null);
             doSingleAction(ControlKeyActionType.SelectAll, _DoKeyActionCtrlA);
@@ -2146,27 +2642,27 @@ namespace Noris.Clients.Win.Components.AsolDX
             doSingleAction(ControlKeyActionType.MoveDown, _DoKeyActionMoveDown);
             doSingleAction(ControlKeyActionType.MoveBottom, _DoKeyActionMoveBottom);
             doSingleAction(ControlKeyActionType.Delete, _DoKeyActionDelete);
-            doSingleAction(ControlKeyActionType.CopyToRightOne, null);                // Pozn. pokud není dodaná metoda pro akci (=null), pak tuto akci má řešit pouze nadřazený container
-            doSingleAction(ControlKeyActionType.CopyToRightAll, null);                //  - pomocí eventhandlerů ListActionBefore a ListActionAfter
+            doSingleAction(ControlKeyActionType.CopyToRightOne, null);                   // Pozn. pokud není dodaná metoda pro akci (=null), pak tuto akci má řešit pouze nadřazený container
+            doSingleAction(ControlKeyActionType.CopyToRightAll, null);                   //  - pomocí eventhandlerů ListActionBefore a ListActionAfter
             doSingleAction(ControlKeyActionType.CopyToLeftOne, null);
             doSingleAction(ControlKeyActionType.CopyToLeftAll, null);
             doSingleAction(ControlKeyActionType.Undo, _DoKeyActionUndo);
             doSingleAction(ControlKeyActionType.Redo, _DoKeyActionRedo);
-            doSingleAction(ControlKeyActionType.ActivateFilter, null);                // Měl by odchytit Parent container a případně přesměrovat
-            doSingleAction(ControlKeyActionType.FillKeyToFilter, null);               //  obdobně
+            doSingleAction(ControlKeyActionType.ActivateFilter, null);                   // Měl by odchytit Parent container a případně přesměrovat
+            doSingleAction(ControlKeyActionType.FillKeyToFilter, null);                  //  obdobně
             return handled;
 
             // Zjistí, zda má být provedena daná akce, a pokud ano pak ji provede.
             void doSingleAction(ControlKeyActionType action, Action internalActionMethod)
             {
-                if (!actions.HasFlag(action)) return;                          // Tato akce není požadována
-                if (!force && !enabledKeyActions.HasFlag(action)) return;      // Tato akce sice je požadována, ale není povolena
+                if (!actions.HasFlag(action)) return;                                    // Tato akce není požadována
+                if (!force && !enabledActions.HasFlag(action)) return;                   // Tato akce sice je požadována, ale není povolena
 
                 var argsBefore = new DxListBoxActionCancelEventArgs(actions, e);
                 _RunListActionBefore(argsBefore);
                 if (!argsBefore.Cancel)
                 {
-                    if (internalActionMethod != null) internalActionMethod();  // Provedu konkrétní akci, pokud je dodána; viz dole napž. _DoKeyActionCtrlA()
+                    if (internalActionMethod != null) internalActionMethod();            // Provedu konkrétní akci, pokud je dodána; viz dole napž. _DoKeyActionCtrlA()
                     var argsAfter = new DxListBoxActionEventArgs(actions, e);
                     _RunListActionAfter(argsAfter);
                     handled = true;
@@ -2786,14 +3282,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public bool UndoRedoEnabled 
         { 
-            get { return _UndoRedoEnabled; } 
+            get { return __UndoRedoEnabled; } 
             set 
             {
-                _UndoRedoEnabled = value;
+                __UndoRedoEnabled = value;
                 RunUndoRedoEnabledChanged();
             } 
         }
-        private bool _UndoRedoEnabled;
+        private bool __UndoRedoEnabled;
         /// <summary>
         /// Controller UndoRedo.
         /// Pokud není povoleno <see cref="UndoRedoController"/>, je zde null.
@@ -2942,6 +3438,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public event EventHandler SelectedItemsChanged;
         #endregion
     }
+    #endregion
     #region class DxListBoxTemplate : data pro tvorbu šablony v ListBoxu
     /// <summary>
     /// Šablona pro zobrazení prvku v <see cref="DxListBoxControl"/>

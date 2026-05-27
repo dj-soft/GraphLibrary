@@ -5439,7 +5439,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _DragDropBList.DataExchangeCrossType = DataExchangeCrossType.AllControlsInCurrentApplication | DataExchangeCrossType.AnyOtherApplications;
             _DragDropBList.RowFilterMode = DxListBoxPanel.FilterRowMode.Server;
             _DragDropBList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
-            _DragDropBList.ButtonsTypes = ControlKeyActionType.MoveAll;
+            _DragDropBList.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.Move_All };
             _PanelDragDrop.Controls.Add(_DragDropBList);
 
             _DragDropCTree = new DxTreeList() { FilterBoxMode = RowFilterBoxMode.Server, DragDropActions = targetDDActions, EnabledKeyActions = sourceKeyActions };

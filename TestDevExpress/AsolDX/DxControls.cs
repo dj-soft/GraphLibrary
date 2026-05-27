@@ -11802,11 +11802,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Klávesa CtrlV: vložit
         /// </summary>
         ClipPaste = 0x0004,
+
         /// <summary>
         /// Klávesa Delete: Smazat vybrané
         /// </summary>
         Delete = 0x0008,
-
         /// <summary>
         /// Klávesa CtrlR: Refresh
         /// </summary>
@@ -11815,6 +11815,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Klávesa CtrlA: vybrat vše
         /// </summary>
         SelectAll = 0x0020,
+
         /// <summary>
         /// Klávesa Ctrl Home: přejdi na začátek
         /// </summary>
@@ -11849,6 +11850,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Klávesa CtrlY: Redo (znovu provést poslední změnu)
         /// </summary>
         Redo = 0x2000,
+
         /// <summary>
         /// Klávesa Šipka nahoru nebo PageUp na první pozici Listu: aktivuj řádkový filtr
         /// </summary>
@@ -11876,30 +11878,43 @@ namespace Noris.Clients.Win.Components.AsolDX
         CopyToLeftAll = 0x00080000,
 
         /// <summary>
+        /// Oddělovač = prostor velikosti 1/4 buttonu na šířku/výšku
+        /// </summary>
+        Delimiter = 0x10000000,
+
+        /// <summary>
         /// Všechny práce s clipboardem
         /// </summary>
-        ClipboardAll = ClipCopy | ClipCut | ClipPaste,
+        Clipboard_All = ClipCopy | ClipCut | ClipPaste,
+        /// <summary>
+        /// Ostatní vše: <see cref="Delete"/> + <see cref="Refresh"/> + <see cref="SelectAll"/>
+        /// </summary>
+        Others_All = Delete | Refresh | SelectAll,
         /// <summary>
         /// Všechny pohyby kurzoru
         /// </summary>
-        GoAll = GoBegin | GoEnd,
+        Go_All = GoBegin | GoEnd,
         /// <summary>
         /// Všechny přesuny nahoru/dolů
         /// </summary>
-        MoveAll = MoveTop | MoveUp | MoveDown | MoveBottom,
-        /// <summary>
-        /// Všechny kopie doleva/doprava
-        /// </summary>
-        CopyAll = CopyToRightOne | CopyToRightAll | CopyToLeftOne | CopyToLeftAll,
+        Move_All = MoveTop | MoveUp | MoveDown | MoveBottom,
         /// <summary>
         /// Undo a Redo
         /// </summary>
-        UndoRedoAll = Undo | Redo,
+        UndoRedo_All = Undo | Redo,
+        /// <summary>
+        /// Všechna práce s filtrem
+        /// </summary>
+        Filter_All = ActivateFilter | FillKeyToFilter,
+        /// <summary>
+        /// Všechny kopie doleva/doprava
+        /// </summary>
+        Copy_All = CopyToRightOne | CopyToRightAll | CopyToLeftOne | CopyToLeftAll,
 
         /// <summary>
         /// Všechny akce
         /// </summary>
-        All = ClipboardAll | Delete | SelectAll | GoAll | MoveAll | UndoRedoAll | ActivateFilter | ActivateFilter
+        All = Clipboard_All | Others_All | Go_All | Move_All | UndoRedo_All | Filter_All | Copy_All
     }
     /// <summary>
     /// Stav aktivity okna

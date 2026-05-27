@@ -72,7 +72,7 @@ namespace TestDevExpress.Forms
             _ProcessListBox = new DxListBoxPanel()
             {
                 ButtonsPosition = ToolbarPosition.BottomSideRight,
-                ButtonsTypes = ControlKeyActionType.Refresh,
+                ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.Refresh },
                 ButtonsSize = ResourceImageSizeType.Medium,
                 RowFilterMode = DxListBoxPanel.FilterRowMode.Server,
                 Dock = System.Windows.Forms.DockStyle.Fill
@@ -106,11 +106,11 @@ namespace TestDevExpress.Forms
             var selectId = (currentSelectedProcess ?? currentProcess)?.ProcessId ?? 0;
             var newSelectedProcess = processInfos.FirstOrDefault(p => p.ProcessId == selectId);    // Nový SelectedMenuItem musí být instance z processInfos
             _ProcessListBox.ListItems = processInfos;
-            _ProcessListBox.SelectedListItem = newSelectedProcess;
+            _ProcessListBox.SelectedMenuItem = newSelectedProcess;
             _ProcessInfos = processInfos;
         }
 
-        private ProcessInfo SelectedProcess { get { return _ProcessListBox.SelectedListItem as ProcessInfo; } set { _ProcessListBox.SelectedListItem = value; } }
+        private ProcessInfo SelectedProcess { get { return _ProcessListBox.SelectedMenuItem as ProcessInfo; } set { _ProcessListBox.SelectedMenuItem = value; } }
         private ProcessInfo[] _ProcessInfos;
         private DxListBoxPanel _ProcessListBox;
         #endregion

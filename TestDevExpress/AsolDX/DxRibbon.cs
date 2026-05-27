@@ -6413,8 +6413,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (DxComponent.IsDebuggerActive)
                     buttonsTypes |= ControlKeyActionType.Undo | ControlKeyActionType.Redo;
 
-                qatPanel.ButtonsTypes = buttonsTypes;
-
+                qatPanel.ButtonsTypes = new ControlKeyActionType[] { buttonsTypes };
 
                 var result = form.ShowDialog(this.FindForm());
 

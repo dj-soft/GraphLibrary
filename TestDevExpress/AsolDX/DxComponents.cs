@@ -9631,7 +9631,30 @@ White
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Smazat")]
         DxKeyActionDeleteText,
-
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Vybrané doprava")]
+        DxKeyActionCopyToRightOneText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Všechny vybrané položky přenese doprava")]
+        DxKeyActionCopyToRightOneTitle,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Všechno doprava")]
+        DxKeyActionCopyToRightAllText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Všechny položky bez ohledu na výběr přenese doprava")]
+        DxKeyActionCopyToRightAllTitle,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Vybrané doleva")]
+        DxKeyActionCopyToLeftOneText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Všechny vybrané položky přenese doleva")]
+        DxKeyActionCopyToLeftOneTitle,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Všechno doleva")]
+        DxKeyActionCopyToLeftAllText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Všechny položky bez ohledu na výběr přenese doleva")]
+        DxKeyActionCopyToLeftAllTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Ctrl+Y")]
         DxKeyActionUndoTitle,

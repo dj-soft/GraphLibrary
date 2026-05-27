@@ -126,6 +126,7 @@ namespace TestDevExpress.Forms
             if (sender is Control control && control.Tag is SampleInfo sampleInfo)
             {
                 _DisposeSamplesAll();
+                __CurrentSample = sampleInfo;
                 sampleInfo.Button.Appearance.FontStyleDelta = FontStyle.Bold;
                 sampleInfo.ButtonClick();
                 _ResizeChildControls();
@@ -194,8 +195,10 @@ namespace TestDevExpress.Forms
         }
         private Control _HostContainer { get { return this.DxMainPanel; } }
         private List<SampleInfo> __Samples;
+        private SampleInfo __CurrentSample;
         private Point __SampleBegin;
         private List<Control> __ResizedControls;
+        private Rectangle __SampleBounds;
 
         private void _HostContainer_ClientSizeChanged(object sender, EventArgs e)
         {
@@ -213,6 +216,9 @@ namespace TestDevExpress.Forms
                 child.Top = top;
                 child.Height = height;
             }
+
+            __SampleBounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, clientSize.Width - __SampleBegin.X - 3, clientSize.Height - __SampleBegin.Y - 3);
+            __CurrentSample?.DoLayout?.Invoke();
         }
 
         private class SampleInfo
@@ -224,8 +230,17 @@ namespace TestDevExpress.Forms
                 this.DisposeContent = disposeContent;
                 this.IsNewGroup = isNewGroup;
             }
+            public SampleInfo(string buttonText, Action buttonClick, Action doLayout, Action disposeContent, bool isNewGroup = false)
+            {
+                this.ButtonText = buttonText;
+                this.ButtonClick = buttonClick;
+                this.DisposeContent = disposeContent;
+                this.DoLayout = doLayout;
+                this.IsNewGroup = isNewGroup;
+            }
             public readonly string ButtonText;
             public readonly Action ButtonClick;
+            public readonly Action DoLayout;
             public readonly Action DisposeContent;
             public readonly bool IsNewGroup;
             public DxSimpleButton Button;
@@ -271,8 +286,8 @@ namespace TestDevExpress.Forms
             var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 450, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
             sampleList.SelectionMode = SelectionMode.MultiExtended;
             sampleList.ButtonsPosition = ToolbarPosition.RightSideCenter;
-            sampleList.ButtonsTypes = ControlKeyActionType.MoveAll;
-            sampleList.EnabledKeyActions = ControlKeyActionType.MoveAll;
+            sampleList.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.Move_All };
+            sampleList.EnabledKeyActions = ControlKeyActionType.Move_All;
             sampleList.DragDropActions = DxDragDropActionType.ReorderItems;
             sampleList.ListItems = Randomizer.GetMenuItems(36, 80, Randomizer.ImageResourceType.PngSmall, true);
             _AddEventHandlers(sampleList, true);
@@ -301,7 +316,7 @@ namespace TestDevExpress.Forms
             var sampleListA = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 400, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
             sampleListA.SelectionMode = SelectionMode.MultiExtended;
             sampleListA.ButtonsPosition = ToolbarPosition.BottomSideCenter;
-            sampleListA.ButtonsTypes = ControlKeyActionType.SelectAll | ControlKeyActionType.CopyToRightOne | ControlKeyActionType.CopyToRightAll;
+            sampleListA.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.SelectAll, ControlKeyActionType.Delimiter, ControlKeyActionType.CopyToRightOne, ControlKeyActionType.CopyToRightAll, ControlKeyActionType.CopyToRightOne, ControlKeyActionType.CopyToRightAll };
             sampleListA.EnabledKeyActions = ControlKeyActionType.None;
             sampleListA.DragDropActions = DxDragDropActionType.CopyItemsFrom;
             sampleListA.ListItems = Randomizer.GetMenuItems(36, 80, Randomizer.ImageResourceType.PngSmall, true);
@@ -312,7 +327,7 @@ namespace TestDevExpress.Forms
             var sampleListB = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X + 410, __SampleBegin.Y, 400, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
             sampleListB.SelectionMode = SelectionMode.MultiExtended;
             sampleListB.ButtonsPosition = ToolbarPosition.BottomSideCenter;
-            sampleListB.ButtonsTypes = ControlKeyActionType.SelectAll | ControlKeyActionType.Delete | ControlKeyActionType.CopyToLeftOne | ControlKeyActionType.CopyToLeftAll | ControlKeyActionType.MoveAll;
+            sampleListB.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.SelectAll, ControlKeyActionType.Delimiter, ControlKeyActionType.Delete, ControlKeyActionType.CopyToLeftOne, ControlKeyActionType.CopyToLeftAll, ControlKeyActionType.Delimiter, ControlKeyActionType.Move_All };
             sampleListB.EnabledKeyActions = ControlKeyActionType.None;
             sampleListB.DragDropActions = DxDragDropActionType.ImportItemsInto | DxDragDropActionType.ReorderItems;
             sampleListB.ListItems = Randomizer.GetMenuItems(7, Randomizer.ImageResourceType.PngSmall, true);
@@ -354,6 +369,65 @@ namespace TestDevExpress.Forms
         private DxListBoxPanel _Sample3ListA;
         private DxListBoxPanel _Sample3ListB;
         #endregion
+        #region Sample 4 DblListBox
+        /// <summary>
+        /// Metoda je volaná reflexí v <see cref="DxMainContentPrepare"/> na základě atributu [Initializer()] !!!
+        /// </summary>
+        [Initializer(4)]
+        private void _PrepareSample4()
+        {
+            __Samples.Add(new SampleInfo("DoubleListBox", _CreateSample4, _CreateLayout4, _DisposeSample4, true));
+        }
+        private void _CreateSample4()
+        {
+            var sampleDblList = new DxDblListBoxPanel();
+
+            sampleDblList.ButtonsPosition = DxDblListBoxPanel.ButtonsPositionType.Bottom;
+            sampleDblList.SourceRowFilterMode = DxListBoxPanel.FilterRowMode.Client;
+            sampleDblList.TargetRowFilterMode = DxListBoxPanel.FilterRowMode.Client;
+            sampleDblList.SourceListReadOnly = true;
+            sampleDblList.ClipboardActionsEnabled = true;
+
+            sampleDblList.SourceMenuItems = Randomizer.GetMenuItems(48, 80, Randomizer.ImageResourceType.PngSmall, true, true);
+            sampleDblList.TargetMenuItems = Randomizer.GetMenuItems(3, 8, Randomizer.ImageResourceType.PngSmall, true, true);
+
+            this._HostContainer.Controls.Add(sampleDblList);
+
+            _Sample4DblList = sampleDblList;
+        }
+        private void _CreateLayout4()
+        {
+            var bounds = __SampleBounds;
+            _Sample4DblList.Bounds = bounds;
+        }
+        private void _DisposeSample4()
+        {
+            _Sample4DblList?.RemoveControlFromParent();
+            _Sample4DblList = null;
+        }
+        private void _Sample4ListA_ListActionAfter(object sender, DxListBoxActionEventArgs e)
+        {
+            switch (e.Action)
+            {
+                case ControlKeyActionType.CopyToRightOne:
+                case ControlKeyActionType.CopyToRightAll:
+
+                    break;
+            }
+        }
+        private void _Sample4ListB_ListActionAfter(object sender, DxListBoxActionEventArgs e)
+        {
+            switch (e.Action)
+            {
+                case ControlKeyActionType.CopyToLeftOne:
+                case ControlKeyActionType.CopyToLeftAll:
+
+                    break;
+            }
+        }
+        private DxDblListBoxPanel _Sample4DblList;
+        #endregion
+
         #region Sample 11
         /// <summary>
         /// Metoda je volaná reflexí v <see cref="DxMainContentPrepare"/> na základě atributu [Initializer()] !!!
@@ -370,8 +444,8 @@ namespace TestDevExpress.Forms
             sampleList.DxTemplate = _CreateTemplate11();
             sampleList.SelectionMode = SelectionMode.MultiExtended;
             sampleList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
-            sampleList.ButtonsTypes = ControlKeyActionType.MoveAll;
-            sampleList.EnabledKeyActions = ControlKeyActionType.MoveAll;
+            sampleList.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.Move_All };
+            sampleList.EnabledKeyActions = ControlKeyActionType.Move_All;
             sampleList.DragDropActions = DxDragDropActionType.ReorderItems;
             _AddEventHandlers(sampleList, true);
             this._HostContainer.Controls.Add(sampleList);
@@ -403,7 +477,7 @@ namespace TestDevExpress.Forms
         [Initializer(12)]
         private void _PrepareSample12()
         {
-            __Samples.Add(new SampleInfo("DataTable a Template 2500 řádků", _CreateSample12, _DisposeSample12, true));
+            __Samples.Add(new SampleInfo("DataTable a Template 2500 řádků", _CreateSample12, _DisposeSample12, false));
         }
         private void _CreateSample12()
         {
@@ -444,7 +518,7 @@ namespace TestDevExpress.Forms
         [Initializer(13)]
         private void _PrepareSample13()
         {
-            __Samples.Add(new SampleInfo("DataTable a SimpleLayout", _CreateSample13, _DisposeSample13, true));
+            __Samples.Add(new SampleInfo("DataTable a SimpleLayout", _CreateSample13, _DisposeSample13, false));
         }
         private void _CreateSample13()
         {
@@ -471,7 +545,7 @@ namespace TestDevExpress.Forms
         [Initializer(14)]
         private void _PrepareSample14()
         {
-            __Samples.Add(new SampleInfo("Katalog hub, 80 řádků", _CreateSample14, _DisposeSample14, true));
+            __Samples.Add(new SampleInfo("Katalog hub, 80 řádků", _CreateSample14, _DisposeSample14, false));
         }
         private void _CreateSample14()
         {
