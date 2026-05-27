@@ -3543,6 +3543,60 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="defaultTitle">Náhradní titulek, použije se když je zadán text ale není zadán titulek</param>
         public void SetToolTip(string title, string text, string defaultTitle = null) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text, defaultTitle); }
         #endregion
+        #region Items
+        public IMenuItem[] ComboItems { get { return __ComboItems; } set { __ComboItems = value; _AcceptComboItems(); } } private IMenuItem[] __ComboItems;
+        public IMenuItem SelectedComboItem 
+        {
+            get 
+            {
+                var selectedItem = SelectedItem;
+                if (selectedItem != null && selectedItem is ImageComboBoxItem dxItem && dxItem.Value is IMenuItem menuItem)
+                    return menuItem;
+                return null;
+            } 
+            set
+            {
+                ImageComboBoxItem dxItem = null;
+                IMenuItem menuItem = value;
+                if (menuItem != null)
+                    dxItem = this.Properties.Items
+                        .OfType<ImageComboBoxItem>()
+                        .FirstOrDefault(cbi => cbi.Value != null && Object.ReferenceEquals(cbi.Value, menuItem));
+                SelectedItem = dxItem;
+            }
+        }
+        private void _AcceptComboItems()
+        {
+            this.SelectedComboItem = null;
+
+            this.Properties.Items.Clear();
+
+            ResourceImageSizeType imageSize = ResourceImageSizeType.Small;
+            this.Properties.SmallImages = DxComponent.GetPreferredImageList(imageSize); 
+            this.Properties.Items.AddRange(CreateComboBoxItems(__ComboItems, imageSize));
+        }
+        public static ImageComboBoxItem[] CreateComboBoxItems(IEnumerable<IMenuItem> menuItems, ResourceImageSizeType imageSize = ResourceImageSizeType.Small)
+        {
+            var dxItems = new List<ImageComboBoxItem>();
+            if (menuItems != null)
+            {
+                foreach (var menuItem in menuItems)
+                {
+                    if (menuItem != null)
+                    {
+                        var dxItem = new DevExpress.XtraEditors.Controls.ImageComboBoxItem()
+                        {
+                            Value = menuItem,
+                            Description = menuItem.Text,
+                            ImageIndex = DxComponent.GetPreferredImageIndex(menuItem.ImageName, imageSize)
+                        };
+                        dxItems.Add(dxItem);
+                    }
+                }
+            }
+            return dxItems.ToArray();
+        }
+        #endregion
     }
     #endregion
     #region DxSpinEdit

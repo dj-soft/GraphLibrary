@@ -13,6 +13,7 @@ using System.Drawing;
 using Noris.Clients.Win.Components.AsolDX.DxForm;
 using Noris.Clients.Win.Components.AsolDX.DataForm;
 using TestDevExpress.Components;
+using DevExpress.XtraRichEdit.Model.History;
 
 namespace TestDevExpress.Forms
 {
@@ -382,11 +383,13 @@ namespace TestDevExpress.Forms
         {
             var sampleDblList = new DxDblListBoxPanel();
 
-            sampleDblList.ButtonsPosition = DxDblListBoxPanel.ButtonsPositionType.Bottom;
             sampleDblList.SourceRowFilterMode = DxListBoxPanel.FilterRowMode.Client;
             sampleDblList.TargetRowFilterMode = DxListBoxPanel.FilterRowMode.Client;
+            sampleDblList.ButtonsPosition = DxDblListBoxPanel.ButtonsPositionType.Bottom;
             sampleDblList.SourceListReadOnly = true;
             sampleDblList.ClipboardActionsEnabled = true;
+            sampleDblList.ReorderItemsEnabled = true;
+            sampleDblList.DragAndDropEnabled = true;
 
             sampleDblList.SourceMenuItems = Randomizer.GetMenuItems(48, 80, Randomizer.ImageResourceType.PngSmall, true, true);
             sampleDblList.TargetMenuItems = Randomizer.GetMenuItems(3, 8, Randomizer.ImageResourceType.PngSmall, true, true);
@@ -394,38 +397,98 @@ namespace TestDevExpress.Forms
             this._HostContainer.Controls.Add(sampleDblList);
 
             _Sample4DblList = sampleDblList;
+
+            _CreateSample4Params();                        // Params = prvky pro nastavování vlastností pro testy různého nastavení
         }
         private void _CreateLayout4()
         {
             var bounds = __SampleBounds;
-            _Sample4DblList.Bounds = bounds;
+            _Sample4DblList.Bounds = new Rectangle(bounds.X, bounds.Y + 30, bounds.Width, bounds.Height - 30);
         }
         private void _DisposeSample4()
         {
             _Sample4DblList?.RemoveControlFromParent();
             _Sample4DblList = null;
-        }
-        private void _Sample4ListA_ListActionAfter(object sender, DxListBoxActionEventArgs e)
-        {
-            switch (e.Action)
-            {
-                case ControlKeyActionType.CopyToRightOne:
-                case ControlKeyActionType.CopyToRightAll:
 
-                    break;
-            }
-        }
-        private void _Sample4ListB_ListActionAfter(object sender, DxListBoxActionEventArgs e)
-        {
-            switch (e.Action)
-            {
-                case ControlKeyActionType.CopyToLeftOne:
-                case ControlKeyActionType.CopyToLeftAll:
+            __Sample4ButtonsLabel.RemoveControlFromParent();
+            __Sample4ButtonsLabel = null;
 
-                    break;
-            }
+            __Sample4ButtonsCombo.RemoveControlFromParent();
+            __Sample4ButtonsCombo = null;
+
+            __Sample4SourceReadOnlyCheck.RemoveControlFromParent();
+            __Sample4SourceReadOnlyCheck = null;
+
+            __Sample4ClipActionsEnabledCheck.RemoveControlFromParent();
+            __Sample4ClipActionsEnabledCheck = null;
+
+            __Sample4ReorderEnabledCheck.RemoveControlFromParent();
+            __Sample4ReorderEnabledCheck = null;
+
+            __Sample4DragDropEnabledCheck.RemoveControlFromParent();
+            __Sample4DragDropEnabledCheck = null;
         }
         private DxDblListBoxPanel _Sample4DblList;
+        #region Nastavování vlastností
+
+        private void _CreateSample4Params()
+        {
+            __Sample4ParamsValid = false;
+            var sampleDblList = _Sample4DblList;
+            int x = __SampleBounds.Left + 6;
+            int y = __SampleBounds.Top + 6;
+            __Sample4ButtonsLabel = DxComponent.CreateDxLabel(x, y + 4, 100, this._HostContainer, "ButtonsPosition:"); x += 105;
+
+            __Sample4ButtonsCombo = DxComponent.CreateDxImageComboBox(x, y, 160, this._HostContainer, _Sample4ParamsChanged); x += 185;
+            __Sample4ButtonsCombo.ComboItems = new IMenuItem[]
+            {
+                new DataMenuItem(){ Text = "None", Tag = DxDblListBoxPanel.ButtonsPositionType.None },
+                new DataMenuItem(){ Text = "Bottom", Tag = DxDblListBoxPanel.ButtonsPositionType.Bottom, ImageName = "svgimages/align/alignhorizontalbottom.svg" },
+                new DataMenuItem(){ Text = "Center", Tag = DxDblListBoxPanel.ButtonsPositionType.Center, ImageName = "svgimages/align/alignverticalcenter.svg" },
+                new DataMenuItem(){ Text = "Right", Tag = DxDblListBoxPanel.ButtonsPositionType.Right, ImageName = "svgimages/align/alignverticalright.svg" }
+            };
+
+            var dblListPosition = _Sample4DblList.ButtonsPosition;
+            __Sample4ButtonsCombo.SelectedComboItem = __Sample4ButtonsCombo.ComboItems.FirstOrDefault(mi => ((DxDblListBoxPanel.ButtonsPositionType)mi.Tag) == dblListPosition);
+
+            __Sample4SourceReadOnlyCheck = DxComponent.CreateDxCheckEdit(x, y, 160, this._HostContainer, "SourceListReadOnly", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1); x += 165;
+            __Sample4SourceReadOnlyCheck.Checked = sampleDblList.SourceListReadOnly;
+
+            __Sample4ClipActionsEnabledCheck = DxComponent.CreateDxCheckEdit(x, y, 160, this._HostContainer, "ClipboardActionsEnabled", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1); x += 165;
+            __Sample4ClipActionsEnabledCheck.Checked = sampleDblList.ClipboardActionsEnabled;
+
+            __Sample4ReorderEnabledCheck = DxComponent.CreateDxCheckEdit(x, y, 160, this._HostContainer, "ReorderItemsEnabled", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1); x += 165;
+            __Sample4ReorderEnabledCheck.Checked = sampleDblList.ReorderItemsEnabled;
+
+            __Sample4DragDropEnabledCheck = DxComponent.CreateDxCheckEdit(x, y, 160, this._HostContainer, "DragAndDropEnabled", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1); x += 165;
+            __Sample4DragDropEnabledCheck.Checked = sampleDblList.DragAndDropEnabled;
+
+
+            __Sample4ParamsValid = true;
+        }
+        private void _Sample4ParamsChanged(object sender, EventArgs args )
+        {
+            if (!__Sample4ParamsValid) return;
+
+            var sampleDblList = _Sample4DblList;
+
+            if (__Sample4ButtonsCombo.SelectedComboItem != null && __Sample4ButtonsCombo.SelectedComboItem.Tag is DxDblListBoxPanel.ButtonsPositionType buttonPosition)
+                sampleDblList.ButtonsPosition = buttonPosition;
+
+            sampleDblList.SourceListReadOnly = __Sample4SourceReadOnlyCheck.Checked;
+            sampleDblList.ClipboardActionsEnabled = __Sample4ClipActionsEnabledCheck.Checked;
+            sampleDblList.ReorderItemsEnabled = __Sample4ReorderEnabledCheck.Checked;
+            sampleDblList.DragAndDropEnabled = __Sample4DragDropEnabledCheck.Checked;
+        }
+        private DxLabelControl __Sample4ButtonsLabel;
+        private DxImageComboBoxEdit __Sample4ButtonsCombo;
+        private DxCheckEdit __Sample4SourceReadOnlyCheck;
+        private DxCheckEdit __Sample4ClipActionsEnabledCheck;
+        private DxCheckEdit __Sample4ReorderEnabledCheck;
+        private DxCheckEdit __Sample4DragDropEnabledCheck;
+
+        private bool __Sample4ParamsValid;
+        #endregion
         #endregion
 
         #region Sample 11

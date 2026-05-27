@@ -65,6 +65,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 throw new ArgumentNullException($"DxDragDrop() error : parameter 'source' is null.");
             }
+
+            this.IsActive = true;
         }
         /// <summary>
         /// Vizualizace
@@ -266,6 +268,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="sourcePoint"></param>
         private void DoSourceMouseDown(Point sourcePoint)
         {
+            if (!this.IsActive) return;
+
             FillControlDragArgs();
             _SourceStartPoint = sourcePoint;
             _SourceStartBounds = sourcePoint.CreateRectangleFromCenter(this._SourceStartSize);
@@ -605,6 +609,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Default = <see cref="MouseButtons.Left"/> | <see cref="MouseButtons.Right"/>, tedy kterýkoli z těchto buttonů může zahájit proces.
         /// </summary>
         public MouseButtons DragButtons { get; set; }
+        /// <summary>
+        /// Systém je aktivní?
+        /// </summary>
+        public bool IsActive { get; set; }
         /// <summary>
         /// ID tohoto objektu
         /// </summary>

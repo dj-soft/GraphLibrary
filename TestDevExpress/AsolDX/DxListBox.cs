@@ -88,13 +88,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Základní vlastnosti:
             SourceDuplicityEnabled = true;
             SourceSelectionMode = SelectionMode.MultiExtended;
+            SourceRowFilterMode = DxListBoxPanel.FilterRowMode.None;
 
             TargetDuplicityEnabled = true;
             TargetSelectionMode = SelectionMode.MultiExtended;
+            TargetRowFilterMode = DxListBoxPanel.FilterRowMode.None;
 
             // DoubleListBox vlastnosti:
             __ButtonsPosition = ButtonsPositionType.Center;
             __SourceListReadOnly = true;
+            __DragAndDropEnabled = true;
             __ClipboardActionsEnabled = true;
             __ReorderItemsEnabled = true;
             _AcceptSourceListStyles();
@@ -140,6 +143,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud obsahuje true, pak List vlevo = Source smí obsahovat duplicitní klíče (defaultní hodnota je true).
         /// Pokud je false, pak vložení dalšího záznamu s klíčem, který už v Listu je, bude ignorováno.
         /// Pozor, pokud List obsahuje nějaké duplicitní záznamy a poté bude nastaveno <see cref="SourceDuplicityEnabled"/> na false, NEBUDOU duplicitní záznamy odstraněny.
+        /// <para/>
+        /// Výchozí hodnota je <c>true</c>.
         /// </summary>
         public bool SourceDuplicityEnabled { get { return __SourceListPanel.DuplicityEnabled; } set { __SourceListPanel.DuplicityEnabled = value; } }
         /// <summary>
@@ -169,7 +174,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxDragDropActionType SourceDragDropActions { get { return __SourceListPanel.DragDropActions; } set { __SourceListPanel.DragDropActions = value; } }
         /// <summary>
-        /// Varianta řádkového filtru. Default = None
+        /// Varianta řádkového filtru.
+        /// <para/>
+        /// Výchozí hodnota je <see cref="DxListBoxPanel.FilterRowMode.None"/>.
         /// </summary>
         public DxListBoxPanel.FilterRowMode SourceRowFilterMode { get { return __SourceListPanel.RowFilterMode; } set { __SourceListPanel.RowFilterMode = value; } }
      
@@ -185,6 +192,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud obsahuje true, pak zdrojový List vpravo = Target smí obsahovat duplicitní klíče (defaultní hodnota je true).
         /// Pokud je false, pak vložení dalšího záznamu s klíčem, který už v Listu je, bude ignorováno.
         /// Pozor, pokud List obsahuje nějaké duplicitní záznamy a poté bude nastaveno <see cref="TargetDuplicityEnabled"/> na false, NEBUDOU duplicitní záznamy odstraněny.
+        /// <para/>
+        /// Výchozí hodnota je <c>true</c>.
         /// </summary>
         public bool TargetDuplicityEnabled { get { return __TargetListPanel.DuplicityEnabled; } set { __TargetListPanel.DuplicityEnabled = value; } }
         /// <summary>
@@ -215,20 +224,48 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DxDragDropActionType TargetDragDropActions { get { return __TargetListPanel.DragDropActions; } set { __TargetListPanel.DragDropActions = value; } }
         /// <summary>
         /// Varianta řádkového filtru. Default = None
+        /// <para/>
+        /// Výchozí hodnota je <see cref="DxListBoxPanel.FilterRowMode.None"/>.
         /// </summary>
         public DxListBoxPanel.FilterRowMode TargetRowFilterMode { get { return __TargetListPanel.RowFilterMode; } set { __TargetListPanel.RowFilterMode = value; } }
         #endregion
         #region Definice vzhledu a chování - propojené pro oba ListBoxy
         /// <summary>
         /// Umístění buttonů v rámci <see cref="DxDblListBoxPanel"/>.
+        /// <para/>
+        /// Výchozí hodnota je <see cref="ButtonsPositionType.Center"/>.
         /// </summary>
-        public ButtonsPositionType ButtonsPosition { get { return __ButtonsPosition; } set { _SetButtonsPosition(value); } } private ButtonsPositionType __ButtonsPosition;
+        public ButtonsPositionType ButtonsPosition { get { return __ButtonsPosition; } set { __ButtonsPosition = value; _AcceptButtonsPosition(); } } private ButtonsPositionType __ButtonsPosition;
         /// <summary>
-        /// Akceptuje hodnotu do <see cref="ButtonsPosition"/>
+        /// Source List (vlevo) je ReadOnly? Pak nemá povoleno Delete, Reorder a pro Clipboard nemá povoleno Cut ani Paste
+        /// <para/>
+        /// Výchozí hodnota je <c>true</c>.
         /// </summary>
-        /// <param name="position"></param>
-        private void _SetButtonsPosition(ButtonsPositionType position)
+        public bool SourceListReadOnly { get { return __SourceListReadOnly; } set { __SourceListReadOnly = value; _AcceptListStyles(true, false); } } private bool __SourceListReadOnly;
+        /// <summary>
+        /// Jsou povoleny akce DragAndDrop?
+        /// <para/>
+        /// Výchozí hodnota je <c>true</c>.
+        /// </summary>
+        public bool DragAndDropEnabled { get { return __DragAndDropEnabled; } set { __DragAndDropEnabled = value; _AcceptListStyles(true, true); } } private bool __DragAndDropEnabled;
+        /// <summary>
+        /// Jsou povoleny akce přenesení prvků pomocí Clipboardu?
+        /// <para/>
+        /// Výchozí hodnota je <c>true</c>.
+        /// </summary>
+        public bool ClipboardActionsEnabled { get { return __ClipboardActionsEnabled; } set { __ClipboardActionsEnabled = value; _AcceptListStyles(true, true); } } private bool __ClipboardActionsEnabled;
+        /// <summary>
+        /// Jsou povoleny akce změny pořadí prvků?
+        /// <para/>
+        /// Výchozí hodnota je <c>true</c>.
+        /// </summary>
+        public bool ReorderItemsEnabled { get { return __ReorderItemsEnabled; } set { __ReorderItemsEnabled = value; _AcceptListStyles(true, true); } } private bool __ReorderItemsEnabled;
+        /// <summary>
+        /// Akceptuje hodnotu pozice buttonůdo <see cref="ButtonsPosition"/>
+        /// </summary>
+        private void _AcceptButtonsPosition()
         {
+            ButtonsPositionType position = __ButtonsPosition;
             switch (position)
             {
                 case ButtonsPositionType.None:
@@ -252,48 +289,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             __ButtonsPosition = position;
         }
         /// <summary>
-        /// Source List (vlevo) je ReadOnly? Pak nemá povoleno Delete, Reorder a pro Clipboard nemá povoleno Cut ani Paste
+        /// Akceptuje zadané hodnoty <see cref="SourceListReadOnly"/>, <see cref="DragAndDropEnabled"/>, <see cref="ClipboardActionsEnabled"/>, <see cref="ReorderItemsEnabled"/>
+        /// do listů Source a Traget dle zadaných parametrů
         /// </summary>
-        public bool SourceListReadOnly { get { return __SourceListReadOnly; } set { _SetSourceListReadOnly(value); } } private bool __SourceListReadOnly;
-        /// <summary>
-        /// Akceptuje hodnotu do <see cref="SourceListReadOnly"/>
-        /// </summary>
-        /// <param name="sourceListReadOnly"></param>
-        /// <returns></returns>
-        private void _SetSourceListReadOnly(bool sourceListReadOnly)
+        /// <param name="acceptToSource"></param>
+        /// <param name="acceptToTarget"></param>
+        private void _AcceptListStyles(bool acceptToSource, bool acceptToTarget)
         {
-            __SourceListReadOnly = sourceListReadOnly;
-            _AcceptSourceListStyles();
-        }
-        /// <summary>
-        /// Jsou povoleny akce přenesení prvků pomocí Clipboardu?
-        /// </summary>
-        public bool ClipboardActionsEnabled { get { return __ClipboardActionsEnabled; } set { _SetClipboardActionsEnabled(value); } } private bool __ClipboardActionsEnabled;
-        /// <summary>
-        /// Akceptuje hodnotu do <see cref="ClipboardActionsEnabled"/>
-        /// </summary>
-        /// <param name="clipboardActionsEnabled"></param>
-        /// <returns></returns>
-        private void _SetClipboardActionsEnabled(bool clipboardActionsEnabled)
-        {
-            __ClipboardActionsEnabled = clipboardActionsEnabled;
-            _AcceptSourceListStyles();
-            _AcceptTargetListStyles();
-        }
-        /// <summary>
-        /// Jsou povoleny akce změny pořadí prvků?
-        /// </summary>
-        public bool ReorderItemsEnabled { get { return __ReorderItemsEnabled; } set { _SetReorderItemsEnabled(value); } } private bool __ReorderItemsEnabled;
-        /// <summary>
-        /// Akceptuje hodnotu do <see cref="ReorderItemsEnabled"/>
-        /// </summary>
-        /// <param name="reorderItemsEnabled"></param>
-        /// <returns></returns>
-        private void _SetReorderItemsEnabled(bool reorderItemsEnabled)
-        {
-            __ReorderItemsEnabled = reorderItemsEnabled;
-            _AcceptSourceListStyles();
-            _AcceptTargetListStyles();
+            if (acceptToSource) _AcceptSourceListStyles();
+            if (acceptToTarget) _AcceptTargetListStyles();
         }
         /// <summary>
         /// Podle hodnot <see cref="SourceListReadOnly"/> a <see cref="ClipboardActionsEnabled"/> a <see cref="ReorderItemsEnabled"/> 
@@ -302,6 +306,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _AcceptSourceListStyles()
         {
             bool sourceListReadOnly = __SourceListReadOnly;
+            bool dragAndDropEnabled = __DragAndDropEnabled;
             bool clipboardActionsEnabled = __ClipboardActionsEnabled;
             bool reorderItemsEnabled = __ReorderItemsEnabled;
 
@@ -314,7 +319,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             // SelectAll je povolen vždy:
             buttonTypes.Add(ControlKeyActionType.SelectAll);
             keyActions |= ControlKeyActionType.SelectAll;
-            dragDropActions |= DxDragDropActionType.CopyItemsFrom;
+            if (dragAndDropEnabled)
+                dragDropActions |= DxDragDropActionType.CopyItemsFrom;
 
             // Pokud je povolen ClipBoard, pak přidáme Delimiter a ClipCopy [a možná podle editovatelnosti i Cut a Paste]:
             if (clipboardActionsEnabled)
@@ -348,7 +354,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             buttonTypes.Add(ControlKeyActionType.CopyToRightOne);
             buttonTypes.Add(ControlKeyActionType.CopyToRightAll);
             keyActions |= ControlKeyActionType.CopyToRightOne | ControlKeyActionType.CopyToRightAll;
-            dragDropActions |= DxDragDropActionType.CopyItemsFrom;
+            if (dragAndDropEnabled)
+                dragDropActions |= DxDragDropActionType.CopyItemsFrom;
 
 
             // Pokud není ReadOnly a máme povoleno Reorder:
@@ -360,7 +367,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 buttonTypes.Add(ControlKeyActionType.MoveDown);
                 buttonTypes.Add(ControlKeyActionType.MoveBottom);
                 keyActions |= ControlKeyActionType.Move_All;
-                dragDropActions |= DxDragDropActionType.ReorderItems;
+                if (dragAndDropEnabled)
+                    dragDropActions |= DxDragDropActionType.ReorderItems;
             }
 
             // Výsledky:
@@ -374,10 +382,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Podle hodnot <see cref="ClipboardActionsEnabled"/> a <see cref="ReorderItemsEnabled"/> 
         /// vloží patřičné hodnoty do <see cref="SourceButtonsTypes"/> a <see cref="SourceEnabledKeyActions"/> a <see cref="SourceDragDropActions"/>.
         /// </summary>
-
         private void _AcceptTargetListStyles()
         {
             bool sourceListReadOnly = __SourceListReadOnly;
+            bool dragAndDropEnabled = __DragAndDropEnabled;
             bool clipboardActionsEnabled = __ClipboardActionsEnabled;
             bool reorderItemsEnabled = __ReorderItemsEnabled;
 
@@ -390,7 +398,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             // SelectAll je povolen vždy:
             buttonTypes.Add(ControlKeyActionType.SelectAll);
             keyActions |= ControlKeyActionType.SelectAll;
-            dragDropActions |= DxDragDropActionType.CopyItemsFrom;
+            if (dragAndDropEnabled)
+                dragDropActions |= DxDragDropActionType.CopyItemsFrom;
 
             // Pokud je povolen ClipBoard, pak přidáme Delimiter a ClipCopy a Cut a Paste:
             if (clipboardActionsEnabled)
@@ -413,7 +422,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             keyActions |= ControlKeyActionType.Delete;
 
             // DragDrop akceptuje prvky Dragované ze zdroje:
-            dragDropActions |= DxDragDropActionType.ImportItemsInto;
+            if (dragAndDropEnabled)
+                dragDropActions |= DxDragDropActionType.ImportItemsInto;
 
             // Pokud máme povoleno Reorder:
             if (reorderItemsEnabled)
@@ -424,7 +434,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 buttonTypes.Add(ControlKeyActionType.MoveDown);
                 buttonTypes.Add(ControlKeyActionType.MoveBottom);
                 keyActions |= ControlKeyActionType.Move_All;
-                dragDropActions |= DxDragDropActionType.ReorderItems;
+                if (dragAndDropEnabled)
+                    dragDropActions |= DxDragDropActionType.ReorderItems;
             }
 
             // Výsledky:
@@ -3012,7 +3023,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (actions != DxDragDropActionType.None && _DxDragDrop == null)
                 _DxDragDrop = new DxDragDrop(this);
+            
             _DragDropActions = actions;
+
+            if (_DxDragDrop != null)
+                _DxDragDrop.IsActive = (actions != DxDragDropActionType.None);
         }
         /// <summary>
         /// Dispose controlleru Drag and Drop
