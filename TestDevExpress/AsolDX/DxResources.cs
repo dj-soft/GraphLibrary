@@ -84,9 +84,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sizeType"></param>
         /// <param name="useZoom"></param>
-        /// <param name="targetDpi"></param>
+        /// <param name="targetDpi">DPI controlu (typicky <see cref="System.Windows.Forms.Control.DeviceDpi"/>)</param>
+        /// <param name="resultModulo">Násobek pixelů pro výsledné číslo, abychom nevraceli např. 17. Typicky 2 nebo 4. Při výsledku 16px * Zoom 130% = 21px a modulo 4 vrátíme 20px (zarovnáme dolů na celé 4px)</param>
         /// <returns></returns>
-        public static Size GetImageSize(ResourceImageSizeType? sizeType, bool useZoom = true, int? targetDpi = null)
+        public static Size GetImageSize(ResourceImageSizeType? sizeType, bool useZoom = true, int? targetDpi = null, int? resultModulo = null)
         {
             if (!sizeType.HasValue) sizeType = ResourceImageSizeType.Medium;
             int s;
@@ -108,7 +109,14 @@ namespace Noris.Clients.Win.Components.AsolDX
                     break;
             }
             if (useZoom)
+            {
                 s = (targetDpi.HasValue ? ZoomToGui(s, targetDpi.Value) : ZoomToGui(s));
+                if (resultModulo.HasValue && resultModulo.Value > 1 && resultModulo.Value <= 16)
+                {
+                    int m = resultModulo.Value;
+                    s = (s / m) * m;                       // s:21  /  m:4  =  5       5 * m:4  =  20
+                }
+            }
             return new Size(s, s);
         }
         /// <summary>
@@ -840,6 +848,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region ApplyImage - do cílového objektu vepíše obrázek podle toho, jak je zadán a kam má být vepsán
         /// <summary>
+        /// Vrací true, pokud dodané jméno ikony není prázdné, a je rozpoznáno jako validní (z knihovny Resources, z DevExpress, jde o SVG image, nebo ImageArray) a je tedy možno jej aplikovat do prvků GUI (buttony, menu, atd).
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <returns></returns>
+        public static bool IsValidImageName(string imageName) { return Instance._IsValidImageName(imageName); }
+        /// <summary>
+        /// Vrací true, pokud dodané jméno ikony není prázdné, a je rozpoznáno jako validní.
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <returns></returns>
+        private bool _IsValidImageName(string imageName)
+        {
+            if (String.IsNullOrEmpty(imageName)) return false;
+
+            if (_TryGetContentTypeXmlContent(imageName, null, false, out var contentTypeXml, out var dxSvgImageXml)) return true;
+            if (_TryGetContentTypeImageArray(imageName, null, false, out var contentTypeArr, out var dxSvgImageArr)) return true;
+            if (_ExistsDevExpressResource(imageName)) return true;
+            if (DxApplicationResourceLibrary.TryGetResource(imageName, false, out var resourcePack)) return true;
+
+            return false;
+        }
+        /// <summary>
         /// ApplyImage - do cílového objektu vepíše obrázek podle toho, jak je zadán a kam má být vepsán
         /// </summary>
         /// <param name="imageOptions"></param>
@@ -902,7 +932,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (args.SmallButton && imageOptions is SimpleButtonImageOptions buttonImageOptions)
             {
                 buttonImageOptions.Location = DevExpress.XtraEditors.ImageLocation.MiddleCenter;
-                buttonImageOptions.ImageToTextAlignment = ImageAlignToText.TopCenter;
+                buttonImageOptions.ImageToTextAlignment = ImageAlignToText.None;                   // Button nebude mít text (protože args.SmallButton). A takhle bude jeho ikona úplně přesně uprostřed!
             }
         }
         /// <summary>
@@ -2183,6 +2213,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             return DevExpress.Utils.Svg.SvgPaletteHelper.GetSvgPalette(skinProvider, svgState.Value);
         }
         /// <summary>
+        /// Vrátí true, pokud dané jméno ikony / obrázku je k nalezení v DevExpress knihovnách
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <returns></returns>
+        public static bool IsDevExpressResource(string imageName) { return Instance._ExistsDevExpressResource(imageName); }
+        /// <summary>
         /// Vrací seznam DevExpress resources - jména zdrojů
         /// </summary>
         /// <param name="extension">Přípona, vybírat jen záznamy s touto příponou. Měla by začínat tečkou: ".svg"</param>
@@ -2254,7 +2290,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 svgContent = _CreateVectorContentDevExpress(resourceName);
                 vectorDict.Add(resourceName, svgContent);
             }
-            return svgContent;                   // třída SvgImage má implicitní konverzi z byte[]
+            SvgImage svgImage = svgContent;                // třída SvgImage má implicitní konverzi z byte[]
+            svgImage.Tag = args.ImageName;                 // V property SvgImage.Tag bychom rádi ukládali zdrojové jméno obrázku...
+            return svgImage;
         }
         /// <summary>
         /// Najde a vrátí byte[] obsah z <see cref="SvgImage"/> pro dané jméno, hledá v DevExpress zdrojích
@@ -2767,6 +2805,133 @@ namespace Noris.Clients.Win.Components.AsolDX
             return ResourceContentType.None;
         }
         #endregion
+        #region Public static konverze plného jména aplikačního zdroje (Resources.bin) na skupinové jméno, velikost a typ
+        /// <summary>
+        /// Vrátí korektně formátovaný klíč resource (provede Trim, ToLower, a náhradu zpětných lomítek a odstranění úvodních lomítek.
+        /// <para/>
+        /// Pokud tedy na vstupu bude <c>" \\pic_0\UI\Browse\GenTemplate-large.svg "</c>, pak na výstupu bude <c>"pic_0/ui/browse/gentemplate-large.svg"</c>.
+        /// </summary>
+        /// <param name="resourceItemName"></param>
+        /// <returns></returns>
+        public static string GetAplResourceItemKey(string resourceItemName)
+        {
+            string key = (resourceItemName ?? "").Trim().ToLower().Replace("\\", "/");
+            while (key.Length > 0 && key[0] == '/') key = key.Substring(1).Trim();
+            return key;
+        }
+        /// <summary>
+        /// Vrátí obecné jméno zdroje z dodaného plného jména zdroje (oddělí velikost a typ souboru podle suffixu a přípony).
+        /// <para/>
+        /// Pokud tedy na vstupu bude <c>" \\pic_0\UI\Browse\GenTemplate-large.svg "</c>, pak na výstupu bude <c>"pic_0/ui/browse/gentemplate"</c>.
+        /// </summary>
+        /// <param name="resourceItemName"></param>
+        /// <returns></returns>
+        public static string GetAplResourcePackKey(string resourceItemName)
+        {
+            return GetAplResourcePackKey(resourceItemName, out var _, out var _);
+        }
+        /// <summary>
+        /// Vrátí obecné jméno zdroje z dodaného plného jména zdroje (oddělí velikost a typ souboru podle suffixu a přípony).
+        /// <para/>
+        /// Pokud tedy na vstupu bude <c>" \\pic_0\UI\Browse\GenTemplate-large.svg "</c>, pak na výstupu bude <c>"pic_0/ui/browse/gentemplate"</c>,<br/>
+        /// a do out parametrů uloží velikost <paramref name="sizeType"/> = <see cref="ResourceImageSizeType.Large"/>,<br/>
+        /// a druh obsahu <paramref name="contentType"/> = <see cref="ResourceContentType.Vector"/>.
+        /// </summary>
+        /// <param name="resourceItemName"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="contentType"></param>
+        /// <returns></returns>
+        public static string GetAplResourcePackKey(string resourceItemName, out ResourceImageSizeType sizeType, out ResourceContentType contentType)
+        {
+            string resourcePackName = GetAplResourceItemKey(resourceItemName);
+            sizeType = ResourceImageSizeType.None;
+            contentType = ResourceContentType.None;
+            if (!String.IsNullOrEmpty(resourcePackName))
+                if (AplResourceRemoveTypeFromSuffix(ref resourcePackName, out contentType) && IsAplResourceSupportSize(contentType))
+                    AplResourceRemoveSizeFromSuffix(ref resourcePackName, out sizeType);
+            return resourcePackName;
+        }
+        /// <summary>
+        /// Vrací true, pokud dodaný typ obsahu podporuje uvádění velikosti v názvu zdroje (souboru). Typicky jde o obrázky.
+        /// </summary>
+        /// <param name="contentType"></param>
+        /// <returns></returns>
+        private static bool IsAplResourceSupportSize(ResourceContentType contentType)
+        {
+            switch (contentType)
+            {
+                case ResourceContentType.Bitmap:
+                case ResourceContentType.Vector:
+                case ResourceContentType.Icon:
+                case ResourceContentType.Cursor:
+                    return true;
+            }
+            return false;
+        }
+        /// <summary>
+        /// Z dodaného jména souboru určí suffix, a podle něj detekuje velikost obrázku (dá do out parametru) a detekovaný suffix odřízne (celý).
+        /// Vrátí true, pokud nějakou velikost detekoval a odřízl (tedy <paramref name="sizeType"/> je jiný než None). 
+        /// Vrátí false, když je vstup prázdný, nebo bez suffixu nebo s neznámým suffixem, pak suffix neodřízne.
+        /// <para/>
+        /// Například pro vstup: "C:/Images/Button-24x24" detekuje <paramref name="sizeType"/> = <see cref="ResourceImageSizeType.Medium"/>, 
+        /// a v ref parametru <paramref name="resourceName"/> ponechá: "C:/Images/Button".
+        /// <para/>
+        /// Tato metoda se typicky volá až po metodě <see cref="AplResourceRemoveTypeFromSuffix(ref string, out ResourceContentType)"/>, protože tam se řeší a odřízne přípona, a následně se zde řeší suffix jména souboru.
+        /// </summary>
+        /// <param name="resourceName"></param>
+        /// <param name="sizeType"></param>
+        /// <returns></returns>
+        private static bool AplResourceRemoveSizeFromSuffix(ref string resourceName, out ResourceImageSizeType sizeType)
+        {
+            sizeType = ResourceImageSizeType.None;
+            if (String.IsNullOrEmpty(resourceName)) return false;
+            resourceName = resourceName.TrimEnd();
+            int index = resourceName.LastIndexOf("-");
+            if (index <= 0) return false;
+            string suffix = resourceName.Substring(index).ToLower();
+            switch (suffix)
+            {
+                case "-16x16":
+                case "-small":
+                    sizeType = ResourceImageSizeType.Small;
+                    break;
+                case "-24x24":
+                    sizeType = ResourceImageSizeType.Medium;
+                    break;
+                case "-32x32":
+                case "-large":
+                    sizeType = ResourceImageSizeType.Large;
+                    break;
+            }
+            if (sizeType != ResourceImageSizeType.None)
+                resourceName = resourceName.Substring(0, resourceName.Length - suffix.Length);
+            return (sizeType != ResourceImageSizeType.None);
+        }
+        /// <summary>
+        /// Z dodaného jména souboru určí příponu, podle ní detekuje typ obsahu (dá do out parametru) a detekovanou příponu odřízne (včetně tečky).
+        /// Vrátí true, pokud nějakou příponu detekoval a odřízl (tedy <paramref name="contentType"/> je jiný než None). 
+        /// Vrátí false, když je vstup prázdný, nebo bez přípony nebo s neznámou příponou, pak příponu neodřízne.
+        /// <para/>
+        /// Například pro vstup: "C:/Images/Button-24x24.png" detekuje <paramref name="contentType"/> = <see cref="ResourceContentType.Bitmap"/>, 
+        /// a v ref parametru <paramref name="resourceName"/> ponechá: "C:/Images/Button-24x24".
+        /// <para/>
+        /// Tato metoda se typicky volá před metodou <see cref="AplResourceRemoveSizeFromSuffix(ref string, out ResourceImageSizeType)"/>, protože tady se řeší a odřízne přípona, a následně se tam řeší suffix jména souboru.
+        /// </summary>
+        /// <param name="resourceName"></param>
+        /// <param name="contentType"></param>
+        private static bool AplResourceRemoveTypeFromSuffix(ref string resourceName, out ResourceContentType contentType)
+        {
+            contentType = ResourceContentType.None;
+            if (String.IsNullOrEmpty(resourceName)) return false;
+            resourceName = resourceName.TrimEnd();
+            if (resourceName.StartsWith("@")) return false;               // POZOR = tady může name obsahovat nevalidní znaky ( "@text|A|#000066|sans-serif|B|2|#222288|#CCCCFF" ) => neměl bych zhavarovat
+            string extension = System.IO.Path.GetExtension(resourceName).ToLower();
+            contentType = DxComponent.GetContentTypeFromExtension(extension);
+            if (contentType != ResourceContentType.None)
+                resourceName = resourceName.Substring(0, resourceName.Length - extension.Length);
+            return (contentType != ResourceContentType.None);
+        }
+        #endregion
         #region Priority, velikosti ikon, atd
         /// <summary>
         /// Obsahuje true, pokud jsou preferovány vektorové ikony.
@@ -3049,9 +3214,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Platný typ velikosti <see cref="SizeType"/>, nebo daný jménem obrázku, nebo default = <see cref="ResourceImageSizeType.Large"/>
             /// </summary>
-            public ResourceImageSizeType CurrentSizeType 
+            public ResourceImageSizeType CurrentSizeType
             {
-                get 
+                get
                 {
                     if (this.SizeType.HasValue) return this.SizeType.Value;
 
@@ -3060,7 +3225,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                         var imageName = ImageName;
                         if (!String.IsNullOrEmpty(imageName))
                         {
-                            DataResources.GetPackKey(imageName, out var size, out var type);
+                            DxComponent.GetAplResourcePackKey(imageName, out var size, out var type);
                             if (size != ResourceImageSizeType.None)
                                 __SizeTypeByName = size;
                         }
@@ -3830,6 +3995,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         public const string DxDialogIconWarning = "pic_0/Win/MessageBox/warning";
         /// <summary>Standardní ikona pro danou příležitost</summary>
         public const string DxDialogIconError = "pic_0/Win/MessageBox/error";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public const string DxDialogIconSave = "pic_0/Menu/frmsave";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public const string DxDialogIconSaveAs = "pic_0/Menu/SaveAs";
     }
     #endregion
     #region class DxBmpImageList : Kolekce Images rozšířená o možnost reloadu při změně barevnosti

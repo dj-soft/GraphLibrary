@@ -812,6 +812,40 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return text;
         }
+        /// <summary>
+        /// Rozdělí this string na část před oddělovačem <paramref name="delimiter"/> a část za ním (oddělovač ve výstupu nebude).
+        /// <para/>
+        /// Pokud this string je null, pak výstup je null.<br/>
+        /// Pokud není zadán oddělovač, anebo není nalezen, pak výstup je pár: { "text", null }.<br/>
+        /// Pokud je oddělovač nalezen, pak ve výstupu je prvek Item2 ne-null.<br/>
+        /// Pokud oddělovač je hned na první pozici vstupního textu, pak na výstupu je Item1 = "", a v Item2 je text za oddělovačem.<br/>
+        /// Pokud oddělovač je úplně na konci textu, pak na výstupu je Item1 = text před oddělovačem, a v Item2 je "".<br/>
+        /// <para/>
+        /// Metoda neprovádí Trim() žádné části.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="delimiter"></param>
+        /// <returns></returns>
+        public static Tuple<string, string> Cut(this string text, string delimiter)
+        {
+            if (text is null) return null;
+            if (String.IsNullOrEmpty(delimiter)) return new Tuple<string, string>(text, null);               // Oddělovač nezadán        =>    Vracíme { "text", null }
+            int delLen = delimiter.Length;
+            int txtLen = text.Length;
+
+            int index = text.IndexOf(delimiter);                                                             // Pozice oddělovače například ";"
+            if (index < 0) return new Tuple<string, string>(text, null);                                     // Oddělovač nenalezen      =>    Vracíme { "text", null }
+
+            if (index == 0)                                                                                  // Oddělovač je hned na začátku textu
+                return ((txtLen == delLen)                                                                   // Pokud vstupní text == pouze oddělovač:
+                    ? new Tuple<string, string>("", "")                                                      // ";"          =>   Vracíme { "", "" }
+                    : new Tuple<string, string>("", text.Substring(delLen)));                                // ";itm2"      =>   Vracíme { "", "itm2" }
+
+            if ((index + delLen) >= txtLen)                                                                  // Oddělovač je úplně na konci textu, za ním není nic:
+                return new Tuple<string, string>(text.Substring(0, index), "");                              // "itm1;"      =>   Vracíme { "itm1", "" }
+
+            return new Tuple<string, string>(text.Substring(0, index), text.Substring(index + delLen));      // "itm1;itm2"  =>   Vracíme { "itm1", "itm2" }
+        }
         #endregion
         #region Align
         /// <summary>

@@ -3989,9 +3989,9 @@ Aplikační server neodpověděl v časovém limitu 130 sekund. Opakujte pokus o
             dialogArgs.SystemIcon = NWC.DialogSystemIcon.Question;
             dialogArgs.MessageText = "Přejete si další chod k obědu?" + Environment.NewLine + Randomizer.GetSentences(4, 8, 3, 12);
             dialogArgs.PrepareButtons(DialogResult.Yes, DialogResult.No);
-            dialogArgs.IconFile = "Quest";
-            dialogArgs.Buttons[0].ImageFile = "Yes";
-            dialogArgs.Buttons[1].ImageFile = "No";
+            dialogArgs.IconName = "Quest";
+            dialogArgs.Buttons[0].ImageName = "Yes";
+            dialogArgs.Buttons[1].ImageName = "No";
             dialogArgs.StatusBarCtrlCVisible = true;
 
             DialogForm(dialogArgs);

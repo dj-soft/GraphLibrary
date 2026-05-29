@@ -2477,6 +2477,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class DxImageArea : IDxPanelPaintedItem
     {
+        #region Běžná data
         /// <summary>
         /// Konstruktor.
         /// Prvek lze přidat do seznamu <see cref="DxPanelControl.PaintedItems"/>, nikoliv do <see cref="Control.Controls"/>.
@@ -2488,6 +2489,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             BackColor = null;
             BorderColor = null;
             DotColor = null;
+            _RemoveImage();
         }
         /// <summary>
         /// Souřadnice.
@@ -2518,15 +2520,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Použít testovací paletu?
         /// </summary>
         public bool UseCustomPalette { get; set; }
-        /// <summary>
-        /// Jméno obrázku.
-        /// Default = null. Nekreslí se nic.
-        /// Setování hodnoty neprovádí refresh parent panelu.
-        /// <para/>
-        /// Jméno je vyhledáno ve zdrojích aplikačních i DevExpress, smí to být vektor i bitmapa i skládaný vektorový obrázek.
-        /// Nepodporujeme náhradní obrázek vytvořený pro Caption.
-        /// </summary>
-        public string ImageName { get; set; }
         /// <summary>
         /// Jméno obrázku je exaktně dané.
         /// Pokud je zde true, a ve jménu <see cref="ImageName"/> je jméno se suffixem velikosti a příponou, bude akceptováno. 
@@ -2576,12 +2569,291 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Jakýkoli aplikační údaj
         /// </summary>
         public object Tag { get; set; }
+        #endregion
+        #region Věci okolo Image
+        /// <summary>
+        /// Jméno obrázku.
+        /// Default = null. Nekreslí se nic.
+        /// Setování hodnoty neprovádí refresh parent panelu.
+        /// <para/>
+        /// Jméno je vyhledáno ve zdrojích aplikačních i DevExpress, smí to být vektor i bitmapa i skládaný vektorový obrázek.
+        /// Nepodporujeme náhradní obrázek vytvořený pro Caption.
+        /// <para/>
+        /// V tomto stringu smí být uveden přímo text SVG ikony: SVG je rozpoznán, pokud zde přítomný text začíná <u><c><![CDATA[<svg ...]]></c></u> anebo začíná <u><c><![CDATA[<?xml ...]]></c></u> a obsahuje <u><c><![CDATA[<svg ...]]></c></u>.
+        /// <para/>
+        /// V tomto stringu smí být uveden přímo binární obsah bitmapového souboru, kódovaný Base64.
+        /// </summary>
+        public string ImageName
+        {
+            get { return __ImageName; }
+            set { _StoreImageSource(value, null); }
+        }
+        private string __ImageName;
+        /// <summary>
+        /// Fyzický obrázek
+        /// </summary>
+        public Image ImageObject
+        {
+            get { return __ImageObject; }
+            set { _StoreImageSource(null, value); }
+        }
+        private Image __ImageObject;
+        private DevExpress.Utils.Svg.SvgImage __SvgImageObject;
+        private Image __BinaryImageObject;
+        /// <summary>
+        /// Objekt nemá žádný obrázek
+        /// </summary>
+        public bool IsEmpty { get { return (String.IsNullOrEmpty(ImageName) && ImageObject is null); } }
+        /// <summary>
+        /// Do this instance zmapuje a uloží data o obrázku / ikoně, dodaná zvenku
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <param name="imageObject"></param>
+        private void _StoreImageSource(string imageName, Image imageObject)
+        {
+            _RemoveImage();
+
+            var sourceType = ImageSourceType.None;
+            byte[] content = null;
+            if (!String.IsNullOrEmpty(imageName))
+                sourceType = DetectImageSource(imageName, out content);
+            if (sourceType == ImageSourceType.None && imageObject != null)
+                sourceType = ImageSourceType.ExternalImage;
+
+            switch (sourceType)
+            {
+                case ImageSourceType.ImageName:
+                    __ImageName = imageName;
+                    __ImageSource = sourceType;
+                    break;
+                case ImageSourceType.SvgContent:
+                    __ImageName = imageName;
+                    __SvgImageObject = DxSvgImage.Create(imageName);
+                    __ImageSource = sourceType;
+                    break;
+                case ImageSourceType.BinaryData:
+                    __ImageName = imageName;
+                    __BinaryImageObject = _TryGetImageObject(content);
+                    if (__BinaryImageObject != null)
+                        __ImageSource = sourceType;
+                    break;
+                case ImageSourceType.ExternalImage:
+                    __ImageObject = imageObject;
+                    __ImageSource = sourceType;
+                    break;
+            }
+        }
+        /// <summary>
+        /// Zcela odebere veškeré interně uložené informace o obrázku, včetně Dispose obrázku vnitřního (<see cref="__BinaryImageObject"/>)
+        /// </summary>
+        private void _RemoveImage()
+        {
+            if (this.ImageSource == ImageSourceType.BinaryData)
+            {
+                try
+                {
+                    this.__BinaryImageObject?.Dispose();
+                }
+                catch { }
+            }
+
+            this.__ImageName = null;
+            this.__ImageObject = null;
+            this.__SvgImageObject = null;
+            this.__BinaryImageObject = null;
+            this.ImageSource = ImageSourceType.None;
+        }
+        /// <summary>
+        /// Vrátí Image vytvořený z dodaného stringu ve formátu byte[]
+        /// </summary>
+        /// <param name="content"></param>
+        /// <returns></returns>
+        private Image _TryGetImageObject(byte[] content)
+        {
+            if (content is null || content.Length < 20) return null;
+
+            // Převod (může vyhodit FormatException, pokud vstup není validní Base64)
+            Image image = null;
+            try
+            {
+                using (var stream = new System.IO.MemoryStream(content))
+                    image = Image.FromStream(stream, true);
+            }
+            catch
+            {
+                image = null;
+            }
+            return image;
+        }
+        /// <summary>
+        /// Vrátí Image vytvořený z dodaného stringu ve formátu Base64
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        private Image _TryGetImageObject(string data)
+        {
+            if (string.IsNullOrWhiteSpace(data)) return null;
+
+            // Pokud přijde data URI like "data:...;base64,AAAA...", odřízneme prefix
+            int commaIndex = data.IndexOf(',');
+            if (commaIndex >= 0) data = data.Substring(commaIndex + 1);
+
+            // Převod (může vyhodit FormatException, pokud vstup není validní Base64)
+            Image image = null;
+            try
+            {
+                var content = Convert.FromBase64String(data);
+                using (var stream = new System.IO.MemoryStream(Convert.FromBase64String(data)))
+                    image = Image.FromStream(stream, true);
+            }
+            catch
+            {
+                image = null;
+            }
+            return image;
+        }
+        /// <summary>
+        /// Podle obsahu <paramref name="imageName"/> odhadne, co je to za obsah.
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <returns></returns>
+        public static ImageSourceType DetectImageSource(string imageName)
+        {
+            return DetectImageSource(imageName, out var _);
+        }
+        /// <summary>
+        /// Podle obsahu <paramref name="imageName"/> odhadne, co je to za obsah. Pokud to bude <see cref="ImageSourceType.ExternalImage"/>, pak v out <paramref name="content"/> bude byte[] konvertované z názvu.
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <param name="content"></param>
+        /// <returns></returns>
+        public static ImageSourceType DetectImageSource(string imageName, out byte[] content)
+        {
+            content = null;
+            if (String.IsNullOrEmpty(imageName)) return ImageSourceType.None;
+            if (imageName.StartsWith("<svg", StringComparison.OrdinalIgnoreCase) && imageName.EndsWith("</svg>", StringComparison.OrdinalIgnoreCase)) return ImageSourceType.SvgContent;
+            if (imageName.StartsWith("<<?xml ", StringComparison.OrdinalIgnoreCase) && imageName.IndexOf("<svg", StringComparison.OrdinalIgnoreCase) > 0 && imageName.EndsWith("</svg>", StringComparison.OrdinalIgnoreCase)) return ImageSourceType.SvgContent;
+            if (IsLikelyBase64(imageName, out content, 100)) return ImageSourceType.BinaryData;
+            return ImageSourceType.ImageName;
+        }
+        /// <summary>
+        /// Vrátí true, pokud dodaný string vypadá jako Base64
+        /// Heuristika: odstraní data: prefix a whitespace, zkontroluje regex a pak zkusí dekódovat.
+        /// </summary>
+        /// <param name="input">Vstupní text</param>
+        /// <param name="minRequiredSize">Minimální očekávaná délka bytového pole, např. pro smysluplné obrázky nelze akceptovat pole kratší než 100 Byte</param>
+        /// <returns></returns>
+        public static bool IsLikelyBase64(string input, int? minRequiredSize = null)
+        {
+            return IsLikelyBase64(input, out var _, minRequiredSize);
+        }
+        /// <summary>
+        /// Vrátí true, pokud dodaný string vypadá jako Base64
+        /// Heuristika: odstraní data: prefix a whitespace, zkontroluje regex a pak zkusí dekódovat.
+        /// </summary>
+        /// <param name="input">Vstupní text</param>
+        /// <param name="content">Out konvertované pole</param>
+        /// <param name="minRequiredSize">Minimální očekávaná délka bytového pole, např. pro smysluplné obrázky nelze akceptovat pole kratší než 100 Byte</param>
+        /// <returns></returns>
+        public static bool IsLikelyBase64(string input, out byte[] content, int? minRequiredSize = null)
+        {
+            content = null;
+            if (string.IsNullOrWhiteSpace(input))
+                return false;
+
+            input = input.Trim();
+
+            // Pokud jde o data URI, odřízneme prefix
+            if (input.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+            {
+                int comma = input.IndexOf(',');
+                if (comma >= 0)
+                    input = input.Substring(comma + 1);
+            }
+
+            // Odstraníme všechny bílé znaky (CR/LF/space/tab)
+            input = System.Text.RegularExpressions.Regex.Replace(input, @"\s+", "");
+
+            // Rychlý regex check (délka a povolené znaky + správné = padding)
+            if (!System.Text.RegularExpressions.Regex.IsMatch(input, @"\A(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?\z"))
+                return false;
+
+            // Délka pole:
+            if (minRequiredSize.HasValue && minRequiredSize.Value > 0)
+            {
+                int contentMaxSize = (input.Length * 3) / 4;
+                if (contentMaxSize < minRequiredSize.Value) return false;
+            }
+
+            // Pokusíme se dekódovat bez výjimky (allocujeme max možnou velikost)
+            try
+            {
+                // Convert.FromBase64String taky odmítne nevalidní vstup
+                content = Convert.FromBase64String(input);
+                return true;
+            }
+            catch (FormatException)
+            {
+                return false;
+            }
+        }
+        /// <summary>
+        /// Aktuální zdroj Image
+        /// </summary>
+        public ImageSourceType ImageSource { get { return __ImageSource; } private set { __ImageSource = value; } }
+        private ImageSourceType __ImageSource;
+        /// <summary>
+        /// Druh obrázku dodaný do <see cref="DxImageArea"/>
+        /// </summary>
+        public enum ImageSourceType
+        {
+            /// <summary>
+            /// Nedodán
+            /// </summary>
+            None,
+            /// <summary>
+            /// Jméno obrázku, který bude získán ze zdrojů na straně klienta
+            /// </summary>
+            ImageName,
+            /// <summary>
+            /// Text SVG definice obrázku
+            /// </summary>
+            SvgContent,
+            /// <summary>
+            /// Binární data zadaná jako Base64 ze stramy serveru, vytvořený Image musíme Disposovat zde
+            /// </summary>
+            BinaryData,
+            /// <summary>
+            /// Externí Image, který vykreslíme, ale nebudeme Disposovat
+            /// </summary>
+            ExternalImage
+        }
+        #endregion
+        #region Kreslení
+        /// <summary>
+        /// Prvek bude vykreslen do panelu
+        /// </summary>
+        /// <param name="e"></param>
+        public void OnPaint(PaintEventArgs e)
+        {
+            _OnPaint(e);
+        }
         /// <summary>
         /// Prvek bude vykreslen do panelu
         /// </summary>
         /// <param name="e"></param>
         void IDxPanelPaintedItem.OnPaint(PaintEventArgs e)
         {
+            _OnPaint(e);
+        }
+        /// <summary>
+        /// Prvek bude vykreslen do panelu
+        /// </summary>
+        /// <param name="e"></param>
+        private void _OnPaint(PaintEventArgs e)
+        {
+            if (!Visible) return;
+
             var bounds = this.Bounds;
 
             int d = 0;
@@ -2596,21 +2868,30 @@ namespace Noris.Clients.Win.Components.AsolDX
             var sizeTypeV = DxComponent.GetImageSizeTypeVector(bounds.Size);
             var sizeTypeB = DxComponent.GetImageSizeTypeBitmap(bounds.Size);
             if (sizeTypeV == ResourceImageSizeType.None) return;
-            string imageName = this.ImageName;
-            if (String.IsNullOrEmpty(imageName)) return;
-
             Rectangle? edgeBounds = null;
             Rectangle? viewBounds = null;
             bool isPainted = false;
+
             try
             {
-                bool preferVector = this.IsPreferredVectorImage ?? DxComponent.IsPreferredVectorImage;
-                if (preferVector)
-                    isPainted = TryPaintVector(e.Graphics, imageName, sizeTypeV, bounds, out edgeBounds, out viewBounds);
-                if (!isPainted)
-                    isPainted = TryPaintBitmap(e.Graphics, imageName, sizeTypeB, bounds, out edgeBounds, out viewBounds);
-                if (!isPainted)
-                    isPainted = TryPaintVector(e.Graphics, imageName, sizeTypeV, bounds, out edgeBounds, out viewBounds);
+                switch (this.ImageSource)
+                {
+                    case ImageSourceType.ImageName:
+                        isPainted = _OnPaintByName(e.Graphics, ImageName, sizeTypeV, sizeTypeB, bounds, out edgeBounds, out viewBounds);
+                        break;
+
+                    case ImageSourceType.SvgContent:
+                        isPainted = _OnPaintBySvgImage(e.Graphics, __SvgImageObject, bounds, out edgeBounds, out viewBounds);
+                        break;
+
+                    case ImageSourceType.BinaryData:
+                        isPainted = _OnPaintByImage(e.Graphics, __BinaryImageObject, bounds, out edgeBounds, out viewBounds);
+                        break;
+
+                    case ImageSourceType.ExternalImage:
+                        isPainted = _OnPaintByImage(e.Graphics, ImageObject, bounds, out edgeBounds, out viewBounds);
+                        break;
+                }
             }
             catch { }
 
@@ -2622,8 +2903,33 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 // Mohu vykreslit tečky v místech pixelů:
                 if (viewBounds.HasValue && this.DotColor.HasValue)
-                    PaintPixelDots(e.Graphics, edgeBounds.Value, viewBounds.Value);
+                    _PaintPixelDots(e.Graphics, edgeBounds.Value, viewBounds.Value);
             }
+        }
+        /// <summary>
+        /// Vykreslí obrázek daného jména do dané souřadnice
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="imageName"></param>
+        /// <param name="sizeTypeV"></param>
+        /// <param name="sizeTypeB"></param>
+        /// <param name="bounds"></param>
+        /// <param name="edgeBounds"></param>
+        /// <param name="viewBounds"></param>
+        /// <returns></returns>
+        private bool _OnPaintByName(Graphics graphics, string imageName, ResourceImageSizeType sizeTypeV, ResourceImageSizeType sizeTypeB, Rectangle bounds, out Rectangle? edgeBounds, out Rectangle? viewBounds)
+        {
+            edgeBounds = null;
+            viewBounds = null;
+            bool isPainted = false;
+            bool preferVector = this.IsPreferredVectorImage ?? DxComponent.IsPreferredVectorImage;
+            if (preferVector)
+                isPainted = _TryPaintVector(graphics, imageName, sizeTypeV, bounds, out edgeBounds, out viewBounds);
+            if (!isPainted)
+                isPainted = _TryPaintBitmap(graphics, imageName, sizeTypeB, bounds, out edgeBounds, out viewBounds);
+            if (!isPainted)
+                isPainted = _TryPaintVector(graphics, imageName, sizeTypeV, bounds, out edgeBounds, out viewBounds);
+            return isPainted;
         }
         /// <summary>
         /// Zkusí najít vektorový obrázek a vykreslit jej
@@ -2635,20 +2941,34 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="edgeBounds"></param>
         /// <param name="viewBounds"></param>
         /// <returns></returns>
-        private bool TryPaintVector(Graphics graphics, string imageName, ResourceImageSizeType sizeType, Rectangle bounds, out Rectangle? edgeBounds, out Rectangle? viewBounds)
+        private bool _TryPaintVector(Graphics graphics, string imageName, ResourceImageSizeType sizeType, Rectangle bounds, out Rectangle? edgeBounds, out Rectangle? viewBounds)
+        {
+            var svgImage = DxComponent.GetVectorImage(imageName, this.ExactName, sizeType);
+            return _OnPaintBySvgImage(graphics, svgImage, bounds, out edgeBounds, out viewBounds);
+        }
+        /// <summary>
+        /// Zkusí najít bitmapový obrázek a vykreslit jej
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="imageName"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="bounds"></param>
+        /// <param name="edgeBounds"></param>
+        /// <param name="viewBounds"></param>
+        /// <returns></returns>
+        private bool _TryPaintBitmap(Graphics graphics, string imageName, ResourceImageSizeType sizeType, Rectangle bounds, out Rectangle? edgeBounds, out Rectangle? viewBounds)
+        {
+            var bmpImage = DxComponent.GetBitmapImage(imageName, sizeType, exactName: this.ExactName);
+            return _OnPaintByImage(graphics, bmpImage, bounds, out edgeBounds, out viewBounds);
+        }
+
+        private bool _OnPaintBySvgImage(Graphics graphics, DevExpress.Utils.Svg.SvgImage svgImage, Rectangle bounds, out Rectangle? edgeBounds, out Rectangle? viewBounds)
         {
             viewBounds = null;
-            /*
-            var svgPaletteName = DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveSvgPaletteName;
-
-            var skin = DevExpress.Skins.CommonSkins.GetSkin(DevExpress.LookAndFeel.UserLookAndFeel.Default);
-            var svgPalettes = skin.SvgPalettes;
-            var customSvgPalettes = skin.CustomSvgPalettes;
-            var svgPalette = customSvgPalettes.Values.LastOrDefault();
-            */
+            edgeBounds = null;
+            if (svgImage == null) return false;
 
             DevExpress.Utils.Svg.SvgPalette palette = null;
-
             if (this.UseCustomPalette)
             {
                 palette = new DevExpress.Utils.Svg.SvgPalette();
@@ -2667,36 +2987,35 @@ namespace Noris.Clients.Win.Components.AsolDX
                     commonSkin.SvgPalettes[DevExpress.Skins.Skin.DefaultSkinPaletteName].CustomPalette = palette;
             }
 
-            edgeBounds = null;
-            var svgImage = DxComponent.GetVectorImage(imageName, this.ExactName, sizeType);
-            if (svgImage == null) return false;
             DxSvgImage.RenderTo(svgImage, graphics, bounds, out var imageBounds, Alignment, palette, this.SetSmoothing);
             if (imageBounds.HasValue) edgeBounds = Rectangle.Ceiling(imageBounds.Value);
             viewBounds = Rectangle.Ceiling((svgImage is DxSvgImage dxSvgImage) ? dxSvgImage.ViewBounds : DxSvgImage.Create(svgImage).ViewBounds);
             return true;
         }
         /// <summary>
-        /// Zkusí najít bitmapový obrázek a vykreslit jej
+        /// Vykreslí dodaný obrázek do dané souřadnice
         /// </summary>
         /// <param name="graphics"></param>
-        /// <param name="imageName"></param>
-        /// <param name="sizeType"></param>
+        /// <param name="image"></param>
         /// <param name="bounds"></param>
         /// <param name="edgeBounds"></param>
         /// <param name="viewBounds"></param>
         /// <returns></returns>
-        private bool TryPaintBitmap(Graphics graphics, string imageName, ResourceImageSizeType sizeType, Rectangle bounds, out Rectangle? edgeBounds, out Rectangle? viewBounds)
+        private bool _OnPaintByImage(Graphics graphics, Image image, Rectangle bounds, out Rectangle? edgeBounds, out Rectangle? viewBounds)
         {
             edgeBounds = null;
             viewBounds = null;
-            var bmpImage = DxComponent.GetBitmapImage(imageName, sizeType, exactName: this.ExactName);
-            if (bmpImage == null) return false;
-            var imageSize = bmpImage.Size;
-            RectangleF imageBounds = ((SizeF)imageSize).ZoomTo((RectangleF)bounds, Alignment);
-            graphics.DrawImage(bmpImage, imageBounds);
-            edgeBounds = Rectangle.Ceiling(imageBounds);
-            viewBounds = new Rectangle(Point.Empty, imageSize);
-            return true;
+            bool isPainted = false;
+            if (image != null)
+            {
+                var imageSize = image.Size;
+                RectangleF imageBounds = ((SizeF)imageSize).ZoomTo((RectangleF)bounds, Alignment);
+                graphics.DrawImage(image, imageBounds);
+                edgeBounds = Rectangle.Ceiling(imageBounds);
+                viewBounds = new Rectangle(Point.Empty, imageSize);
+                isPainted = true;
+            }
+            return isPainted;
         }
         /// <summary>
         /// Vykreslí tečky na hranách pixelů
@@ -2704,7 +3023,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="graphics"></param>
         /// <param name="edgeBounds"></param>
         /// <param name="viewBounds"></param>
-        private void PaintPixelDots(Graphics graphics, Rectangle edgeBounds, Rectangle viewBounds)
+        private void _PaintPixelDots(Graphics graphics, Rectangle edgeBounds, Rectangle viewBounds)
         {
             if (!edgeBounds.HasPixels() || !viewBounds.HasPixels()) return;
 
@@ -2732,6 +3051,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 ix++;
             }
         }
+        #endregion
     }
     #endregion
     #region DxTextEdit
@@ -2746,6 +3066,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DxTextEdit()
         {
             EnterMoveNextControl = true;
+            this.Enter += _Enter;
+            this.Validating += _Validating;
+            this.Leave += _Leave;
         }
         #region Rozšířené property
         /// <summary>
@@ -2762,6 +3085,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <returns></returns>
         public override string ToString() { return this.GetTypeName() + ": '" + (this.Text ?? "NULL") + "'"; }
+        #endregion
+        #region ValueChanged
+        /// <summary>
+        /// Event vyvolaný při validaci zadaného obsahu pokud v procesu editace došlo ke změně hodnoty
+        /// </summary>
+        public event EventHandler ValueChanged;
+        private void _Enter(object sender, EventArgs e)
+        {
+        }
+        private void _Validating(object sender, CancelEventArgs e)
+        {
+            this.ValueChanged?.Invoke(sender, e);
+        }
+        private void _Leave(object sender, EventArgs e)
+        {
+        }
         #endregion
         #region HasMouse
         /// <summary>
@@ -3484,6 +3823,157 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public override string ToString() { return this.GetTypeName(); }
         #endregion
+        #region ImageList, ImageContentType
+        /// <summary>
+        /// Typ použitých ikon; default = None, je třeba nastavit
+        /// </summary>
+        public ResourceContentType ImageContentType
+        {
+            get { return __ImageContentType; }
+            set { __ImageContentType = value; __ImageListValid = false; }
+        }
+        private ResourceContentType __ImageContentType = ResourceContentType.None;
+        private ResourceImageSizeType __ImageSizeType = ResourceImageSizeType.None;
+        private bool __ImageListValid;
+        /// <summary>
+        /// Zkontroluje validnost předvoleb a validnost ImageListu dle předvoleb
+        /// </summary>
+        private void _CheckImageList()
+        {
+            if (!__ImageListValid)
+            {
+                // Validace předvoleb:
+                if (!(__ImageContentType == ResourceContentType.Vector || __ImageContentType == ResourceContentType.Bitmap))
+                    __ImageContentType = ResourceContentType.Vector;
+
+                if (!(__ImageSizeType == ResourceImageSizeType.Small || __ImageSizeType == ResourceImageSizeType.Medium || __ImageSizeType == ResourceImageSizeType.Large))
+                    __ImageSizeType = ResourceImageSizeType.Small;
+
+                // Vygenerování ImageListu:
+                this.Properties.SmallImages = _GetImageList(__ImageContentType, __ImageSizeType);
+                this.Properties.GlyphAlignment = HorzAlignment.Near;
+
+                __ImageListValid = true;
+            }
+        }
+        /// <summary>
+        /// Vrátí index ikony
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <returns></returns>
+        private int _GetImageIndex(string imageName)
+        {
+            int index = -1;
+            if (!String.IsNullOrEmpty(imageName))
+            {
+                _CheckImageList();
+                var contentType = __ImageContentType;
+                var sizeType = __ImageSizeType;
+                switch (contentType)
+                {
+                    case ResourceContentType.Vector:
+                        index = DxComponent.GetVectorImageIndex(imageName, sizeType);
+                        break;
+                    case ResourceContentType.Bitmap:
+                        index = DxComponent.GetBitmapImageIndex(imageName, sizeType);
+                        break;
+                }
+            }
+            return index;
+        }
+        /// <summary>
+        /// Vrátí ImageList pro dané požadavky
+        /// </summary>
+        /// <param name="contentType"></param>
+        /// <param name="sizeType"></param>
+        /// <returns></returns>
+        private object _GetImageList(ResourceContentType contentType, ResourceImageSizeType sizeType)
+        {
+            if (contentType != ResourceContentType.Bitmap)
+                return DxComponent.GetVectorImageList(sizeType);
+            else
+                return DxComponent.GetBitmapImageList(sizeType);
+        }
+        #endregion
+        #region SelectedComboItem, ComboItems
+        /// <summary>
+        /// Aktuálně vybraná položka typu <see cref="IMenuItem"/>. Lze setovat.
+        /// </summary>
+        public IMenuItem SelectedComboItem
+        {
+            get
+            {
+                var selectedItem = SelectedItem;
+                if (selectedItem != null && selectedItem is ImageComboBoxItem dxItem && dxItem.Value is IMenuItem menuItem)
+                    return menuItem;
+                return null;
+            }
+            set
+            {
+                ImageComboBoxItem dxItem = null;
+                IMenuItem menuItem = value;
+                if (menuItem != null)
+                    dxItem = this.Properties.Items
+                        .OfType<ImageComboBoxItem>()
+                        .FirstOrDefault(cbi => cbi.Value != null && Object.ReferenceEquals(cbi.Value, menuItem));
+                SelectedItem = dxItem;
+            }
+        }
+        /// <summary>
+        /// Položky v nabídce. Lze setovat.
+        /// </summary>
+        public IMenuItem[] ComboItems { get { return __ComboItems; } set { _AcceptComboItems(value); } } private IMenuItem[] __ComboItems;
+        /// <summary>
+        /// Do nabídky ComboItems vloží prvky z dodaného pole <paramref name="newComboItems"/>.
+        /// </summary>
+        /// <param name="newComboItems"></param>
+        private void _AcceptComboItems(IMenuItem[] newComboItems)
+        {
+            var oldComboItem = this.SelectedComboItem;
+
+            this.__ComboItems = newComboItems;
+
+            this.Properties.Items.Clear();
+            _CheckImageList();
+
+            this.Properties.Items.AddRange(CreateComboBoxItems(newComboItems, imageSearcher: _GetImageIndex));
+
+            this.SelectedComboItem = oldComboItem;
+        }
+        /// <summary>
+        /// Vytvoří a vrátí pole prvků do ComboBoxu pro dané prvky <paramref name="menuItems"/>.
+        /// </summary>
+        /// <param name="menuItems"></param>
+        /// <param name="imageSize"></param>
+        /// <param name="imageSearcher"></param>
+        /// <returns></returns>
+        public static ImageComboBoxItem[] CreateComboBoxItems(IEnumerable<IMenuItem> menuItems, ResourceImageSizeType? imageSize = null, Func<string, int> imageSearcher = null)
+        {
+            var dxItems = new List<ImageComboBoxItem>();
+            if (menuItems != null)
+            {
+                foreach (var menuItem in menuItems)
+                {
+                    if (menuItem != null)
+                    {
+                        var dxItem = new DevExpress.XtraEditors.Controls.ImageComboBoxItem()
+                        {
+                            Value = menuItem,
+                            Description = menuItem.Text
+                        };
+
+                        if (imageSearcher != null)
+                            dxItem.ImageIndex = imageSearcher(menuItem.ImageName);
+                        else
+                            dxItem.ImageIndex = DxComponent.GetPreferredImageIndex(menuItem.ImageName, imageSize ?? ResourceImageSizeType.Small);
+
+                        dxItems.Add(dxItem);
+                    }
+                }
+            }
+            return dxItems.ToArray();
+        }
+        #endregion
         #region HasMouse
         /// <summary>
         /// Panel má na sobě myš?
@@ -3542,60 +4032,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="text">Text</param>
         /// <param name="defaultTitle">Náhradní titulek, použije se když je zadán text ale není zadán titulek</param>
         public void SetToolTip(string title, string text, string defaultTitle = null) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text, defaultTitle); }
-        #endregion
-        #region Items
-        public IMenuItem[] ComboItems { get { return __ComboItems; } set { __ComboItems = value; _AcceptComboItems(); } } private IMenuItem[] __ComboItems;
-        public IMenuItem SelectedComboItem 
-        {
-            get 
-            {
-                var selectedItem = SelectedItem;
-                if (selectedItem != null && selectedItem is ImageComboBoxItem dxItem && dxItem.Value is IMenuItem menuItem)
-                    return menuItem;
-                return null;
-            } 
-            set
-            {
-                ImageComboBoxItem dxItem = null;
-                IMenuItem menuItem = value;
-                if (menuItem != null)
-                    dxItem = this.Properties.Items
-                        .OfType<ImageComboBoxItem>()
-                        .FirstOrDefault(cbi => cbi.Value != null && Object.ReferenceEquals(cbi.Value, menuItem));
-                SelectedItem = dxItem;
-            }
-        }
-        private void _AcceptComboItems()
-        {
-            this.SelectedComboItem = null;
-
-            this.Properties.Items.Clear();
-
-            ResourceImageSizeType imageSize = ResourceImageSizeType.Small;
-            this.Properties.SmallImages = DxComponent.GetPreferredImageList(imageSize); 
-            this.Properties.Items.AddRange(CreateComboBoxItems(__ComboItems, imageSize));
-        }
-        public static ImageComboBoxItem[] CreateComboBoxItems(IEnumerable<IMenuItem> menuItems, ResourceImageSizeType imageSize = ResourceImageSizeType.Small)
-        {
-            var dxItems = new List<ImageComboBoxItem>();
-            if (menuItems != null)
-            {
-                foreach (var menuItem in menuItems)
-                {
-                    if (menuItem != null)
-                    {
-                        var dxItem = new DevExpress.XtraEditors.Controls.ImageComboBoxItem()
-                        {
-                            Value = menuItem,
-                            Description = menuItem.Text,
-                            ImageIndex = DxComponent.GetPreferredImageIndex(menuItem.ImageName, imageSize)
-                        };
-                        dxItems.Add(dxItem);
-                    }
-                }
-            }
-            return dxItems.ToArray();
-        }
         #endregion
     }
     #endregion
@@ -3698,6 +4134,104 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString() { return this.GetTypeName() + ": '" + (this.Text ?? "NULL") + "'"; }
+        /// <summary>
+        /// Klávesa, která aktivuje button
+        /// </summary>
+        public Keys HotKey { get; set; }
+        /// <summary>
+        /// Provede kliknutí na CheckBox
+        /// </summary>
+        public void PerformClick()
+        {
+            this.OnClick(EventArgs.Empty);
+        }
+        #endregion
+        #region HasMouse
+        /// <summary>
+        /// Panel má na sobě myš?
+        /// </summary>
+        public bool HasMouse
+        {
+            get { return _HasMouse; }
+            private set
+            {
+                if (value != _HasMouse)
+                {
+                    _HasMouse = value;
+                    OnHasMouseChanged();
+                    HasMouseChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+        }
+        private bool _HasMouse;
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        protected virtual void OnHasMouseChanged() { }
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        public event EventHandler HasMouseChanged;
+        /// <summary>
+        /// Panel.OnMouseEnter
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseEnter(EventArgs e)
+        {
+            base.OnMouseEnter(e);
+            this.HasMouse = true;
+        }
+        /// <summary>
+        /// Panel.OnMouseLeave
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            base.OnMouseLeave(e);
+            this.HasMouse = false;
+        }
+        #endregion
+        #region ToolTip
+        /// <summary>
+        /// Nastaví daný text a titulek pro tooltip
+        /// </summary>
+        /// <param name="text"></param>
+        public void SetToolTip(string text) { this.SuperTip = DxComponent.CreateDxSuperTip(null, text); }
+        /// <summary>
+        /// Nastaví daný text a titulek pro tooltip
+        /// </summary>
+        /// <param name="title">Titulek</param>
+        /// <param name="text">Text</param>
+        /// <param name="defaultTitle">Náhradní titulek, použije se když je zadán text ale není zadán titulek</param>
+        public void SetToolTip(string title, string text, string defaultTitle = null) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text, defaultTitle); }
+        #endregion
+    }
+    #endregion
+    #region DxToggleSwitch
+    /// <summary>
+    /// ToggleSwitch
+    /// </summary>
+    public class DxToggleSwitch : DevExpress.XtraEditors.ToggleSwitch, IHotKeyControl
+    {
+        #region Rozšířené property
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        /// <summary>
+        /// Hodnota = kopíruje hodnotu <see cref="DevExpress.XtraEditors.ToggleSwitch.IsOn"/>
+        /// </summary>
+        public bool Value { get { return this.IsOn; } set { this.IsOn = value; } }
         /// <summary>
         /// Vizualizace
         /// </summary>
@@ -5222,21 +5756,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vytvoří a vrátí SuperTooltip
         /// </summary>
         /// <param name="toolTipItem"></param>
+        /// <param name="defaultTitleSuffix">Přídavek k defaultnímu textu titulku, pouze pokud bude force = true</param>
+        /// <param name="force">Vytvořit SuperTip i tehdy, když by obsah nestál za mnoho</param>
         /// <returns></returns>
-        public static DxSuperToolTip CreateDxSuperTip(IToolTipItem toolTipItem)
+        public static DxSuperToolTip CreateDxSuperTip(IToolTipItem toolTipItem, string defaultTitleSuffix = null, bool force = false)
         {
             if (toolTipItem == null) return null;
-            return CreateDxSuperTip(toolTipItem.ToolTipTitle, toolTipItem.ToolTipText, null, toolTipItem.ToolTipIcon, toolTipItem.ToolTipAllowHtml);
+            return CreateDxSuperTip(toolTipItem.ToolTipTitle, toolTipItem.ToolTipText, null, toolTipItem.ToolTipIcon, toolTipItem.ToolTipAllowHtml, defaultTitleSuffix, force);
         }
         /// <summary>
         /// Vytvoří a vrátí SuperTooltip
         /// </summary>
         /// <param name="textItem"></param>
+        /// <param name="defaultTitleSuffix">Přídavek k defaultnímu textu titulku, pouze pokud bude force = true</param>
+        /// <param name="force">Vytvořit SuperTip i tehdy, když by obsah nestál za mnoho</param>
         /// <returns></returns>
-        public static DxSuperToolTip CreateDxSuperTip(ITextItem textItem)
+        public static DxSuperToolTip CreateDxSuperTip(ITextItem textItem, string defaultTitleSuffix = null, bool force = false)
         {
             if (textItem == null) return null;
-            return CreateDxSuperTip(textItem.ToolTipTitle, textItem.ToolTipText, textItem.Text, textItem.ToolTipIcon, textItem.ToolTipAllowHtml);
+            return CreateDxSuperTip(textItem.ToolTipTitle, textItem.ToolTipText, textItem.Text, textItem.ToolTipIcon, textItem.ToolTipAllowHtml, defaultTitleSuffix, force);
         }
         /// <summary>
         /// Vytvoří a vrátí standardní SuperToolTip pro daný titulek a text.
@@ -5249,10 +5787,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="defaultTitle"></param>
         /// <param name="toolTipIcon"></param>
         /// <param name="toolTipAllowHtml"></param>
+        /// <param name="defaultTitleSuffix">Přídavek k defaultnímu textu titulku, pouze pokud bude force = true</param>
+        /// <param name="force">Vytvořit SuperTip i tehdy, když by obsah nestál za mnoho</param>
         /// <returns></returns>
-        public static DxSuperToolTip CreateDxSuperTip(string title, string text, string defaultTitle = null, string toolTipIcon = null, bool? toolTipAllowHtml = null)
+        public static DxSuperToolTip CreateDxSuperTip(string title, string text, string defaultTitle = null, string toolTipIcon = null, bool? toolTipAllowHtml = null, string defaultTitleSuffix = null, bool force = false)
         {
-            if (!DxComponent.PrepareToolTipTexts(title, text, defaultTitle, out string toolTipTitle, out string toolTipText)) return null;
+            if (!DxComponent.PrepareToolTipTexts(title, text, defaultTitle, defaultTitleSuffix, force, out string toolTipTitle, out string toolTipText)) return null;
 
             var superTip = new DxSuperToolTip();
             superTip.LoadValues(toolTipTitle, toolTipText, toolTipIcon, toolTipAllowHtml);
@@ -5292,13 +5832,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         private string __TitleText;
         private string __TitleIcon;
         private ToolTipTitleItem __TitleItem;
-
         private ToolTipSeparatorItem __SeparatorItem;
-
         private string __TextText;
         private bool? __ToolTipAllowHtmlText;
         private ToolTipItem __TextItem;
-
         private bool __AcceptTitleOnlyAsValid;
         /// <summary>
         /// Hodnoty z proměnných vepíše do objektu SuperTip = vytvoří/zruš/nastaví itemy.
@@ -5731,7 +6268,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _ListBox_SelectedIndexChanged(object sender, EventArgs e)
         {
-            var selectedItems = _ListBox.SelectedMenuItemsExt;
+            var selectedItems = _ListBox.SelectedMenuItems;
             StatusText = "Označeny řádky: " + selectedItems.Length.ToString();
         }
         /// <summary>
@@ -5746,19 +6283,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private void _ListBox_PaintListIcons(PaintEventArgs e)
         {
-            var visibleItems = _ListBox.VisibleMenuItemsExt;
+            var visibleItems = _ListBox.CurrentVisibleMenuItems;
             foreach (var visibleItem in visibleItems)
             {
-                string resourceName = visibleItem.Item2?.Text;
-                Rectangle itemBounds = visibleItem.Item3;
-                using (var image = DxComponent.CreateBitmapImage(resourceName, optimalSvgSize: new Size(32, 32)))
+                var resourceName = visibleItem.MenuItem?.Text;                 // Název obrázku
+                var itemBounds = visibleItem.Bounds;                           // Snad souřadnice prvku
+                if (itemBounds.HasValue)
                 {
-                    if (image != null)
+                    var b = itemBounds.Value;
+                    using (var image = DxComponent.CreateBitmapImage(resourceName, optimalSvgSize: new Size(32, 32)))
                     {
-                        Size size = image.Size;
-                        Point imagePoint = new Point((itemBounds.Right - 24 - size.Width / 2), itemBounds.Top + ((itemBounds.Height - size.Height) / 2));
-                        Rectangle imageBounds = new Rectangle(imagePoint, size);
-                        e.Graphics.DrawImage(image, imageBounds);
+                        if (image != null)
+                        {
+                            Size size = image.Size;
+                            Point imagePoint = new Point((b.Right - 24 - size.Width / 2), b.Top + ((b.Height - b.Height) / 2));
+                            Rectangle imageBounds = new Rectangle(imagePoint, size);
+                            e.Graphics.DrawImage(image, imageBounds);
+                        }
                     }
                 }
             }
@@ -5779,8 +6320,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _FilteredItemsCount = resources.Length;
 
             _ListBox.SuspendLayout();
-            _ListBox.Items.Clear();
-            _ListBox.Items.AddRange(items);
+            _ListBox.MenuItems = items;
             _ListBox.ResumeLayout(false);
             _ListBox.PerformLayout();
 
@@ -5821,7 +6361,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _DoCopyClipboard()
         {
-            var selectedItems = _ListBox.SelectedMenuItemsExt;
+            var selectedItems = _ListBox.SelectedMenuItems;
             int rowCount = selectedItems.Length;
             int rowLast = rowCount - 1;
             StringBuilder sb = new StringBuilder();
@@ -5832,7 +6372,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 for (int i = 0; i < rowCount; i++)
                 {
                     var selectedItem = selectedItems[i];
-                    string resourceName = selectedItem.Item2?.Text;
+                    string resourceName = selectedItem?.Text;
                     string suffix = (i < rowLast ? "," : "");
                     sb.AppendLine($"    \"{resourceName}\"{suffix}");
                 }
@@ -5847,7 +6387,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 foreach (var selectedItem in selectedItems)
                 {
                     _ClipboardCopyIndex++;
-                    string resourceName = selectedItem.Item2?.Text;
+                    string resourceName = selectedItem?.Text;
                     if (!String.IsNullOrEmpty(resourceName))
                         sb.AppendLine($"  string resource{_ClipboardCopyIndex} = \"{resourceName}\";");
                 }
@@ -5860,7 +6400,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 _ClipboardCopyIndex++;
                 var selectedItem = selectedItems[0];
-                string resourceName = selectedItem.Item2?.Text;
+                string resourceName = selectedItem?.Text;
                 if (!String.IsNullOrEmpty(resourceName))
                     sb.AppendLine($"  string resource{_ClipboardCopyIndex} = \"{resourceName}\";");
 
@@ -8854,6 +9394,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public bool AllIconsDirectPaint { get; set; }
         /// <summary>
+        /// Povinně provést Refresh názvů ikon před každým vykreslením každého jednoho TabHeaderu.
+        /// Nastavte na true tehdy, když se ikony mohou změnit u již existujícího Tabu.
+        /// Zatím nemám cestu, jak ikonu invalidovat a následně refreshovat pouze nevalidní prvky.
+        /// </summary>
+        public bool RefreshIconNamesBeforePaint { get; set; }
+        /// <summary>
         /// Typ velikosti hlavní ikony
         /// </summary>
         public ResourceImageSizeType MainImageSizeType
@@ -9105,6 +9651,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             ImageInfo imageInfo = _GetImageInfo(e);
             if (imageInfo is null) return;
+
+            if (this.RefreshIconNamesBeforePaint)
+                imageInfo.RefreshIconNames();
+
             if (String.IsNullOrEmpty(imageInfo.SecondImageName) && !this.AllIconsDirectPaint) return;    // Pokud není definovaná druhá ikona a není požadavek AllDirect, pak nechám kreslení na default
 
             var position = SecondImagePosition;
@@ -9123,6 +9673,24 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case ImagePositionType.InsteadPinButton: _DrawTabHeaderInControlBox(e, imageInfo, IconPositionType.Left); break;
                 case ImagePositionType.InsteadCloseButton: _DrawTabHeaderInControlBox(e, imageInfo, IconPositionType.Right); break;
             }
+        }
+        /// <summary>
+        /// Pro debugování
+        /// </summary>
+        private PaintedParts __PaintParts = PaintedParts.All;
+        [Flags]
+        private enum PaintedParts
+        {
+            None = 0,
+
+            Background = 0x0001,
+            Text = 0x0002,
+            MainImage = 0x0010,
+            SecondImage = 0x0020,
+            Buttons = 0x0100,
+            IsHandled = 0x1000,
+
+            All = Background | Text | MainImage | SecondImage | Buttons | IsHandled
         }
         /// <summary>
         /// Vrátí informace o ikonách pro daný TabHeader
@@ -9200,32 +9768,57 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="imageInfo"></param>
         private void _DrawTabHeaderAfterStandardIcon(DevExpress.XtraTab.TabHeaderCustomDrawEventArgs e, ImageInfo imageInfo)
         {
-            e.DefaultDrawBackground();
+            var paintParts = __PaintParts;
+
+            if (paintParts.HasFlag(PaintedParts.Background))
+                e.DefaultDrawBackground();
 
             if (imageInfo.HasBothImages)
             {
-                var mainImageBounds = _GetBoundsInMainArea(e, imageInfo.MainImageSize, IconPositionType.Left);
-                _DrawMainImageToBounds(e, imageInfo, mainImageBounds);
+                if (paintParts.HasFlag(PaintedParts.MainImage))
+                {
+                    var mainImageBounds = _GetBoundsInMainArea(e, imageInfo.MainImageSize, IconPositionType.Left);
+                    _DrawMainImageToBounds(e, imageInfo, mainImageBounds);
+                }
 
-                var secondImageBounds = _GetBoundsInMainArea(e, imageInfo.SecondImageSize, IconPositionType.Right);
-                _DrawImageToBounds(e, imageInfo.SecondImageName, secondImageBounds, this.SecondImageSizeType);
+                if (paintParts.HasFlag(PaintedParts.SecondImage))
+                {
+                    var secondImageBounds = _GetBoundsInMainArea(e, imageInfo.SecondImageSize, IconPositionType.Right);
+                    _DrawImageToBounds(e, imageInfo.SecondImageName, secondImageBounds, this.SecondImageSizeType);
+                }
             }
             else if (imageInfo.HasMainImage)
             {
-                var mainImageBounds = _GetBoundsInMainArea(e, imageInfo.MainImageSize, IconPositionType.Center);
-                _DrawMainImageToBounds(e, imageInfo, mainImageBounds);
+                if (paintParts.HasFlag(PaintedParts.MainImage))
+                {
+                    var mainImageBounds = _GetBoundsInMainArea(e, imageInfo.MainImageSize, IconPositionType.Center);
+                    _DrawMainImageToBounds(e, imageInfo, mainImageBounds);
+                }
             }
             else if (imageInfo.HasSecondImage)
             {
-                var secondImageBounds = _GetBoundsInMainArea(e, imageInfo.SecondImageSize, IconPositionType.Center);
-                _DrawImageToBounds(e, imageInfo.SecondImageName, secondImageBounds, this.SecondImageSizeType);
+                if (paintParts.HasFlag(PaintedParts.SecondImage))
+                {
+                    var secondImageBounds = _GetBoundsInMainArea(e, imageInfo.SecondImageSize, IconPositionType.Center);
+                    _DrawImageToBounds(e, imageInfo.SecondImageName, secondImageBounds, this.SecondImageSizeType);
+                }
             }
 
-            e.DefaultDrawText();
-            // DrawHeaderPageText(e);
+            if (paintParts.HasFlag(PaintedParts.Text))
+            {
+                e.DefaultDrawText();
+                // DrawHeaderPageText(e);
+            }
 
-            e.DefaultDrawButtons();
-            e.Handled = true;
+            if (paintParts.HasFlag(PaintedParts.Buttons))
+            {
+                e.DefaultDrawButtons();
+            }
+
+            if (paintParts.HasFlag(PaintedParts.IsHandled))
+            {
+                e.Handled = true;
+            }
         }
         /// <summary>
         /// Vykreslí celý TabHeader s přidaným Image za textem před ControlArea (vpravo)
@@ -9393,8 +9986,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!String.IsNullOrEmpty(imageInfo.MainImageName))
                 _DrawImageToBounds(e, imageInfo.MainImageName, imageBounds, this.MainImageSizeType);
 
-            // Image pro Main ikonu není dán explicitně, vykreslíme ikonu formuláře:
-            if (imageInfo.DocumentControl is Form form && form.Icon != null)
+            // Pokud Image pro Main ikonu není dán explicitně, vykreslíme defaultní ikonu formuláře:
+            else if (imageInfo.DocumentControl is Form form && form.Icon != null)
                 e.Cache.DrawIcon(form.Icon, imageBounds);
         }
         /// <summary>
@@ -9506,15 +10099,36 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 if (owner != null && document != null)
                 {
-                    this.RefreshIconNames(owner, document);
-                    this.RefreshIconSizes(owner, document);
-                    this.RefreshDocument(owner, document);
+                    this.RefreshIconNames(owner, document);          // Zajistí i provedení RefreshIconSizes() + RefreshDocument()
                 }
             }
             /// <summary>
             /// Aktualizuje názvy ikon z formuláře dodaného v dokumentu
             /// </summary>
+            public void RefreshIconNames()
+            {
+                var owner = this.Owner;
+                var document = this.Document;
+
+                if (owner != null && document != null)
+                {
+                    this._RefreshIconNames(owner, document);
+                }
+            }
+            /// <summary>
+            /// Aktualizuje názvy ikon z formuláře dodaného v dokumentu.
+            /// Provede i <see cref="RefreshIconSizes(DxTabHeaderImagePainter, DevExpress.XtraBars.Docking2010.Views.BaseDocument)"/>.
+            /// </summary>
             public void RefreshIconNames(DxTabHeaderImagePainter owner, DevExpress.XtraBars.Docking2010.Views.BaseDocument document)
+            {
+                if (owner is null) return;
+                _RefreshIconNames(owner, document);
+                RefreshIconSizes(owner, document);
+            }
+            /// <summary>
+            /// Aktualizuje pouze názvy ikon z formuláře dodaného v dokumentu. Neřeší <see cref="RefreshIconSizes(DxTabHeaderImagePainter, DevExpress.XtraBars.Docking2010.Views.BaseDocument)"/>.
+            /// </summary>
+            private void _RefreshIconNames(DxTabHeaderImagePainter owner, DevExpress.XtraBars.Docking2010.Views.BaseDocument document)
             {
                 if (owner is null) return;
 
@@ -9529,7 +10143,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                     this.MainImageName = owner.MainImageNameGenerator?.Invoke(form);
                     this.SecondImageName = owner.SecondImageNameGenerator?.Invoke(form);
                 }
-                RefreshIconSizes(owner, document);
             }
             /// <summary>
             /// Aktualizuje velikost ikon
@@ -10353,9 +10966,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual bool SubItemsIsOnDemand { get; set; }
         /// <summary>
-        /// Titulek ToolTipu (pokud není zadán explicitně) se přebírá z textu prvku
+        /// Titulek ToolTipu (pokud není zadán explicitně, pak se odnikud nepřebírá)
         /// </summary>
-        string IToolTipItem.ToolTipTitle { get { return ToolTipTitle ?? Text; } }
+        string IToolTipItem.ToolTipTitle { get { return ToolTipTitle; } }
         /// <summary>
         /// Explicitně daná akce po aktivaci této položky menu
         /// </summary>
@@ -10732,17 +11345,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         [XS.PersistingEnabled(false)]
         public object Tag { get; set; }
         /// <summary>
-        /// Titulek okna ToolTip (může obsahovat Text, když to dává smysl)
+        /// Titulek okna ToolTip (DAJ 0079867 3.3.2026: Pokud nebyl dodán explicitní titulek ToolTipu, pak nebudeme vracet nic náhradního)
         /// </summary>
-        string IToolTipItem.ToolTipTitle 
-        {
-            get 
-            {
-                if (!String.IsNullOrEmpty(ToolTipTitle)) return ToolTipTitle;  // Explicitně zadaný titulek je jasný
-                if (!String.IsNullOrEmpty(ToolTipText)) return Text;           // Toť oříšek... : Pokud je specifikován 'ToolTipText' (tedy budeme zobrazovat nějaký rozšiřující text), pak jako Titulek použijeme základní Text prvku (button, záhlaví stránky, atd)
-                return null;                                                   // Ale když uživatel nezadal ani explicitní titulek, ani text ToolTipu, tak samotný náhradní Titulek nemá smysl.
-            }
-        }
+        string IToolTipItem.ToolTipTitle { get { return ToolTipTitle; } }
     }
     /// <summary>
     /// Definice jednoduchého prvku, který nese ID, text, ikony, tooltip a Tag

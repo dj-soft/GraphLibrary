@@ -20,6 +20,7 @@ using DevExpress.Utils;
 using DevExpress.Utils.Extensions;
 using DevExpress.Utils.Filtering.Internal;
 using DevExpress.Utils.Menu;
+using DevExpress.Utils.Svg;
 using DevExpress.XtraEditors;
 using DevExpress.XtraEditors.Controls;
 using DevExpress.XtraEditors.Drawing;
@@ -63,9 +64,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void InitProperties()
         {
             SynchronizeFocusedRow = DevExpress.Utils.DefaultBoolean.True;
+            SynchronizeViews = DefaultBoolean.True;
         }
         /// <summary>
-        /// Zobrazí horizontální split
+        /// Zobrazí se dva gridy vedle sebe
         /// </summary>
         public void ShowHorizontalSplit()
         {
@@ -77,7 +79,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Zobrazí vertikálí split
+        /// Zobrazí se dva gridy nad sebou
         /// </summary>
         public void ShowVerticalSplit()
         {
@@ -163,7 +165,6 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                         this.DataSourceChanging = true;
                         base.DataSource = value;
-                        //view.SetScrollPosition();
                         if (view.WaitForNextRows) view.RestorePropertiesBeforeLoadMoreRows();
                     }
                     finally
@@ -181,33 +182,37 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         private void _OnPaintEx(object sender, PaintEventArgs e)
         {
-            //Malování ohraničení aktivního (focusovaného) řádku
+            //Malování ohraničení aktuálního řádku
             GridControl grid = sender as GridControl;
             GridView view = grid.FocusedView as GridView;
             if (view == null) return;
             GridViewInfo viewInfo = view.GetViewInfo() as GridViewInfo;
             GridRowInfo rowInfo = viewInfo.GetGridRowInfo(view.FocusedRowHandle);
-            //if (rowInfo == null || !view.IsFocusedView)
-            //return;
 
-            //int x = rowInfo.DataBounds.X /*- rowInfo.IndentRect.X*/;
-            //int y = rowInfo.DataBounds.Y + 1;
-            //int width = rowInfo.DataBounds.Width - 1 /*+ rowInfo.IndentRect.Width*/;
-            //int height = rowInfo.DataBounds.Height - 2;
             if (rowInfo != null)
-            {
-                int x = rowInfo.DataBounds.X;
-                int y = rowInfo.DataBounds.Y;
-                int width = rowInfo.DataBounds.Width - 2;
-                int height = rowInfo.DataBounds.Height - 1;
+            {//RMC 0079948 - 2026.03.13 - Nový přehled - označení - barvy; změna tloušky, barvy, stylu a pozice ohraničení aktuálního řádku.
+                int x = rowInfo.DataBounds.X - rowInfo.IndicatorRect.Width;
+                if (x < 0) x = 0;   //při posunu scrollbaruu vpravo se může stát, že x bude záporné, pak ho nastavíme na 0, aby se nám vykresloval svisla čara na začátku řádku vždy (excel).
+                int y = rowInfo.DataBounds.Y + 1;
+                int width = viewInfo.ViewRects.ColumnTotalWidth + rowInfo.DataBounds.X - 1;
+                int height = rowInfo.DataBounds.Height - 2;
 
-                Color borderColor = ColorTranslator.FromHtml("#383838");
+                //Color borderColor = ColorTranslator.FromHtml("#383838");
+                Color borderColor = ColorTranslator.FromHtml("#2F4F4F");    //darkslategray
                 if (DxComponent.IsDarkTheme) borderColor = Color.White;
-                var pen = DxComponent.PaintGetPen(borderColor);
-                pen.DashStyle = view.IsFocusedView ? System.Drawing.Drawing2D.DashStyle.Solid : System.Drawing.Drawing2D.DashStyle.Dot;
-                e.Graphics.DrawRectangle(pen, x, y, width, height);
 
-                if (pen.DashStyle != System.Drawing.Drawing2D.DashStyle.Solid) pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Solid;    //Vrátím zpět na solid, protože pen je cache, tak at to neměním ostatním
+                var pen = DxComponent.PaintGetPen(borderColor);
+                System.Drawing.Drawing2D.DashStyle originalDashStyle = pen.DashStyle;
+                float originWidth = pen.Width;
+                //pro focused bude solid a bez focusu bude tečkovaná (vlnovec)
+                pen.DashStyle = view.IsFocusedView ? System.Drawing.Drawing2D.DashStyle.Solid : System.Drawing.Drawing2D.DashStyle.Dot;
+                // Dvojitý rámeček solit nebo dot — fázově posunuté tečky tvoří vlnový efekt
+                e.Graphics.DrawRectangle(pen, x, y - 1, width, height + 1);    // vnější rámeček
+                e.Graphics.DrawRectangle(pen, x + 1, y, width - 2, height - 1);        // vnitřní rámeček
+
+                //reset hodnot pera, protože je cachované a měníme jeho vlastnosti
+                if (pen.DashStyle != originalDashStyle) pen.DashStyle = originalDashStyle;
+                if (pen.Width != originWidth) pen.Width = originWidth;
             }
         }
 
@@ -374,7 +379,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// DxDataController. Aktuálně řeší schování nativních group řádek z gridView 
     /// </summary>
-    public class DxDataController : CurrencyDataController
+    public class DxCurrencyDataController : CurrencyDataController
     {
         /// <inheritdoc/>
         protected override void BuildVisibleIndexes()
@@ -395,11 +400,24 @@ namespace Noris.Clients.Win.Components.AsolDX
                 VisibleIndexes.Add(rowHandle);
             }
         }
+        /// <inheritdoc/>
+        protected override void CheckResetCurrentPositionOnDataSourceChange(bool requiresReset)
+        {
+            return;//RMC 0079226 20.11.2025 Nový přehled CurrentRowNumber 3 Klient; řízení pozice řádku si řešíme sami v DxGridView, tak zde nic neděláme.
+            /*
+                        //RMC 0079013 21.10.2025 Nový přehled CurrentRowNumber po otevřen; zamezení aby se nastavoval řádek 0 při změně datasource.
+                        //Pokud je řádek validní tak neresetuj pozici. Nastavuji si to sám.
+                        if (IsValidControllerRowHandle(CurrentControllerRow)) return;
+
+                        // Jinak zachovej původní chování (např. po úplné změně dat je reset OK)
+                        base.CheckResetCurrentPositionOnDataSourceChange(requiresReset);
+            */
+        }
     }
     /// <summary>
     /// Datový pohled typu <see cref="GridView"/>
     /// </summary>
-    public class DxGridView : DevExpress.XtraGrid.Views.Grid.GridView, IListenerStyleChanged
+    public partial class DxGridView : DevExpress.XtraGrid.Views.Grid.GridView, IListenerStyleChanged
     {
         #region constatns
         const int maxColumnWidthNoTrimm = 25;
@@ -411,7 +429,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <inheritdoc/>
         protected override string ViewName { get { return "DxGridView"; } }
         /// <inheritdoc/>
-        protected override BaseGridController CreateDataController() { return new DxDataController(); }
+        protected override BaseGridController CreateDataController() { return new DxCurrencyDataController(); }
 
         /// <summary>
         /// DxGridControll parent
@@ -456,6 +474,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Povoluje multiselect řádků
         /// </summary>
         public bool MultiSelect { get => _multiSelect; set { _multiSelect = value; _SetGridMultiSelectAndMode(); } }
+
+        //RMC 0080209 - 2026.04.23 - Problém s právem na export dat
+        private bool _allowMultiCellCopyClipboard = true;
+        /// <summary>
+        /// Povoluje hromadné kopírování buněk do clipboardu.
+        /// </summary>
+        public bool AllowMultiCellCopyClipboard { get => _allowMultiCellCopyClipboard; set { _allowMultiCellCopyClipboard = value; _SetClipboardOptions(); } }
 
         private bool _showGroupPanel;
         /// <summary>
@@ -523,6 +548,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public bool DisableSortChange { get; set; }
 
+        /// <summary>
+        /// Zapne/vypne HotTrack podbarvení řádku pod kurzorem myši.
+        /// Používá se při přechodu do/z Busy stavu DynamicPage.
+        /// </summary>
+        public bool HotTrackEnabled
+        {
+            get => OptionsSelection.EnableAppearanceHotTrackedRow == DefaultBoolean.True;
+            set => OptionsSelection.EnableAppearanceHotTrackedRow = value ? DefaultBoolean.True : DefaultBoolean.False;
+        }
+
         #endregion
 
         #region konstruktory
@@ -558,8 +593,6 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             //this.OptionsView.HeaderFilterButtonShowMode = DevExpress.XtraEditors.Controls.FilterButtonShowMode.SmartTag;
 
-            // OptionsMenu.ShowAutoFilterRowItem = false;  //nechceme povolit uživateli přepínat zda bude/nebude vidět filtrovací řádek
-
             OptionsView.EnableAppearanceEvenRow = true;
 
             OptionsScrollAnnotations.ShowFocusedRow = DevExpress.Utils.DefaultBoolean.True;
@@ -574,8 +607,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             OptionsView.ShowVerticalLines = DefaultBoolean.True;
 
             //Clipboard
-            OptionsClipboard.AllowExcelFormat = DefaultBoolean.True;
-            OptionsClipboard.ClipboardMode = DevExpress.Export.ClipboardMode.Formatted;
+            _SetClipboardOptions(); //RMC 0080209 - 2026.04.23 - Problém s právem na export dat
 
             //---Groupování TEST
             OptionsMenu.ShowGroupSummaryEditorItem = false;
@@ -592,12 +624,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             OptionsBehavior.AutoExpandAllGroups = true; //RMC 0076915 19.11.2024 Optimalizace group pro velký poč. záznam; groupy chceme mít všechny rozbalené při první inicializaci. Jejich stav rozbaleno/sbaleno, řešíme o něco později samy.
             LevelIndent = 0;    //vypíná odsazení při zapnutém groupování.
 
-
-            //this.OptionsBehavior.AlignGroupSummaryInGroupRow = DefaultBoolean.True;
             _SetAlignGroupSummaryInGroupRow();
-
             //----
-
+            _SetFilteredColumnHeaderBackground();
+            _LoadClauseImages();
         }
 
         #region Register/unregister events
@@ -657,6 +687,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.DragObjectStart += _OnDragObjectStart;
             this.DragObjectOver += _OnDragObjectOver;
             this.DragObjectDrop += _OnDragObjectDrop;
+
+            this.ShownEditor += _OnShownEditor;
         }
         private void _UnRegisterEventsHandlers()
         {
@@ -714,10 +746,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.DragObjectStart -= _OnDragObjectStart;
             this.DragObjectOver -= _OnDragObjectOver;
             this.DragObjectDrop -= _OnDragObjectDrop;
+
+            this.ShownEditor -= _OnShownEditor;
         }
         #endregion
 
         #region skin/vzhled
+
+        Color _filteredColumnHeaderBackground = Color.Empty;
 
         /// <summary>
         /// Je voláno vždy po změně skinu
@@ -727,6 +763,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             __groupButtonColapsed = __groupButtonExpandedBelow = __groupButtonExpandedAbove = null; //reset images=>Refresh, protože se načtou znovu pro aktuální skin
             _RefreshColumnHeaderImages();
             GroupInfos.ForEach(groupInfo => groupInfo.RefreshStyleInfo());  //refresh StyleInfo (kalíšku) pro GroupInfo
+            _SetFilteredColumnHeaderBackground();
+            _LoadClauseImages();
         }
         private void _RefreshColumnHeaderImages()
         {
@@ -734,6 +772,106 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 var gridViewColumn = GetIGridViewColumn(gcItem);
                 if (gridViewColumn != null) _ApplyImageToColumnHeader(gcItem, gridViewColumn);
+            }
+        }
+        /// <summary>
+        /// Ziskání barvy pozadí filtrovaného sloupce z filtr panelu (dole).
+        /// </summary>
+        private void _SetFilteredColumnHeaderBackground()
+        {
+            //RMC 0078143 10.06.2025 Nový přehled: ŘF barevné označení
+            //Bere se barva samotného itemu tak i pozadí a provádí se merge barev (snaha se přiblížit barvě, která je ve skutečnosti vykreslená i s Alpha kanálem)
+            //Některé skiny jsou vykresleny pomocí images, některé mají jen barvu, proto ten dvojí způsob
+            Color _gridFilterPanelBackground = Color.Empty;
+            SkinElement gridFilterPanelElement = SkinManager.GetSkinElement(SkinProductId.Grid, DevExpress.LookAndFeel.UserLookAndFeel.Default, "GridFilterPanel");
+            if (gridFilterPanelElement.HasImage)
+            {
+                DevExpress.Utils.ImageCollection gridFilterPanelImages = gridFilterPanelElement.Image.GetImages();
+                _gridFilterPanelBackground = GetColorFromImage(gridFilterPanelImages.Images[0], 5, 5);
+            }
+            else
+            {
+                _gridFilterPanelBackground = gridFilterPanelElement.Color.BackColor;
+            }
+
+            SkinElement filterPanelPropertyElement = SkinManager.GetSkinElement(SkinProductId.Common, DevExpress.LookAndFeel.UserLookAndFeel.Default, "FilterPanelProperty");
+            if (filterPanelPropertyElement.HasImage)
+            {
+                DevExpress.Utils.ImageCollection filterPanelPropertyImages = filterPanelPropertyElement.Image.GetImages();
+                _filteredColumnHeaderBackground = GetColorFromImage(filterPanelPropertyImages.Images[0], 5, 5);
+            }
+            else
+            {
+                _filteredColumnHeaderBackground = filterPanelPropertyElement.Color.BackColor;
+            }
+            _filteredColumnHeaderBackground = Blend(_filteredColumnHeaderBackground, _gridFilterPanelBackground);
+        }
+
+        /// <summary>
+        /// získání barvy z obrázku
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <returns></returns>
+        internal Color GetColorFromImage(Image image, int x, int y)
+        {
+            Color result;
+            using (var bitmap = new Bitmap(image))
+            {
+                result = bitmap.GetPixel(x, y);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Blend (merge) dvou barev, kdy aplha kanál se bere jen z "horní" <paramref name="colorA"/>
+        /// </summary>
+        /// <param name="colorA"></param>
+        /// <param name="colorB"></param>
+        /// <returns></returns>
+        public static Color Blend(Color colorA, Color colorB)
+        {
+            float alpha = colorA.A / 255f;
+
+            int r = (int)(colorA.R * alpha + colorB.R * (1 - alpha));
+            int g = (int)(colorA.G * alpha + colorB.G * (1 - alpha));
+            int b = (int)(colorA.B * alpha + colorB.B * (1 - alpha));
+
+            return Color.FromArgb(255, r, g, b); // výsledná barva je neprůhledná
+        }
+
+        /// <summary>
+        /// Načtení obrázků pro clause v řádkovém filtru, snažíme se získat obrázky z aktuálního skinu a upravit je pro naše potřeby
+        /// </summary>
+        private void _LoadClauseImages()
+        {//RMC 0078567 07.10.2025 Nový přehled - filtrování na Nezačíná na
+            _svgImageNotEndsWith = DevExpress.XtraEditors.FilterControl.GetClauseSvgImageByType("EndsWith").Clone(UpdateBlueToRedStyle);
+            _svgImageNotBeginsWith = DevExpress.XtraEditors.FilterControl.GetClauseSvgImageByType("BeginsWith").Clone(UpdateBlueToRedStyle);
+            _imageNotEndsWith = CreateBitmapClauseIcon(_svgImageNotEndsWith);
+            _imageNotBeginsWith = CreateBitmapClauseIcon(_svgImageNotBeginsWith);
+
+            //update style
+            void UpdateBlueToRedStyle(SvgElement element, Hashtable hashtable)
+            {
+                if (hashtable.ContainsKey("StyleName"))
+                {
+                    if ((string)hashtable["StyleName"] == ("Blue"))
+                    {
+                        hashtable["StyleName"] = "Red";
+                    }
+                }
+            }
+            //konverze z SVG na Bitmapu
+            Bitmap CreateBitmapClauseIcon(SvgImage svgImage)
+            {
+                var palette = SvgPaletteHelper.GetSvgPalette(DevExpress.LookAndFeel.UserLookAndFeel.Default, DevExpress.Utils.Drawing.ObjectState.Normal);
+                Bitmap target = new Bitmap(_clauseImageSize.Width, _clauseImageSize.Height);
+                using (Graphics g = Graphics.FromImage(target))
+                {
+                    DxSvgImage.RenderTo(svgImage, g, new Rectangle(0, 0, _clauseImageSize.Width, _clauseImageSize.Height), ContentAlignment.MiddleRight, palette, false);
+                }
+                return target;
             }
         }
         #endregion
@@ -768,7 +906,28 @@ namespace Noris.Clients.Win.Components.AsolDX
             //    return;
             //}
 
-            if (e.Button == MouseButtons.Left && Control.ModifierKeys == Keys.Control) //LButton and ctrl only
+            if (e.Button == MouseButtons.Right)
+            {
+                if (IsFilterRow(hitInfo.RowHandle) && hitInfo.InRowCell && !(hitInfo.Column == view.FocusedColumn && hitInfo.RowHandle == view.FocusedRowHandle))
+                {
+                    //RMC 0078033 23.05.2025 Nový přehled-fokus kont.menu řád.filtru
+                    //Zajistí že když kliknu do řádkového filtru pravým tlačítkem, tak kontrol dostane focus a rovnou se zobrazí kontextové menu (vložit...)
+                    ((DXMouseEventArgs)e).Handled = true;
+                    view.CloseEditor();
+                    view.FocusedColumn = hitInfo.Column;
+                    view.FocusedRowHandle = hitInfo.RowHandle;
+                    view.ShowEditor();
+                    if (view.ActiveEditor != null)
+                    {
+                        view.ActiveEditor.SendMouse(view.ActiveEditor.PointToClient(Cursor.Position), MouseButtons.Left);
+                        view.ActiveEditor.SendMouseUp(view.ActiveEditor.PointToClient(Cursor.Position), MouseButtons.Left);
+                        view.ActiveEditor.SendMouse(view.ActiveEditor.PointToClient(Cursor.Position), MouseButtons.Left);
+                        view.ActiveEditor.SendMouseUp(view.ActiveEditor.PointToClient(Cursor.Position), MouseButtons.Left);
+                        view.ActiveEditor.SendMouse(view.ActiveEditor.PointToClient(Cursor.Position), MouseButtons.Right);
+                    }
+                }
+            }
+            else if (e.Button == MouseButtons.Left && Control.ModifierKeys == Keys.Control) //LButton and ctrl only
             {
                 //Nemám označen žádný řádek a left click + ctrl (výběr jednotlivých řádků) na jíný řádek než byl aktuální. 
                 //Chci aby se označil i původní (poslední) aktivní řádek. Stejně se to chová v TotalCommanderu.
@@ -785,7 +944,62 @@ namespace Noris.Clients.Win.Components.AsolDX
                     }
                 }
             }
+            else if (e.Button == MouseButtons.Left && Control.ModifierKeys == (Keys.Control | Keys.Shift) && hitInfo.InDataRow) //Ctrl+Shift+LClick = odznačení rozsahu
+            {//RMC 0080377 - 2026.05.20 - Nový přehled - hromadné odoznačení
+                int anchorHandle = _deSelectAnchorRowHandle >= 0 ? _deSelectAnchorRowHandle : view.FocusedRowHandle;
+                if (anchorHandle >= 0 && view.IsDataRow(anchorHandle))
+                {
+                    _UnselectRange(anchorHandle, hitInfo.RowHandle);
+                    _deSelectAnchorRowHandle = hitInfo.RowHandle;
+                }
+                dxE.Handled = true;
+            }
+            //nastavení clipboardu při alt left click.
+            else if (e.Button == MouseButtons.Left && Control.ModifierKeys == Keys.Alt) //LButton and ALT only
+            {
+                bool copied = false;
+                string text = string.Empty;
+                if (hitInfo.InRow && hitInfo.InRowCell)
+                {
+                    var value = view.GetRowCellDisplayText(hitInfo.RowHandle, hitInfo.Column);
+                    if (value != null) { text = value.ToString(); }
+
+                    ((DXMouseEventArgs)e).Handled = true;   //RMC 0078974 15.10.2025 TEST HEN47 nový přehled_výběr záznamů; potlačíme select řádku
+                    copied = true;
+                }
+                else if (hitInfo.HitTest == GridHitTest.Footer && hitInfo.Column != null)
+                {
+                    // celkový footer (Total Summary)
+                    text = view.GetRowFooterCellText(hitInfo.RowHandle, hitInfo.Column);
+                    copied = true;
+                }
+                if (copied)
+                {
+                    if (!string.IsNullOrEmpty(text))
+                    {
+                        Clipboard.SetText(text.Replace('\u00A0', ' '), TextDataFormat.UnicodeText); //RMC 0078992 15.10.2025 Kopírování čísla z přehledu; odstranění NBSP
+                        Globals.NotifyToast(GridControl, null, DxComponent.Localize(MsgCode.CopyBrowseCell, hitInfo.Column.Caption), System.Windows.Forms.ToolTipIcon.Info);
+                    }
+                    else
+                    {
+                        Clipboard.Clear();
+                    }
+                }
+            }
             LastMouseDownGridHitInfo = hitInfo;
+            _lastMouseDownGridHitInfoForFilter = hitInfo;
+
+            // Reset deselect anchor při kliku bez Ctrl+Shift;//RMC 0080377 - 2026.05.20 - Nový přehled - hromadné odoznačení
+            if (e.Button == MouseButtons.Left && Control.ModifierKeys != (Keys.Control | Keys.Shift))
+            {
+                _deSelectAnchorRowHandle = -1;
+            }
+
+            if (!IsLastClickInFilterRow())
+            {
+                //pokud klikám někde jinde než řádkovém filtru (skáču na další sloupce), tak chci resetovat proměné, které blokují aplikování řádkového filtru
+                _ResetPropertiesForEnableApplyFilter();
+            }
         }
 
         private void _OnMouseUp(object sender, MouseEventArgs e)
@@ -793,26 +1007,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxGridView view = sender as DxGridView;
             GridHitInfo hitInfo = view.CalcHitInfo(e.Location);
             DXMouseEventArgs dxE = DXMouseEventArgs.GetMouseArgs(e);
-
-            //nastavení clipboardu při alt left click.
-            if (e.Button == MouseButtons.Left && Control.ModifierKeys == Keys.Alt) //LButton and ALT only
-            {
-                if (hitInfo.InRow && hitInfo.InRowCell)
-                {
-                    string valueString = string.Empty;
-                    var value = view.GetRowCellDisplayText(hitInfo.RowHandle, hitInfo.Column);
-                    if (value != null)
-                    {
-                        valueString = value.ToString();
-                    }
-                    if (String.IsNullOrEmpty(valueString))
-                        System.Windows.Forms.Clipboard.Clear();
-                    else
-                        System.Windows.Forms.Clipboard.SetText(valueString, System.Windows.Forms.TextDataFormat.UnicodeText);
-                    Globals.NotifyToast(GridControl, null, DxComponent.Localize(MsgCode.CopyBrowseCell, hitInfo.Column.Caption), System.Windows.Forms.ToolTipIcon.Info);
-                    return;
-                }
-            }
 
             //Změna logiky označení/rušení označení všech řádků pomocí checkBoxů v hlavičce
             //Pokud mám označený nějaký řádek (ne všechny), tak prvním kliknutím na checkBox chci zrušit označení všech řádků.
@@ -847,6 +1041,41 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
                 DXMouseEventArgs.GetMouseArgs(e).Handled = true;
             }
+        }
+
+        /// <summary>
+        /// Vrací text pro buňku v celkovém footeru (Total Summary) pro daný sloupec. Zohleduňuje i vlastní data pro SummaryRow.
+        /// </summary>
+        /// <param name="rowHandle"></param>
+        /// <param name="column">Sloupec, pro který chceme získat hodnotu.</param>
+        /// <returns>Text hodnoty buňky ve footeru.</returns>
+        public override string GetRowFooterCellText(int rowHandle, GridColumn column)
+        {
+            //RMC 0078993 15.10.2025 Kopírování ze součtového řádku
+            if (column == null || rowHandle != GridControl.InvalidRowHandle) return null;
+
+            // Získání odpovídajícího GridSummaryItem pro daný sloupec
+            //Může být více summary. Tady ale bereme omezení, že v naši implementaci máme jen jedno summary pro jeden sloupec.
+            GridSummaryItem summaryItem = column.Summary.FirstOrDefault() as GridSummaryItem;
+            if (summaryItem == null) return null;
+            IGridViewColumn gvColumn = GetIGridViewColumn(column.FieldName);
+            object rawValue = null;
+
+            // Pokud máme vlastní data pro SummaryRow, použijeme je
+            if (_summaryRowData != null && _summaryRowData.Table.Columns.Contains(column.FieldName))
+            {
+                rawValue = _summaryRowData[column.FieldName];
+            }
+            else
+            {
+                rawValue = summaryItem.SummaryValue;
+            }
+
+            if (gvColumn != null)
+            {
+                return ConvertAndFormatValue(rawValue, gvColumn.ColumnType, gvColumn.FormatString);
+            }
+            else return "";
         }
 
         private string ConvertAndFormatValue(object value, Type targetType, string formatString)
@@ -974,12 +1203,35 @@ namespace Noris.Clients.Win.Components.AsolDX
                     {
                         //OnFocusedRowChanged vyvolá komponenta, protože se opravdu změní řádek
                         FocusedRowIndex = value;
+                        //FocusRowSmart(value);
                     }
                 }
                 else
                 {
                     OnFocusedRowChanged(FocusedRowIndex, FocusedRowIndex);
                 }
+            }
+        }
+
+
+        private void FocusRowSmart(int rowHandle)
+        {
+            //RMC 0079013 21.10.2025 Nový přehled CurrentRowNumber po otevřen; pokus o zachování scrollbaru při nastavení currentRow pokud je vidět, ale nefunguje to, protože při otevirání přehledu není ještě vykreslen a řádky nejsou vidět. Zatím to nechám..
+            // Zapamatuj aktuální top pro případ, že je řádek už vidět
+            int top = TopRowIndex;
+
+            // Scroll jen když je schovaný
+            var state = IsRowVisibleByIndex(rowHandle);
+
+            FocusedRowHandle = rowHandle;
+
+            if (state == RowVisibleState.Hidden)
+            {
+                MakeRowVisible(rowHandle);      // posune tak, aby byl vidět (často na začátek)
+            }
+            else
+            {
+                TopRowIndex = top;              // zajistí, že se nerozskočí nahoru
             }
         }
 
@@ -1004,6 +1256,36 @@ namespace Noris.Clients.Win.Components.AsolDX
                 ClearSelection();
                 //nulujeme summy, protože již nemáme všechny řádky selected
                 _summaryRowData = null;
+            }
+        }
+
+        /// <summary>
+        /// Kotevní řádek pro operaci Ctrl+Shift (odznačení rozsahu). -1 = není nastaven.
+        /// //RMC 0080377 - 2026.05.20 - Nový přehled - hromadné odoznačení
+        /// </summary>
+        private int _deSelectAnchorRowHandle = -1;
+
+        /// <summary>
+        /// Odznačí rozsah řádků od startRowHandle po endRowHandle (včetně obou krajních).
+        /// Podporuje oba směry (start &gt; end i start &lt; end).
+        /// </summary>
+        private void _UnselectRange(int startRowHandle, int endRowHandle)
+        {//RMC 0080377 - 2026.05.20 - Nový přehled - hromadné odoznačení
+            if (!MultiSelect) return;
+            int from = Math.Min(startRowHandle, endRowHandle);
+            int to = Math.Max(startRowHandle, endRowHandle);
+            BeginSelection();
+            try
+            {
+                for (int handle = from; handle <= to; handle++)
+                {
+                    if (IsDataRow(handle))
+                        UnselectRow(handle);
+                }
+            }
+            finally
+            {
+                EndSelection();
             }
         }
 
@@ -1104,6 +1386,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         #region Drawing, customDraw
         private void _OnCustomDrawCell(object sender, RowCellCustomDrawEventArgs e)
         {
+            bool mergedCell = false;
             bool drawEmptyMergedCell = false;
             bool nextCellValueIsDiferent = true;
             Color mergedCellBackground = this.PaintAppearance.Row.GetBackColor(e.Cache);
@@ -1111,13 +1394,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             GridCellInfo cellInfo = (e.Cell as GridCellInfo);
             var iColumn = GetIGridViewColumn(e.Column);
 
-            //Datový řádek (buňka)
+            //Datový řádek (buňka), včetně našich custom group row (je to taky datový řádek)
             //Console.WriteLine($"CustomDrawCell rowHandle: {e.RowHandle} column: {e.Column}");
             if (this.IsDataRow(e.RowHandle) && e.Column.VisibleIndex >= 0 && e.Column.FieldName != GROUPBUTTON)
             {
+                //RMC 0078493 07.08.2025 Mizející údaje v přehledech; refaktor vykreslování barev pro merge buněk a hover myši
                 if (iColumn != null && iColumn.AllowMerge && !_IsGroupRow(e.RowHandle))
                 {
                     //Merge column
+                    mergedCell = true;
                     int previousRowHandle = e.RowHandle - 1;
                     if (this.IsDataRow(previousRowHandle))
                     {
@@ -1125,21 +1410,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                         //kontrola zda je aktuální hodnota buňky stejná s předchozí viditelnou
                         if (previousCellValue != null && previousCellValue.Equals(e.CellValue) && this.IsRowVisible(previousRowHandle) == RowVisibleState.Visible)
                         {
-                            if (!this.IsRowSelected(e.RowHandle))
-                            {
-                                //změna pozadí pro merge buňky, překreslím to...
-                                Rectangle rect = e.Bounds;
-                                rect.Inflate(1, 1);
-                                e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(mergedCellBackground), rect);
-                            }
                             drawEmptyMergedCell = true;
                         }
                         else
                         {
-                            if (!this.IsRowSelected(e.RowHandle))
-                            {
-                                e.Appearance.BackColor = mergedCellBackground;
-                            }
+                            //odlišný první řádek
                             drawEmptyMergedCell = false;
                         }
                     }
@@ -1169,24 +1444,36 @@ namespace Noris.Clients.Win.Components.AsolDX
                     //kalíšek z definice ze serveru
                     styleInfo = cell.StyleInfo;
                 }
-                if (styleInfo != null)
+                if (styleInfo != null || mergedCell || drawEmptyMergedCell)
                 {
-                    if (this.IsRowSelected(e.RowHandle))
+                    if (this.IsRowHotTracked(e.RowHandle))
+                    {
+                        //hot tracked řádek (při hoveru myši)
+                        if (styleInfo?.AttributeBgColor != null) e.Appearance.BackColor = styleInfo.AttributeBgColor.Value.Morph(this.PaintAppearance.HotTrackedRow.BackColor, 0.5f);
+                        else if (mergedCell || drawEmptyMergedCell) e.Appearance.BackColor = this.PaintAppearance.HotTrackedRow.BackColor.Morph(mergedCellBackground, 0.5f);
+                    }
+                    else if (this.IsRowSelected(e.RowHandle))
                     {
                         //selectovaný řádek: provedeme merge barev pro pozadí. Barva pro označovaní řádků + barva kalíšku
-                        if (styleInfo.AttributeBgColor != null) e.Appearance.BackColor = this.PaintAppearance.SelectedRow.BackColor.Morph(styleInfo.AttributeBgColor.Value, 0.5f); ;
+                        if (styleInfo?.AttributeBgColor != null) e.Appearance.BackColor = this.PaintAppearance.SelectedRow.BackColor.Morph(styleInfo.AttributeBgColor.Value, 0.5f);
+                        else if (mergedCell || drawEmptyMergedCell) e.Appearance.BackColor = this.PaintAppearance.SelectedRow.BackColor.Morph(mergedCellBackground, 0.5f);
                     }
                     else
                     {
-                        if (styleInfo.AttributeBgColor != null) e.Appearance.BackColor = styleInfo.AttributeBgColor.Value;
+                        //neselectovaný řádek
+                        if (styleInfo?.AttributeBgColor != null) e.Appearance.BackColor = styleInfo.AttributeBgColor.Value;
+                        else if (mergedCell || drawEmptyMergedCell) e.Appearance.BackColor = mergedCellBackground;
                     }
-                    if (styleInfo.AttributeColor != null) e.Appearance.ForeColor = styleInfo.AttributeColor.Value;
-                    if (styleInfo.AttributeFontStyle != null) e.Appearance.FontStyleDelta = styleInfo.AttributeFontStyle.Value;
+                    if (styleInfo?.AttributeColor != null) e.Appearance.ForeColor = styleInfo.AttributeColor.Value;
+                    if (styleInfo?.AttributeFontStyle != null) e.Appearance.FontStyleDelta = styleInfo.AttributeFontStyle.Value;
                 }
 
                 if (drawEmptyMergedCell)
                 {
-                    //nevolám defaultDraw => prázdná buňka
+                    //nevolám defaultDraw => prázdná buňka, zmizí text, jen barva pozadí se vykreslí podle nastavení výše (stejně jako ostatní bunky).
+                    Rectangle rect = e.Bounds;
+                    rect.Inflate(1, 1);
+                    e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(e.Appearance.BackColor), rect);
                 }
                 else
                 {
@@ -1200,6 +1487,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
                 e.Handled = true;   //Již se nic nezpracuje v base
             }
+
+            //GROUPBUTTON
             if (e.Column.FieldName == GROUPBUTTON)
             {
                 int groupId = _GetGroupIdRow(e.RowHandle);
@@ -1231,8 +1520,21 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     e.DisplayText = displayText;
                 }
-            }
+                //RMC 0078567 07.10.2025 Nový přehled - filtrování na Nezačíná na
+                if (_TryGetNonStandartClauseType(e.Column, out var extendedClauseType) && e.RowHandle == GridControl.AutoFilterRowHandle)
+                {
+                    //kreslíme ikonku a text pro speciální typy clause (NotBeginsWith, NotEndsWith)
+                    var y = e.Bounds.Y + (e.Bounds.Height - _clauseImageSize.Height) / 2;
+                    var palette = SvgPaletteHelper.GetSvgPalette(DevExpress.LookAndFeel.UserLookAndFeel.Default, DevExpress.Utils.Drawing.ObjectState.Normal);
+                    DxSvgImage.RenderTo(_GetSvgImageByClauseType(extendedClauseType), e.Graphics, new Rectangle(e.Bounds.X + 3, y, _clauseImageSize.Width, _clauseImageSize.Height), ContentAlignment.MiddleRight, palette, false);
 
+                    // posuň text, ať neleze přes ikonku
+                    var txtRect = new Rectangle(e.Bounds.X + _clauseImageSize.Width + 8, e.Bounds.Y, e.Bounds.Width - _clauseImageSize.Width - 8, e.Bounds.Height);
+                    e.Appearance.DrawString(e.Cache, e.DisplayText, txtRect);
+                    e.Handled = true;
+                    return;
+                }
+            }
         }
         /// <summary>
         /// kreslí spodní linku ohraničení buňky.
@@ -1304,6 +1606,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (e.Column?.GroupIndex >= 0 && e.Info.HeaderPosition == DevExpress.Utils.Drawing.HeaderPositionKind.Special)
             {
+                // vykreslení nadpisu pro sloupec, který je v groupě. Dokreslení stavu groupy (sbaleno/rozbaleno).
                 if (GroupColumnHeaderInfos.TryGetValue(e.Column, out DxGridViewInfo.GroupColumnHeaderInfo info))
                 {
                     e.Info.CaptionRect = info.CaptionRect;  //nastavení souřadnic pro nadpis. Bere souřadnice, které se vypočítaly při prvním výpočtu velikosti
@@ -1330,7 +1633,22 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 e.Handled = true;
             }
-
+            else
+            {
+                if (e.Column != null)
+                {
+                    if (!string.IsNullOrEmpty(e.Column.FilterInfo.FilterString))
+                    {
+                        //RMC 0078143 10.06.2025 Nový přehled: ŘF barevné označení
+                        // Pozadí pro zafiltrovaný sloupec
+                        e.Column.AppearanceHeader.BackColor = _filteredColumnHeaderBackground;
+                    }
+                    else
+                    {
+                        e.Column.AppearanceHeader.BackColor = Color.Empty;//reset
+                    }
+                }
+            }
         }
 
         #endregion
@@ -1347,6 +1665,154 @@ namespace Noris.Clients.Win.Components.AsolDX
                 OptionsSelection.MultiSelectMode = DevExpress.XtraGrid.Views.Grid.GridMultiSelectMode.RowSelect;     // mód označování v režimu multiselect=true (RowSelect,CellSelect,CheckBoxRowSelect)
             }
         }
+        #region Clipboard
+        private void _SetClipboardOptions()
+        {
+            //RMC 0080209 - 2026.04.23 - Problém s právem na export dat
+            OptionsClipboard.AllowCopy = _allowMultiCellCopyClipboard ? DefaultBoolean.True : DefaultBoolean.False;
+            OptionsClipboard.AllowExcelFormat = DefaultBoolean.False;
+            OptionsClipboard.ClipboardMode = DevExpress.Export.ClipboardMode.Default;
+        }
+        /// <summary>
+        /// RMC 0080218 - 2026.05.15 - Nový přehled ctrl c a do excelu ctrl v; - Vlastní clipboard implementace.
+        /// DevExpress ClipboardMode.Formatted padduje buňky mezerami a vkládá neviditelné znaky do prázdných buněk.
+        /// Místo base.CopyToClipboard() sestavíme clipboard data sami přímo z buněk gridu:
+        /// Text (tab-separated, čistý) + HTML (tučné nadpisy, ohraničení buněk pro Teams).
+        /// Chování odpovídá starému BrowseGrid (Infragistics CopyWithHeaders).
+        /// </summary>
+        public override void CopyToClipboard()
+        {
+            if (!_allowMultiCellCopyClipboard) return;
+
+            try
+            {
+                int[] selectedRows = GetSelectedRows();
+                if ((selectedRows == null || selectedRows.Length == 0) && FocusedRowHandle >= 0 && IsDataRow(FocusedRowHandle))
+                    selectedRows = new[] { FocusedRowHandle };
+                if (selectedRows == null || selectedRows.Length == 0) return;
+
+                // Pouze datové řádky (ne filtry apod.)
+                selectedRows = selectedRows.Where(r => IsDataRow(r)).ToArray();
+                if (selectedRows.Length == 0) return;
+
+                // Viditelné sloupce bez systémových (GROUPBUTTON, checkbox výběru)
+                string checkBoxField = OptionsSelection.CheckBoxSelectorField;
+                var columns = new List<GridColumn>();
+                foreach (GridColumn col in VisibleColumns)
+                {
+                    if (col.FieldName == GROUPBUTTON) continue;
+                    if (col.FieldName == GridView.CheckBoxSelectorColumnName) continue;
+                    if (!string.IsNullOrEmpty(checkBoxField) && col.FieldName == checkBoxField) continue;
+                    columns.Add(col);
+                }
+                if (columns.Count == 0) return;
+
+                int colCount = columns.Count;
+                int rowCount = selectedRows.Length;
+                string[][] grid = new string[rowCount + 1][];
+
+                // Nadpisy sloupců
+                grid[0] = new string[colCount];
+                for (int j = 0; j < colCount; j++)
+                    grid[0][j] = columns[j].Caption ?? columns[j].FieldName ?? "";
+
+                // Data
+                for (int i = 0; i < rowCount; i++)
+                {
+                    grid[i + 1] = new string[colCount];
+                    for (int j = 0; j < colCount; j++)
+                    {
+                        string cellText = GetRowCellDisplayText(selectedRows[i], columns[j]) ?? "";
+                        // NBSP (tisícový oddělovač) → běžná mezera (stejně jako Alt+Click kopie)
+                        grid[i + 1][j] = cellText.Replace('\u00A0', ' ');
+                    }
+                }
+
+                // Tab-separated text
+                var textSb = new StringBuilder();
+                for (int i = 0; i < grid.Length; i++)
+                {
+                    if (i > 0) textSb.Append("\r\n");
+                    textSb.Append(string.Join("\t", grid[i]));
+                }
+                string cleanText = textSb.ToString();
+
+                // HTML tabulka (tučné nadpisy + ohraničení pro Teams)
+                string htmlFragment = _BuildHtmlTable(grid);
+                string cfHtml = _BuildCfHtml(htmlFragment);
+
+                // Clipboard: Text + HTML (bez Biff/Excel formátu → Excel použije text)
+                DataObject dataObject = new DataObject();
+                dataObject.SetData(DataFormats.UnicodeText, cleanText);
+                dataObject.SetData(DataFormats.Text, cleanText);
+                dataObject.SetData(DataFormats.Html, cfHtml);
+                Clipboard.SetDataObject(dataObject, true);
+            }
+            catch
+            {
+                // Fallback: necháme DevExpress udělat default copy
+                base.CopyToClipboard();
+            }
+        }
+        /// <summary>
+        /// Vytvoří HTML tabulku z 2D pole buněk. První řádek = tučný nadpis (th).
+        /// </summary>
+        private static string _BuildHtmlTable(string[][] grid)
+        {
+            var sb = new StringBuilder();
+            sb.Append("<table style=\"border-collapse:collapse;\">");
+            for (int i = 0; i < grid.Length; i++)
+            {
+                sb.Append("<tr>");
+                string cellTag = (i == 0) ? "th" : "td";
+                string cellStyle = (i == 0)
+                    ? " style=\"border:1px solid #000;padding:2px 4px;font-weight:bold;\""
+                    : " style=\"border:1px solid #000;padding:2px 4px;\"";
+                for (int j = 0; j < grid[i].Length; j++)
+                {
+                    string value = System.Net.WebUtility.HtmlEncode(grid[i][j]);
+                    sb.Append('<').Append(cellTag).Append(cellStyle).Append('>');
+                    sb.Append(string.IsNullOrEmpty(value) ? "" : value);
+                    sb.Append("</").Append(cellTag).Append('>');
+                }
+                sb.Append("</tr>");
+            }
+            sb.Append("</table>");
+            return sb.ToString();
+        }
+        /// <summary>
+        /// Obalí HTML fragment do CF_HTML clipboard formátu s korektními byte-offsety.
+        /// https://learn.microsoft.com/en-us/windows/win32/dataxchg/html-clipboard-format
+        /// </summary>
+        private static string _BuildCfHtml(string htmlFragment)
+        {
+            // CF_HTML header používá byte offsety (UTF-8), ne char offsety
+            string header =
+                "Version:0.9\r\n" +
+                "StartHTML:{0:D10}\r\n" +
+                "EndHTML:{1:D10}\r\n" +
+                "StartFragment:{2:D10}\r\n" +
+                "EndFragment:{3:D10}\r\n";
+            string htmlStart = "<html><body>\r\n<!--StartFragment-->";
+            string htmlEnd = "<!--EndFragment-->\r\n</body></html>";
+
+            // Placeholder header pro výpočet offsetů (se zástupnými hodnotami)
+            string placeholderHeader = string.Format(header, 0, 0, 0, 0);
+            int headerBytes = Encoding.UTF8.GetByteCount(placeholderHeader);
+            int htmlStartBytes = Encoding.UTF8.GetByteCount(htmlStart);
+            int fragmentBytes = Encoding.UTF8.GetByteCount(htmlFragment);
+            int htmlEndBytes = Encoding.UTF8.GetByteCount(htmlEnd);
+
+            int startHtml = headerBytes;
+            int startFragment = startHtml + htmlStartBytes;
+            int endFragment = startFragment + fragmentBytes;
+            int endHtml = endFragment + htmlEndBytes;
+
+            return string.Format(header, startHtml, endHtml, startFragment, endFragment)
+                 + htmlStart + htmlFragment + htmlEnd;
+        }
+        #endregion
+
         private void _SetAlignGroupSummaryInGroupRow()
         {
             this.OptionsBehavior.AlignGroupSummaryInGroupRow = DxComponent.ConvertBool(AlignGroupSummaryInGroupRow);
@@ -1361,37 +1827,61 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             else if (e.MenuType == DevExpress.XtraGrid.Views.Grid.GridMenuType.AutoFilter)
             {
-                //Přidání položel v menu operátora řádkového filtru. (Je zadáno, Není zadáno)
-                IGridViewColumn colum = GetIGridViewColumn(e.HitInfo.Column);
-                if (colum != null && !colum.IsEditStyleColumnType)  //nechceme pro editační styly, protože neumíme vložit jiný text než je editační styl
+                GridView view = sender as GridView;
+                var column = GetHitInfo(view)?.Column;
+
+                //Přidání a odebrání položek v menu operátora řádkového filtru
+                IGridViewColumn iColum = GetIGridViewColumn(column);
+                if (iColum != null && (iColum.EditStyleViewMode != EditStyleViewMode.IconText && iColum.EditStyleViewMode != EditStyleViewMode.Icon))  //nechceme pro editační styly, kde je ikonka, protože neumíme vložit jiný text než je editační styl //RMC 0078037 23.05.2025 Nový přehled-ŘF editačníhi stylu
                 {
-                    DevExpress.Utils.Menu.DXMenuCheckItem item = new DevExpress.Utils.Menu.DXMenuCheckItem();
                     e.Menu.ItemClick -= Menu_ItemClick;
                     e.Menu.ItemClick += Menu_ItemClick;
-                    e.Menu.Items.Add(_CreateConditionMenuItem(FilterUIElementLocalizerStringId.CustomUIFilterIsBlankName, "IsNullOrEmpty"));
-                    e.Menu.Items.Add(_CreateConditionMenuItem(FilterUIElementLocalizerStringId.CustomUIFilterIsNotBlankName, "IsNotNullOrEmpty"));
-                }
-            }
-            else if (e.MenuType == DevExpress.XtraGrid.Views.Grid.GridMenuType.Column && e.HitInfo.InGroupColumn)
-            {
-                //kontextové menu v group panelu. Sbalit vše a rozbalit vše.
-                e.Menu.ItemClick -= Menu_ItemClick;
-                e.Menu.ItemClick += Menu_ItemClick;
 
-                int? group = GetGroupByColumn(e.HitInfo.Column);
-                if (group != null)
-                {
-                    DXMenuItem expandAll = e.Menu.Items.FirstOrDefault(x => x.Tag.Equals(DevExpress.XtraGrid.Localization.GridStringId.MenuGroupPanelFullExpand));
-                    if (expandAll != null)
+                    //RMC 0078567 07.10.2025 Nový přehled - filtrování na Nezačíná na
+                    //odstranit like a notLike operataroy pokud nejsou vybrány.
+                    if (_TryFindMenuIndex(e.Menu.Items, ClauseType.Like, out var indexLike, out var itemLike))
                     {
-                        //do tagu přidám číslo skupiny, abych mohl v Menu_ItemClick číslo skupiny parsovat a použít. 
-                        expandAll.Tag = GridLocalizer.Active.GetLocalizedString(DevExpress.XtraGrid.Localization.GridStringId.MenuGroupPanelFullExpand) + "_" + group.Value;
+                        if (itemLike is DXMenuCheckItem itemCheck && !itemCheck.Checked)
+                        {
+                            e.Menu.Items.RemoveAt(indexLike);
+                        }
                     }
-                    DXMenuItem collapseAll = e.Menu.Items.FirstOrDefault(x => x.Tag.Equals(DevExpress.XtraGrid.Localization.GridStringId.MenuGroupPanelFullCollapse));
-                    if (collapseAll != null)
+                    if (_TryFindMenuIndex(e.Menu.Items, ClauseType.NotLike, out var indexNotLike, out var itemNotLike))
                     {
-                        collapseAll.Tag = GridLocalizer.Active.GetLocalizedString(DevExpress.XtraGrid.Localization.GridStringId.MenuGroupPanelFullCollapse) + "_" + group.Value;
+                        if (itemNotLike is DXMenuCheckItem itemCheck && !itemCheck.Checked)
+                        {
+                            e.Menu.Items.RemoveAt(indexNotLike);
+                        }
                     }
+
+                    //přidání našich extended operátorů Nezačíná a Nekončí
+                    if (_TryFindMenuIndex(e.Menu.Items, ClauseType.BeginsWith, out int indexBeginsWith, out _))
+                    {
+                        //pokud najdu operátor Začíná, tak přidáme i Nezačíná a nekončí. Neřídím to datovám typem sloupce, ale nechávám to na logice filtrování.
+                        e.Menu.Items.Insert(indexBeginsWith + 1, _CreateConditionMenuItem(FilterUIElementLocalizerStringId.CustomUIFilterDoesNotBeginWithName, "NotBeginWith", _GetImageByClauseType(ExtendedClauseType.NotBeginWith)));
+                        _TryFindMenuIndex(e.Menu.Items, ClauseType.EndsWith, out int indexEndsWith, out _);
+                        e.Menu.Items.Insert(indexEndsWith + 1, _CreateConditionMenuItem(FilterUIElementLocalizerStringId.CustomUIFilterDoesNotEndWithName, "NotEndWith", _GetImageByClauseType(ExtendedClauseType.NotEndsWith)));
+
+                        _TryGetNonStandartClauseType(FocusedColumn, out var extendedClauseType);
+                        //je vybrán náš extended operátor, tak všechny ostatní odškrtnem a zaškrtnem ten náš
+                        if (extendedClauseType != ExtendedClauseType.None)
+                        {
+                            foreach (DXMenuCheckItem it in e.Menu.Items)
+                                it.Checked = false;
+                            foreach (DXMenuCheckItem it in e.Menu.Items)
+                                if ((FilterUIElementLocalizerStringId)it.Tag == (extendedClauseType == ExtendedClauseType.NotBeginWith ? FilterUIElementLocalizerStringId.CustomUIFilterDoesNotBeginWithName : FilterUIElementLocalizerStringId.CustomUIFilterDoesNotEndWithName))
+                                    it.Checked = true;
+                        }
+                    }
+
+                    //Přidání podmínek Between a NotBetween
+                    //RMC 0078966 14.11.2025 interval (..) v řádkovém filtru
+                    e.Menu.Items.Add(_CreateConditionMenuItem(DevExpress.XtraEditors.Controls.StringId.FilterClauseBetween, "Between"));
+                    e.Menu.Items.Add(_CreateConditionMenuItem(DevExpress.XtraEditors.Controls.StringId.FilterClauseNotBetween, "NotBetween"));
+
+                    //Přidání podmínek IsBlank a IsNotBlank
+                    e.Menu.Items.Add(_CreateConditionMenuItem(DevExpress.XtraEditors.Controls.StringId.FilterClauseIsNullOrEmpty, "IsNullOrEmpty"));
+                    e.Menu.Items.Add(_CreateConditionMenuItem(DevExpress.XtraEditors.Controls.StringId.FilterClauseIsNotNullOrEmpty, "IsNotNullOrEmpty"));
                 }
             }
             else if (e.HitInfo.InColumn && e.MenuType == DevExpress.XtraGrid.Views.Grid.GridMenuType.Column && e.HitInfo.Column?.FieldName == GROUPBUTTON)
@@ -1402,24 +1892,99 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var hitInfo = new DxGridHitInfo(e.HitInfo, Cursor.Position);
                 this.RaiseShowContextMenu(hitInfo, "ColumnHeader");
             }
+            else if (e.MenuType == DevExpress.XtraGrid.Views.Grid.GridMenuType.Column)
+            {
+                //kontextové menu na header column. Sbalit vše a rozbalit vše.
+                e.Menu.ItemClick -= Menu_ItemClick;
+                e.Menu.ItemClick += Menu_ItemClick;
+
+                int? group = GetGroupByColumn(e.HitInfo.Column);
+                if (group != null)
+                {
+                    //do tagu přidám číslo skupiny, abych mohl v Menu_ItemClick číslo skupiny parsovat a použít. 
+                    DXMenuItem expandAll = e.Menu.Items.FirstOrDefault(x => x.Tag.Equals(DevExpress.XtraGrid.Localization.GridStringId.MenuGroupPanelFullExpand));
+                    if (expandAll != null)
+                    {
+                        expandAll.Tag = GridLocalizer.Active.GetLocalizedString(DevExpress.XtraGrid.Localization.GridStringId.MenuGroupPanelFullExpand) + "_" + group.Value;
+                    }
+                    DXMenuItem collapseAll = e.Menu.Items.FirstOrDefault(x => x.Tag.Equals(DevExpress.XtraGrid.Localization.GridStringId.MenuGroupPanelFullCollapse));
+                    if (collapseAll != null)
+                    {
+                        collapseAll.Tag = GridLocalizer.Active.GetLocalizedString(DevExpress.XtraGrid.Localization.GridStringId.MenuGroupPanelFullCollapse) + "_" + group.Value;
+                    }
+                }
+            }
+            else if (e.MenuType == DevExpress.XtraGrid.Views.Grid.GridMenuType.Group)
+            {
+                //kontextové menu v group panelu. - všechny skupiny
+                e.Menu.ItemClick -= Menu_ItemClick;
+                e.Menu.ItemClick += Menu_ItemClick;
+
+                //do tagu přidám číslo skupiny (prázdný string), abych mohl v Menu_ItemClick rozlišit že se jedná o všechny skupiny. 
+                DXMenuItem expandAll = e.Menu.Items.FirstOrDefault(x => x.Tag.Equals(DevExpress.XtraGrid.Localization.GridStringId.MenuGroupPanelFullExpand));
+                if (expandAll != null)
+                {
+                    expandAll.Tag = GridLocalizer.Active.GetLocalizedString(DevExpress.XtraGrid.Localization.GridStringId.MenuGroupPanelFullExpand) + "_" + "";
+                    expandAll.Caption = DxComponent.Localize(MsgCode.DxGridMenuExpandAllGroups);
+                }
+                DXMenuItem collapseAll = e.Menu.Items.FirstOrDefault(x => x.Tag.Equals(DevExpress.XtraGrid.Localization.GridStringId.MenuGroupPanelFullCollapse));
+                if (collapseAll != null)
+                {
+                    collapseAll.Tag = GridLocalizer.Active.GetLocalizedString(DevExpress.XtraGrid.Localization.GridStringId.MenuGroupPanelFullCollapse) + "_" + "";
+                    collapseAll.Caption = DxComponent.Localize(MsgCode.DxGridMenuCollapseAllGroups);
+                }
+                DXMenuItem clearGrouping = e.Menu.Items.FirstOrDefault(x => x.Tag.Equals(DevExpress.XtraGrid.Localization.GridStringId.MenuGroupPanelClearGrouping));
+                if (collapseAll != null)
+                {
+                    clearGrouping.Caption = DxComponent.Localize(MsgCode.DxGridMenuClearAllGrouping);
+                }
+            }
         }
 
-        /// <summary>
-        ///Vytvoření položel pro menu operátora řádkového filtru. (Je zadáno, Není zadáno)
-        /// </summary>
-        /// <param name="localizerStringId"></param>
-        /// <param name="condition"></param>
-        /// <returns></returns>
-        private DXMenuCheckItem _CreateConditionMenuItem(FilterUIElementLocalizerStringId localizerStringId, string condition)
+        private bool _TryFindMenuIndex(DXMenuItemCollection items, ClauseType clauseType, out int index, out DXMenuItem dXMenuItem)
+        {
+            //RMC 0078567 07.10.2025 Nový přehled - filtrování na Nezačíná na
+            index = -1;
+            dXMenuItem = null;
+            int i = 0;
+            foreach (DXMenuItem item in items)
+            {
+                if (Enum.TryParse(item.Tag.ToString(), ignoreCase: true, out ClauseType tagClauseType) && tagClauseType == clauseType)
+                {
+                    index = i;
+                    dXMenuItem = item;
+                    return true;
+                }
+                i++;
+            }
+            return false;
+        }
+
+        private DXMenuCheckItem _CreateConditionMenuItem(DevExpress.XtraEditors.Controls.StringId localizerStringId, string condition, Image itemImage = null)
+        {
+            string caption = Localizer.Active.GetLocalizedString(localizerStringId);
+            var item = _CreateConditionMenuItem(caption, condition, itemImage);
+            item.Tag = localizerStringId;
+            return item;
+        }
+
+        private DXMenuCheckItem _CreateConditionMenuItem(FilterUIElementLocalizerStringId localizerStringId, string condition, Image itemImage = null)
+        {
+            string caption = FilterUIElementLocalizer.GetString(localizerStringId);
+            var item = _CreateConditionMenuItem(caption, condition, itemImage);
+            item.Tag = localizerStringId;
+            return item;
+        }
+
+        private DXMenuCheckItem _CreateConditionMenuItem(string caption, string condition, Image itemImage = null)
         {
             //https://supportcenter.devexpress.com/ticket/details/t601149/how-to-access-auto-filter-row-icons
-            Image image = DevExpress.XtraEditors.FilterControl.GetClauseImageByType(DevExpress.LookAndFeel.UserLookAndFeel.Default, condition);
-            string caption = FilterUIElementLocalizer.GetString(localizerStringId);
-
             DXMenuCheckItem item = new DXMenuCheckItem();
-            item.ImageOptions.Image = image;
+            if (itemImage != null)
+                item.ImageOptions.Image = itemImage;
+            else
+                item.ImageOptions.Image = DevExpress.XtraEditors.FilterControl.GetClauseImageByType(DevExpress.LookAndFeel.UserLookAndFeel.Default, condition);
             item.Caption = caption;
-            item.Tag = localizerStringId;
             return item;
         }
 
@@ -1431,22 +1996,134 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void Menu_ItemClick(object sender, DevExpress.Utils.Menu.DXMenuItemEventArgs e)
         {
             var column = this.FocusedColumn;
-            if (e.Item.Tag.Equals(FilterUIElementLocalizerStringId.CustomUIFilterIsBlankName))
+            //row filter menu
+            if (FocusedRowHandle == GridControl.AutoFilterRowHandle)
             {
-                var bOpertar = new BinaryOperator(column.FieldName, WildCardNull, BinaryOperatorType.Equal);
-                column.FilterInfo = new ColumnFilterInfo(bOpertar);
+                bool isExtendedClauseType = false;
+                if (e.Item.Tag.Equals(StringId.FilterClauseIsNullOrEmpty))
+                {
+                    //RMC 0077896 07.05.2025 Nový přehled - NULL filtr na datum; nová obsluha
+                    this.CloseEditor(); //Zavře se editor => propíše se hodnota do políčka filtru. Musí to být první, protože když se mění hodnota z intarvulu na null, tak to projde do CreateAutoFilterCriterion dvakrát (nevím proč)
+                    this.SetAutoFilterValue(column, WildCardNull, AutoFilterCondition.Equals); // použije GridView metodu
+                }
+                else if (e.Item.Tag.Equals(StringId.FilterClauseIsNotNullOrEmpty))
+                {
+                    //RMC 0077896 07.05.2025 Nový přehled - NULL filtr na datum; nová obsluha
+                    this.CloseEditor();//Zavře se editor => propíše se hodnota do políčka filtru. Musí to být první, protože když se mění hodnota z intarvulu na not null, tak to projde do CreateAutoFilterCriterion dvakrát (nevím proč)
+                    this.SetAutoFilterValue(column, WildCardNull, AutoFilterCondition.DoesNotEqual); // použije GridView metodu
+                }
+                else if (e.Item.Tag.Equals(FilterUIElementLocalizerStringId.CustomUIFilterDoesNotBeginWithName))
+                {
+                    //RMC 0078567 07.10.2025 Nový přehled - filtrování na Nezačíná na
+                    //Nezačíná na
+                    CloseEditor();
+                    //nastavení našeho operátoru
+                    _columnsExtendedClauseType[column] = ExtendedClauseType.NotBeginWith;
+                    //Přenesení hodnoty v editoru do filtru z předchozího operátora
+                    var columnFilter = ActiveFilter[column];
+                    if (columnFilter != null)
+                    {
+                        string textValue = ActiveEditor?.EditValue?.ToString() ?? GetRowCellValue(GridControl.AutoFilterRowHandle, column)?.ToString();
+                        if (string.IsNullOrEmpty(textValue) && columnFilter.Filter.Value != null)
+                        {
+                            textValue = columnFilter.Filter.Value.ToString();
+                        }
+                        ActiveFilter.Remove(column);
+                        var crit = new NotOperator(new FunctionOperator(FunctionOperatorType.StartsWith, new OperandProperty(column.FieldName), new OperandValue(textValue)));
+                        ActiveFilterCriteria &= crit;
+                        _StoreConvertedColumnFiter(textValue, crit.ToString());
+                    }
+                    ReactivateFilterRowEditor();
+                    isExtendedClauseType = true;
+                }
+                else if (e.Item.Tag.Equals(FilterUIElementLocalizerStringId.CustomUIFilterDoesNotEndWithName))
+                {
+                    //RMC 0078567 07.10.2025 Nový přehled - filtrování na Nezačíná na
+                    //Nekončí na
+                    CloseEditor();
+                    //nastavení našeho operátoru
+                    _columnsExtendedClauseType[column] = ExtendedClauseType.NotEndsWith;
+                    //Přenesení hodnoty v editoru do filtru z předchozího operátora
+                    var columnFilter = ActiveFilter[column];
+                    if (columnFilter != null)
+                    {
+                        string textValue = ActiveEditor?.EditValue?.ToString() ?? GetRowCellValue(GridControl.AutoFilterRowHandle, column)?.ToString();
+                        if (string.IsNullOrEmpty(textValue) && columnFilter.Filter.Value != null)
+                        {
+                            textValue = columnFilter.Filter.Value.ToString();
+                        }
+                        ActiveFilter.Remove(column);
+                        if (!string.IsNullOrEmpty(textValue))
+                        {
+                            var crit = new NotOperator(new FunctionOperator(FunctionOperatorType.EndsWith, new OperandProperty(column.FieldName), new OperandValue(textValue)));
+                            ActiveFilterCriteria &= crit;
+                            _StoreConvertedColumnFiter(textValue, crit.ToString());
+                        }
+                    }
+                    ReactivateFilterRowEditor();
+                    isExtendedClauseType = true;
+                }
+                else if (e.Item.Tag.Equals(StringId.FilterClauseBetween))
+                {//RMC 0078966 14.11.2025 interval (..) v řádkovém filtru
+                    string textValue = ActiveEditor?.EditValue?.ToString() ?? GetRowCellValue(GridControl.AutoFilterRowHandle, column)?.ToString();
+                    textValue = textValue ?? "";
+
+                    if (textValue == WildCardNull) textValue = "";  //reset při přechodu z IsNull na Between
+                    if (!textValue.Contains(InternvalSeparator)) textValue += InternvalSeparator;
+
+                    this.CloseEditor();//Zavře se editor => propíše se hodnota do políčka filtru. Musí to být první, protože když se mění hodnota z intarvulu na not null, tak to projde do CreateAutoFilterCriterion dvakrát (nevím proč)
+                    this.SetAutoFilterValue(column, textValue, AutoFilterCondition.Equals); // použije GridView metodu
+                    ReactivateFilterRowEditor();
+
+                    SetIntervalTextAndCursorPosition(textValue);
+                }
+                else if (e.Item.Tag.Equals(StringId.FilterClauseNotBetween))
+                {//RMC 0078966 14.11.2025 interval (..) v řádkovém filtru
+                    string textValue = ActiveEditor?.EditValue?.ToString() ?? GetRowCellValue(GridControl.AutoFilterRowHandle, column)?.ToString();
+                    textValue = textValue ?? "";
+
+                    if (textValue == WildCardNull) textValue = "";  //reset při přechodu z IsNull na Between
+                    if (!textValue.Contains(InternvalSeparator)) textValue += InternvalSeparator;
+
+                    this.CloseEditor();//Zavře se editor => propíše se hodnota do políčka filtru. Musí to být první, protože když se mění hodnota z intarvulu na not null, tak to projde do CreateAutoFilterCriterion dvakrát (nevím proč)
+                    this.SetAutoFilterValue(column, textValue, AutoFilterCondition.DoesNotEqual); // použije GridView metodu
+                    ReactivateFilterRowEditor();
+
+                    SetIntervalTextAndCursorPosition(textValue);
+                }
+
+                if (!isExtendedClauseType && _columnsExtendedClauseType.ContainsKey(column) && _columnsExtendedClauseType[column] != ExtendedClauseType.None)
+                {
+                    //RMC 0078567 07.10.2025 Nový přehled - filtrování na Nezačíná na
+                    _columnsExtendedClauseType[column] = ExtendedClauseType.None;
+                    CloseEditor();
+                    //je to změna z našeho operátora na jiný standart operátor
+                    //budu tu muset udělat obshluhu všech změn aby mě zůstala hodnota v editoru? 
+                    object editValue = ActiveEditor?.EditValue?.ToString() ?? GetRowCellValue(GridControl.AutoFilterRowHandle, column)?.ToString();
+
+                    string textValue = editValue?.ToString();
+                    if (editValue != null)
+                    {
+                        var columnFilter = ActiveFilter[column];
+                        if (columnFilter != null)
+                        {
+                            this.SetAutoFilterValue(column, editValue, (AutoFilterCondition)e.Item.Tag); // použije GridView metodu
+                        }
+                    }
+                }
             }
-            else if (e.Item.Tag.Equals(FilterUIElementLocalizerStringId.CustomUIFilterIsNotBlankName))
-            {
-                var bOpertar = new BinaryOperator(column.FieldName, WildCardNull, BinaryOperatorType.NotEqual);
-                column.FilterInfo = new ColumnFilterInfo(bOpertar);
-            }
-            else if (e.Item.Tag.ToString().StartsWith(GridLocalizer.Active.GetLocalizedString(DevExpress.XtraGrid.Localization.GridStringId.MenuGroupPanelFullExpand)))
+            //group menu
+            if (e.Item.Tag.ToString().StartsWith(GridLocalizer.Active.GetLocalizedString(DevExpress.XtraGrid.Localization.GridStringId.MenuGroupPanelFullExpand)))
             {
                 string[] tags = e.Item.Tag.ToString().Split('_');
                 if (tags.Length == 2 && int.TryParse(tags[1], out int group))
                 {
                     _SetAllGroupsAndParentsExpanded(group);
+                }
+                else
+                {
+                    //expande all
+                    _SetAllGroupsAndParentsExpanded(_theLowestGroup);
                 }
             }
             else if (e.Item.Tag.ToString().StartsWith(GridLocalizer.Active.GetLocalizedString(DevExpress.XtraGrid.Localization.GridStringId.MenuGroupPanelFullCollapse)))
@@ -1456,10 +2133,41 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     _SetAllGroupsAndChildsColapsed(group);
                 }
+                else
+                {
+                    //colapse all
+                    _SetAllGroupsAndChildsColapsed(0);
+                }
             }
-            else
+        }
+
+        private void SetIntervalTextAndCursorPosition(string textValue)
+        {//RMC 0078966 14.11.2025 interval (..) v řádkovém filtru
+            // Ensure the text is selected and cursor is at the end  
+            if (ActiveEditor is TextEdit textEdit)
             {
-                this.CloseEditor();
+                textEdit.EditValue = textValue;
+                textEdit.Text = textValue;
+                textEdit.SelectAll();
+                if (textValue.Length > InternvalSeparator.Length)
+                {
+                    textEdit.SelectionStart = textEdit.Text.Length;
+                }
+                else
+                {
+                    textEdit.SelectionStart = 0;
+                }
+            }
+        }
+
+        /// <summary>  
+        /// Aktivuje editor v řádkovém filtru. Používá se po je ho zavření.
+        /// </summary>  
+        private void ReactivateFilterRowEditor()
+        {//RMC 0078966 14.11.2025 interval (..) v řádkovém filtru
+            if (FocusedColumn != null && FocusedRowHandle == GridControl.AutoFilterRowHandle)
+            {
+                this.ShowEditor();
             }
         }
 
@@ -1529,14 +2237,44 @@ namespace Noris.Clients.Win.Components.AsolDX
             //budu asi dál posílat i když oblsoužím? ale nastavím e.Handled = true;
             if (sender is DxGridView view)
             {
+                //RMC 0080209 - 2026.04.23 - Problém s právem na export dat
+                if (!AllowMultiCellCopyClipboard && e.Control && e.KeyCode == Keys.C)
+                {
+                    e.SuppressKeyPress = true;
+                    e.Handled = true;
+                    return;
+                }
                 if (view.FocusedRowHandle == 0 && e.KeyData == Keys.Up)
                 {//skok do řádkového filtru
                     e.Handled = TrySetFocusToFilterRow(LastFocusedColumnInRowFilter);
                 }
 
                 if (IsFilterRowActive && e.KeyData == Keys.Enter) _ApplyColumnsFilter();
+
+                // Ctrl+Shift+šipka = odznačení rozsahu (reverse Shift)
+                if (MultiSelect && e.Control && e.Shift && (e.KeyCode == Keys.Down || e.KeyCode == Keys.Up))
+                {//RMC 0080377 - 2026.05.20 - Nový přehled - hromadné odoznačení
+                    int currentHandle = view.FocusedRowHandle;
+                    if (view.IsDataRow(currentHandle))
+                    {
+                        if (_deSelectAnchorRowHandle < 0) _deSelectAnchorRowHandle = currentHandle;
+                        view.UnselectRow(currentHandle);
+                        int nextHandle = e.KeyCode == Keys.Down
+                            ? view.GetNextVisibleRow(currentHandle)
+                            : view.GetPrevVisibleRow(currentHandle);
+                        if (nextHandle >= 0 && view.IsDataRow(nextHandle))
+                            view.FocusedRowHandle = nextHandle;
+                    }
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                    return;
+                }
+
+                // Reset anchor pokud se nejedná o Ctrl+Shift operaci
+                if (!e.Control || !e.Shift) _deSelectAnchorRowHandle = -1;
             }
             LastKeyCodeDown = e.KeyData;
+            _lastKeyCodeDownForFilter = e.KeyData;
 
             OnKeyDown(this, e);
         }
@@ -1635,7 +2373,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         public event DxGridGroupExpandedOrColapsadHandler GroupExpandedOrColapsad;
         public delegate void DxGridGroupExpandedOrColapsadHandler(object sender, DxGridGroupExpandedOrColapsadArgs args);
-        public class DxGridGroupExpandedOrColapsadArgs: EventArgs
+        public class DxGridGroupExpandedOrColapsadArgs : EventArgs
         {
             internal DxGridGroupExpandedOrColapsadArgs(int groupNumber, bool expanded)
             {
@@ -1713,7 +2451,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     }
 
                     //Odstranit případný operátor ze začátku
-                    var condition = _GetConditionAndTrimStringExpression(ref strVal, iColumn);
+                    var condition = _GetConditionAndTrimStringExpression(ref strVal, iColumn, out _);
 
                     StringBuilder sbErrorMsg = new StringBuilder();
                     //číslo
@@ -1756,6 +2494,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                     //datum
                     else if (iColumn.IsDateTimeColumnType)
                     {
+                        //RMC 0078488 06.08.2025 Nový přehled v47 - DATUM řádkový filtr; nahrazení všech čárek za tečku v strVal
+                        strVal = strVal.Replace(',', '.');
                         if (_TryParseDotsInterval(strVal, out DateTime startDate, out DateTime endDatetime))
                         {//interval ..
                             if (startDate.Year < _minYearForFilter)
@@ -1800,6 +2540,23 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
 
+        private void _OnShownEditor(object sender, EventArgs e)
+        {
+            //RMC 0078567 07.10.2025 Nový přehled - filtrování na Nezačíná na
+            //okamžik kdy kliknu do buňky a zobrazí se editor
+            if (!IsFilterRow(FocusedRowHandle) || FocusedColumn == null) return;
+
+            if (_TryGetNonStandartClauseType(FocusedColumn, out var extendedClauseType) && FocusedRowHandle == GridControl.AutoFilterRowHandle)
+            {
+                if (ActiveEditor is TextEdit te)
+                {
+                    // 1) zruš nativní ContextImage (to je to, co ti ikonku „překreslí“)
+                    te.Properties.ContextImageOptions.Image = null;
+                    te.Properties.ContextImageOptions.SvgImage = _GetSvgImageByClauseType(extendedClauseType);
+                }
+            }
+        }
+
         internal IGridViewColumn GetIGridViewColumn(string columnName)
         {
             if (string.IsNullOrEmpty(columnName)) return null;
@@ -1819,6 +2576,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private const int _minYearForFilter = 1753;
         /// <summary>
+        /// Oddělovač pro intervaly v řádkovém filtru
+        /// </summary>
+        private const string InternvalSeparator = "..";
+        /// <summary>
         /// zástupný znak pro null
         /// </summary>
         internal const string WildCardNull = "<NULL>";
@@ -1831,7 +2592,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Výraz filtrovacího řádku
         /// </summary>
-        public string RowFilterExpression { get { return _GetConverterdRowFilterExpression(this.ActiveFilterCriteria); } set { _SetConverterdRowFilterExpression(value); } }
+        public string RowFilterExpression { get { return _GetConverterdRowFilterExpression(this.ActiveFilterCriteria); } set { _ResetPropertiesForEnableApplyFilter(); _SetConverterdRowFilterExpression(value); } }
         /// <summary>
         /// Příznak zda je filtrovací řádek neaktivní
         /// </summary>
@@ -1850,6 +2611,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private Dictionary<string, string> _convertedRowFilterCache = new Dictionary<string, string>();
 
+        // --- custom negace pro starts/ends ---
+        //RMC 0078567 07.10.2025 Nový přehled - filtrování na Nezačíná na
+        private SvgImage _svgImageNotBeginsWith;
+        private SvgImage _svgImageNotEndsWith;
+        private Image _imageNotBeginsWith;
+        private Image _imageNotEndsWith;
+        /// <summary>
+        /// velikost obrázku napevno pro řádkový filtr. Takto funguje i DevExpress, takže no stress
+        /// </summary>
+        private Size _clauseImageSize = new Size(16, 16);
+        private enum ExtendedClauseType
+        {
+            None,
+            NotBeginWith,
+            NotEndsWith
+        }
+        private Dictionary<GridColumn, ExtendedClauseType> _columnsExtendedClauseType = new Dictionary<GridColumn, ExtendedClauseType>();
+
         /// <summary>
         /// Voláno před aplikací filtru do GridView, možnost sestavení vlastní podmínky pro filtr
         /// </summary>
@@ -1862,7 +2641,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             //1. změna základního operátoru. Pro všechny sloupce stejné. Pokud níže vyhodnotí, že je condition potřeba nastavit jinak, tak se tak uděje.
             var iColumn = GetIGridViewColumn(column);
-            AutoFilterCondition conditionFromString = _GetConditionAndTrimStringExpression(ref strVal, iColumn);
+            ExtendedClauseType extendedClauseTypeFromString = ExtendedClauseType.None;
+            AutoFilterCondition conditionFromString = _GetConditionAndTrimStringExpression(ref strVal, iColumn, out extendedClauseTypeFromString);
             if (conditionFromString != AutoFilterCondition.Default)
             {
                 condition = conditionFromString;
@@ -1896,6 +2676,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             else if (iColumn.IsDateTimeColumnType)
             {//datum
+                //RMC 0078488 06.08.2025 Nový přehled v47 - DATUM řádkový filtr; nahrazení všech čárek za tečku v strVal
+                strVal = strVal.Replace(',', '.');
+                _value = strVal;
                 if (_TryParseDotsInterval(strVal, out DateTime startDate, out DateTime endDatetime))
                 {//interval ..
                     resultConvertedCriteriaOperator = new BetweenOperator(column.FieldName, startDate, endDatetime);
@@ -1950,6 +2733,23 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
 
+            //RMC 0078567 07.10.2025 Nový přehled - filtrování na Nezačíná na
+            //konverze na nezačíná a nekončí.
+            //uložení typu rozšířeného operátoru pro daný sloupec
+            if (extendedClauseTypeFromString == ExtendedClauseType.NotBeginWith) { _columnsExtendedClauseType[column] = ExtendedClauseType.NotBeginWith; }
+            else if (extendedClauseTypeFromString == ExtendedClauseType.NotEndsWith) { _columnsExtendedClauseType[column] = ExtendedClauseType.NotEndsWith; }
+            if (_TryGetNonStandartClauseType(column, out var clauseType))
+            {
+                if (clauseType == ExtendedClauseType.NotBeginWith)
+                {
+                    resultConvertedCriteriaOperator = new NotOperator(new FunctionOperator(FunctionOperatorType.StartsWith, new OperandProperty(column.FieldName), new OperandValue(strVal)));
+                }
+                else if (clauseType == ExtendedClauseType.NotEndsWith)
+                {
+                    resultConvertedCriteriaOperator = new NotOperator(new FunctionOperator(FunctionOperatorType.EndsWith, new OperandProperty(column.FieldName), new OperandValue(strVal)));
+                }
+            }
+
             if (!object.ReferenceEquals(resultConvertedCriteriaOperator, null))
             {
                 //koncová obsluha intervalu obecně
@@ -1981,15 +2781,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="stringExpression"></param>
         /// <param name="gridViewColumn"></param>
+        /// <param name="extendedClauseType"></param>
         /// <returns></returns>
-        private AutoFilterCondition _GetConditionAndTrimStringExpression(ref string stringExpression, IGridViewColumn gridViewColumn)
+        private AutoFilterCondition _GetConditionAndTrimStringExpression(ref string stringExpression, IGridViewColumn gridViewColumn, out ExtendedClauseType extendedClauseType)
         {
+            extendedClauseType = ExtendedClauseType.None;
             //dva znaky
             if (stringExpression.StartsWith("!=") || stringExpression.StartsWith("<>")) { stringExpression = stringExpression.Substring(2); return AutoFilterCondition.DoesNotEqual; }
             if (stringExpression.StartsWith(">=")) { stringExpression = stringExpression.Substring(2); return AutoFilterCondition.GreaterOrEqual; }
             if (stringExpression.StartsWith("<=")) { stringExpression = stringExpression.Substring(2); return AutoFilterCondition.LessOrEqual; }
             if (stringExpression.StartsWith("!%") && gridViewColumn.IsStringColumnType) { stringExpression = stringExpression.Substring(2); return AutoFilterCondition.DoesNotContain; }
-            if (stringExpression.StartsWith("!*") && gridViewColumn.IsStringColumnType) { stringExpression = stringExpression.Substring(2); return AutoFilterCondition.NotLike; }    //stejné jako "nezačíná"
+            //if (stringExpression.StartsWith("!*") && gridViewColumn.IsStringColumnType) { stringExpression = stringExpression.Substring(2); return AutoFilterCondition.NotLike; }    //stejné jako "nezačíná"
+            if (stringExpression.StartsWith("!*") && gridViewColumn.IsStringColumnType) { stringExpression = stringExpression.Substring(2); extendedClauseType = ExtendedClauseType.NotBeginWith; return AutoFilterCondition.Default; }    //RMC 0078567 07.10.2025 Nový přehled - filtrování na Nezačíná na
 
             //Jeden znak
             if (stringExpression.StartsWith("=")) { stringExpression = stringExpression.Substring(1); return AutoFilterCondition.Equals; }
@@ -1997,7 +2800,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (stringExpression.StartsWith("<") && !IsWildCardNull(stringExpression)) { stringExpression = stringExpression.Substring(1); return AutoFilterCondition.Less; }
             if (stringExpression.StartsWith("%") && gridViewColumn.IsStringColumnType) { stringExpression = stringExpression.Substring(1); return AutoFilterCondition.Contains; }
             if (stringExpression.StartsWith("*") && gridViewColumn.IsStringColumnType) { stringExpression = stringExpression.Substring(1); return AutoFilterCondition.BeginsWith; }
-            if (stringExpression.StartsWith("!") && gridViewColumn.IsStringColumnType) { stringExpression = stringExpression.Substring(1); return AutoFilterCondition.NotLike; } //stejné jako "nezačíná"
+            //if (stringExpression.StartsWith("!") && gridViewColumn.IsStringColumnType) { stringExpression = stringExpression.Substring(1); return AutoFilterCondition.NotLike; } //stejné jako "nezačíná"
+            if (stringExpression.StartsWith("!") && gridViewColumn.IsStringColumnType) { stringExpression = stringExpression.Substring(1); extendedClauseType = ExtendedClauseType.NotBeginWith; return AutoFilterCondition.Default; }    //RMC 0078567 07.10.2025 Nový přehled - filtrování na Nezačíná na
 
             return AutoFilterCondition.Default;
         }
@@ -2167,7 +2971,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             const string format_dmyU = "M/d/yyyy";
             const string format_myE = "M.yyyy";
             const string format_myU = "M/yyyy";
-            string format_y = "yyyy";
+            const string format_y = "yyyy";
+            const string format_dmE = "d.M";
+            const string format_dmU = "M/d";
 
             if (DateTime.TryParseExact(value, format_dmyhmsE, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out resultDateTime)
                 || DateTime.TryParseExact(value, format_dmyhmsU, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out resultDateTime))
@@ -2214,9 +3020,29 @@ namespace Noris.Clients.Win.Components.AsolDX
                 month = resultDateTime.Month;
                 year = resultDateTime.Year;
             }
+            else if (DateTime.TryParseExact(value.TrimEnd('.'), format_dmE, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out resultDateTime)
+                 || DateTime.TryParseExact(value.TrimEnd('.'), format_dmU, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out resultDateTime))
+            {
+                parsed = true;
+                resultDateTime = new DateTime(DateTime.Now.Year, resultDateTime.Month, resultDateTime.Day);
+                day = resultDateTime.Day;
+                month = resultDateTime.Month;
+                year = resultDateTime.Year;
+            }
             else if (DateTime.TryParseExact(value, format_y, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out resultDateTime))
             {
                 parsed = true;
+                year = resultDateTime.Year;
+            }
+            else if (value.EndsWith(".") && int.TryParse(value.TrimEnd('.'), out int resultDay))    //parsování dne v měsíci (např. "15."), musí končit s tečkou, takto to bylo ve starém přehledu
+            {
+                int daysInMonth = DateTime.DaysInMonth(DateTime.Now.Year, DateTime.Now.Month); //ověření platnosti dne v měsíci
+                if (resultDay < 1 || resultDay > daysInMonth) return false;
+
+                parsed = true;
+                resultDateTime = new DateTime(DateTime.Now.Year, DateTime.Now.Month, resultDay);
+                day = resultDateTime.Day;
+                month = resultDateTime.Month;
                 year = resultDateTime.Year;
             }
             return parsed;
@@ -2391,11 +3217,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             get
             {
-                bool isLastClickOnFilterRow = LastMouseDownGridHitInfo != null && this.IsFilterRow(LastMouseDownGridHitInfo.RowHandle) && LastMouseDownGridHitInfo.Column != null;
-                bool isLastKeyTab = LastKeyCodeDown == Keys.Tab;
-                return !(IsFilterRowActive && (isLastClickOnFilterRow || isLastKeyTab));
+                bool isLastClickInFilterRow = IsLastClickInFilterRow();
+                bool isLastKeyTab = _lastKeyCodeDownForFilter == Keys.Tab;
+                return !(IsFilterRowActive && (isLastClickInFilterRow || isLastKeyTab));
             }
         }
+
+        /// <summary>
+        /// slouží pro řízení aplikace filtru. Může se resetovat pomoc <see cref="_ResetPropertiesForEnableApplyFilter"/> dle potřeby aplikování filtru. Proto je to private a samostatná proměnná.
+        /// </summary>
+        private GridHitInfo _lastMouseDownGridHitInfoForFilter = null;
+
+        /// <summary>
+        /// slouží pro řízení aplikace filtru. Může se resetovat pomoc <see cref="_ResetPropertiesForEnableApplyFilter"/> dle potřeby aplikování filtru. Proto je to private a samostatná proměnná.        /// </summary>
+        private Keys _lastKeyCodeDownForFilter = Keys.None;
+
+        private bool IsLastClickInFilterRow()
+        {
+            return _lastMouseDownGridHitInfoForFilter != null && this.IsFilterRow(_lastMouseDownGridHitInfoForFilter.RowHandle) && _lastMouseDownGridHitInfoForFilter.Column != null;
+        }
+
         private bool _fireApplyColumnsFilter = false;
         /// <summary>
         /// Chci vynutit aplikování řádkového filtru
@@ -2405,6 +3246,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             _fireApplyColumnsFilter = true;
             base.ApplyColumnsFilterCore();
             _fireApplyColumnsFilter = false;
+        }
+
+        /// <summary>
+        /// Resetuj proměné, které blokují aplikaci filtru. Například při pohybu myší po buňkách filtru, nebo při pohybu pomocí Tab.
+        /// </summary>
+        private void _ResetPropertiesForEnableApplyFilter()
+        {//RMC 0077833 25.04.2025 QA - nepotvrzená filtrovací kritéria; zavedeny samostatné proměnné pro řízení aplikace filtru
+            _lastKeyCodeDownForFilter = Keys.None;
+            _lastMouseDownGridHitInfoForFilter = null;
         }
         protected override void OnActiveFilterChanged(object sender, EventArgs e)
         {
@@ -2525,6 +3375,44 @@ namespace Noris.Clients.Win.Components.AsolDX
             //throw new NotImplementedException();
         }
 
+        private bool _TryGetNonStandartClauseType(GridColumn column, out ExtendedClauseType extendedClauseType)
+        {
+            //RMC 0078567 07.10.2025 Nový přehled - filtrování na Nezačíná na
+            extendedClauseType = ExtendedClauseType.None;
+            if (_columnsExtendedClauseType.ContainsKey(column))
+            {
+                extendedClauseType = _columnsExtendedClauseType[column];
+                return extendedClauseType != ExtendedClauseType.None;
+            }
+            return false;
+        }
+
+        private SvgImage _GetSvgImageByClauseType(ExtendedClauseType clauseType)
+        {
+            //RMC 0078567 07.10.2025 Nový přehled - filtrování na Nezačíná na
+            switch (clauseType)
+            {
+                case ExtendedClauseType.NotBeginWith:
+                    return _svgImageNotBeginsWith;
+                case ExtendedClauseType.NotEndsWith:
+                    return _svgImageNotEndsWith;
+                default:
+                    return null;
+            }
+        }
+        private Image _GetImageByClauseType(ExtendedClauseType clauseType)
+        {
+            //RMC 0078567 07.10.2025 Nový přehled - filtrování na Nezačíná na
+            switch (clauseType)
+            {
+                case ExtendedClauseType.NotBeginWith:
+                    return _imageNotBeginsWith;
+                case ExtendedClauseType.NotEndsWith:
+                    return _imageNotEndsWith;
+                default:
+                    return null;
+            }
+        }
         #endregion
 
 
@@ -3035,9 +3923,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         internal const string PARENTGROUPID = "_parent_group_id_";
         private const string GROUPBUTTON = "_group_button_";
         internal const string PK_COLUMN_NAME = "H_PK_H";
-
+        /// <summary>
+        /// Slouží pro uložení informací stavu jedntlivých skupinových řádku.
+        /// </summary>
         internal List<GroupRowInfo> GroupRowInfos = new List<GroupRowInfo>();
-        internal List<GroupInfo> GroupInfos = new List<GroupInfo>();    //slouží pro řízení stavu celé skupiny, sbalit vše a rozbalit vše.
+        /// <summary>
+        /// Slouží pro řízení stavu celé skupiny, sbalit vše a rozbalit vše.
+        /// </summary>
+        internal List<GroupInfo> GroupInfos = new List<GroupInfo>();
         //Slouží pro speciální případ, kdy ruším groupy a při zrušení poslední se neudrží informace o řazení view ani se nepošle změna o řazení.
         private Dictionary<string, DevExpress.Data.ColumnSortOrder> _lastColumSortOrder = new Dictionary<string, DevExpress.Data.ColumnSortOrder>();
 
@@ -3244,9 +4137,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="group"></param>
         private void _SetAllGroupsAndChildsColapsed(int group)
         {
-            //STR 0077817 - 2025.04.14 - Ukládání všech nastavení do pohledu: doplnění události při sbalení/rozbalení skupiny
-            _OnGroupExpandedOrColapsad(group, expanded: false);
-
             bool anyGroupRowOfGroup = GroupRowInfos.Any(x => x.Group == group);  //příznak zda existuje nějaký group řádek pro danou groupu
             bool loadAllRows = false;
             if (!anyGroupRowOfGroup)
@@ -3263,6 +4153,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                     return;
                 }
             }
+            //STR 0077817 - 2025.04.14 - Ukládání všech nastavení do pohledu: doplnění události při sbalení/rozbalení skupiny
+            _OnGroupExpandedOrColapsad(group, expanded: false);
 
             foreach (GroupRowInfo item in GroupRowInfos)
             {
@@ -3301,13 +4193,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="group"></param>
         private void _SetAllGroupsAndParentsExpanded(int group)
         {
-            //STR 0077817 - 2025.04.14 - Ukládání všech nastavení do pohledu: doplnění události při sbalení/rozbalení skupiny
-            _OnGroupExpandedOrColapsad(group, expanded: true);
-
-
             foreach (var item in GroupInfos.Where(item => item.Group <= group))
             {
                 item.Expanded = true;
+                //STR 0077817 - 2025.04.14 - Ukládání všech nastavení do pohledu: doplnění události při sbalení/rozbalení skupiny
+                _OnGroupExpandedOrColapsad(item.Group, expanded: true);
             }
 
             foreach (GroupRowInfo item in GroupRowInfos)
@@ -3360,6 +4250,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         private bool _IsTheLowestGroup(int group)
         {
             return group >= GroupCount - 1;
+        }
+
+        private int _theLowestGroup
+        {
+            get { return GroupCount - 1; }
         }
         /// <summary>
         /// Vrací číslo groupy sloupce. Vrací null pokud sloupec není grouped.
@@ -3851,6 +4746,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 //Text
                 //editační styl bez ikonek
                 RepositoryItemComboBox repItemCombo = new RepositoryItemComboBox();          // vytvoříme objekt typu RepositoryItemComboBox
+                repItemCombo.TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.Standard; // umožní psaní
+                repItemCombo.AutoComplete = false;  //RMC 0078037 23.05.2025 Nový přehled-ŘF editačníhi stylu; vypnutí doplnovaní textu (jednodušeji lze zadat jen část textu)
                 int i = 0;
                 foreach (var code in gridViewColumn.CodeTable)
                 {
@@ -4024,7 +4921,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (_silentMode) return;
 
-            if (selectedRows.Count() != this.RowCount) _selectedAllRows = false; //schození přiznaku o vybraných všech řádcích
+            if (selectedRows.Count() != this.RowCount)
+            {
+                _selectedAllRows = false; //schození přiznaku o vybraných všech řádcích
+                _summaryRowData = null; //nulujeme summy, protože již nemáme všechny řádky selected //RMC 0079750 - 2026.02.12 - Součet v novém přehledu
+            }
             if (DxSelectionChanged != null) DxSelectionChanged(this, new DxGridSelectionChangedChangedEventArgs(selectedRows, SelectedAllRows));
         }
 

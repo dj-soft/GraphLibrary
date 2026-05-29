@@ -2111,6 +2111,14 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.ChildItemPanel = null;
             }
             /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return this.AreaId + ": " + (this.ChildType == WSForms.AreaContentType.DxLayoutItemPanel ? this.ChildItemPanel?.ToString() : this.ChildType.ToString());
+            }
+            /// <summary>
             /// ID prostoru
             /// </summary>
             public string AreaId { get; private set; }
@@ -2229,9 +2237,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Do this instance aplikuje nový layout, definovaný třídou Area (rekurzivně)
         /// </summary>
         /// <param name="area"></param>
-        /// <param name="areaIdMapping"></param>
-        /// <param name="lostControlMode"></param>
-        /// <param name="force"></param>
+        /// <param name="areaIdMapping">Přechodová mapa (Key = staré AreaId, Value = nové AreaId)</param>
+        /// <param name="lostControlMode">Režim práce s UserControly, které nejsou v mapě <paramref name="areaIdMapping"/></param>
+        /// <param name="force">Vložit layout i když v něm nejsou změny? I pak může parametr <paramref name="lostControlMode"/> ovlivnit obsah okna</param>
         private void _SetXmlLayoutArea(Area area, IEnumerable<KeyValuePair<string, string>> areaIdMapping, OrphanedControlMode lostControlMode, bool force)
         {
             if (area == null)
@@ -2239,8 +2247,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             var layoutOld = GetLayoutData();           // Stávající layout, z něj využijeme strukturu (Item3) a následně pole UserControlů a jejich adres (Item2)
             if (!force)
-            {   // Pokud není povinné změnit layout, a dodaný layout je obsahově identický, pak skončíme:
-                if (Area.IsEqual(area, layoutOld.Item4)) return;
+            {   // Pokud není povinné změnit layout, a dodaný layout je obsahově identický, a pokud režim pro sirotky je Umístit někam, pak skončíme protože není třeba nic měnit:
+                if (Area.IsEqual(area, layoutOld.Item4) && (lostControlMode == OrphanedControlMode.MoveToNewArea || lostControlMode == OrphanedControlMode.MoveToUnusedArea)) return;
             }
 
             DxLayoutItemInfo[] lostControls = null;
@@ -2297,7 +2305,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Stávající UserControly budou umístěny vždy do nově vytvořených políček
             /// </summary>
-            MoveToNewArea
+            MoveToNewArea,
+            /// <summary>
+            /// Stávající nepotřebné UserControly budou skryty (Visible = false, Dock = None) a budou přemístěny do Root containeru.
+            /// Tak budou stále žít, ale nebudou vidět.
+            /// Následně může jejich controller tyto controly řízeně zahodit (zavřít, zlikvidovat, atd).
+            /// </summary>
+            HideUserControl
         }
         /// <summary>
         /// Jakým způsobem se má odebrat Control
@@ -2448,9 +2462,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (oldControls == null || oldControls.Length == 0) return new DxLayoutItemInfo[0];   // Zkratka
 
-            // Nejprve umístíme stávající controly podle explicitní mapy:
-            Dictionary<string, string> mapDict = CreateDictionary(areaIdMapping);
-            List<DxLayoutItemInfo> remainingControls = new List<DxLayoutItemInfo>();
+            // Nejprve umístíme stávající controly podle explicitní mapy (mapa popisuje, že dosavadní control z pozice X máme umístit do nového layoutu do pozice Y):
+            var mapDict = CreateDictionary(areaIdMapping);
+            var remainingControls = new List<DxLayoutItemInfo>();
             if (mapDict.Count > 0)
             {
                 foreach (DxLayoutItemInfo oldControl in oldControls)
@@ -2476,50 +2490,63 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             // Nyní umístíme zbývající controly podle zadaného režimu (lostControlMode):
-            List<DxLayoutItemInfo> lostControls = new List<DxLayoutItemInfo>();
+            var lostControls = new List<DxLayoutItemInfo>();
             if (remainingControls.Count > 0)
             {
                 switch (lostControlMode)
                 {
                     case OrphanedControlMode.MoveToUnusedArea:
                     case OrphanedControlMode.MoveToNewArea:
+                    case OrphanedControlMode.HideUserControl:
                         bool canUseExistingHosts = (lostControlMode == OrphanedControlMode.MoveToUnusedArea);
+                        bool doHideControl = (lostControlMode == OrphanedControlMode.HideUserControl);
                         foreach (DxLayoutItemInfo oldControl in remainingControls)
                         {   // Tady už neřešíme mapu (původní => nové AreaId), protože co podle ní šlo vyřešit, už je vyřešeno.
                             string oldAreaId = oldControl.AreaId;
-                            bool isAssigned = false;
-                            // 1. Pokud můžeme využít existující oblasti:
-                            if (canUseExistingHosts)
+                            var userControl = oldControl.UserControl;
+                            bool isProcessed = false;
+                            // 1. Pokud control máme skrýt:
+                            if (doHideControl)
+                            {
+                                userControl.Visible = false;
+                                userControl.Dock = DockStyle.None;
+                                // Neviditelný control přidám do this hostitele = on nebude vidět, ale bude mít WinForm parenta:
+                                this.Controls.Add(userControl);
+                                isProcessed = true;
+                            }
+                            // 2. Pokud můžeme využít existující oblasti:
+                            else if (canUseExistingHosts)
                             {
                                 if (newHosts.TryGetValue(oldAreaId, out var newHostInfo) && newHostInfo.IsDisponible)
                                 {   // Pokud najdeme původní oblast dle AreaId, a oblast existuje a je prázdná,
                                     // pak do ní tento control umístíme:
                                     if (newHostInfo.ChildType == WSForms.AreaContentType.EmptyLayoutPanel)
                                         newHostInfo.ClearChilds();
-                                    AddControlToParent(oldControl.UserControl, newHostInfo.Parent, oldControl.IsPrimaryPanel, oldControl.TitleText, oldControl.TitleSubstitute);
-                                    isAssigned = true;
+                                    AddControlToParent(userControl, newHostInfo.Parent, oldControl.IsPrimaryPanel, oldControl.TitleText, oldControl.TitleSubstitute);
+                                    isProcessed = true;
                                 }
-                                if (!isAssigned)
+                                if (!isProcessed)
                                 {   // Zkusíme najít libovolný existující prázdný prvek:
                                     var anyHostInfo = newHosts.Values.FirstOrDefault(h => h.IsDisponible);
                                     if (anyHostInfo != null)
                                     {
                                         if (anyHostInfo.ChildType == WSForms.AreaContentType.EmptyLayoutPanel)
                                             anyHostInfo.ClearChilds();
-                                        AddControlToParent(oldControl.UserControl, anyHostInfo.Parent, oldControl.IsPrimaryPanel, oldControl.TitleText, oldControl.TitleSubstitute);
-                                        isAssigned = true;
+                                        AddControlToParent(userControl, anyHostInfo.Parent, oldControl.IsPrimaryPanel, oldControl.TitleText, oldControl.TitleSubstitute);
+                                        isProcessed = true;
                                     }
                                 }
                             }
-
-                            // 2. Pokud jsme nemohli využít existující oblasti, anebo už žádná volná není, pak přidáme novou oblast:
-                            if (!isAssigned)
+                            // 3. Pokud jsme control nijak nevyřešili (není skryt a nemohli jsme využít existující oblasti, anebo už žádná volná není), pak přidáme novou oblast a do ní vložíme Control:
+                            if (!isProcessed)
                             {   // Přidáme defaultně = nakonec, doprava
-                                AddControl(oldControl.UserControl);
-                                isAssigned = true;
+                                AddControl(userControl);
+                                isProcessed = true;
                             }
                         }
                         break;
+
+                    case OrphanedControlMode.ReleaseControls:
                     default:
                         lostControls = remainingControls;
                         break;
@@ -2637,7 +2664,14 @@ namespace Noris.Clients.Win.Components.AsolDX
                 WSArea = wsArea;
             }
             internal readonly WSForms.Area WSArea;
-
+            /// <summary>
+            /// Vizualizace obsahu
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return (this.ContentType == WSForms.AreaContentType.DxLayoutItemPanel) ? ContentText : this.ContentType.ToString();
+            }
             #region Data
             /// <summary>
             /// ID prostoru
@@ -4937,6 +4971,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
             this.IsVisible = isVisible;
             this.State = state;
         }
+        /// <summary>
+        /// Vizualizace obsahu
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"{AreaId}: {Title}{(IsPrimaryPanel ? "; Primary" : "")}{(IsVisible ? "" : "; Invisible")}";
+        }
+        /// <summary>
+        /// Titulek použitý
+        /// </summary>
+        protected string Title { get { return !String.IsNullOrEmpty(TitleText) ? TitleText : (TitleSubstitute ?? ""); } }
         /// <summary>
         /// ID prostoru
         /// </summary>

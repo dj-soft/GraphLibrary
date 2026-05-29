@@ -17,8 +17,6 @@ namespace Noris.Clients.Win.Components.AsolDX
 {
     using Noris.Clients.Win.Components.AsolDX.Map;
 
-    using System.Runtime.InteropServices;
-
     /// <summary>
     /// Panel obsahující <see cref="MsWebView"/> a jednoduchý toolbar (Back - Forward - Refresh - Adresa - Go)
     /// <para/>
@@ -1060,23 +1058,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         #region Buttony
         private void _ShowMapClick(object sender, EventArgs args)
         {
-            // AFU 0076331 - WebCoordinates je po programmatic navigation (např. po setování Value z click-Accept
-            // v MapEditContainer) stale: _ConvertUrlAdressToCoordinates přeskakuje programmatic navigace,
-            // takže WebCoordinates nedostane novou URL. Preferujeme WebCoordinates pokud má data (user panoval
-            // a WebCoordinates obsahuje aktuální viewport), jinak fallback na MapCoordinates (authoritative
-            // stored value - aktuální po click-Accept). Viz IOU 000010088507.
-            string urlAdress = null;
-            try
-            {
-                var web = this.WebCoordinates;
-                if (web != null && !web.IsEmpty) urlAdress = web.UrlAdress;
-            }
-            catch { }
-            if (string.IsNullOrEmpty(urlAdress))
-            {
-                try { urlAdress = this.IMapProperties?.MapCoordinates?.UrlAdress; } catch { }
-            }
-            if (string.IsNullOrEmpty(urlAdress)) return;
+            string urlAdress = this.WebCoordinates.UrlAdress;
             DxComponent.StartProcess(urlAdress);
             this.__MsWebView.Focus();
         }
@@ -2070,23 +2052,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             __MsWebProperties = new WebPropertiesInfo(this);
             this.SizeChanged += _SizeChanged;
-
-            // AFU 19.03.2026 - Oprava E_ABORT (0x80004004)
-            if (this.IsHandleCreated)
-                _InitWebCore();
-            else
-                this.HandleCreated += _OnHandleCreatedInitWebCore;
-        }
-
-        /// <summary>
-        /// Po vytvoření Handle se spustí inicializace WebCore, která je nezbytná pro další práci s WebView.
-        /// </summary>
-        private void _OnHandleCreatedInitWebCore(object sender, EventArgs e)
-        {
-            this.HandleCreated -= _OnHandleCreatedInitWebCore;
             _InitWebCore();
         }
-
         /// <summary>
         /// Po změně velikosti controlu resetuje paměť načteného Image
         /// </summary>
@@ -2163,7 +2130,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             };
 
             this.CoreWebView2InitializationCompleted += _CoreWebView2InitializationCompleted;
-            _ = this.EnsureCoreWebView2Async(); // AFU 19.03.2026 - Oprava E_ABORT (0x80004004)
+            var task = this.EnsureCoreWebView2Async();
+            task.Wait(50);
         }
         /// <summary>
         /// Počítadlo, kolikrát byl spuštěn proces <c>EnsureCoreWebView2Async()</c>
@@ -2185,7 +2153,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (__CoreWebInitializerCounter == 1)
                     {
                         __CoreWebInitializerCounter = 2;
-                        _ = this.EnsureCoreWebView2Async(); // AFU 19.03.2026 - Oprava E_ABORT (0x80004004)
+                        var task = this.EnsureCoreWebView2Async();
+                        task.Wait(50);
                     }
                 }
                 else
@@ -2211,17 +2180,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             else
             {
-                // AFU 24.03.2026 - E_ABORT pouze logujeme, nezobrazujeme uživateli (může nastat při race condition během inicializace)
-                if (e.InitializationException is COMException comEx && comEx.ErrorCode == unchecked((int)0x80004004))
-                {
-                    DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebViewCore.CoreWebView2InitializationCompleted: E_ABORT (0x80004004); Counter: {__CoreWebInitializerCounter}; {comEx.Message}");
-                }
-                else
-                {
-                    // K této chybě dojde mimo try  catch blok (=> asynchronně, invokováno do GUI), takže throw mi shodí aplikaci. Dáme placku:
-                    DxComponent.ShowMessageException(e.InitializationException, "", "MsWebView error");
-                    // throw new ApplicationException($"MsWebView2 error: '{e.InitializationException.Message}'", e.InitializationException);
-                }
+                // K této chybě dojde mimo try  catch blok (=> asynchronně, invokováno do GUI), takže throw mi shodí aplikaci. Dáme placku:
+                DxComponent.ShowMessageException(e.InitializationException, "", "MsWebView error");
+                // throw new ApplicationException($"MsWebView2 error: '{e.InitializationException.Message}'", e.InitializationException);
             }
         }
         /// <summary>
@@ -2272,20 +2233,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.NewWindowRequested");
 
             var properties = this.WebProperties;
-
-            // AFU 0072781: Nové okno je zakázané => zablokovat popup a otevřít v aktuálním webview:
-            if (properties != null && !properties.CanOpenNewWindow)
-            {
-                e.Handled = true;
-
-                if (!String.IsNullOrEmpty(e.Uri) && this.CoreWebView2 != null)
-                    this.CoreWebView2.Navigate(e.Uri);
-
-                return;
-            }
-
-            // Nové okno je povolené => nechat default chování:
-            e.Handled = false;
+            if (properties.CanOpenNewWindow)
+                e.NewWindow = this.CoreWebView2;
         }
         /// <summary>
         /// Eventhandler při zahájení navigace.
@@ -2364,8 +2313,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _CoreWeb_WebResourceResponseReceived(object sender, Microsoft.Web.WebView2.Core.CoreWebView2WebResourceResponseReceivedEventArgs e)
         {
-            if (!DxComponent.LogIsRepeated(5, "WebViewCore.WebResourceResponseReceived"))
+            if (DxComponent.LogActivities.HasFlag(LogActivityKind.WinMessage))
+            {
+                var headers = e.Response.Headers.Select(h => h.Key).ToOneString("; ");
+                DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"WebViewCore.WebResourceResponseReceived (Headers: {headers})");
+            }
+            else if (!DxComponent.LogIsRepeated(5, "WebViewCore.WebResourceResponseReceived"))
+            {   // Nelogujeme detaily? => vepíšeme tento řádek jen tehdy, když jsme podobný neměli v posledních 5 milisekundách:
                 DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, "WebViewCore.WebResourceResponseReceived");
+            }
 
             _CheckDelayedResponse();                       // Tam se ověří, zda budeme čekat na doběhnutí dalších Responses (odpovědi ze serveru, které přicházejí po NavigationCompleted)
         }
@@ -5503,23 +5459,14 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
         {
             parsedData = null;
 
-            // AFU 0076331 - Seznam v 2025 migroval mapy.cz → mapy.com, a přidal language prefix (/cs/, /en/, /de/, /sk/).
-            // Původní strict match "mapy.cz" + "/zakladni" po migraci failoval → Accept pin ve WebView2 se nikdy neenabloval.
-            // Viz IOU 000010088507. Akceptujeme obě domény i volitelný 2-znakový language prefix.
+            // Web:
+            string web = (providerId == MapProviderSeznamMapy.Id ? "mapy.cz" :
+                         (providerId == MapProviderSeznamFrameMapy.Id ? "frame.mapy.cz/" : "mapy.cz"));
             string host = uri.Host;
-            bool isSeznamMapyHost = host.Equals("mapy.cz", StringComparison.OrdinalIgnoreCase)
-                                 || host.Equals("mapy.com", StringComparison.OrdinalIgnoreCase);
-            bool isSeznamFrameHost = host.Equals("frame.mapy.cz", StringComparison.OrdinalIgnoreCase)
-                                  || host.Equals("frame.mapy.com", StringComparison.OrdinalIgnoreCase);
-            bool hostMatches = (providerId == MapProviderSeznamMapy.Id && isSeznamMapyHost)
-                            || (providerId == MapProviderSeznamFrameMapy.Id && isSeznamFrameHost)
-                            || (providerId != MapProviderSeznamMapy.Id && providerId != MapProviderSeznamFrameMapy.Id && isSeznamMapyHost);
-            if (!hostMatches) return false;
+            if (!String.Equals(host, web, StringComparison.OrdinalIgnoreCase)) return false;
 
-            // Typ mapy: localPath může mít language prefix (/cs/zakladni), nebo být bez něj (/zakladni).
+            // Typ mapy:
             string localPath = uri.LocalPath;
-            if (localPath != null && localPath.Length >= 4 && localPath[0] == '/' && localPath[3] == '/')
-                localPath = localPath.Substring(3);   // "/cs/zakladni" → "/zakladni"
             MapCoordinatesMapType mapType =
                 (String.Equals(localPath, "/zakladni") ? MapCoordinatesMapType.Standard :
                 (String.Equals(localPath, "/letecka") ? MapCoordinatesMapType.Photo :
@@ -5543,21 +5490,30 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
             // Zoom
             SearchUriQueryValue("z", queryData, out int zoom, out bool hasZoom);
 
-            // AFU 0076331 - Point vždy odvozujeme z Center (viewport střed), nikoli z "id=" (původní pin).
-            // Důvod: na mapy.com v MsWebView neexistuje interaktivní cesta, jak změnit "id=" — Chromium
-            // kontextové menu nahradilo starou SMap ContextMenu.AddMarkerItem. Parametr "id=" tedy v URL
-            // zůstává stále stejný (= výchozí stored pin). Pokud by se Point odvozoval z "id=", pak
-            // webCoordinates.PointText == mapCoordinates.PointText stále → Accept button se nikdy neaktivoval.
-            // Beremou-li Point z Center (x,y), pan viewu mění PointText a Accept se rozsvítí správně.
-            // Viz IOU 000010088507.
+            // Souřadnice bodu Point - výchozí je v souřadnici Center:
+            bool hasPoint = false;
             Double pointX = centerX;
             Double pointY = centerY;
 
-            // Pro kompatibilitu ponecháváme čtení "source=coor&id=..." — jen pro detekci, že v URL bod byl
-            // (ovlivňuje ShowPointPin v Result níže), ale pointX/pointY již nepřebíráme.
+            // a) Point nalezený pomocí source=coor;id=(kordináty) :
+            //    To se do mapy vkládá buď Ctrl+Click, anebo Pravá myš:menu Co je zde?
             SearchUriQueryValue("source", queryData, out string source, out bool hasSource);
             SearchUriQueryValue("id", queryData, out string id, out bool hasId);
-            bool hasIdPin = hasSource && String.Equals(source, "coor") && hasId && !String.IsNullOrEmpty(id) && id.Contains("%2C");
+            if (hasSource && String.Equals(source, "coor") && hasId && !String.IsNullOrEmpty(id) && id.Contains("%2C"))
+            {   // Pokud v URL najdu: "source=coor&id=15.795172900000000%2C49.949911300000000"
+                var coords = id.Split(new string[] { "%2C" }, StringSplitOptions.RemoveEmptyEntries);
+                if (coords.Length == 2 && TryParseDouble(coords[0], out Double ptX) && TryParseDouble(coords[1], out Double ptY))
+                {
+                    hasPoint = true;
+                    pointX = ptX;
+                    pointY = ptY;
+                }
+            }
+            // b) Nebo pokud se uživatel pokusí o "navigování" Pravá myš:trasa sem
+            if (!hasPoint)
+            {
+
+            }
 
             // Postranní panel:
             bool hasPanel = false;
@@ -5575,7 +5531,7 @@ namespace Noris.Clients.Win.Components.AsolDX.Map
                 MapType = mapType,
                 Zoom = zoom,
                 ShowInfoPanel = hasPanel,
-                ShowPointPin = hasIdPin   // AFU 0076331 - ShowPointPin reflektuje přítomnost "source=coor&id=" v URL
+                ShowPointPin = hasPoint
             };
 
             // OK:

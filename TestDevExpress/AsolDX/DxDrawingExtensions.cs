@@ -304,6 +304,28 @@ namespace Noris.Clients.Win.Components.AsolDX
             return result;
         }
         /// <summary>
+        /// Vrátí pole všech Parentů až k this controlu.
+        /// <para/>
+        /// Parametr <paramref name="hierarchyToParent"/> definuje pořadí Parentů ve vráceném poli:<br/>
+        /// false = pole má na indexu [0] nejvyššího Parenta, a na posledním indexu pole je this control;<br/>
+        /// true = pole má na indexu [0] this control, a na posledním indexu pole je nejvyšší Parenta.<br/>
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="hierarchyToParent">Pořadí v poli: false = od nejvyššího Parenta k this controlu; true = od this controlu k nejvyššímu parentu.</param>
+        /// <returns></returns>
+        public static Control[] GetAllParents(this Control control, bool hierarchyToParent)
+        {
+            var parents = new List<Control>();
+            int timeout = 100;
+            while (control != null && (timeout--) >= 0)
+            {
+                parents.Add(control);                                          // Tímto způsobem bude poslední (=nejvyšší) parent na poslední pozici Listu.
+                control = control.Parent;
+            }
+            if (!hierarchyToParent && parents.Count > 1) parents.Reverse();    // Takto bude poslední (=nejvyšší) parent na první pozici Listu.
+            return parents.ToArray();
+        }
+        /// <summary>
         /// Korektně disposuje všechny Child prvky, provede i Controls.Clear().
         /// </summary>
         /// <param name="control"></param>

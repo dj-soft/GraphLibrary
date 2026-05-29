@@ -924,6 +924,82 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (strikeOut) fontStyle |= FontStyle.Strikeout;
             return fontStyle;
         }
+        /// <summary>
+        /// Vrátí stringovou reprezentaci zadané klávesy, včetně modifikátorů.
+        /// Vrací například <c>"Shift F8"</c> nebo <c>"Ctrl A"</c>.
+        /// Oddělovačem je mezera, jednotlivé prvky jsou z enumu <see cref="Keys"/>, modifikátory jsou <c>Shift Alt Ctrl</c>.
+        /// Reverzní metoda je <see cref="ConvertWinKeys(string)"/>.
+        /// </summary>
+        /// <param name="keys"></param>
+        /// <param name="modifierJoin">Spojovací znak mezi sousedními modifikátory (<c>Ctrl+Shift</c>).<br/>Implicitní je <c>'+'</c>.<br/>Povolené znaky jsou ' ' nebo '+', jiné budou ignorovány.</param>
+        /// <param name="keyCodeJoin">Spojovací znak za modifikátory před klávesou(<c>Ctrl+Shift</c>).<br/>Implicitní je <c>'+'</c>.<br/>Povolené znaky jsou ' ' nebo '+', jiné budou ignorovány.</param>
+        /// <param name="addNoneKeyCode">Přidávat text <c>None</c>, pokud KeyCode je <c>None</c>? Pak výsledkem bude například <c>Ctrl None</c>. Default je false.</param>
+        /// <returns></returns>
+        public static string ConvertWinKeys(System.Windows.Forms.Keys keys, char modifierJoin = '+', char keyCodeJoin = ' ', bool addNoneKeyCode = false)
+        {
+            string result = "";
+            keyCodeJoin = validate(keyCodeJoin, ' ');
+
+            // Modifikátory:
+            modifierJoin = validate(modifierJoin, '+');
+            if ((keys & Keys.Control) != 0) result += $"Ctrl{modifierJoin}";
+            if ((keys & Keys.Shift) != 0) result += $"Shift{modifierJoin}";
+            if ((keys & Keys.Alt) != 0) result += $"Alt{modifierJoin}";
+            // result může být: "Ctrl+"  nebo  "Ctrl+Alt+"   nebo  ""
+            bool hasModifier = (result.Length > 0);
+            if (hasModifier) result = result.Substring(0, result.Length - 1);            // Odeberu koncový znak modifierJoin
+            // result může být: "Ctrl"  nebo  "Ctrl+Alt"   nebo  ""
+
+            // Vlastní klávesa:
+            Keys keyCode = ((Keys)(keys & Keys.KeyCode));
+            if (keyCode != Keys.None || addNoneKeyCode)
+                result += (hasModifier ? keyCodeJoin.ToString() : "") + keyCode.ToString();
+
+            return result;
+
+
+            // Validuje znak Joiner
+            char validate(char c, char d)
+            {
+                return (c == '+' || c == ' ') ? c : d;
+            }
+        }
+        /// <summary>
+        /// Vrátí enum <see cref="Keys"/> reprezentaci zadané klávesy, včetně modifikátorů.
+        /// Oddělovačem je mezera, jednotlivé prvky jsou z enumu <see cref="Keys"/>, modifkátory jsou <c>Shift Alt Ctrl</c>.
+        /// Reverzní metoda je <see cref="ConvertWinKeys(Keys, char, char, bool)"/>.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public static System.Windows.Forms.Keys ConvertWinKeys(string key)
+        {
+            Keys result = Keys.None;
+            if (!String.IsNullOrEmpty(key))
+            {
+                var parts = key.Trim().Split(' ', '+');                                  // Přípustné delimitery
+                foreach (var part in parts)
+                {
+                    switch (part)
+                    {
+                        case "Ctrl":
+                        case "Control":
+                            result |= Keys.Control;
+                            break;
+                        case "Shift":
+                            result |= Keys.Shift;
+                            break;
+                        case "Alt":
+                            result |= Keys.Alt;
+                            break;
+                        default:
+                            if (!String.IsNullOrEmpty(part) && Enum.TryParse<Keys>(part, false, out Keys k))
+                                result |= k;
+                            break;
+                    }
+                }
+            }
+            return result;
+        }
         private DevExpress.XtraEditors.StyleController _MainTitleStyle;
         private DevExpress.XtraEditors.StyleController _SubTitleStyle;
         private DevExpress.XtraEditors.StyleController _LabelStyle;
@@ -1910,7 +1986,22 @@ namespace Noris.Clients.Win.Components.AsolDX
                 styleType, wordWrap, autoSizeMode, hAlignment,
                 visible, useLabelTextOffset, false);
         }
-
+        /// <summary>
+        /// Vytvoří a vrátí <see cref="DxTitleLabelControl"/> dle parametrů.
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="parent"></param>
+        /// <param name="text"></param>
+        /// <param name="styleType"></param>
+        /// <param name="wordWrap"></param>
+        /// <param name="autoSizeMode"></param>
+        /// <param name="hAlignment"></param>
+        /// <param name="visible"></param>
+        /// <param name="useLabelTextOffset"></param>
+        /// <param name="shiftY"></param>
+        /// <returns></returns>
         public static DxTitleLabelControl CreateDxTitleLabel(int x, ref int y, int w, Control parent, string text,
             LabelStyleType? styleType = null, DevExpress.Utils.WordWrap? wordWrap = null, DevExpress.XtraEditors.LabelAutoSizeMode? autoSizeMode = null, DevExpress.Utils.HorzAlignment? hAlignment = null,
             bool? visible = null, bool useLabelTextOffset = false, bool shiftY = false)
@@ -1934,13 +2025,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             return label;
         }
         /// <summary>
-        /// Vytvoří a vrátí DxTextEdit s danými parametry
+        /// Vytvoří a vrátí <see cref="DxTextEdit"/> dle parametrů.
         /// </summary>
         /// <param name="x"></param>
         /// <param name="y"></param>
         /// <param name="w"></param>
         /// <param name="parent"></param>
-        /// <param name="textChanged"></param>
+        /// <param name="valueChanged"></param>
         /// <param name="maskType"></param>
         /// <param name="editMask"></param>
         /// <param name="useMaskAsDisplayFormat"></param>
@@ -1950,12 +2041,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="readOnly"></param>
         /// <param name="tabStop"></param>
         /// <returns></returns>
-        public static DxTextEdit CreateDxTextEdit(int x, int y, int w, Control parent, EventHandler textChanged = null,
+        public static DxTextEdit CreateDxTextEdit(int x, int y, int w, Control parent, EventHandler valueChanged = null,
             DevExpress.XtraEditors.Mask.MaskType? maskType = null, string editMask = null, bool? useMaskAsDisplayFormat = null,
             string toolTipTitle = null, string toolTipText = null,
             bool? visible = null, bool? readOnly = null, bool? tabStop = null)
         {
-            return CreateDxTextEdit(x, ref y, w, parent, textChanged,
+            return CreateDxTextEdit(x, ref y, w, parent, valueChanged,
                 maskType, editMask, useMaskAsDisplayFormat,
                 toolTipTitle, toolTipText,
                 visible, readOnly, tabStop, false);
@@ -1967,7 +2058,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="y"></param>
         /// <param name="w"></param>
         /// <param name="parent"></param>
-        /// <param name="textChanged"></param>
+        /// <param name="valueChanged"></param>
         /// <param name="maskType"></param>
         /// <param name="editMask"></param>
         /// <param name="useMaskAsDisplayFormat"></param>
@@ -1978,7 +2069,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="tabStop"></param>
         /// <param name="shiftY"></param>
         /// <returns></returns>
-        public static DxTextEdit CreateDxTextEdit(int x, ref int y, int w, Control parent, EventHandler textChanged = null,
+        public static DxTextEdit CreateDxTextEdit(int x, ref int y, int w, Control parent, EventHandler valueChanged = null,
             DevExpress.XtraEditors.Mask.MaskType? maskType = null, string editMask = null, bool? useMaskAsDisplayFormat = null,
             string toolTipTitle = null, string toolTipText = null,
             bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool shiftY = false)
@@ -1997,7 +2088,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             textEdit.SetToolTip(toolTipTitle, toolTipText);
 
-            if (textChanged != null) textEdit.TextChanged += textChanged;
+            // if (textChanged != null) textEdit.TextChanged += textChanged;            // eventy: TextChanged i EditValueChanged jsou vyvolány po každé klávese!!!
+            if (valueChanged != null) textEdit.ValueChanged += valueChanged;
             if (parent != null) parent.Controls.Add(textEdit);
             if (shiftY) y = y + textEdit.Height + inst._DetailYSpaceText;
             return textEdit;
@@ -2318,6 +2410,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="hAlignment"></param>
         /// <param name="toolTipTitle"></param>
         /// <param name="toolTipText"></param>
+        /// <param name="value"></param>
         /// <param name="visible"></param>
         /// <param name="readOnly"></param>
         /// <param name="allowGrayed"></param>
@@ -2326,12 +2419,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static DxCheckEdit CreateDxCheckEdit(int x, int y, int w, Control parent, string text, EventHandler checkedChanged = null,
             DevExpress.XtraEditors.Controls.CheckBoxStyle? checkBoxStyle = null, DevExpress.XtraEditors.Controls.BorderStyles? borderStyles = null, HorzAlignment? hAlignment = null,
             string toolTipTitle = null, string toolTipText = null,
-            bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool? allowGrayed = null)
+            bool? value = null, bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool? allowGrayed = null)
         {
             return CreateDxCheckEdit(x, ref y, w, parent, text, checkedChanged,
                 checkBoxStyle, borderStyles, hAlignment,
                 toolTipTitle, toolTipText,
-                visible, readOnly, tabStop, false);
+                value, visible, readOnly, tabStop, false);
         }
         /// <summary>
         /// Vytvoří a vrátí DxCheckEdit s danými parametry
@@ -2347,6 +2440,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="hAlignment"></param>
         /// <param name="toolTipTitle"></param>
         /// <param name="toolTipText"></param>
+        /// <param name="value"></param>
         /// <param name="visible"></param>
         /// <param name="readOnly"></param>
         /// <param name="tabStop"></param>
@@ -2356,12 +2450,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static DxCheckEdit CreateDxCheckEdit(int x, ref int y, int w, Control parent, string text, EventHandler checkedChanged = null,
             DevExpress.XtraEditors.Controls.CheckBoxStyle? checkBoxStyle = null, DevExpress.XtraEditors.Controls.BorderStyles? borderStyles = null, HorzAlignment? hAlignment = null,
             string toolTipTitle = null, string toolTipText = null,
-            bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool? allowGrayed = null, bool shiftY = false)
+            bool? value = null, bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool? allowGrayed = null, bool shiftY = false)
         {
             var inst = Instance;
 
             var checkEdit = new DxCheckEdit() { Bounds = new Rectangle(x, y, w, inst._DetailYHeightText), Text = text };
             checkEdit.StyleController = inst._InputStyle;
+            if (value.HasValue) checkEdit.Checked = value.Value;
             if (visible.HasValue) checkEdit.Visible = visible.Value;
             if (readOnly.HasValue) checkEdit.ReadOnly = readOnly.Value;
             if (tabStop.HasValue) checkEdit.TabStop = tabStop.Value;
@@ -2391,6 +2486,96 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (shiftY) y = y + checkEdit.Height + inst._DetailYSpaceText;
 
             return checkEdit;
+        }
+        /// <summary>
+        /// Vytvoří a vrátí ToggleSwitch
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="parent"></param>
+        /// <param name="onText"></param>
+        /// <param name="offText"></param>
+        /// <param name="widthRatio"></param>
+        /// <param name="checkedChanged"></param>
+        /// <param name="borderStyles"></param>
+        /// <param name="hAlignment"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="value"></param>
+        /// <param name="visible"></param>
+        /// <param name="readOnly"></param>
+        /// <param name="tabStop"></param>
+        /// <returns></returns>
+        public static DxToggleSwitch CreateDxToggleSwitch(int x, int y, int w, Control parent, string onText, string offText = null, float? widthRatio = null, EventHandler checkedChanged = null,
+            DevExpress.XtraEditors.Controls.BorderStyles? borderStyles = null, HorzAlignment? hAlignment = null,
+            string toolTipTitle = null, string toolTipText = null,
+            bool? value = null, bool? visible = null, bool? readOnly = null, bool? tabStop = null)
+        {
+            return CreateDxToggleSwitch(x, ref y, w, parent, onText, offText, widthRatio, checkedChanged,
+                borderStyles, hAlignment,
+                toolTipTitle, toolTipText,
+                value, visible, readOnly, tabStop, false);
+        }
+        /// <summary>
+        /// Vytvoří a vrátí ToggleSwitch
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="parent"></param>
+        /// <param name="onText"></param>
+        /// <param name="offText"></param>
+        /// <param name="widthRatio"></param>
+        /// <param name="checkedChanged"></param>
+        /// <param name="borderStyles"></param>
+        /// <param name="hAlignment"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="visible"></param>
+        /// <param name="value"></param>
+        /// <param name="readOnly"></param>
+        /// <param name="tabStop"></param>
+        /// <param name="shiftY"></param>
+        /// <returns></returns>
+        public static DxToggleSwitch CreateDxToggleSwitch(int x, ref int y, int w, Control parent, string onText, string offText = null, float? widthRatio = null, EventHandler checkedChanged = null,
+            DevExpress.XtraEditors.Controls.BorderStyles? borderStyles = null, HorzAlignment? hAlignment = null,
+            string toolTipTitle = null, string toolTipText = null,
+            bool? value = null, bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool shiftY = false)
+        {
+            var inst = Instance;
+
+            var toggleSwitch = new DxToggleSwitch() { Bounds = new Rectangle(x, y, w, inst._DetailYHeightText), Text = onText };
+            toggleSwitch.StyleController = inst._InputStyle;
+            if (value.HasValue) toggleSwitch.Value = value.Value;
+            if (visible.HasValue) toggleSwitch.Visible = visible.Value;
+            if (readOnly.HasValue) toggleSwitch.ReadOnly = readOnly.Value;
+            if (tabStop.HasValue) toggleSwitch.TabStop = tabStop.Value;
+
+            if (offText != null)
+            {
+                toggleSwitch.Properties.OnText = onText;
+                toggleSwitch.Properties.OffText = offText;
+            }
+
+            if (hAlignment.HasValue)
+            {
+                toggleSwitch.Properties.GlyphAlignment = hAlignment.Value;                       // Kde bude ikonka?
+                toggleSwitch.Properties.Appearance.TextOptions.HAlignment = hAlignment.Value;    // Kde bude text?
+                toggleSwitch.Properties.Appearance.Options.UseTextOptions = true;                // Použít zarovnání textu!
+            }
+
+            if (borderStyles.HasValue) toggleSwitch.BorderStyle = borderStyles.Value;
+            if (widthRatio.HasValue) toggleSwitch.Properties.EditorToThumbWidthRatio = widthRatio.Value;
+            toggleSwitch.SetToolTip(toolTipTitle, toolTipText, onText);
+
+            if (checkedChanged != null)
+                toggleSwitch.Toggled += checkedChanged;
+
+            if (parent != null) parent.Controls.Add(toggleSwitch);
+            if (shiftY) y = y + toggleSwitch.Height + inst._DetailYSpaceText;
+
+            return toggleSwitch;
         }
         /// <summary>
         /// Vytvoří a vrátí DxListBoxControl s danými parametry
@@ -2508,6 +2693,59 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (shiftY) y = y + listBox.Height + inst._DetailYSpaceText;
 
             return listBox;
+        }
+        /// <summary>
+        /// Vytvoří a vrátí DxListBoxPanel s danými parametry
+        /// </summary>
+        /// <param name="dock"></param>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        /// <param name="parent"></param>
+        /// <param name="selectedIndexChanged"></param>
+        /// <param name="multiColumn"></param>
+        /// <param name="filterRowMode"></param>
+        /// <param name="selectionMode"></param>
+        /// <param name="itemHeight"></param>
+        /// <param name="itemHeightPadding"></param>
+        /// <param name="enabledKeyActions"></param>
+        /// <param name="dragDropActions"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="visible"></param>
+        /// <param name="tabStop"></param>
+        /// <returns></returns>
+        public static DxListBoxPanel CreateDxListBoxPanel(DockStyle? dock = null, int? width = null, int? height = null, Control parent = null, EventHandler selectedIndexChanged = null,
+            bool? multiColumn = null, DxListBoxPanel.FilterRowMode? filterRowMode = null, SelectionMode? selectionMode = null, int? itemHeight = null, int? itemHeightPadding = null,
+            ControlKeyActionType? enabledKeyActions = null, DxDragDropActionType? dragDropActions = null,
+            string toolTipTitle = null, string toolTipText = null,
+            bool? visible = null, bool? tabStop = null)
+        {
+            var inst = Instance;
+
+            int x = 0;
+            int y = 0;
+            int w = width ?? 100;
+            int h = height ?? 100;
+
+            DxListBoxPanel listBoxPanel = new DxListBoxPanel() { Bounds = new Rectangle(x, y, w, h) };
+            listBoxPanel.ListBox.StyleController = inst._InputStyle;
+            if (dock.HasValue) listBoxPanel.Dock = dock.Value;
+            if (multiColumn.HasValue) listBoxPanel.ListBox.MultiColumn = multiColumn.Value;
+            if (filterRowMode.HasValue) listBoxPanel.RowFilterMode = filterRowMode.Value;
+            if (selectionMode.HasValue) listBoxPanel.ListBox.SelectionMode = selectionMode.Value;
+            if (itemHeight.HasValue) listBoxPanel.ListBox.ItemHeight = itemHeight.Value;
+            if (itemHeightPadding.HasValue) listBoxPanel.ListBox.ItemHeightPadding = itemHeightPadding.Value;
+
+            if (enabledKeyActions.HasValue) listBoxPanel.ListBox.EnabledKeyActions = enabledKeyActions.Value;
+            if (dragDropActions.HasValue) listBoxPanel.ListBox.DragDropActions = dragDropActions.Value;
+
+            if (visible.HasValue) listBoxPanel.Visible = visible.Value;
+            if (tabStop.HasValue) listBoxPanel.TabStop = tabStop.Value;
+
+            if (selectedIndexChanged != null) listBoxPanel.ListBox.SelectedIndexChanged += selectedIndexChanged;
+            if (parent != null) parent.Controls.Add(listBoxPanel);
+
+            return listBoxPanel;
         }
         /// <summary>
         /// Vytvoří a vrátí DxCheckButton s danými parametry
@@ -3270,6 +3508,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="title"></param>
         /// <param name="text"></param>
+        /// <returns></returns>
+        public static DxSuperToolTip CreateDxSuperTip(string title, string text)
+        {
+            return DxSuperToolTip.CreateDxSuperTip(title, text, null, null);
+        }
+        /// <summary>
+        /// Vytvoří a vrátí standardní SuperToolTip pro daný titulek a text
+        /// </summary>
+        /// <param name="title"></param>
+        /// <param name="text"></param>
         /// <param name="defaultTitle"></param>
         /// <param name="toolTipIcon"></param>
         /// <returns></returns>
@@ -3281,19 +3529,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vytvoří a vrátí SuperTooltip
         /// </summary>
         /// <param name="textItem"></param>
+        /// <param name="defaultTitleSuffix">Přídavek k defaultnímu textu titulku, pouze pokud bude force = true</param>
+        /// <param name="force">Vytvořit SuperTip i tehdy, když by obsah nestál za mnoho</param>
         /// <returns></returns>
-        public static DxSuperToolTip CreateDxSuperTip(IMenuItem textItem)
+        public static DxSuperToolTip CreateDxSuperTip(IMenuItem textItem, string defaultTitleSuffix = null, bool force = false)
         {
-            return DxSuperToolTip.CreateDxSuperTip(textItem);
+            return DxSuperToolTip.CreateDxSuperTip(textItem, defaultTitleSuffix, force);
         }
         /// <summary>
         /// Vytvoří a vrátí SuperTooltip
         /// </summary>
         /// <param name="toolTipItem"></param>
+        /// <param name="defaultTitleSuffix">Přídavek k defaultnímu textu titulku, pouze pokud bude force = true</param>
+        /// <param name="force">Vytvořit SuperTip i tehdy, když by obsah nestál za mnoho</param>
         /// <returns></returns>
-        public static DxSuperToolTip CreateDxSuperTip(IToolTipItem toolTipItem)
+        public static DxSuperToolTip CreateDxSuperTip(IToolTipItem toolTipItem, string defaultTitleSuffix = null, bool force = false)
         {
-            return DxSuperToolTip.CreateDxSuperTip(toolTipItem);
+            return DxSuperToolTip.CreateDxSuperTip(toolTipItem, defaultTitleSuffix, force);
         }
         /// <summary>
         /// Vytvoří a vrátí instanci <see cref="ToolTipControlInfo"/>, která se používá jako ToolTip pro TreeList a GridList.
@@ -3387,58 +3639,95 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static bool PrepareToolTipTexts(string title, string text, string defaultTitle, out string toolTipTitle, out string toolTipText)
         {
+            return PrepareToolTipTexts(title, text, defaultTitle, null, false, out toolTipTitle, out toolTipText);
+        }
+        /// <summary>
+        /// Metoda ze vstupních dat vybere Titulek a Text pro ToolTip a vrátí true = máme data pro jeho zobrazení.
+        /// Zde se tedy určuje, co bude zobrazeno a zda vůbec.
+        /// <para/>
+        /// Pokud není naplněn <paramref name="title"/> ani <paramref name="text"/>, pak se ToolTip nebude generovat = vrací se false.<br/>
+        /// Pokud je naplněn <paramref name="text"/> ale není <paramref name="title"/>, pak se jako titulek použije <paramref name="defaultTitle"/> a vrátí se true.<br/>
+        /// Pokud je naplněn <paramref name="title"/> a není dán <paramref name="text"/>, pak bude ToolTip bez textu (titulek stačí) a vrátí se true.
+        /// <para/>
+        /// Pokud je zadán text v <paramref name="defaultTitle"/>, a k němu je dán jen jeden z <paramref name="title"/> anebo <paramref name="text"/>, a ten je shodný,
+        /// pak se ToolTip negeneruje = obsahoval by totéž, co už je uvedeno v prvku.
+        /// </summary>
+        /// <param name="title">Explicitně definovaný titulek ToolTipu</param>
+        /// <param name="text">Explicitně definovaný text ToolTipu</param>
+        /// <param name="defaultTitle">Implicitní text, daný prvkem, ke kterému je ToolTip navázán (typicky text tlačítka v Ribbonu)</param>
+        /// <param name="defaultTitleSuffix">Přídavek k defaultnímu textu titulku, pouze pokud bude force = true</param>
+        /// <param name="force">Vytvořit SuperTip i tehdy, když by obsah nestál za mnoho</param>
+        /// <param name="toolTipTitle">Výstup titulku ToolTipu. Pokud nemá být, je zde null.</param>
+        /// <param name="toolTipText">Výstup textu ToolTipu. Pokud nemá být, je zde null.</param>
+        /// <returns></returns>
+        public static bool PrepareToolTipTexts(string title, string text, string defaultTitle, string defaultTitleSuffix, bool force, out string toolTipTitle, out string toolTipText)
+        {
             toolTipTitle = null;
             toolTipText = null;
+
             bool isTitle = !String.IsNullOrEmpty(title);
             bool isText = !String.IsNullOrEmpty(text);
             bool isDefaultTitle = !String.IsNullOrEmpty(defaultTitle);
-            if (isTitle && isText && String.Equals(title, text))
-            {   // Pokud máme dán Title i Text a oba jsou shodné,
-                // pak Title zahodím (a případně použiju DefaultTitle jako titulek):
-                title = null;
-                isTitle = false;
-            }
-            if (!isTitle && !isText) return false;                       // Pokud není Title ani Text, pak Default Title sám o sobě neznamená existenci ToolTipu.
+            bool hasDefaultTitleSuffix = !String.IsNullOrEmpty(defaultTitleSuffix);
 
+            /*  DAJ 0079867 : 3.3.2026 exaktní zadání:
+
+                2  : Není nastavený titulek ani obsah -> titulek se převezme z názvu tlačítka (současné chování), obsah prázdný
+                      --> nebudeme generovat žádný ToolTip, protože DevExpress si vytvoří vlastní nativní
+                3  : Není nastavený titulek, je nastavený obsah -> titulek se převezme z názvu tlačítka (současné chování), obsah podle toho co nastavím na serveru
+                1a : Nastavený pouze titulek -> vykreslit titulek, obsah prázdný
+                1b : Nastavený titulek i obsah -> vykreslit to co nastavím na serveru
+            
+                String.Empty a null považovat za nezadanou hodnotu. Nechceme uložnit definovat "prázdnou" hodnotu. 
+            
+            */
+
+            // 1. Pokud máme explicitně dán Title i Text:
             if (isTitle && isText)
-            {   // Máme titulek i text a ty jsou navzájem odlišné (to se řešilo před chvilkou):
-                // : Jde o jednoznačnou věc:
+            {
+                // 1a. Pokud jsou oba texty shodné => Pak ToolTip bude obsahovat jen Titulek (opakovaný text vynechám):
+                if (String.Equals(title, text))
+                {
+                    toolTipTitle = title;
+                    toolTipText = null;
+                }
+                // 1b. Odlišné texty => úplně optimální zadání:
+                else
+                {
+                    toolTipTitle = title;
+                    toolTipText = text;
+                }
+                return true;
+            }
+            // 1a. Je dodán titulek, a tedy není dodán obsah => vykreslím jen titulek, bez textu:
+            if (isTitle)
+            {
                 toolTipTitle = title;
+                toolTipText = null;
+                return true;
+            }
+
+
+            // 2. Pokud není dodán ani Title ani Text, pak nebudeme zobrazovat ToolTip = posloucháme to, co nám bylo nakázáno. Nejsou-li dodány texty, nebude ToolTip:
+            if (!isTitle && !isText)
+            {
+                toolTipTitle = null;
+                toolTipText = null;
+                return false;
+            }
+
+            // 3. Pokud není dán Title, ale je dán Text a je dodán Default Title, pak Titulek je převzat Default a je přidán text:
+            if (!isTitle && isText && isDefaultTitle)
+            {
+                toolTipTitle = defaultTitle + (hasDefaultTitleSuffix ? defaultTitleSuffix : "");
                 toolTipText = text;
                 return true;
             }
 
-            if (isDefaultTitle && (isTitle != isText))
-            {   // Mám defaultní titulek (= text ve viditelném prvku - Ribbon BarItem, Menu Item),
-                // a k tomu mám jen Titulek nebo jen Text (tedy XOR: jeden ano, a druhý ne),
-                // Pak pokud ten zadaný 'Title' anebo 'Text' je stejný jako 'DefaultTitle', pak ToolTip nebude:
-                if (isTitle)
-                {   // Máme DefaultTitle a Title, a nemáme Text:
-                    // : pokud Title == DefaultTitle, pak nemá význam zobrazit ToolTip (bylo by tam jen to, co už je vidět):
-                    if (String.Equals(title, defaultTitle)) return false;
-                    // : Jinak dám DefaultTitle => toolTipTitle a Title => toolTipText:
-                    toolTipTitle = defaultTitle;
-                    toolTipText = title;
-                    return true;
-                }
-
-                if (isText)
-                {   // Máme DefaultTitle a Text, a nemáme Title:
-                    // : pokud Text == DefaultTitle, pak nemá význam zobrazit ToolTip (bylo by tam jen to, co už je vidět):
-                    if (String.Equals(text, defaultTitle)) return false;
-                    // : Jinak dám DefaultTitle => toolTipTitle a Text => toolTipText:
-                    toolTipTitle = defaultTitle;
-                    toolTipText = text;
-                    return true;
-                }
-
-                return false;
-            }
-
-            // Defaultní chování:
-            toolTipTitle = (isTitle ? title : (isDefaultTitle ? defaultTitle : null));
-            toolTipText = (isText ? text : null);
-            return true;
+            // Další varianty nebyly zadány, proto ToolTip nebude zobrazen:
+            toolTipTitle = null;
+            toolTipText = null;
+            return false;
         }
         #endregion
         #region Tvorba prvků Toolbaru (=Ribbonu), static, bez Ribbonu
@@ -3491,6 +3780,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _FillBarItemSizeColors(ribbonItem, barItem, level);      // Velikost, barvy, alignment
                 _FillBarItemImage(ribbonItem, barItem, level);           // Image můžu řešit až po vložení velikosti, protože Image se řídí i podle velikosti prvku 
                 _FillBarItemHotKey(ribbonItem, barItem, level);          // HotKeys
+                _FillBarItemSpecific(ribbonItem, barItem, level);        // Konkrétní typy itemů si načítají konkrétní další data (BarCheckItem, BarBaseButtonItem, DxBarCheckBoxToggle)
                 _FillBarItemReload(ribbonItem, barItem, level);          // Speciální itemy mají svůj Reload (ComboBox)
             }
         }
@@ -3752,10 +4042,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             isHeader = false;
             switch (ribbonItem.ItemType)
             {
-                case RibbonItemType.Label:
-                case RibbonItemType.LabelSpring:
                 case RibbonItemType.Static:
                 case RibbonItemType.StaticSpring:
+                case RibbonItemType.Label:
+                case RibbonItemType.LabelSpring:
                     var barStaticButton = new DevExpress.XtraBars.BarStaticItem();
                     barItem = barStaticButton;
                     break;
@@ -3960,7 +4250,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 barItem.Size = ribbonItem.Size.Value;
             }
 
-
             if ((ribbonItem.ItemType == RibbonItemType.LabelSpring || ribbonItem.ItemType == RibbonItemType.StaticSpring) && barItem is DevExpress.XtraBars.BarStaticItem springItem)
             {
                 springItem.AutoSize = DevExpress.XtraBars.BarStaticItemSize.Spring;
@@ -4014,12 +4303,22 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
+        /// Do daného BarItem prvku Ribbonu (znovu) vepíše data z dodané definice. Použije se např. po změně skinu.
+        /// </summary>
+        /// <param name="barItem"></param>
+        /// <param name="ribbonItem"></param>
+        /// <param name="level"></param>
+        internal static void FillBarItemImageFrom(DevExpress.XtraBars.BarItem barItem, IRibbonItem ribbonItem, int? level = null)
+        {
+            _FillBarItemImage(ribbonItem, barItem, level);
+        }
+        /// <summary>
         /// Nastaví dodaný styl písma do daného prvku, do jeho odpovídající Appearance, do všech stavů
         /// </summary>
         /// <param name="ribbonItem"></param>
         /// <param name="barItem"></param>
         /// <param name="level"></param>
-        private static void _FillBarItemImage(IRibbonItem ribbonItem, DevExpress.XtraBars.BarItem barItem, int level)
+        private static void _FillBarItemImage(IRibbonItem ribbonItem, DevExpress.XtraBars.BarItem barItem, int? level)
         {
             var itemType = ribbonItem.ItemType;
             if ((itemType == RibbonItemType.CheckButton || itemType == RibbonItemType.CheckButtonPassive || itemType == RibbonItemType.CheckBoxStandard || itemType == RibbonItemType.CheckBoxPasive || itemType == RibbonItemType.RadioItem) && barItem is DevExpress.XtraBars.BarBaseButtonItem barButton)
@@ -4041,8 +4340,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool isRootItem = (level.HasValue ? (level.Value == 0) : (ribbonItem.ParentItem is null));
 
             // Velikost obrázku: pro RootItem (vlastní prvky v Ribbonu) ve stylu Large nebo Default dáme obrázky Large, jinak dáme Small (pro malé prvky Ribbonu a pro položky menu, ty mají Level 1 a vyšší):
-            bool isLargeIcon = (isRootItem && (ribbonItem.RibbonStyle.HasFlag(RibbonItemStyles.Large) || ribbonItem.RibbonStyle == RibbonItemStyles.Default));
-            ResourceImageSizeType sizeType = (isLargeIcon ? ResourceImageSizeType.Large : ResourceImageSizeType.Small);
+            ResourceImageSizeType sizeType = _GetRibbonItemSizeType(ribbonItem, isRootItem);
 
             // Náhradní ikonka (pro nezadané nebo neexistující ImageName) budeme generovat jen pro level = 0 = Ribbon, a ne pro Menu!
             string imageCaption = GetCaptionForRibbonImage(ribbonItem, level);
@@ -4067,8 +4365,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool isRootItem = (level.HasValue ? (level.Value == 0) : (ribbonItem.ParentItem is null));
 
             // Velikost obrázku: pro RootItem (vlastní prvky v Ribbonu) ve stylu Large nebo Default dáme obrázky Large, jinak dáme Small (pro malé prvky Ribbonu a pro položky menu, ty mají Level 1 a vyšší):
-            bool isLargeIcon = (isRootItem && (ribbonItem.RibbonStyle.HasFlag(RibbonItemStyles.Large) || ribbonItem.RibbonStyle == RibbonItemStyles.Default));
-            ResourceImageSizeType sizeType = (isLargeIcon ? ResourceImageSizeType.Large : ResourceImageSizeType.Small);
+            ResourceImageSizeType sizeType = _GetRibbonItemSizeType(ribbonItem, isRootItem);
 
             // Náhradní ikonka (pro nezadané nebo neexistující ImageName) budeme generovat jen pro level = 0 = Ribbon, a ne pro Menu!
             string imageCaption = GetCaptionForRibbonImage(ribbonItem, level);
@@ -4091,6 +4388,32 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Pokud nemám Image ani imageCaption, pak je třeba upravit PaintStyle tak, aby BarStatic prvek nezobrazoval přeškrtnutý Image:
             barButton.PaintStyle = DxRibbonControl.ConvertPaintStyle(ribbonItem, level);
+        }
+        /// <summary>
+        /// Vrátí optimální velikost ikony pro daný prvek Ribbonu
+        /// </summary>
+        /// <param name="ribbonItem"></param>
+        /// <param name="isRootItem"></param>
+        /// <returns></returns>
+        private static ResourceImageSizeType _GetRibbonItemSizeType(IRibbonItem ribbonItem, bool isRootItem)
+        {
+            // Pokud prvek ribbonu explicitně deklaruje velikost, pak ji použijeme:
+            ResourceImageSizeType? sizeType = ribbonItem.ImageSizeType;
+
+            // Pokud prvek sám velikost explicitně nedeklaruje, pak ji určíme podle stylu prvku a příznaku Root úrovně:
+            if (!sizeType.HasValue)
+            {
+                if (!isRootItem)
+                    // SubMenu mají vždy Small, protože velké ikony v SubMenu nezobrazujeme:
+                    sizeType = ResourceImageSizeType.Small;
+                else
+                {   // Root level = podle stylu zobrazení:
+                    bool isLargeIcon = (isRootItem && (ribbonItem.RibbonStyle.HasFlag(RibbonItemStyles.Large) || ribbonItem.RibbonStyle == RibbonItemStyles.Default));
+                    sizeType = (isLargeIcon ? ResourceImageSizeType.Large : ResourceImageSizeType.Small);
+                }
+            }
+
+            return sizeType.Value;
         }
         /// <summary>
         /// Metoda vrátí text, z něhož bude možno vytvořit náhradní Image pro daný prvek Ribbonu <paramref name="ribbonItem"/>.
@@ -4136,6 +4459,36 @@ namespace Noris.Clients.Win.Components.AsolDX
                 barItem.ItemShortcut = new DevExpress.XtraBars.BarShortcut(ribbonItem.Shortcut.Value);
             else if (!string.IsNullOrEmpty(ribbonItem.HotKey) && !(barItem is DevExpress.XtraBars.BarSubItem))
                 barItem.ItemShortcut = new DevExpress.XtraBars.BarShortcut(SystemAdapter.GetShortcutKeys(ribbonItem.HotKey));
+        }
+        /// <summary>
+        /// Pro konkrétní druhy prvků (BarCheckItem, BarBaseButtonItem, DxBarCheckBoxToggle) donačte konkrétní data
+        /// </summary>
+        /// <param name="ribbonItem"></param>
+        /// <param name="barItem"></param>
+        /// <param name="level"></param>
+        private static void _FillBarItemSpecific(IRibbonItem ribbonItem, DevExpress.XtraBars.BarItem barItem, int level)
+        {
+            // Specifické styly:
+            if (barItem is DevExpress.XtraBars.BarCheckItem checkItem)
+            {   // Do CheckBoxu + RadioButtonu vepisujeme víc vlastností:
+                checkItem.CheckBoxVisibility = DevExpress.XtraBars.CheckBoxVisibility.BeforeText;
+                checkItem.CheckStyle =
+                    (ribbonItem.ItemType == RibbonItemType.RadioItem ? DevExpress.XtraBars.BarCheckStyles.Radio :
+                    (ribbonItem.ItemType == RibbonItemType.CheckBoxToggle ? DevExpress.XtraBars.BarCheckStyles.Standard : DevExpress.XtraBars.BarCheckStyles.Standard));
+                checkItem.Checked = ribbonItem.Checked ?? false;
+            }
+            if (ribbonItem.ItemType == RibbonItemType.CheckButton && barItem is DevExpress.XtraBars.BarBaseButtonItem barButton)
+            {   // CheckButton:
+                barButton.ButtonStyle = DevExpress.XtraBars.BarButtonStyle.Check;
+                barButton.Down = (ribbonItem.Checked.HasValue && ribbonItem.Checked.Value);
+            }
+            if (barItem is DxBarCheckBoxToggle dxCheckBoxToggle)
+            {   // AsolDX.Toggle:
+                dxCheckBoxToggle.CheckedSilent = ribbonItem.Checked;
+                if (ribbonItem.ImageName != null) dxCheckBoxToggle.ImageNameNull = ribbonItem.ImageName;
+                if (ribbonItem.ImageNameUnChecked != null) dxCheckBoxToggle.ImageNameUnChecked = ribbonItem.ImageNameUnChecked;
+                if (ribbonItem.ImageNameChecked != null) dxCheckBoxToggle.ImageNameChecked = ribbonItem.ImageNameChecked;
+            }
         }
         /// <summary>
         /// Pro daný prvek Ribbonu, pokud implementuje <see cref="IReloadable"/>, zavolá jeho metodu <see cref="IReloadable.Reload"/>
@@ -5062,18 +5415,23 @@ namespace Noris.Clients.Win.Components.AsolDX
             get { return __LogActive; }
             set
             {
-                if (value && (__LogSB == null))
+                if (value && (__LogWatch == null || __LogSB == null))
                 {   // Inicializace:
-                    __LogTimeSpanForEmptyRow = __LogFrequencyLong / 10L;   // Pokud mezi dvěma zápisy do logu bude časová pauza 1/10 sekundy a víc, vložím EmptyRow
+                    __LogWatch = new System.Diagnostics.Stopwatch();
+                    __LogFrequency = __LogFrequencyLong;
+                    __LogTimeSpanForEmptyRow = System.Diagnostics.Stopwatch.Frequency / 10L;   // Pokud mezi dvěma zápisy do logu bude časová pauza 1/10 sekundy a víc, vložím EmptyRow
                     __LogSB = new StringBuilder();
                 }
                 if (value && !__LogActive)
                 {   // Restart:
-                    __LogStartTicks = _LogTimeCurrent;
+                    __LogWatch.Start();
+                    __LogStartTicks = __LogWatch.ElapsedTicks;
                     __LogLastWriteTicks = __LogStartTicks;
                 }
                 if (!value && __LogActive)
                 {   // Stop:
+                    if (__LogWatch != null)
+                        __LogWatch.Stop();
                     // if (_LogSB != null)
                     //    _LogSB.Clear();
                     // Instance nechávám existovat včetně obsahu. Clear obsahu lze řešit explicitně.
@@ -5117,10 +5475,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             _RunLogTextChanged();
         }
         /// <summary>
-        /// Obsahuje aktuální čas (časovače <see cref="__LogRunningWatch"/>), jako ElapsedTicks
+        /// Obsahuje aktuální čas jako ElapsedTicks
         /// </summary>
         /// <returns></returns>
-        private long _LogTimeCurrent { get { return __LogRunningWatch.ElapsedTicks; } }
+        private long _LogTimeCurrent { get { return (_LogActive ? __LogWatch.ElapsedTicks : 0L); } }
         /// <summary>
         /// Přidá titulek (mezera + daný text ohraničený znaky ===)
         /// </summary>
@@ -5144,7 +5502,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private decimal _LogGetTimeElapsed(long startTime, string logTokenTime)
         {
-            return _LogGetTimeElapsed(startTime, __LogRunningWatch.ElapsedTicks, logTokenTime);
+            if (!_LogActive) return 0m;
+            return _LogGetTimeElapsed(startTime, __LogWatch.ElapsedTicks, logTokenTime);
         }
         /// <summary>
         /// Vrátí dobu času, která uplynula do teď od času <paramref name="startTime"/>, v jednotkách dle <paramref name="logTokenTime"/>, default v mikrosekundách.
@@ -5155,6 +5514,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private decimal _LogGetTimeElapsed(long startTime, long endTime, string logTokenTime)
         {
+            if (!_LogActive) return 0m;
+
             decimal seconds = ((decimal)(endTime - startTime)) / __LogFrequency;     // Počet sekund
             string token = logTokenTime ?? LogTokenTimeMicrosec;
             switch (token)
@@ -5211,7 +5572,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!_LogActive) return;
             if (!_DoLog(kind)) return;
 
-            long nowTime = _LogTimeCurrent;
+            long nowTime = __LogWatch.ElapsedTicks;
             decimal seconds = (startTime.HasValue ? ((decimal)(nowTime - startTime.Value)) / __LogFrequency : 0m);     // Počet sekund
             if (line.Contains(LogTokenTimeSec))
             {
@@ -5242,7 +5603,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!_LogActive) return;
             if (!_DoLog(LogActivityKind.WinMessage)) return;
 
-            long nowTime = _LogTimeCurrent;
+            long nowTime = __LogWatch.ElapsedTicks;
 
             var msgName = _GetWinMessage(msg, false);
             if (msgName != null)
@@ -5282,7 +5643,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="nowTime"></param>
         private void _LogAddLine(string line, bool forceEmptyRow, long? startTime = null, long? nowTime = null)
         {
-            long nowTick = nowTime ?? _LogTimeCurrent;
+            if (!_LogActive) return;
+
+            long nowTick = nowTime ?? __LogWatch.ElapsedTicks;
             string totalUs = _LogGetMicroseconds(__LogStartTicks, nowTick).ToString();              // mikrosekund od startu
             string stepUs = _LogGetMicroseconds(__LogLastWriteTicks, nowTick).ToString();           // mikrosekund od posledního logu
             string timeUs = (startTime.HasValue ? _LogGetMicroseconds(startTime.Value, nowTick).ToString() : "");    // mikrosekund od daného času
@@ -5296,7 +5659,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 __LogSB.AppendLine(logLine);
                 _LogLastLine = logLine;
             }
-            __LogLastWriteTicks = _LogTimeCurrent;
+            __LogLastWriteTicks = __LogWatch.ElapsedTicks;
             _RunLogTextChanged();
         }
         /// <summary>
@@ -5336,7 +5699,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private bool __LogActive;
         private LogActivityKind __LogActivities;
-        private long _LogWatchCurrentTicks { get { return __LogRunningWatch.ElapsedTicks; } }
+        private System.Diagnostics.Stopwatch __LogWatch;
+        private long _LogWatchCurrentTicks { get { return __LogWatch.ElapsedTicks; } }
         private decimal __LogFrequency;
         private long __LogFrequencyLong;
         private StringBuilder __LogSB;
@@ -5465,7 +5829,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private const uint WDA_EXCLUDEFROMCAPTURE = 0x00000011;
         #endregion
-        #region Draw metody a instance
+        #region Draw metody základní (Line, Brush, Gradient) a jejich instance
         /// <summary>
         /// Vykreslí linku, která může být i gradientem kde <paramref name="color2"/> je barva u pravého okraje
         /// </summary>
@@ -5644,69 +6008,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case RectangleSide.Right:
                 case RectangleSide.MiddleRight: return GradientStyleType.ToRight;
                 default: return GradientStyleType.None;
-            }
-        }
-        /// <summary>
-        /// Metoda vykreslí do dané grafiky daný obrázek do cílového prostoru, v daném režimu a zarovnání.
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="imageName"></param>
-        /// <param name="bounds"></param>
-        /// <param name="fillMode"></param>
-        /// <param name="alignment"></param>
-        public static void PaintImage(Graphics graphics, string imageName, Rectangle bounds, ImageFillMode fillMode, ContentAlignment alignment)
-        {
-            if (String.IsNullOrEmpty(imageName) || fillMode == ImageFillMode.None) return;
-            var image = DxComponent.GetBitmapImage(imageName, ResourceImageSizeType.Original);
-            PaintImage(graphics, image, bounds, fillMode, alignment);
-        }
-        /// <summary>
-        /// Metoda vykreslí do dané grafiky daný obrázek do cílového prostoru, v daném režimu a zarovnání.
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="image"></param>
-        /// <param name="bounds"></param>
-        /// <param name="fillMode"></param>
-        /// <param name="alignment"></param>
-        public static void PaintImage(Graphics graphics, Image image, Rectangle bounds, ImageFillMode fillMode, ContentAlignment alignment)
-        {
-            if (image is null || fillMode == ImageFillMode.None) return;
-            var clip = graphics.Clip;
-            try
-            {
-                var imageSize = image.Size;
-                Rectangle imageBounds;
-                graphics.SetClip(bounds, CombineMode.Intersect);
-                switch (fillMode)
-                {
-                    case ImageFillMode.Clip:
-                        imageBounds = imageSize.AlignTo(bounds, alignment, false);
-                        graphics.DrawImageUnscaledAndClipped(image, imageBounds);
-                        break;
-                    case ImageFillMode.Shrink:
-                        bool isBigger = (imageSize.Width > bounds.Width || imageSize.Height > bounds.Height);
-                        imageBounds = (isBigger ? imageSize.FitTo(bounds, alignment) : imageSize.AlignTo(bounds, alignment));
-                        graphics.DrawImage(image, imageBounds);
-                        break;
-                    case ImageFillMode.Resize:
-                        imageBounds = imageSize.FitTo(bounds, alignment);
-                        graphics.DrawImage(image, imageBounds);
-                        break;
-                    case ImageFillMode.Fill:
-                        imageBounds = bounds;
-                        graphics.DrawImage(image, imageBounds);
-                        break;
-                    case ImageFillMode.Tile:
-
-
-
-                        break;
-                }
-            }
-            catch (Exception) { }
-            finally
-            {
-                graphics.Clip = clip;
             }
         }
         /// <summary>
@@ -6243,6 +6544,71 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #endregion
+        #region PaintImage a PaintImageDirect
+        /// <summary>
+        /// Metoda vykreslí do dané grafiky daný obrázek do cílového prostoru, v daném režimu a zarovnání.
+        /// Kreslí pomocí vyrenderování bitmapy.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="imageName"></param>
+        /// <param name="bounds"></param>
+        /// <param name="fillMode"></param>
+        /// <param name="alignment"></param>
+        public static void PaintImage(Graphics graphics, string imageName, Rectangle bounds, ImageFillMode fillMode, ContentAlignment alignment)
+        {
+            if (String.IsNullOrEmpty(imageName) || fillMode == ImageFillMode.None) return;
+            var image = DxComponent.GetBitmapImage(imageName, ResourceImageSizeType.Original);
+            PaintImage(graphics, image, bounds, fillMode, alignment);
+        }
+        /// <summary>
+        /// Metoda vykreslí do dané grafiky daný obrázek do cílového prostoru, v daném režimu a zarovnání.
+        /// Kreslí pomocí vyrenderování bitmapy.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="image"></param>
+        /// <param name="bounds"></param>
+        /// <param name="fillMode"></param>
+        /// <param name="alignment"></param>
+        public static void PaintImage(Graphics graphics, Image image, Rectangle bounds, ImageFillMode fillMode, ContentAlignment alignment)
+        {
+            if (image is null || fillMode == ImageFillMode.None) return;
+            var clip = graphics.Clip;
+            try
+            {
+                var imageSize = image.Size;
+                Rectangle imageBounds;
+                graphics.SetClip(bounds, CombineMode.Intersect);
+                switch (fillMode)
+                {
+                    case ImageFillMode.Clip:
+                        imageBounds = imageSize.AlignTo(bounds, alignment, false);
+                        graphics.DrawImageUnscaledAndClipped(image, imageBounds);
+                        break;
+                    case ImageFillMode.Shrink:
+                        bool isBigger = (imageSize.Width > bounds.Width || imageSize.Height > bounds.Height);
+                        imageBounds = (isBigger ? imageSize.FitTo(bounds, alignment) : imageSize.AlignTo(bounds, alignment));
+                        graphics.DrawImage(image, imageBounds);
+                        break;
+                    case ImageFillMode.Resize:
+                        imageBounds = imageSize.FitTo(bounds, alignment);
+                        graphics.DrawImage(image, imageBounds);
+                        break;
+                    case ImageFillMode.Fill:
+                        imageBounds = bounds;
+                        graphics.DrawImage(image, imageBounds);
+                        break;
+                    case ImageFillMode.Tile:
+
+                        break;
+                }
+            }
+            catch (Exception) { }
+            finally
+            {
+                graphics.Clip = clip;
+            }
+        }
+        #endregion
         #region Lokalizace - můstek do systému
         /// <summary>
         /// Vrátí lokalizovaný string
@@ -6387,6 +6753,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="title"></param>
         public static void ShowMessageException(Exception exc, string preText = null, string title = null) { _ShowMessage(title, preText, MessageBoxButtons.OK, DialogSystemIcon.Error, exc); }
         /// <summary>
+        /// Zobrazí dotaz
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="title"></param>
+        /// <param name="buttons"></param>
+        public static DialogResult ShowMessageQuestion(string text, string title = null, params DialogResult[] buttons)
+        {
+            DialogArgs args = new DialogArgs();
+            args.Title = title;
+            args.MessageText = text;
+            args.MessageTextContainsHtml = AllowHtmlText(text);
+            args.ButtonPanelDock = DockStyle.Bottom;
+            args.ButtonsAlignment = AlignContentToSide.Center;
+            args.SystemIcon = DialogSystemIcon.Question;
+            args.PrepareButtons(buttons);
+            args.DefaultResultValue = DialogResult.None;
+            var result = DialogForm.ShowDialog(args);
+            return (result is DialogResult dialogResult ? dialogResult : DialogResult.None);
+        }
+        /// <summary>
         /// Zobrazí text / chybu
         /// </summary>
         /// <param name="title"></param>
@@ -6395,7 +6781,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="icon"></param>
         /// <param name="exc"></param>
         /// <param name="defaultButton"></param>
-        private static void _ShowMessage(string title, string text, MessageBoxButtons buttons, DialogSystemIcon? icon = null, Exception exc = null, MessageBoxDefaultButton? defaultButton = null)
+        private static object _ShowMessage(string title, string text, MessageBoxButtons buttons, DialogSystemIcon? icon = null, Exception exc = null, MessageBoxDefaultButton? defaultButton = null)
         {
             DialogArgs args;
             if (exc != null)
@@ -6413,10 +6799,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                 args.ButtonPanelDock = DockStyle.Bottom;
                 args.ButtonsAlignment = AlignContentToSide.Center;
                 args.SystemIcon = icon ?? DialogSystemIcon.Information;
-                args.MessageTextContainsHtml = DialogArgs.TextContainsHtml(text);
+                args.MessageTextContainsHtml = DxComponent.AllowHtmlText(text);
                 args.PrepareButtons(buttons, defaultButton);
             }
-            DialogForm.ShowDialog(args);
+            var result = DialogForm.ShowDialog(args);
+            return result;
         }
         /// <summary>
         /// Vrátí true, má být akceptováno HTML formátování v daném textu / false pokud ne.<br/>
@@ -6436,25 +6823,48 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (String.IsNullOrEmpty(text)) return false;
 
             string test = text.Trim().ToLower();
-            if (test.Contains("<b>") && test.Contains("</b>")) return true;
-            if (test.Contains("<i>") && test.Contains("</i>")) return true;
-            if (test.Contains("<s>") && test.Contains("</s>")) return true;
-            if (test.Contains("<u>") && test.Contains("</u>")) return true;
+            if (containsPairTag("b")) return true;
+            if (containsPairTag("i")) return true;
+            if (containsPairTag("s")) return true;
+            if (containsPairTag("u")) return true;
 
-            if (test.Contains("<sub>") && test.Contains("</sub>")) return true;
-            if (test.Contains("<sup>") && test.Contains("</sup>")) return true;
+            if (containsPairTag("sup")) return true;
+            if (containsPairTag("sub")) return true;
 
-            if (test.Contains("<size") && test.Contains("</size>")) return true;
-            if (test.Contains("<font") && test.Contains("</font>")) return true;
-            if (test.Contains("<backcolor") && test.Contains("</backcolor>")) return true;
-            if (test.Contains("<color") && test.Contains("</color>")) return true;
+            if (containsPairTag("size")) return true;
+            if (containsPairTag("font")) return true;
+            if (containsPairTag("backcolor")) return true;
+            if (containsPairTag("color")) return true;
 
-            if (test.Contains("<p") && test.Contains("</p>")) return true;
-            if (test.Contains("<p>") || test.Contains("<br>")) return true;
+            if (containsPairTag("a")) return true;
+            if (containsPairTag("p")) return true;
 
-            if (test.Contains("<href") && test.Contains(">")) return true;
+            if (containsSingleTag("p")) return true;
+            if (containsSingleTag("br")) return true;
+            if (containsSingleTag("href")) return true;
 
             return false;
+
+
+            bool containsSingleTag(string tag)
+            {
+                if (contains($"<{tag}>", 0, out var b1)) return true;                                                       //    <br>
+                if (contains($"<{tag}/>", 0, out var b2)) return true;                                                      //    <br/>
+                if (contains($"<{tag}", 0, out var b3) && contains($">", b3, out var e3) && e3 > b3) return true;           //    <href="">
+                return false;
+            }
+            bool containsPairTag(string tag)
+            {
+                if (contains($"<{tag}>", 0, out var b1) && contains($"</{tag}>", b1, out var e1) && e1 > b1) return true;   //    <tag>...</tag>
+                if (contains($"<{tag} ", 0, out var b2) && contains($"</{tag}>", b2, out var e2) && e2 > b2) return true;   //    <tag attr ... </tag>
+                if (contains($"<{tag}/>", 0, out var b3)) return true;                                                      //    <tag/>
+                return false;
+            }
+            bool contains(string text, int startIndex, out int position)
+            {
+                position = test.IndexOf(text, startIndex);
+                return (position >= 0);
+            }
         }
         #endregion
         #region SleepUntil - pozastavit thread do splnění podmínky
@@ -7592,10 +8002,19 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <returns></returns>
             public static WinProcessInfo GetInfoForProcess(System.Diagnostics.Process process, bool permanent = false)
             {
-                var processInfo = new WinProcessInfo(process);
-                processInfo._Refresh(process);
+                long privateMemory = 0L;
+                long workingSet64 = 0L;
+                int gDIHandleCount = 0;
+                int userHandleCount = 0;
+                try { privateMemory = process.PrivateMemorySize64; } catch { }
+                try { workingSet64 = process.WorkingSet64; } catch { }
+                try { gDIHandleCount = GetGuiResources(process.Handle, 0); } catch { }
+                try { userHandleCount = GetGuiResources(process.Handle, 1); } catch { }
+
+                var processInfo = new WinProcessInfo(privateMemory, workingSet64, gDIHandleCount, userHandleCount);
                 if (!permanent)
                     processInfo.__Process = null;
+
                 return processInfo;
             }
             /// <summary>
@@ -8779,6 +9198,7 @@ White
         {
             Dictionary<string, SkinStaticInfo> result = new Dictionary<string, SkinStaticInfo>();
 
+            //RMC 0078551 15.08.2025 Špatné vykreslování klienta; upravené velikosti na menší. V určité situaci viz řešení, se zaseklo vykreslování Tabů a potažmo celého klienta. Velikost měnit tedy s velkou opatrností!
             addInfo("Basic", 33, false);
             addInfo("Bezier", 27, false);
             addInfo("WXI", 41, false);
@@ -8812,35 +9232,38 @@ White
             addInfo("High Contrast Classic", 21, true);
             addInfo("Metropolis", 21, false);
             addInfo("Metropolis Dark", 21, false);
-            addInfo("Whiteprint", 24, false);
-            addInfo("Pumpkin", 22, true);
-            addInfo("Springtime", 22, false);
-            addInfo("Summer 2008", 22, false);
-            addInfo("Valentine", 22, false);
-            addInfo("Xmas 2008 Blue", 22, false);
-            addInfo("McSkin", 22, false);
-            addInfo("Seven Classic", 31, false);
-            addInfo("Black", 22, false);
-            addInfo("Blue", 22, false);
-            addInfo("Darkroom", 21, true);
-            addInfo("Money Twins", 22, false);
-            addInfo("Seven", 23, false);
-            addInfo("Foggy", 22, false);
-            addInfo("Sharp", 22, true);
-            addInfo("Sharp Plus", 23, true);
-            addInfo("Caramel", 22, false);
-            addInfo("Coffee", 22, false);
-            addInfo("Dark Side", 22, true);
-            addInfo("Glass Oceans", 22, false);
-            addInfo("iMaginary", 23, false);
-            addInfo("Lilian", 22, false);
-            addInfo("Liquid Sky", 22, false);
-            addInfo("London Liquid Sky", 22, false);
-            addInfo("Stardust", 22, false);
-            addInfo("The Asphalt World", 22, false);
 
-            addInfo("HELIOS Nephrite Black", 37, false);
-            addInfo("HELIOS Nephrite Colorful", 37, false);
+            addInfo("Whiteprint", 21, false);
+            addInfo("Pumpkin", 20, true);
+            addInfo("Springtime", 20, false);
+            addInfo("Summer 2008", 20, false);
+            addInfo("Valentine", 20, false);
+            addInfo("Xmas 2008 Blue", 20, false);
+            addInfo("McSkin", 20, false);
+            addInfo("Seven Classic", 29, false);
+            addInfo("Black", 20, false);
+            addInfo("Blue", 20, false);
+            addInfo("Darkroom", 21, true);
+            addInfo("Money Twins", 20, false);
+            addInfo("Seven", 21, false);
+            addInfo("Foggy", 20, false);
+            addInfo("Sharp", 20, true);
+            addInfo("Sharp Plus", 23, true);
+            addInfo("Caramel", 20, false);
+            addInfo("Coffee", 20, false);
+            addInfo("Dark Side", 20, true);
+            addInfo("Glass Oceans", 20, false);
+            addInfo("iMaginary", 21, false);
+            addInfo("Lilian", 20, false);
+            addInfo("Liquid Sky", 20, false);
+            addInfo("London Liquid Sky", 20, false);
+            addInfo("Stardust", 20, false);
+            addInfo("The Asphalt World", 20, false);
+
+            addInfo("Helios 2020 Black", 37, false);
+            addInfo("Helios 2020 Colorful", 37, false);
+            addInfo("Helios 2025", 41, false);
+            addInfo("Helios 2025; Compact", 32, false);
 
             return result;
 
@@ -9743,7 +10166,16 @@ White
         DxMapAcceptCoordinatesTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Pozici (bod) aktuálně označenou na mapě převezme do formuláře. Změní tedy souřadnici aktuálního záznamu.")]
-        DxMapAcceptCoordinatesText
+        DxMapAcceptCoordinatesText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Rozbalit všechny skupiny")]
+        DxGridMenuExpandAllGroups,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Sbalit všechny skupiny")]
+        DxGridMenuCollapseAllGroups,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Zrušit všechna seskupení")]
+        DxGridMenuClearAllGrouping
 
 
         // Nové kódy přidej do Messages.xml v klientu!!!     Do AdapterTest.cs není nutno, tam se načítá hodnota atributu DefaultMessageText() !

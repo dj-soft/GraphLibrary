@@ -237,6 +237,7 @@ namespace TestDevExpress.Components
             // Grupy za stránky podle PageText, tříděné podle PageOrder, v rámci jedné stránky podle nejvyšší hodnoty PageOrder:
             var rPages = runFormInfos.CreateSortedGroups(i => (i.PageText ?? ""), i => (i.PageOrder), (a, b) => (a > b ? a : b));
             int pageOrder = basicPage.PageOrder;
+            int mergeOrder = basicPage.MergeOrder;
             foreach (var rPage in rPages)
             {   // V daném pořadí, které vychází z PageOrder:
                 // Stránka Ribbonu: defaultní nebo nová explicitně pojmenovaná:
@@ -250,7 +251,7 @@ namespace TestDevExpress.Components
                 }
                 else
                 {   // Nová page, vytvoříme:
-                    dxPage = new DataRibbonPage() { PageText = rPage.Item1, PageOrder = ++pageOrder };
+                    dxPage = new DataRibbonPage() { PageText = rPage.Item1, PageOrder = ++pageOrder, MergeOrder = ++mergeOrder };
                     pages.Add(dxPage);
                 }
 

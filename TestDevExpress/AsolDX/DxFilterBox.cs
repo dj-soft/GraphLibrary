@@ -53,6 +53,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             _ClearButton = DxComponent.CreateDxMiniButton(224, 0, 24, 24, this, ClearButton_Click, tabStop: false);
             _ClearButton.Name = "FilterClearButton";
+            _ClearButton.Enabled = false;
 
             _FilterText.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
@@ -290,6 +291,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 string text = value?.FilterText ?? "";
                 this._CurrentText = text;
                 this._CurrentValue = value?.FilterValue;
+                this._ClearButton.Enabled = !String.IsNullOrEmpty(text);
 
                 this.RunInGui(() => { ActivateCurrentFilterOperator(); FilterTextSetSilent(text); });
             }
@@ -314,6 +316,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this._CurrentText = text;
                 this._CurrentValue = text;
                 this._CurrentFilterOperator = newOperator;
+                this._ClearButton.Enabled = !String.IsNullOrEmpty(text);
 
                 this.RunInGui(() => { ActivateCurrentFilterOperator(); FilterTextSetSilent(text); });
             }
@@ -322,6 +325,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Za jakých událostí se volá event <see cref="FilterValueChanged"/>
         /// </summary>
         public DxFilterBoxChangeEventSource FilterValueChangedSources { get; set; }
+        /// <summary>
+        /// Vyvolá událost <see cref="FilterValueChanged"/>
+        /// </summary>
+        /// <param name="eventSource">Jaký je důvod eventu? Default = null = <see cref="DxFilterBoxChangeEventSource.TextChange"/></param>
+        public void RaiseFilterBoxChanged(DxFilterBoxChangeEventSource? eventSource = null)
+        {
+            RunFilterValueChanged(eventSource ?? DxFilterBoxChangeEventSource.TextChange);
+        }
         /// <summary>
         /// Událost volaná po hlídané změně obsahu filtru.
         /// Argument obsahuje hodnotu filtru a druh události, která vyvolala event.
@@ -601,6 +612,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.LastFilterValue = currentFilter;          // Od teď bude hodnota CurrentFilterIsChanged = false;
             OnFilterValueChanged(args);
             FilterValueChanged?.Invoke(this, args);
+            _ClearButton.Enabled = !this.CurrentFilterValue.IsEmpty;
         }
         /// <summary>
         /// Po změně hodnoty filtru, dle nastavených zdrojů události

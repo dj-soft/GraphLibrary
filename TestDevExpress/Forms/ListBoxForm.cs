@@ -157,9 +157,9 @@ namespace TestDevExpress.Forms
             string text = "SelectedItemsChanged";
             if (sender is DxListBoxPanel listBox)
             {
-                text += $"; ActiveItemId: {listBox.CurrentItemId}; SelectedCount: {listBox.SelectedItems.Length}";
+                text += $"; ActiveItem: {listBox.CurrentItem}; SelectedCount: {listBox.SelectedItems.Length}";
 
-                var visItms = listBox.ListBox.VisibleItems;
+                var visItms = listBox.ListBox.CurrentVisibleMenuItems;
                 int cnt = visItms.Length;
 
             }

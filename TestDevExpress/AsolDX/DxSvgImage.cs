@@ -78,6 +78,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 dxSvgImage = new DxSvgImage(stream);
             dxSvgImage.ImageName = imageName;
             dxSvgImage.Palette = palette;
+            dxSvgImage.Tag = imageName;                    // V property SvgImage.Tag bychom rádi ukládali zdrojové jméno obrázku...
             return dxSvgImage;
         }
         /// <summary>

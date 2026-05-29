@@ -260,10 +260,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Najde node podle jeho klíče, pokud nenajde pak vrací false.
         /// </summary>
-        /// <param name="nodeKey"></param>
-        /// <param name="nodeInfo"></param>
+        /// <param name="nodeKey">Hledaný klíč</param>
+        /// <param name="nodeInfo">Nalezená data</param>
         /// <returns></returns>
         public bool TryGetNodeInfo(string nodeKey, out ITreeListNode nodeInfo) { return _TreeListNative.TryGetNodeInfo(nodeKey, out nodeInfo); }
+        /// <summary>
+        /// Najde node podle jeho klíče, pokud nenajde pak vrací false.
+        /// Nalezený objekt obsahuje:<br/>
+        /// <c>Item1</c> = definice <see cref="ITreeListNode"/>;<br/>
+        /// <c>Item2</c> = vizuální data <see cref="TreeListNode"/>;<br/>
+        /// </summary>
+        /// <param name="nodeKey">Hledaný klíč</param>
+        /// <param name="nodeData">Nalezená data</param>
+        /// <returns></returns>
+        public bool TryGetNodeData(string nodeKey, out Tuple<ITreeListNode, TreeListNode> nodeData) { return _TreeListNative.TryGetNodeData(nodeKey, out nodeData); }
         /// <summary>
         /// Pole všech nodů = třída <see cref="ITreeListNode"/> = data o nodech
         /// </summary>
@@ -395,6 +405,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Za jakých událostí se volá event <see cref="FilterBoxChanged"/>
         /// </summary>
         public DxFilterBoxChangeEventSource FilterBoxChangedSources { get { return _FilterBox.FilterValueChangedSources; } set { _FilterBox.FilterValueChangedSources = value; } }
+        /// <summary>
+        /// Vyvolá událost <see cref="FilterBoxChanged"/>
+        /// </summary>
+        /// <param name="eventSource">Jaký je důvod eventu? Default = null = <see cref="DxFilterBoxChangeEventSource.TextChange"/></param>
+        public void RaiseFilterBoxChanged(DxFilterBoxChangeEventSource? eventSource = null) { _FilterBox.RaiseFilterBoxChanged(eventSource); }
         /// <summary>
         /// Událost volaná po hlídané změně obsahu filtru.
         /// Argument obsahuje hodnotu filtru a druh události, která vyvolala event.
@@ -1822,7 +1837,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             ITreeListNode nodeInfo = this.FocusedNodeInfo;
             if (nodeInfo != null)
             {
-                if (_IsMainActionRunEvent(nodeInfo, hit.IsInCell))
+                if (hit.IsInImagesOrCell && _IsMainActionRunEvent(nodeInfo, hit.IsInCell))
                     this.RaiseNodeDoubleClick(nodeInfo, this.FocusedColumnIndex, hit.PartType, e.Button);
                 if (_IsMainActionExpandCollapse(nodeInfo, hit.IsInCell))
                     this._NodeExpandCollapse(hit);
@@ -3368,15 +3383,34 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Najde node podle jeho klíče, pokud nenajde pak vrací false.
         /// </summary>
-        /// <param name="nodeKey"></param>
-        /// <param name="nodeInfo"></param>
+        /// <param name="nodeKey">Hledaný klíč</param>
+        /// <param name="nodeInfo">Nalezená data</param>
         /// <returns></returns>
         public bool TryGetNodeInfo(string nodeKey, out ITreeListNode nodeInfo)
         {
             nodeInfo = null;
             if (nodeKey == null) return false;
             bool result = this._NodesKey.TryGetValue(nodeKey, out var nodePair);
-            nodeInfo = nodePair.NodeInfo;
+            if (result)
+                nodeInfo = nodePair?.NodeInfo;
+            return result;
+        }
+        /// <summary>
+        /// Najde node podle jeho klíče, pokud nenajde pak vrací false.
+        /// Nalezený objekt obsahuje:<br/>
+        /// <c>Item1</c> = definice <see cref="ITreeListNode"/>;<br/>
+        /// <c>Item2</c> = vizuální data <see cref="TreeListNode"/>;<br/>
+        /// </summary>
+        /// <param name="nodeKey">Hledaný klíč</param>
+        /// <param name="nodeData">Nalezená data</param>
+        /// <returns></returns>
+        public bool TryGetNodeData(string nodeKey, out Tuple<ITreeListNode, TreeListNode> nodeData)
+        {
+            nodeData = null;
+            if (nodeKey == null) return false;
+            bool result = this._NodesKey.TryGetValue(nodeKey, out var nodePair);
+            if (result && nodePair != null)
+                nodeData = new Tuple<ITreeListNode, TreeListNode>(nodePair.NodeInfo, nodePair.TreeNode);
             return result;
         }
         /// <summary>
