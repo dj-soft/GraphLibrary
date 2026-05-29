@@ -1715,6 +1715,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 __ItemsMode = ListBoxItemsMode.MenuItems;
                 if (__DataTable != null) __DataTable = null;
+                _InvalidateFilteredItems();
             }
             _RunItemsListChanged(e);
         }
@@ -2176,50 +2177,54 @@ SetSelected() - vstup           Absolutní
         {
             if (__FilteredMenuItems is null)
             {
-                var filteredItems = new List<ListMenuItemInfo>();
+                ListMenuItemInfo[] filteredItems = null;
                 if (__ItemsMode == ListBoxItemsMode.MenuItems)
                 {
                     var rowFilter = __RowFilterCriteria;
                     var filterIsActive = !(rowFilter is null);
-                    var evaluator = new DevExpress.Data.Filtering.Helpers.ExpressionEvaluator(DevExpress.Data.Filtering.typede);
-
-                    new DevExpress.Data.Filtering.Helpers.ExpressionEvaluator(System.ComponentModel.TypeDescriptor.GetProperties(typeof(IMenuItem)), rowFilter);
-
-                    var menuItems = this.MenuItems;
-                    int visibleIndex = 0;
-                    for (int absoluteIndex = 0; absoluteIndex < menuItems.Length; absoluteIndex++)
-                    {
-                        var menuItem = menuItems[absoluteIndex];
-                        bool isVisible = (filterIsActive ? isMatch(menuItem, rowFilter) : true);
-                        if (isVisible)
-                        {
-                            filteredItems.Add(new ListMenuItemInfo(absoluteIndex, menuItem, visibleIndex));
-                            visibleIndex++;
-                        }
+                    if (filterIsActive)
+                    {   // Máme filtr => vytvoříme prvotní soupis všech prvků včetně Absolute indexu:
+                        int absIdx = 0;
+                        var absMenuItems = this.MenuItems.Select(i => new ListMenuItemInfo(absIdx++, i)).ToList();          // Absolutní index 0++; a všechny MenuItems
+                        // Vytvoříme evaluator pro typ ListMenuItemInfo, a pro CriteriaOperator: rowFilter
+                        var evaluator = new DevExpress.Data.Filtering.Helpers.ExpressionEvaluator(System.ComponentModel.TypeDescriptor.GetProperties(typeof(ListMenuItemInfo)), rowFilter);
+                        // Vytvoříme pole prvků, které vyhovují zadané podmínce (ale pole stále nemá naplěné hodnoty FilteredIndex):
+                        filteredItems = evaluator.Filter(absMenuItems).OfType<ListMenuItemInfo>().ToArray();
+                        // Nyní prostě projdu pole filteredItems (které nyní osbahuje jen filtrované prvky) a do jednotlivých objektů vepíšu postupně FilteredIndex:
+                        int visIdx = 0;
+                        filteredItems.ForEachExec(i => i.FilteredIndex = visIdx++);
+                    }
+                    else
+                    {   // Nemáme filtr => všechny MenuItems jsou Filtered:
+                        int absIdx = 0;
+                        int visIdx = 0;
+                        filteredItems = this.MenuItems.Select(i => new ListMenuItemInfo(absIdx++, i, visIdx++)).ToArray();     // Absolutní index 0++; a všechny MenuItems, a FilteredIndex++
                     }
                 }
-                __FilteredMenuItems = filteredItems.ToArray();
-            }
-
-            bool isMatch(IMenuItem menuItem, CriteriaOperator criteria)
-            {
-                DevExpress.Data.Filtering.Helpers.ExpressionEvaluator eev = 
-                DevExpress.Data.Filtering.CriteriaOperator;
-                
-
-                CriteriaOperatorEvaluator
-                criteria.ev
+                else
+                {
+                    filteredItems = new ListMenuItemInfo[0];
+                }
+                __FilteredMenuItems = filteredItems;
             }
         }
         /// <summary>
-        /// Aktuálně platný řádkový filtr
+        /// Aktuálně platný řádkový filtr, který byl naposledy aplikován
         /// </summary>
         private CriteriaOperator __RowFilterCriteria;
+        /// <summary>
+        /// Volá ListBox vždy, když z objektu Search je sestavena filtrační podmínka a ta je vložena do ListBoxu
+        /// </summary>
+        /// <param name="criteria"></param>
         protected override void ApplyItemsFilter(CriteriaOperator criteria)
         {
             base.ApplyItemsFilter(criteria);
             _InvalidateFilteredItems(criteria);
         }
+        /// <summary>
+        /// Volá ListBox vždy, když z objektu Search je sestavena filtrační podmínka a ta je vložena do ListBoxu
+        /// </summary>
+        /// <param name="criteria"></param>
         protected override void ApplyInlineSearch(CriteriaOperator criteria)
         {
             base.ApplyInlineSearch(criteria);
@@ -2249,7 +2254,6 @@ SetSelected() - vstup           Absolutní
                 return visibleItems.ToArray();
             }
         }
-
         /// <summary>
         /// Vrátí Filtrovaný index (na němž bude prvek zobrazen po zafiltrování) pro daný Absolutní index. Vrátí null, pokud index je mimo rozsah anebo daný prvek není zobrazitelný.
         /// </summary>
@@ -2296,6 +2300,18 @@ SetSelected() - vstup           Absolutní
                 Bounds = bounds;
             }
             /// <summary>
+            /// Stringová reprezentace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return this.Text;
+            }
+            /// <summary>
+            /// DisplayText
+            /// </summary>
+            public string Text { get { return $"[{AbsoluteIndex}]: '{MenuItem?.Text}'"; } }
+            /// <summary>
             /// Absolutní index = pozice v poli Items.
             /// </summary>
             public int AbsoluteIndex { get; private set; }
@@ -2304,18 +2320,24 @@ SetSelected() - vstup           Absolutní
             /// </summary>
             public IMenuItem MenuItem { get; private set; }
             /// <summary>
-            /// Index v seznamu po aplikování filtru. Pokud je zde null, pak tento prvek nemůže být zobrazen.
+            /// Text prvku tak jak je filtrován: protože Search control generuje filtr s odkazem na property jménem 'Column', tak tímto názvem se bude odkazuvat na zde uvedený text...
             /// </summary>
-            public int? FilteredIndex { get; private set; }
+            public string Column { get { return this.MenuItem.Text; } }
+            /// <summary>
+            /// Index v seznamu po aplikování filtru. Pokud je zde null, pak tento prvek nemůže být zobrazen.
+            /// Zde je umožněno setování hodnoty do 
+            /// </summary>
+            public int? FilteredIndex { get; set; }
             /// <summary>
             /// Pozice prvku v rámci aktuálně fyzicky zobrazených prvků v ListBoxu; první pixel má index 0. Nicméně nad ním mohou být předchozí prvky, které aktuálně nejsou vidět, a zde mají null, ale mají <see cref="FilteredIndex"/> zadané.
             /// </summary>
-            public int? DisplayedIndex { get; private set; }
-            public Rectangle? Bounds { get; private set; }
+            public int? DisplayedIndex { get; set; }
+            /// <summary>
+            /// Fyzické souřadnice, pokud je prvek ve viditelné oblasti Listu
+            /// </summary>
+            public Rectangle? Bounds { get; set; }
         }
         #endregion
-
-
         #endregion
         #region Komplexní List postavený nad DataTable a Template
         /// <summary>
@@ -3311,53 +3333,38 @@ SetSelected() - vstup           Absolutní
             _InsertItems(sourceItems, insertIndex, true, changeType);
         }
         /// <summary>
-        /// Do this listu vloží další prvky <paramref name="sourceItems"/>, počínaje danou pozicí <paramref name="insertIndex"/>.<br/>
+        /// Do this listu vloží další prvky <paramref name="sourceItems"/>, počínaje danou pozicí <paramref name="insertAbsoluteIndex"/>.<br/>
         /// Pokud je zadaná pozice 0, pak jsou prvky vloženy v jejich pořadí úplně na začátek Listu.<br/>
         /// Pokud je daná pozice 1, a stávající List má alespoň jeden prvek, pak dané prvky jsou vloženy za první prvek.<br/>
         /// Pokud je daná pozice null nebo větší než počet prvků, jsou dané prvky přidány na konec listu.
         /// <para/>
-        /// Pozor: daná pozice <paramref name="insertIndex"/> se vztahuje k prvkům pole <see cref="MenuItems"/> = veškeré prvky, nikoliv <see cref="CurrentVisibleMenuItems"/> = aktuálně zafiltrované prvky!
+        /// Pozor: daná pozice <paramref name="insertAbsoluteIndex"/> se vztahuje k prvkům pole <see cref="MenuItems"/> = veškeré prvky, nikoliv <see cref="CurrentVisibleMenuItems"/> = aktuálně zafiltrované prvky!
         /// </summary>
         /// <param name="sourceItems"></param>
-        /// <param name="insertIndex"></param>
+        /// <param name="insertAbsoluteIndex">Absolutní index, kam do Items insertujeme první dodanou položku: 0=bude první na začátku, 1=bude za první existující, (Items.Count -1) = bude před poslední, Items.Count nebo null = ude Add na konec.</param>
         /// <param name="selectNewItems">Nově vložené prvky mají být po vložení vybrané (Selected)?</param>
         /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
-        public void InsertItems(IEnumerable<IMenuItem> sourceItems, int? insertIndex, bool selectNewItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
+        public void InsertItems(IEnumerable<IMenuItem> sourceItems, int? insertAbsoluteIndex, bool selectNewItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
         {
-            _InsertItems(sourceItems, insertIndex, selectNewItems, changeType);
+            _InsertItems(sourceItems, insertAbsoluteIndex, selectNewItems, changeType);
         }
         /// <summary>
-        /// Z this Listu odebere prvky na daných indexech. Index jsou absolutní, nikoli v rámci Visible prvků.
+        /// Z this Listu odebere prvky na daných indexech. Index jsou absolutní, nikoli v rámci Visible (filtrovaných) prvků.
         /// </summary>
-        /// <param name="removeIndexes"></param>
-        public void RemoveIndexes(IEnumerable<int> removeIndexes)
+        /// <param name="removeAbsoluteIndexes"></param>
+        /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
+        public void RemoveIndexes(IEnumerable<int> removeAbsoluteIndexes, DxItemsChangeType changeType = DxItemsChangeType.Code)
         {
-            if (removeIndexes == null) return;
-            int count = this.Items.Count;                            // RemoveIndexes pracuje nad všemi prvky bez ohledu na filtrování
-            var removeList = removeIndexes
-                .CreateDictionary(i => i, true)                      // Odstraním duplicitní hodnoty indexů;
-                .Keys.Where(i => (i >= 0 && i < count))              //  z klíčů (indexy) vyberu jen hodnoty, které reálně existují v ListBoxu;
-                .ToList();                                           //  a vytvořím List pro další práci:
-            removeList.Sort((a, b) => b.CompareTo(a));               // Setřídím indexy sestupně, pro korektní postup odebírání
-            removeList.ForEachExec(i => this.Items.RemoveAt(i));     // A v sestupném pořadí indexů odeberu odpovídající prvky
+            this._RemoveIndexes(removeAbsoluteIndexes, changeType);
         }
         /// <summary>
         /// Z this Listu odebere všechny dané prvky
         /// </summary>
         /// <param name="removeItems"></param>
-        public void RemoveItems(IEnumerable<IMenuItem> removeItems)
+        /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
+        public void RemoveItems(IEnumerable<IMenuItem> removeItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
         {
-            if (removeItems == null) return;
-            if (this.__ItemsMode != ListBoxItemsMode.MenuItems) return;
-
-            var removeArray = removeItems.ToArray();
-            var listItems = this.MenuItems;                          // RemoveItems musí pracovat nad polem všech prvků
-            for (int i = this.Items.Count - 1; i >= 0; i--)          // RemoveItems pracuje nad všemi prvky bez ohledu na filtrování
-            {
-                var listItem = listItems[i];
-                if (listItem != null && removeArray.Any(t => Object.ReferenceEquals(t, listItem)))
-                    this.Items.RemoveAt(i);
-            }
+            this._RemoveItems(removeItems, changeType);
         }
         /// <summary>
         /// Metoda z dodané kolekce prvku vrátí jen ty platné.
@@ -3400,38 +3407,36 @@ SetSelected() - vstup           Absolutní
         /// Pokud index určuje vizuální proces DragAndDrop, pak musí vizuální index přepočítat pomocí <see cref="GetAbsoluteIndexFromFiltered(int)"/> z indexu vizuálního.
         /// </summary>
         /// <param name="sourceItems"></param>
-        /// <param name="insertAbsoluteIndex"></param>
+        /// <param name="insertAbsoluteIndex">Absolutní index, kam do Items insertujeme první dodanou položku: 0=bude první na začátku, 1=bude za první existující, (Items.Count -1) = bude před poslední, Items.Count nebo null = ude Add na konec.</param>
         /// <param name="selectNewItems">Nově vložené prvky mají být po vložení vybrané (Selected)?</param>
         /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
         private void _InsertItems(IEnumerable<IMenuItem> sourceItems, int? insertAbsoluteIndex, bool selectNewItems, DxItemsChangeType changeType)
         {
             if (sourceItems is null || !sourceItems.Any()) return;
 
-            var validItems = _GetOnlyValidItems(sourceItems, true);
+            var validItems = _GetOnlyValidItems(sourceItems, true);            // Vyberu prvky, které vyhovují NonDuplicitě ItemId (vstupující + stávající dohromady)
             if (validItems.Length == 0) return;
 
-            var totalCount = this.Items.Count;                                 // Items.Count = počet prvků celkem, nikoli jen počet aktuálně filtrovaných prvků
-            var visibleCount = this.ItemCount;                                 // ItemCount   = počet prvků zobrazených po zafiltrování klientským filtrem
-
-            List<int> selectedIndexes = new List<int>();
+            int totalCount = this.Items.Count;
+            var selectedIndexes = new List<int>();                             // Tyto absolutní indexy budou selected = nově vložené prvky
             if (insertAbsoluteIndex.HasValue && insertAbsoluteIndex.Value >= 0 && insertAbsoluteIndex.Value < totalCount)
-            {
-                int index = insertAbsoluteIndex.Value;
-                int visibleIndex = 0;
+            {   // Vkládáme někam před poslední prvek:
+                int targetIndex = insertAbsoluteIndex.Value;
                 foreach (var sourceItem in validItems)
                 {
-                    selectedIndexes.Add(visibleIndex++);
-                    this.Items.Insert(index++, CreateListBoxItem(sourceItem));
+                    selectedIndexes.Add(targetIndex);                          // Budoucí Selected prvky: pokud první dávám Insert na pozici [0], tak [0] bude Selected
+                    this.Items.Insert(targetIndex++, CreateListBoxItem(sourceItem));
                 }
             }
             else
             {
-                int visibleIndex = visibleCount;
+                int targetIndex = totalCount;
                 foreach (var sourceItem in validItems)
-                    selectedIndexes.Add(visibleIndex++);
+                    selectedIndexes.Add(targetIndex++);
                 this.Items.AddRange(CreateListBoxItems(validItems));
             }
 
+            this._InvalidateFilteredItems();
             if (selectNewItems)
                 this.SelectedAbsoluteIndexes = selectedIndexes.ToArray();
         }
@@ -3467,18 +3472,20 @@ SetSelected() - vstup           Absolutní
         /// <summary>
         /// Z this Listu odebere prvky na daných indexech.
         /// </summary>
-        /// <param name="removeIndexes"></param>
+        /// <param name="removeAbsoluteIndexes"></param>
         /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
-        private void _RemoveIndexes(IEnumerable<int> removeIndexes, DxItemsChangeType changeType)
+        private void _RemoveIndexes(IEnumerable<int> removeAbsoluteIndexes, DxItemsChangeType changeType)
         {
-            if (removeIndexes == null) return;
+            if (removeAbsoluteIndexes == null) return;
             int totalCount = this.Items.Count;                       // _RemoveIndexes pracuje se všemi prvky bez ohledu na filtr
-            var removeList = removeIndexes
+            var removeList = removeAbsoluteIndexes
                 .CreateDictionary(i => i, true)                      // Odstraním duplicitní hodnoty indexů;
                 .Keys.Where(i => (i >= 0 && i < totalCount))         //  z klíčů (indexy) vyberu jen hodnoty, které reálně existují v ListBoxu;
                 .ToList();                                           //  a vytvořím List pro další práci:
             removeList.Sort((a, b) => b.CompareTo(a));               // Setřídím indexy sestupně, pro korektní postup odebírání
             removeList.ForEachExec(i => this.Items.RemoveAt(i));     // A v sestupném pořadí indexů odeberu odpovídající prvky
+
+            this._InvalidateFilteredItems();
         }
         /// <summary>
         /// Z this Listu odebere všechny dané prvky
@@ -3488,6 +3495,8 @@ SetSelected() - vstup           Absolutní
         private void _RemoveItems(IEnumerable<IMenuItem> removeItems, DxItemsChangeType changeType)
         {
             if (removeItems == null) return;
+            if (this.__ItemsMode != ListBoxItemsMode.MenuItems) return;
+
             var removeArray = removeItems.ToArray();
             var listItems = this.MenuItems;                          // _RemoveItems musí odebírat prvky z kompletního pole, ne jen z viditelných prvků
             int totalCount = this.Items.Count;                       // _RemoveItems pracuje se všemi prvky bez ohledu na filtr
@@ -3497,6 +3506,8 @@ SetSelected() - vstup           Absolutní
                 if (listItem != null && removeArray.Any(t => Object.ReferenceEquals(t, listItem)))
                     this.Items.RemoveAt(i);
             }
+
+            this._InvalidateFilteredItems();
         }
         #endregion
         #region DataExchange
@@ -3693,20 +3704,30 @@ SetSelected() - vstup           Absolutní
         {
             args.TargetIndex = null;
             args.InsertIndex = null;
-            var selectedItemsInfo = args.SourceObject as Tuple<int, IMenuItem, Rectangle?>[];
-            if (selectedItemsInfo != null && (args.TargetIsSource || args.CurrentEffect == DragDropEffects.Move))
-            {
-                // Pokud provádíme přesun v rámci jednoho Listu (tj. Target == Source),
-                //  pak si musíme najít správný TargetIndex nyní = uživatel chce přemístit prvky před/za určitý prvek, a jeho index se odebráním prvků změní:
+            if ((args.TargetIsSource || args.CurrentEffect == DragDropEffects.Move) && DxDragTargetTryGetMenuInfos(args, out var selectedItemsInfo))
+            {   // Pokud (Cíl == Zdroj (provádíme přesun v rámci jednoho Listu) anebo efekt DragAndDrop je Move) pak musíme zdrojové prvky odstranit:
                 if (args.TargetIsSource)
-                {
+                {   // Pokud provádíme přesun v rámci jednoho Listu (tj. Target == Source),
+                    //  pak si musíme najít správný TargetIndex nyní = uživatel chce přemístit prvky před/za určitý prvek, a jeho index se odebráním prvků změní:
                     Point targetPoint = this.PointToClient(args.ScreenMouseLocation);
                     args.TargetIndex = DoDragSearchIndexRatio(targetPoint);
-                    args.InsertIndex = args.TargetIndex.GetInsertIndex(selectedItemsInfo.Select(t => t.Item1));
+                    args.InsertIndex = args.TargetIndex.GetInsertIndex(selectedItemsInfo.Select(i => i.FilteredIndex ?? -1));
                 }
                 // Odebereme zdrojové prvky:
-                this.RemoveIndexes(selectedItemsInfo.Select(t => t.Item1));
+                this._RemoveIndexes(selectedItemsInfo.Select(t => t.AbsoluteIndex), DxItemsChangeType.DragAndDrop);
             }
+        }
+        /// <summary>
+        /// Pokusí se najít v argumentu <see cref="DxDragDropArgs"/> zdrojový objekt <c>SourceObject</c>, a z něj získat pole prvků <see cref="ListMenuItemInfo"/>.
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        private bool DxDragTargetTryGetMenuInfos(DxDragDropArgs args, out ListMenuItemInfo[] items)
+        {
+            items = null;
+            if (args.SourceObject is IEnumerable<ListMenuItemInfo> listItemsInfo) { items = listItemsInfo.ToArray(); return true; }
+            return false;
         }
         /// <summary>
         /// Když úspěšně končí proces Drag, a this objekt je možným cílem
@@ -3734,7 +3755,7 @@ SetSelected() - vstup           Absolutní
             this.Invalidate();
         }
         /// <summary>
-        /// Pokusí se najít v argumentu <see cref="DxDragDropArgs"/> zdrojový objekt a z něj získat pole prvků <see cref="IMenuItem"/>.
+        /// Pokusí se najít v argumentu <see cref="DxDragDropArgs"/> zdrojový objekt <c>SourceObject</c>, a z něj získat pole prvků <see cref="IMenuItem"/>.
         /// </summary>
         /// <param name="args"></param>
         /// <param name="items"></param>

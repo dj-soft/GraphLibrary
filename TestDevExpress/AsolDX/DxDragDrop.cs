@@ -806,7 +806,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Formulář zobrazující informace v procesu Drag and Drop
         /// </summary>
-        private class DxDragForm : Form
+        private class DxDragForm : DevExpress.XtraEditors.XtraForm // Form
         {
             /// <summary>
             /// Konstruktor
