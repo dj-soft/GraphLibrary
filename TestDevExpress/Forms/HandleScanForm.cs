@@ -69,17 +69,17 @@ namespace TestDevExpress.Forms
 
         private void InitProcessList()
         {
-            _ProcessListBox = new DxListBoxPanel()
-            {
-                ButtonsPosition = ToolbarPosition.BottomSideRight,
-                ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.Refresh },
-                ButtonsSize = ResourceImageSizeType.Medium,
-                RowFilterMode = DxListBoxPanel.FilterRowMode.Server,
-                Dock = System.Windows.Forms.DockStyle.Fill
-            };
-            _ProcessListBox.ListActionAfter += _ProcessListBox_ActionAfter;
-            _ProcessListBox.RowFilterServerKeyEnter += _ProcessListBox_FilterBoxKeyEnter;
-            _ProcessListBox.SelectedItemsChanged += _ProcessListBox_SelectedMenuItemChanged;
+            _ProcessListBox = new DxListBoxPanel();
+            _ProcessListBox.Dock = System.Windows.Forms.DockStyle.Fill;
+
+            _ProcessListBox.DxProperties.ButtonsPosition = ToolbarPosition.BottomSideRight;
+            _ProcessListBox.DxProperties.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.Refresh };
+            _ProcessListBox.DxProperties.ButtonsSize = ResourceImageSizeType.Medium;
+            _ProcessListBox.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Server;
+
+            _ProcessListBox.DxProperties.ListActionAfter += _ProcessListBox_ActionAfter;
+            _ProcessListBox.DxProperties.RowFilterServerKeyEnter += _ProcessListBox_FilterBoxKeyEnter;
+            _ProcessListBox.DxProperties.SelectedItemsChanged += _ProcessListBox_SelectedMenuItemChanged;
             _SplitContainer.Panel1.Controls.Add(_ProcessListBox);
         }
 
@@ -105,12 +105,12 @@ namespace TestDevExpress.Forms
             var processInfos = ProcessInfo.MergeProcesses(_ProcessInfos, currentProcessInfos);     // Sloučit s dosavadními informacemi: dosavadní informace nebudu zahazovat!
             var selectId = (currentSelectedProcess ?? currentProcess)?.ProcessId ?? 0;
             var newSelectedProcess = processInfos.FirstOrDefault(p => p.ProcessId == selectId);    // Nový SelectedMenuItem musí být instance z processInfos
-            _ProcessListBox.MenuItems = processInfos;
-            _ProcessListBox.SelectedMenuItem = newSelectedProcess;
+            _ProcessListBox.DxProperties.MenuItems = processInfos;
+            _ProcessListBox.DxProperties.SelectedMenuItem = newSelectedProcess;
             _ProcessInfos = processInfos;
         }
 
-        private ProcessInfo SelectedProcess { get { return _ProcessListBox.SelectedMenuItem as ProcessInfo; } set { _ProcessListBox.SelectedMenuItem = value; } }
+        private ProcessInfo SelectedProcess { get { return _ProcessListBox.DxProperties.SelectedMenuItem as ProcessInfo; } set { _ProcessListBox.DxProperties.SelectedMenuItem = value; } }
         private ProcessInfo[] _ProcessInfos;
         private DxListBoxPanel _ProcessListBox;
         #endregion

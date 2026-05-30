@@ -6457,12 +6457,12 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var qatPanel = new DxListBoxPanel() { Dock = DockStyle.Fill };
                 form.ControlPanel.Controls.Add(qatPanel);
                 var currentItems = QatManagerItems;
-                qatPanel.ListBox.MenuItems = currentItems;
-                qatPanel.ListBox.SelectionMode = SelectionMode.MultiExtended;
-                qatPanel.ListBox.ItemHeight = 20;
-                qatPanel.ListBox.DragDropActions = DxDragDropActionType.ReorderItems;
-                qatPanel.ListBox.EnabledKeyActions = ControlKeyActionType.MoveDown | ControlKeyActionType.MoveUp | ControlKeyActionType.Delete;
-                qatPanel.ButtonsPosition = ToolbarPosition.RightSideCenter;
+                qatPanel.DxProperties.MenuItems = currentItems;
+                qatPanel.DxProperties.SelectionMode = SelectionMode.MultiExtended;
+                qatPanel.DxProperties.ItemHeight = 20;
+                qatPanel.DxProperties.DragDropActions = DxDragDropActionType.ReorderItems;
+                qatPanel.DxProperties.EnabledKeyActions = ControlKeyActionType.MoveDown | ControlKeyActionType.MoveUp | ControlKeyActionType.Delete;
+                qatPanel.DxProperties.ButtonsPosition = ToolbarPosition.RightSideCenter;
 
                 ControlKeyActionType buttonsTypes =
                     ControlKeyActionType.MoveTop | ControlKeyActionType.MoveUp | ControlKeyActionType.MoveDown | ControlKeyActionType.MoveBottom |
@@ -6471,13 +6471,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (DxComponent.IsDebuggerActive)
                     buttonsTypes |= ControlKeyActionType.Undo | ControlKeyActionType.Redo;
 
-                qatPanel.ButtonsTypes = new ControlKeyActionType[] { buttonsTypes };
+                qatPanel.DxProperties.ButtonsTypes = new ControlKeyActionType[] { buttonsTypes };
 
                 var result = form.ShowDialog(this.FindForm());
 
                 if (result == DialogResult.OK)
                 {   // V ListBoxu jsou prvky typované jako IMenuItem, ale protože jsem tam dával IRibbonItem, tak tam budou tito potomkové:
-                    var modifiedItems = qatPanel.ListBox.MenuItems.OfType<IRibbonItem>().ToArray();
+                    var modifiedItems = qatPanel.DxProperties.MenuItems.OfType<IRibbonItem>().ToArray();
                     ChangeQatItems(currentItems, modifiedItems);
                 }    
             }     

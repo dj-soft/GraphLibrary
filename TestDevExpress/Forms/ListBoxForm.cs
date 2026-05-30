@@ -140,9 +140,9 @@ namespace TestDevExpress.Forms
         /// <param name="resizeHeight"></param>
         private void _AddEventHandlers(DxListBoxPanel listPanel, bool resizeHeight = false)
         {
-            listPanel.SelectedItemsChanged += _SelectedItemsChanged;
-            listPanel.ItemMouseClick += _ItemMouseClick;
-            listPanel.ItemMouseDoubleClick += _ItemMouseDoubleClick;
+            listPanel.DxProperties.SelectedItemsChanged += _SelectedItemsChanged;
+            listPanel.DxProperties.ItemMouseClick += _ItemMouseClick;
+            listPanel.DxProperties.ItemMouseDoubleClick += _ItemMouseDoubleClick;
 
             if (resizeHeight)
                 __ResizedControls.Add(listPanel);
@@ -387,16 +387,15 @@ namespace TestDevExpress.Forms
         {
             var sampleDblList = new DxDblListBoxPanel();
 
-            sampleDblList.SourceRowFilterMode = DxListBoxPanel.FilterRowMode.Client;
-            sampleDblList.TargetRowFilterMode = DxListBoxPanel.FilterRowMode.Client;
-            sampleDblList.ButtonsPosition = DxDblListBoxPanel.ButtonsPositionType.Bottom;
-            sampleDblList.SourceListReadOnly = true;
-            sampleDblList.ClipboardActionsEnabled = true;
-            sampleDblList.ReorderItemsEnabled = true;
-            sampleDblList.DragAndDropEnabled = true;
+            sampleDblList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client;
+            sampleDblList.DxProperties.ButtonsPosition = DxDblListBoxPanel.ButtonsPositionType.Bottom;
+            sampleDblList.DxProperties.SourceListReadOnly = true;
+            sampleDblList.DxProperties.ClipboardActionsEnabled = true;
+            sampleDblList.DxProperties.ReorderItemsEnabled = true;
+            sampleDblList.DxProperties.DragAndDropEnabled = true;
 
-            sampleDblList.SourceMenuItems = Randomizer.GetMenuItems(48, 80, Randomizer.ImageResourceType.PngSmall, true, true);
-            sampleDblList.TargetMenuItems = Randomizer.GetMenuItems(3, 8, Randomizer.ImageResourceType.PngSmall, true, true);
+            sampleDblList.DxProperties.SourceMenuItems = Randomizer.GetMenuItems(48, 80, Randomizer.ImageResourceType.PngSmall, true, true);
+            sampleDblList.DxProperties.TargetMenuItems = Randomizer.GetMenuItems(3, 8, Randomizer.ImageResourceType.PngSmall, true, true);
 
             this._HostContainer.Controls.Add(sampleDblList);
 
@@ -452,20 +451,20 @@ namespace TestDevExpress.Forms
                 new DataMenuItem(){ Text = "Right", Tag = DxDblListBoxPanel.ButtonsPositionType.Right, ImageName = "svgimages/align/alignverticalright.svg" }
             };
 
-            var dblListPosition = _Sample4DblList.ButtonsPosition;
+            var dblListPosition = _Sample4DblList.DxProperties.ButtonsPosition;
             __Sample4ButtonsCombo.SelectedComboItem = __Sample4ButtonsCombo.ComboItems.FirstOrDefault(mi => ((DxDblListBoxPanel.ButtonsPositionType)mi.Tag) == dblListPosition);
 
             __Sample4SourceReadOnlyCheck = DxComponent.CreateDxCheckEdit(x, y, 160, this._HostContainer, "SourceListReadOnly", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1); x += 165;
-            __Sample4SourceReadOnlyCheck.Checked = sampleDblList.SourceListReadOnly;
+            __Sample4SourceReadOnlyCheck.Checked = sampleDblList.DxProperties.SourceListReadOnly;
 
             __Sample4ClipActionsEnabledCheck = DxComponent.CreateDxCheckEdit(x, y, 160, this._HostContainer, "ClipboardActionsEnabled", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1); x += 165;
-            __Sample4ClipActionsEnabledCheck.Checked = sampleDblList.ClipboardActionsEnabled;
+            __Sample4ClipActionsEnabledCheck.Checked = sampleDblList.DxProperties.ClipboardActionsEnabled;
 
             __Sample4ReorderEnabledCheck = DxComponent.CreateDxCheckEdit(x, y, 160, this._HostContainer, "ReorderItemsEnabled", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1); x += 165;
-            __Sample4ReorderEnabledCheck.Checked = sampleDblList.ReorderItemsEnabled;
+            __Sample4ReorderEnabledCheck.Checked = sampleDblList.DxProperties.ReorderItemsEnabled;
 
             __Sample4DragDropEnabledCheck = DxComponent.CreateDxCheckEdit(x, y, 160, this._HostContainer, "DragAndDropEnabled", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1); x += 165;
-            __Sample4DragDropEnabledCheck.Checked = sampleDblList.DragAndDropEnabled;
+            __Sample4DragDropEnabledCheck.Checked = sampleDblList.DxProperties.DragAndDropEnabled;
 
 
             __Sample4ParamsValid = true;
@@ -477,12 +476,12 @@ namespace TestDevExpress.Forms
             var sampleDblList = _Sample4DblList;
 
             if (__Sample4ButtonsCombo.SelectedComboItem != null && __Sample4ButtonsCombo.SelectedComboItem.Tag is DxDblListBoxPanel.ButtonsPositionType buttonPosition)
-                sampleDblList.ButtonsPosition = buttonPosition;
+                sampleDblList.DxProperties.ButtonsPosition = buttonPosition;
 
-            sampleDblList.SourceListReadOnly = __Sample4SourceReadOnlyCheck.Checked;
-            sampleDblList.ClipboardActionsEnabled = __Sample4ClipActionsEnabledCheck.Checked;
-            sampleDblList.ReorderItemsEnabled = __Sample4ReorderEnabledCheck.Checked;
-            sampleDblList.DragAndDropEnabled = __Sample4DragDropEnabledCheck.Checked;
+            sampleDblList.DxProperties.SourceListReadOnly = __Sample4SourceReadOnlyCheck.Checked;
+            sampleDblList.DxProperties.ClipboardActionsEnabled = __Sample4ClipActionsEnabledCheck.Checked;
+            sampleDblList.DxProperties.ReorderItemsEnabled = __Sample4ReorderEnabledCheck.Checked;
+            sampleDblList.DxProperties.DragAndDropEnabled = __Sample4DragDropEnabledCheck.Checked;
         }
         private DxLabelControl __Sample4ButtonsLabel;
         private DxImageComboBoxEdit __Sample4ButtonsCombo;
@@ -513,8 +512,8 @@ namespace TestDevExpress.Forms
             sampleList.DxProperties.SelectionMode = SelectionMode.MultiExtended;
             sampleList.DxProperties.ButtonsPosition = ToolbarPosition.BottomSideCenter;
             sampleList.DxProperties.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.Move_All };
-            sampleList.EnabledKeyActions = ControlKeyActionType.Move_All;
-            sampleList.DragDropActions = DxDragDropActionType.ReorderItems;
+            sampleList.DxProperties.EnabledKeyActions = ControlKeyActionType.Move_All;
+            sampleList.DxProperties.DragDropActions = DxDragDropActionType.ReorderItems;
             _AddEventHandlers(sampleList, true);
             this._HostContainer.Controls.Add(sampleList);
             _Sample11List = sampleList;
@@ -550,7 +549,7 @@ namespace TestDevExpress.Forms
         private void _CreateSample12()
         {
             var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 675, 700) };
-            sampleList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client
+            sampleList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client;
             sampleList.DxProperties.DataTable = Randomizer.GetDataTable(2300, 2500, "id:int;name:idtext;surname:text;description:note;pocet:number;icon:imagenamepngfull;photo:thumb");
             sampleList.DxProperties.DxTemplate = _CreateTemplate12();
             sampleList.DxProperties.SelectionMode = SelectionMode.MultiExtended;
@@ -592,7 +591,7 @@ namespace TestDevExpress.Forms
         private void _CreateSample13()
         {
             var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 520, 320) };
-            sampleList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client
+            sampleList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client;
             sampleList.DxProperties.DataTable = Randomizer.GetDataTable(48, 96, "id:int;name:idtext;surname:text;description:note;pocet:number;icon:imagenamepngfull;photo:thumb");
             sampleList.DxProperties.DxTemplate = sampleList.DxProperties.CreateSimpleDxTemplate("id", "icon", "name", "description", 16);
             sampleList.DxProperties.SelectionMode = SelectionMode.MultiExtended;

@@ -6159,11 +6159,11 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             _ListBox = DxComponent.CreateDxListBox(DockStyle.None, parent: this, selectionMode: SelectionMode.MultiExtended, itemHeight: 32,
                 toolTipTitle: "Seznam Resources", toolTipText: "Označte jeden nebo více řádků, klávesou Ctrl+C zkopírujete názvy Resources jako kód C#.");
-            _ListBox.ItemSizeType = ResourceImageSizeType.None;
+            _ListBox.DxProperties.ItemSizeType = ResourceImageSizeType.None;
             _ListBox.MouseEnter += _AnyControlEnter;
             _ListBox.Enter += _AnyControlEnter;
             _ListBox.KeyDown += _ListBox_KeyDown;
-            _ListBox.PaintList += _ListBox_PaintList;
+            _ListBox.DxProperties.PaintList += _ListBox_PaintList;
             _ListBox.SelectedIndexChanged += _ListBox_SelectedIndexChanged;
 
             _ResourceNames = DxComponent.GetResourceNames(withApplication: false, withDevExpress: true);
@@ -6268,7 +6268,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _ListBox_SelectedIndexChanged(object sender, EventArgs e)
         {
-            var selectedItems = _ListBox.SelectedMenuItems;
+            var selectedItems = _ListBox.DxProperties.SelectedMenuItems;
             StatusText = "Označeny řádky: " + selectedItems.Length.ToString();
         }
         /// <summary>
@@ -6283,11 +6283,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private void _ListBox_PaintListIcons(PaintEventArgs e)
         {
-            var visibleItems = _ListBox.CurrentVisibleMenuItems;
+            var visibleItems = _ListBox.DxProperties.CurrentVisibleMenuItems;
             foreach (var visibleItem in visibleItems)
             {
                 var resourceName = visibleItem.MenuItem?.Text;                 // Název obrázku
-                var itemBounds = visibleItem.Bounds;                           // Snad souřadnice prvku
+                var itemBounds = visibleItem.Bounds;                           // Snad souřadnice prvku = řádku ListBoxu
                 if (itemBounds.HasValue)
                 {
                     var b = itemBounds.Value;
@@ -6361,7 +6361,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _DoCopyClipboard()
         {
-            var selectedItems = _ListBox.SelectedMenuItems;
+            var selectedItems = _ListBox.DxProperties.SelectedMenuItems;
             int rowCount = selectedItems.Length;
             int rowLast = rowCount - 1;
             StringBuilder sb = new StringBuilder();
