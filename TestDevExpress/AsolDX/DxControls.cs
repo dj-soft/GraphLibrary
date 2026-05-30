@@ -6320,7 +6320,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _FilteredItemsCount = resources.Length;
 
             _ListBox.SuspendLayout();
-            _ListBox.MenuItems = items;
+            _ListBox.DxProperties.MenuItems = items;
             _ListBox.ResumeLayout(false);
             _ListBox.PerformLayout();
 

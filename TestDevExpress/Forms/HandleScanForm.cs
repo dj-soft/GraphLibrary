@@ -105,7 +105,7 @@ namespace TestDevExpress.Forms
             var processInfos = ProcessInfo.MergeProcesses(_ProcessInfos, currentProcessInfos);     // Sloučit s dosavadními informacemi: dosavadní informace nebudu zahazovat!
             var selectId = (currentSelectedProcess ?? currentProcess)?.ProcessId ?? 0;
             var newSelectedProcess = processInfos.FirstOrDefault(p => p.ProcessId == selectId);    // Nový SelectedMenuItem musí být instance z processInfos
-            _ProcessListBox.ListItems = processInfos;
+            _ProcessListBox.MenuItems = processInfos;
             _ProcessListBox.SelectedMenuItem = newSelectedProcess;
             _ProcessInfos = processInfos;
         }

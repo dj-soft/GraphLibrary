@@ -159,7 +159,7 @@ namespace TestDevExpress.Forms
             {
                 text += $"; ActiveItem: {listBox.CurrentItem}; SelectedCount: {listBox.SelectedItems.Length}";
 
-                var visItms = listBox.ListBox.CurrentVisibleMenuItems;
+                var visItms = listBox.ListBox.DxProperties.CurrentVisibleMenuItems;
                 int cnt = visItms.Length;
 
             }
@@ -259,8 +259,9 @@ namespace TestDevExpress.Forms
         }
         private void _CreateSample1()
         {
-            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 450, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.None };
-            sampleList.ListItems = Randomizer.GetMenuItems(24, 60, Randomizer.ImageResourceType.PngSmall);
+            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 450, 320) };
+            sampleList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.None;
+            sampleList.DxProperties.MenuItems = Randomizer.GetMenuItems(24, 60, Randomizer.ImageResourceType.PngSmall);
             _AddEventHandlers(sampleList, true);
             this._HostContainer.Controls.Add(sampleList);
 
@@ -284,13 +285,14 @@ namespace TestDevExpress.Forms
         }
         private void _CreateSample2()
         {
-            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 450, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
-            sampleList.SelectionMode = SelectionMode.MultiExtended;
-            sampleList.ButtonsPosition = ToolbarPosition.RightSideCenter;
-            sampleList.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.Move_All };
-            sampleList.EnabledKeyActions = ControlKeyActionType.Move_All;
-            sampleList.DragDropActions = DxDragDropActionType.ReorderItems;
-            sampleList.ListItems = Randomizer.GetMenuItems(36, 80, Randomizer.ImageResourceType.PngSmall, true);
+            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 450, 320) };
+            sampleList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client;
+            sampleList.DxProperties.SelectionMode = SelectionMode.MultiExtended;
+            sampleList.DxProperties.ButtonsPosition = ToolbarPosition.RightSideCenter;
+            sampleList.DxProperties.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.Move_All };
+            sampleList.DxProperties.EnabledKeyActions = ControlKeyActionType.Move_All;
+            sampleList.DxProperties.DragDropActions = DxDragDropActionType.ReorderItems;
+            sampleList.DxProperties.MenuItems = Randomizer.GetMenuItems(36, 80, Randomizer.ImageResourceType.PngSmall, true);
             _AddEventHandlers(sampleList, true);
             this._HostContainer.Controls.Add(sampleList);
 
@@ -314,25 +316,27 @@ namespace TestDevExpress.Forms
         }
         private void _CreateSample3()
         {
-            var sampleListA = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 400, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
-            sampleListA.SelectionMode = SelectionMode.MultiExtended;
-            sampleListA.ButtonsPosition = ToolbarPosition.BottomSideCenter;
-            sampleListA.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.SelectAll, ControlKeyActionType.Delimiter, ControlKeyActionType.CopyToRightOne, ControlKeyActionType.CopyToRightAll, ControlKeyActionType.CopyToRightOne, ControlKeyActionType.CopyToRightAll };
-            sampleListA.EnabledKeyActions = ControlKeyActionType.None;
-            sampleListA.DragDropActions = DxDragDropActionType.CopyItemsFrom;
-            sampleListA.ListItems = Randomizer.GetMenuItems(36, 80, Randomizer.ImageResourceType.PngSmall, true);
-            sampleListA.ListActionAfter += _Sample3ListA_ListActionAfter;
+            var sampleListA = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 400, 320) };
+            sampleListA.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client;
+            sampleListA.DxProperties.SelectionMode = SelectionMode.MultiExtended;
+            sampleListA.DxProperties.ButtonsPosition = ToolbarPosition.BottomSideCenter;
+            sampleListA.DxProperties.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.SelectAll, ControlKeyActionType.Delimiter, ControlKeyActionType.CopyToRightOne, ControlKeyActionType.CopyToRightAll, ControlKeyActionType.CopyToRightOne, ControlKeyActionType.CopyToRightAll };
+            sampleListA.DxProperties.EnabledKeyActions = ControlKeyActionType.None;
+            sampleListA.DxProperties.DragDropActions = DxDragDropActionType.CopyItemsFrom;
+            sampleListA.DxProperties.MenuItems = Randomizer.GetMenuItems(36, 80, Randomizer.ImageResourceType.PngSmall, true);
+            sampleListA.DxProperties.ListActionAfter += _Sample3ListA_ListActionAfter;
             _AddEventHandlers(sampleListA, true);
             this._HostContainer.Controls.Add(sampleListA);
 
-            var sampleListB = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X + 410, __SampleBegin.Y, 400, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
-            sampleListB.SelectionMode = SelectionMode.MultiExtended;
-            sampleListB.ButtonsPosition = ToolbarPosition.BottomSideCenter;
-            sampleListB.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.SelectAll, ControlKeyActionType.Delimiter, ControlKeyActionType.Delete, ControlKeyActionType.CopyToLeftOne, ControlKeyActionType.CopyToLeftAll, ControlKeyActionType.Delimiter, ControlKeyActionType.Move_All };
-            sampleListB.EnabledKeyActions = ControlKeyActionType.None;
-            sampleListB.DragDropActions = DxDragDropActionType.ImportItemsInto | DxDragDropActionType.ReorderItems;
-            sampleListB.ListItems = Randomizer.GetMenuItems(7, Randomizer.ImageResourceType.PngSmall, true);
-            sampleListB.ListActionAfter += _Sample3ListB_ListActionAfter;
+            var sampleListB = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X + 410, __SampleBegin.Y, 400, 320) };
+            sampleListB.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client;
+            sampleListB.DxProperties.SelectionMode = SelectionMode.MultiExtended;
+            sampleListB.DxProperties.ButtonsPosition = ToolbarPosition.BottomSideCenter;
+            sampleListB.DxProperties.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.SelectAll, ControlKeyActionType.Delimiter, ControlKeyActionType.Delete, ControlKeyActionType.CopyToLeftOne, ControlKeyActionType.CopyToLeftAll, ControlKeyActionType.Delimiter, ControlKeyActionType.Move_All };
+            sampleListB.DxProperties.EnabledKeyActions = ControlKeyActionType.None;
+            sampleListB.DxProperties.DragDropActions = DxDragDropActionType.ImportItemsInto | DxDragDropActionType.ReorderItems;
+            sampleListB.DxProperties.MenuItems = Randomizer.GetMenuItems(7, Randomizer.ImageResourceType.PngSmall, true);
+            sampleListB.DxProperties.ListActionAfter += _Sample3ListB_ListActionAfter;
             _AddEventHandlers(sampleListB, true);
             this._HostContainer.Controls.Add(sampleListB);
 
@@ -502,12 +506,13 @@ namespace TestDevExpress.Forms
         }
         private void _CreateSample11()
         {
-            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 520, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
-            sampleList.DataTable = Randomizer.GetDataTable(48, 96, "id:int;name:idtext;surname:text;description:note;pocet:number;icon:imagenamepngfull;photo:thumb");
-            sampleList.DxTemplate = _CreateTemplate11();
-            sampleList.SelectionMode = SelectionMode.MultiExtended;
-            sampleList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
-            sampleList.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.Move_All };
+            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 520, 320) };
+            sampleList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client;
+            sampleList.DxProperties.DataTable = Randomizer.GetDataTable(48, 96, "id:int;name:idtext;surname:text;description:note;pocet:number;icon:imagenamepngfull;photo:thumb");
+            sampleList.DxProperties.DxTemplate = _CreateTemplate11();
+            sampleList.DxProperties.SelectionMode = SelectionMode.MultiExtended;
+            sampleList.DxProperties.ButtonsPosition = ToolbarPosition.BottomSideCenter;
+            sampleList.DxProperties.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.Move_All };
             sampleList.EnabledKeyActions = ControlKeyActionType.Move_All;
             sampleList.DragDropActions = DxDragDropActionType.ReorderItems;
             _AddEventHandlers(sampleList, true);
@@ -544,11 +549,12 @@ namespace TestDevExpress.Forms
         }
         private void _CreateSample12()
         {
-            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 675, 700), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
-            sampleList.DataTable = Randomizer.GetDataTable(2300, 2500, "id:int;name:idtext;surname:text;description:note;pocet:number;icon:imagenamepngfull;photo:thumb");
-            sampleList.DxTemplate = _CreateTemplate12();
-            sampleList.SelectionMode = SelectionMode.MultiExtended;
-            sampleList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
+            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 675, 700) };
+            sampleList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client
+            sampleList.DxProperties.DataTable = Randomizer.GetDataTable(2300, 2500, "id:int;name:idtext;surname:text;description:note;pocet:number;icon:imagenamepngfull;photo:thumb");
+            sampleList.DxProperties.DxTemplate = _CreateTemplate12();
+            sampleList.DxProperties.SelectionMode = SelectionMode.MultiExtended;
+            sampleList.DxProperties.ButtonsPosition = ToolbarPosition.BottomSideCenter;
             _AddEventHandlers(sampleList, true);
             this._HostContainer.Controls.Add(sampleList);
             _Sample12List = sampleList;
@@ -585,11 +591,12 @@ namespace TestDevExpress.Forms
         }
         private void _CreateSample13()
         {
-            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 520, 320), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
-            sampleList.DataTable = Randomizer.GetDataTable(48, 96, "id:int;name:idtext;surname:text;description:note;pocet:number;icon:imagenamepngfull;photo:thumb");
-            sampleList.DxTemplate = sampleList.CreateSimpleDxTemplate("id", "icon", "name", "description", 16);
-            sampleList.SelectionMode = SelectionMode.MultiExtended;
-            sampleList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
+            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 520, 320) };
+            sampleList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client
+            sampleList.DxProperties.DataTable = Randomizer.GetDataTable(48, 96, "id:int;name:idtext;surname:text;description:note;pocet:number;icon:imagenamepngfull;photo:thumb");
+            sampleList.DxProperties.DxTemplate = sampleList.DxProperties.CreateSimpleDxTemplate("id", "icon", "name", "description", 16);
+            sampleList.DxProperties.SelectionMode = SelectionMode.MultiExtended;
+            sampleList.DxProperties.ButtonsPosition = ToolbarPosition.BottomSideCenter;
             _AddEventHandlers(sampleList, true);
             this._HostContainer.Controls.Add(sampleList);
             _Sample13List = sampleList;
@@ -612,7 +619,8 @@ namespace TestDevExpress.Forms
         }
         private void _CreateSample14()
         {
-            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 675, 420), RowFilterMode = DxListBoxPanel.FilterRowMode.Client };
+            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 675, 420) };
+            sampleList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client;
 
             var table = Randomizer.GetDataTable(72, 96, "id:int; iconjedla:label; czname:label; latname:label; area:label; description:note; photo:photo");
             var mycelias = Randomizer.Mycelias;
@@ -627,11 +635,11 @@ namespace TestDevExpress.Forms
                 row["latname"] = mycelium.Item1;
                 row["area"] = Randomizer.GetItem(areas);
             }
-            sampleList.DataTable = table;
+            sampleList.DxProperties.DataTable = table;
 
-            sampleList.DxTemplate = _CreateTemplate14();
-            sampleList.SelectionMode = SelectionMode.MultiExtended;
-            sampleList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
+            sampleList.DxProperties.DxTemplate = _CreateTemplate14();
+            sampleList.DxProperties.SelectionMode = SelectionMode.MultiExtended;
+            sampleList.DxProperties.ButtonsPosition = ToolbarPosition.BottomSideCenter;
             _AddEventHandlers(sampleList, true);
             this._HostContainer.Controls.Add(sampleList);
             _Sample14List = sampleList;

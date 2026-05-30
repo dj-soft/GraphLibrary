@@ -5423,7 +5423,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             DxDragDropActionType sourceDDActions = DxDragDropActionType.CopyItemsFrom;
             _DragDropAList = new DxListBoxPanel() { SelectionMode = SelectionMode.MultiExtended, DragDropActions = sourceDDActions, EnabledKeyActions = sourceKeyActions };
             _DragDropAList.Name = "AList";
-            _DragDropAList.ListItems = _CreateSampleListItems(100, false, true);
+            _DragDropAList.MenuItems = _CreateSampleListItems(100, false, true);
             _DragDropAList.MouseDown += _DragDrop_MouseDown;
             _DragDropAList.DataExchangeCrossType = DataExchangeCrossType.None;
             _DragDropAList.RowFilterMode = DxListBoxPanel.FilterRowMode.Server;
@@ -5434,7 +5434,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _DragDropBList = new DxListBoxPanel() { SelectionMode = SelectionMode.MultiExtended, DragDropActions = targetDDActions, EnabledKeyActions = targetKeyActions };
             _DragDropBList.Name = "BList";
             _DragDropBList.DuplicityEnabled = false;
-            _DragDropBList.ListItems = _CreateSampleListItems(18, true, false);
+            _DragDropBList.MenuItems = _CreateSampleListItems(18, true, false);
             _DragDropBList.MouseDown += _DragDrop_MouseDown;
             _DragDropBList.DataExchangeCrossType = DataExchangeCrossType.AllControlsInCurrentApplication | DataExchangeCrossType.AnyOtherApplications;
             _DragDropBList.RowFilterMode = DxListBoxPanel.FilterRowMode.Server;

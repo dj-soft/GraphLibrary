@@ -2677,13 +2677,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxListBoxControl listBox = new DxListBoxControl() { Bounds = new Rectangle(x, y, w, h) };
             listBox.StyleController = inst._InputStyle;
             if (dock.HasValue) listBox.Dock = dock.Value;
-            if (multiColumn.HasValue) listBox.MultiColumn = multiColumn.Value;
-            if (selectionMode.HasValue) listBox.SelectionMode = selectionMode.Value;
-            if (itemHeight.HasValue) listBox.ItemHeight = itemHeight.Value;
-            if (itemHeightPadding.HasValue) listBox.ItemHeightPadding = itemHeightPadding.Value;
+            if (multiColumn.HasValue) listBox.DxProperties.MultiColumn = multiColumn.Value;
+            if (selectionMode.HasValue) listBox.DxProperties.SelectionMode = selectionMode.Value;
+            if (itemHeight.HasValue) listBox.DxProperties.ItemHeight = itemHeight.Value;
+            if (itemHeightPadding.HasValue) listBox.DxProperties.ItemHeightPadding = itemHeightPadding.Value;
 
-            if (enabledKeyActions.HasValue) listBox.EnabledKeyActions = enabledKeyActions.Value;
-            if (dragDropActions.HasValue) listBox.DragDropActions = dragDropActions.Value;
+            if (enabledKeyActions.HasValue) listBox.DxProperties.EnabledKeyActions = enabledKeyActions.Value;
+            if (dragDropActions.HasValue) listBox.DxProperties.DragDropActions = dragDropActions.Value;
 
             if (visible.HasValue) listBox.Visible = visible.Value;
             if (tabStop.HasValue) listBox.TabStop = tabStop.Value;
@@ -2730,14 +2730,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxListBoxPanel listBoxPanel = new DxListBoxPanel() { Bounds = new Rectangle(x, y, w, h) };
             listBoxPanel.ListBox.StyleController = inst._InputStyle;
             if (dock.HasValue) listBoxPanel.Dock = dock.Value;
-            if (multiColumn.HasValue) listBoxPanel.ListBox.MultiColumn = multiColumn.Value;
-            if (filterRowMode.HasValue) listBoxPanel.RowFilterMode = filterRowMode.Value;
-            if (selectionMode.HasValue) listBoxPanel.ListBox.SelectionMode = selectionMode.Value;
-            if (itemHeight.HasValue) listBoxPanel.ListBox.ItemHeight = itemHeight.Value;
-            if (itemHeightPadding.HasValue) listBoxPanel.ListBox.ItemHeightPadding = itemHeightPadding.Value;
+            if (multiColumn.HasValue) listBoxPanel.DxProperties.MultiColumn = multiColumn.Value;
+            if (filterRowMode.HasValue) listBoxPanel.DxProperties.RowFilterMode = filterRowMode.Value;
+            if (selectionMode.HasValue) listBoxPanel.DxProperties.SelectionMode = selectionMode.Value;
+            if (itemHeight.HasValue) listBoxPanel.DxProperties.ItemHeight = itemHeight.Value;
+            if (itemHeightPadding.HasValue) listBoxPanel.DxProperties.ItemHeightPadding = itemHeightPadding.Value;
 
-            if (enabledKeyActions.HasValue) listBoxPanel.ListBox.EnabledKeyActions = enabledKeyActions.Value;
-            if (dragDropActions.HasValue) listBoxPanel.ListBox.DragDropActions = dragDropActions.Value;
+            if (enabledKeyActions.HasValue) listBoxPanel.DxProperties.EnabledKeyActions = enabledKeyActions.Value;
+            if (dragDropActions.HasValue) listBoxPanel.DxProperties.DragDropActions = dragDropActions.Value;
 
             if (visible.HasValue) listBoxPanel.Visible = visible.Value;
             if (tabStop.HasValue) listBoxPanel.TabStop = tabStop.Value;
