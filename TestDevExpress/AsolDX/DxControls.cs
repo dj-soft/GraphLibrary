@@ -2288,11 +2288,12 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// SplitContainerControl
     /// </summary>
-    public class DxSplitContainerControl : DevExpress.XtraEditors.SplitContainerControl
+    public class DxSplitContainerControl : DevExpress.XtraEditors.SplitContainerControl, IListenerZoomChange, IListenerStyleChanged
     {
         /// <summary>
         /// Zde je uvedena orientace oddělovací čáry. Lze setovat.
-        /// Pokud jsou panely vlevo a vpravo, pak dělící čára má orientaci <see cref="SplitterOrientation"/> = <see cref="Orientation.Vertical"/> = je svislá;
+        /// <para/>
+        /// Pokud jsou panely vlevo a vpravo, pak dělící čára má orientaci <see cref="SplitterOrientation"/> = <see cref="Orientation.Vertical"/> = je svislá;<br/>
         /// Pokud jsou panely nahoře a dole, pak dělící čára má orientaci <see cref="SplitterOrientation"/> = <see cref="Orientation.Horizontal"/> = je vodorovná;
         /// </summary>
         public Orientation SplitterOrientation
@@ -2300,6 +2301,40 @@ namespace Noris.Clients.Win.Components.AsolDX
             get { return (Horizontal ? Orientation.Horizontal : Orientation.Vertical); }
             set { Horizontal = (value == Orientation.Horizontal); }
         }
+        #region Rozšířené property
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        /// <summary>
+        /// Počet pixelů tloušťky splitteru = prostor mezi Panel1 a Panel2.
+        /// </summary>
+        public int CurrentSplitterThick 
+        { 
+            get 
+            {
+                var thick = (this.Horizontal ? (this.Panel2.Left - this.Panel1.Right) : (this.Panel2.Top - this.Panel1.Bottom));
+                return (thick < 2 ? 2 : (thick > 20 ? 20 : thick));            // Pro jistotu zarovnávám do rozsahu 2 - 20
+            }
+        }
+        #endregion
+        #region Style & Zoom Changed
+        void IListenerZoomChange.ZoomChanged() { OnZoomChanged(); }
+        /// <summary>
+        /// Volá se po změně zoomu
+        /// </summary>
+        protected virtual void OnZoomChanged() { }
+        void IListenerStyleChanged.StyleChanged() { OnStyleChanged(); }
+        /// <summary>
+        /// Volá se po změně skinu
+        /// </summary>
+        protected virtual void OnStyleChanged() { }
+        #endregion
     }
     #endregion
     #region DxLabelControl
