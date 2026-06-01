@@ -406,7 +406,7 @@ namespace TestDevExpress.Forms
         private void _CreateLayout4()
         {
             var bounds = __SampleBounds;
-            _Sample4DblList.Bounds = new Rectangle(bounds.X, bounds.Y + 30, bounds.Width, bounds.Height - 30);
+            _Sample4DblList.Bounds = new Rectangle(bounds.X, bounds.Y + 55, bounds.Width, bounds.Height - 58);
         }
         private void _DisposeSample4()
         {
@@ -421,6 +421,9 @@ namespace TestDevExpress.Forms
 
             __Sample4SourceReadOnlyCheck.RemoveControlFromParent();
             __Sample4SourceReadOnlyCheck = null;
+
+            __Sample4MoveAllEnabledCheck.RemoveControlFromParent();
+            __Sample4MoveAllEnabledCheck = null;
 
             __Sample4ClipActionsEnabledCheck.RemoveControlFromParent();
             __Sample4ClipActionsEnabledCheck = null;
@@ -439,10 +442,11 @@ namespace TestDevExpress.Forms
             __Sample4ParamsValid = false;
             var sampleDblList = _Sample4DblList;
             int x = __SampleBounds.Left + 6;
-            int y = __SampleBounds.Top + 6;
-            __Sample4ButtonsLabel = DxComponent.CreateDxLabel(x, y + 4, 100, this._HostContainer, "ButtonsPosition:"); x += 105;
+            int y1 = __SampleBounds.Top + 6;
+            int y2 = __SampleBounds.Top + 28;
+            __Sample4ButtonsLabel = DxComponent.CreateDxLabel(x, y1 + 4, 100, this._HostContainer, "ButtonsPosition:");
 
-            __Sample4ButtonsCombo = DxComponent.CreateDxImageComboBox(x, y, 160, this._HostContainer, _Sample4ParamsChanged); x += 185;
+            __Sample4ButtonsCombo = DxComponent.CreateDxImageComboBox(x, y2, 160, this._HostContainer, _Sample4ParamsChanged);
             __Sample4ButtonsCombo.ComboItems = new IMenuItem[]
             {
                 new DataMenuItem(){ Text = "None", Tag = DxDblListBoxPanel.ButtonsPositionType.None },
@@ -454,16 +458,22 @@ namespace TestDevExpress.Forms
             var dblListPosition = _Sample4DblList.DxProperties.ButtonsPosition;
             __Sample4ButtonsCombo.SelectedComboItem = __Sample4ButtonsCombo.ComboItems.FirstOrDefault(mi => ((DxDblListBoxPanel.ButtonsPositionType)mi.Tag) == dblListPosition);
 
-            __Sample4SourceReadOnlyCheck = DxComponent.CreateDxCheckEdit(x, y, 160, this._HostContainer, "SourceListReadOnly", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1); x += 165;
+            x += 185;
+            __Sample4SourceReadOnlyCheck = DxComponent.CreateDxCheckEdit(x, y1, 160, this._HostContainer, "SourceListReadOnly", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1);
             __Sample4SourceReadOnlyCheck.Checked = sampleDblList.DxProperties.SourceListReadOnly;
 
-            __Sample4ClipActionsEnabledCheck = DxComponent.CreateDxCheckEdit(x, y, 160, this._HostContainer, "ClipboardActionsEnabled", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1); x += 165;
+            __Sample4MoveAllEnabledCheck = DxComponent.CreateDxCheckEdit(x, y2, 160, this._HostContainer, "MoveAllEnabled", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1);
+            __Sample4MoveAllEnabledCheck.Checked = sampleDblList.DxProperties.MoveAllEnabled;
+
+            x += 165;
+            __Sample4ClipActionsEnabledCheck = DxComponent.CreateDxCheckEdit(x, y1, 160, this._HostContainer, "ClipboardActionsEnabled", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1);
             __Sample4ClipActionsEnabledCheck.Checked = sampleDblList.DxProperties.ClipboardActionsEnabled;
 
-            __Sample4ReorderEnabledCheck = DxComponent.CreateDxCheckEdit(x, y, 160, this._HostContainer, "ReorderItemsEnabled", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1); x += 165;
+            __Sample4ReorderEnabledCheck = DxComponent.CreateDxCheckEdit(x, y2, 160, this._HostContainer, "ReorderItemsEnabled", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1);
             __Sample4ReorderEnabledCheck.Checked = sampleDblList.DxProperties.ReorderItemsEnabled;
 
-            __Sample4DragDropEnabledCheck = DxComponent.CreateDxCheckEdit(x, y, 160, this._HostContainer, "DragAndDropEnabled", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1); x += 165;
+            x += 165;
+            __Sample4DragDropEnabledCheck = DxComponent.CreateDxCheckEdit(x, y1, 160, this._HostContainer, "DragAndDropEnabled", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1);
             __Sample4DragDropEnabledCheck.Checked = sampleDblList.DxProperties.DragAndDropEnabled;
 
 
@@ -479,6 +489,7 @@ namespace TestDevExpress.Forms
                 sampleDblList.DxProperties.ButtonsPosition = buttonPosition;
 
             sampleDblList.DxProperties.SourceListReadOnly = __Sample4SourceReadOnlyCheck.Checked;
+            sampleDblList.DxProperties.MoveAllEnabled = __Sample4MoveAllEnabledCheck.Checked;
             sampleDblList.DxProperties.ClipboardActionsEnabled = __Sample4ClipActionsEnabledCheck.Checked;
             sampleDblList.DxProperties.ReorderItemsEnabled = __Sample4ReorderEnabledCheck.Checked;
             sampleDblList.DxProperties.DragAndDropEnabled = __Sample4DragDropEnabledCheck.Checked;
@@ -486,6 +497,7 @@ namespace TestDevExpress.Forms
         private DxLabelControl __Sample4ButtonsLabel;
         private DxImageComboBoxEdit __Sample4ButtonsCombo;
         private DxCheckEdit __Sample4SourceReadOnlyCheck;
+        private DxCheckEdit __Sample4MoveAllEnabledCheck;
         private DxCheckEdit __Sample4ClipActionsEnabledCheck;
         private DxCheckEdit __Sample4ReorderEnabledCheck;
         private DxCheckEdit __Sample4DragDropEnabledCheck;

@@ -97,6 +97,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             // DoubleListBox vlastnosti:
             __ButtonsPosition = ButtonsPositionType.Center;
             __SourceListReadOnly = true;
+            __MoveAllEnabled = true;
             __DragAndDropEnabled = true;
             __ClipboardActionsEnabled = true;
             __ReorderItemsEnabled = true;
@@ -177,6 +178,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected bool SourceListReadOnly { get { return __SourceListReadOnly; } set { __SourceListReadOnly = value; _AcceptListStyles(true, false); } } private bool __SourceListReadOnly;
         /// <summary>
+        /// Je povolena akce Přesunout vše?
+        /// <para/>
+        /// Výchozí hodnota je <c>true</c>.
+        /// </summary>
+        public bool MoveAllEnabled { get { return __MoveAllEnabled; } set { __MoveAllEnabled = value; _AcceptListStyles(true, true); } } private bool __MoveAllEnabled;
+        /// <summary>
         /// Jsou povoleny akce DragAndDrop?
         /// <para/>
         /// Výchozí hodnota je <c>true</c>.
@@ -244,6 +251,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _AcceptSourceListStyles()
         {
             bool sourceListReadOnly = __SourceListReadOnly;
+            bool moveAllEnabled = __MoveAllEnabled;
             bool dragAndDropEnabled = __DragAndDropEnabled;
             bool clipboardActionsEnabled = __ClipboardActionsEnabled;
             bool reorderItemsEnabled = __ReorderItemsEnabled;
@@ -290,8 +298,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             // CopyToRight a DragFrom je u Source povolen vždy:
             buttonTypes.Add(ControlKeyActionType.Delimiter);
             buttonTypes.Add(ControlKeyActionType.CopyToRightOne);
-            buttonTypes.Add(ControlKeyActionType.CopyToRightAll);
-            keyActions |= ControlKeyActionType.CopyToRightOne | ControlKeyActionType.CopyToRightAll;
+            if (moveAllEnabled)
+                buttonTypes.Add(ControlKeyActionType.CopyToRightAll);
+
+            keyActions |= ControlKeyActionType.CopyToRightOne;
+            if (moveAllEnabled)
+                keyActions |= ControlKeyActionType.CopyToRightAll;
+            
             if (dragAndDropEnabled)
                 dragDropActions |= DxDragDropActionType.CopyItemsFrom;
 
@@ -323,6 +336,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _AcceptTargetListStyles()
         {
             bool sourceListReadOnly = __SourceListReadOnly;
+            bool moveAllEnabled = __MoveAllEnabled;
             bool dragAndDropEnabled = __DragAndDropEnabled;
             bool clipboardActionsEnabled = __ClipboardActionsEnabled;
             bool reorderItemsEnabled = __ReorderItemsEnabled;
@@ -461,6 +475,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Výchozí hodnota je <c>true</c>.
             /// </summary>
             public bool SourceListReadOnly { get { return __Owner.SourceListReadOnly; } set { __Owner.SourceListReadOnly = value; } }
+            /// <summary>
+            /// Je povolena akce Přesunout vše?
+            /// <para/>
+            /// Výchozí hodnota je <c>true</c>.
+            /// </summary>
+            public bool MoveAllEnabled { get { return __Owner.MoveAllEnabled; } set { __Owner.MoveAllEnabled = value; } }
             /// <summary>
             /// Jsou povoleny akce DragAndDrop?
             /// <para/>
@@ -1674,7 +1694,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             public event EventHandler UndoRedoEnabledChanged { add { __Owner.ListBox.DxProperties.UndoRedoEnabledChanged += value; } remove { __Owner.ListBox.DxProperties.UndoRedoEnabledChanged -= value; } }
 
             #endregion
-
             #region Řádkový filtr typu server
             /// <summary>
             /// Instance serverového řádkového filtru
@@ -1826,6 +1845,24 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     __ItemsMode = ListBoxItemsMode.None;
                 }
+            }
+        }
+        /// <summary>
+        /// Prvky Listu v páru: <see cref="ImageListBoxItem"/> a <see cref="IMenuItem"/>.
+        /// <para/>
+        /// Jde o <b>všechny přítomné prvky Listu</b>: pokud bude aplikován klientský řádkový filtr, pak zde budou stále všechny prvky!<br/>
+        /// POkud na některé pozici nebude prvek typu <see cref="IMenuItem"/>, pak na jeho pozici je zde NULL.<br/>
+        /// Pro získání pouze Zobrazitelných prvků listu je třeba načíst pole <see cref="CurrentVisibleMenuItems"/>.
+        /// <para/>
+        /// Pokud v Listu budou obsaženy jiné prvky než <see cref="IMenuItem"/>, pak na jejich místě v tomto poli bude null.
+        /// Toto pole má stejný počet prvků jako pole this.Items
+        /// Pole jako celek lze setovat: vymění se obsah, ale zachová se pozice.
+        /// </summary>
+        protected Tuple<ImageListBoxItem, IMenuItem>[] MenuDblItems
+        {
+            get
+            {
+                return (__ItemsMode == ListBoxItemsMode.MenuItems ? this.Items.Select(i => new Tuple<ImageListBoxItem, IMenuItem>(i, i.Value as IMenuItem)).ToArray() : null);
             }
         }
         /// <summary>
@@ -2129,14 +2166,14 @@ SetSelected() - vstup           Absolutní
             get
             {
                 var selIdxs = this.SelectedAbsoluteIndexes;
-                var menuItems = this.MenuItems;
+                var menuDblItems = this.MenuDblItems;
                 var result = new List<ListMenuItemInfo>();
                 foreach (var absoluteIndex in selIdxs)
                 {
-                    if (absoluteIndex >= 0 && absoluteIndex < menuItems.Length)
+                    if (absoluteIndex >= 0 && absoluteIndex < menuDblItems.Length)
                     {
                         var filteredIndex = this.GetFilteredIndexFromAbsolute(absoluteIndex);
-                        result.Add(new ListMenuItemInfo(absoluteIndex, menuItems[absoluteIndex], filteredIndex));
+                        result.Add(new ListMenuItemInfo(absoluteIndex, menuDblItems[absoluteIndex], filteredIndex));
                     }
                 }
                 return result.ToArray();
@@ -2149,27 +2186,16 @@ SetSelected() - vstup           Absolutní
         protected int[] SelectedAbsoluteIndexes
         {
             // AI píše, že SelectedIndices i SetSelected() pracují s absolutním indexem...
-            // Pravdou ale je, že SelectedIndices a SetSelected() pracují s vizuáoním indexem. Ono to dává víc smyslu...
+            // Pravdou ale je, že SelectedIndices a SetSelected() pracují s vizuálním indexem. Ono to dává víc smyslu...
             get
             {
-                var filteredIndexes = SelectedFilteredIndexes;                           // Selected prvky, jejich vizuální Filtered indexy
-                var filteredItems = this.FilteredMenuItems
-                    .Where(i => i.FilteredIndex.HasValue)
-                    .CreateDictionary(i => i.FilteredIndex.Value, true);
-                var absoluteIndexes = new List<int>();
-                foreach (var fltIdx in filteredIndexes)
-                {
-                    if (filteredItems.TryGetValue(fltIdx, out var info))
-                        absoluteIndexes.Add(info.AbsoluteIndex);
-                }
-                return absoluteIndexes.ToArray();
+                var filteredIndexes = SelectedFilteredIndexes;                           // Aktuální Selected prvky, jejich vizuální Filtered indexy
+                return GetAbsoluteIndexesFromFiltered(filteredIndexes);                  // Konvertujeme Filtered => Absolute a vrátíme
             }
             set
             {
-                var absIndexes = value?.CreateDictionary(i => i, true) ?? new Dictionary<int, int>();
-                var count = this.Items.Count;
-                for (int i =  0; i < count; i++) 
-                    this.SetSelected(i, absIndexes.ContainsKey(i));
+                var filteredIndexes = GetFilteredIndexesFromAbsolute(value);             // Z dodaných Absolute indexů vyhledám Filtered indexy
+                SelectedFilteredIndexes = filteredIndexes;                               // A ty Filtered indexy nastavím jako Selected
             }
         }
         /// <summary>
@@ -2185,11 +2211,52 @@ SetSelected() - vstup           Absolutní
                 return this.SelectedIndices.ToArray();
             }
             set
-            {   // Procházíme Filtered items a setujeme přímo jejich index do SetSelected:
-                var filteredIndexes = value?.CreateDictionary(i => i, true) ?? new Dictionary<int, int>();
-                var count = this.Items.Count;
+            {   // Procházíme Filtered items, a nastavujeme SetSelected pro vizuální Item podle jeh opřítomnosti v filteredKeys = value.
+                var filteredKeys = value?.CreateDictionary(i => i, true) ?? new Dictionary<int, int>();
+                var count = this.ItemCount;
                 for (int i = 0; i < count; i++)
-                    this.SetSelected(i, filteredIndexes.ContainsKey(i));
+                    this.SetSelected(i, filteredKeys.ContainsKey(i));
+            }
+        }
+        /// <summary>
+        /// Absolutní index aktivního prvku
+        /// </summary>
+        protected int? CurrentAbsoluteIndex
+        {
+            get
+            {
+                var listItem = base.SelectedItem;
+                var index = this.Items.IndexOf(listItem);                // Items pracují s Absolutním indexem
+                return (index >= 0 ? index : null);
+            }
+            set
+            {
+                var listItem = (value.HasValue && value.Value >= 0 && value.Value < this.Items.Count ? this.Items[value.Value] : null);
+                base.SelectedItem = listItem;                            // base.SelectedItem ve výsledku setuje SelectedIndex!
+                base.MakeItemVisible(base.SelectedIndex);
+            }
+        }
+        /// <summary>
+        /// Filtrovaný index aktivního prvku
+        /// </summary>
+        protected int? CurrentFilteredIndex
+        {
+            get
+            {
+                var filteredItems = this.FilteredMenuItems;
+                var listItem = base.SelectedItem;
+                if (filteredItems.TryGetFirst(i => Object.ReferenceEquals(i, listItem), out var filtItem))
+                    return filtItem.FilteredIndex;
+                return null;
+            }
+            set
+            {
+                var filteredItems = this.FilteredMenuItems;
+                if (value.HasValue && filteredItems.TryGetFirst(i => (i.FilteredIndex.HasValue && i.FilteredIndex.Value == value.Value), out var filtItem))
+                {
+                    base.SelectedItem = filtItem.ListBoxItem;        // base.SelectedItem ve výsledku setuje SelectedIndex!
+                    base.MakeItemVisible(base.SelectedIndex);
+                }
             }
         }
         /// <summary>
@@ -2234,12 +2301,13 @@ SetSelected() - vstup           Absolutní
                 ListMenuItemInfo[] filteredItems = null;
                 if (__ItemsMode == ListBoxItemsMode.MenuItems)
                 {
+                    var menuDblItems = this.MenuDblItems;                     // = ListItem + IMenuItem
                     var rowFilter = __RowFilterCriteria;
                     var filterIsActive = !(rowFilter is null);
                     if (filterIsActive)
                     {   // Máme filtr => vytvoříme prvotní soupis všech prvků včetně Absolute indexu:
                         int absIdx = 0;
-                        var absMenuItems = this.MenuItems.Select(i => new ListMenuItemInfo(absIdx++, i)).ToList();          // Absolutní index 0++; a všechny MenuItems
+                        var absMenuItems = menuDblItems.Select(i => new ListMenuItemInfo(absIdx++, i)).ToList();          // Absolutní index 0++; a všechny MenuItems
                         // Vytvoříme evaluator pro typ ListMenuItemInfo, a pro CriteriaOperator: rowFilter
                         var evaluator = new DevExpress.Data.Filtering.Helpers.ExpressionEvaluator(System.ComponentModel.TypeDescriptor.GetProperties(typeof(ListMenuItemInfo)), rowFilter);
                         // Vytvoříme pole prvků, které vyhovují zadané podmínce (ale pole stále nemá naplěné hodnoty FilteredIndex):
@@ -2252,7 +2320,7 @@ SetSelected() - vstup           Absolutní
                     {   // Nemáme filtr => všechny MenuItems jsou Filtered:
                         int absIdx = 0;
                         int visIdx = 0;
-                        filteredItems = this.MenuItems.Select(i => new ListMenuItemInfo(absIdx++, i, visIdx++)).ToArray();     // Absolutní index 0++; a všechny MenuItems, a FilteredIndex++
+                        filteredItems = menuDblItems.Select(i => new ListMenuItemInfo(absIdx++, i, visIdx++)).ToArray();     // Absolutní index 0++; a všechny MenuItems, a FilteredIndex++
                     }
                 }
                 else
@@ -2292,21 +2360,44 @@ SetSelected() - vstup           Absolutní
             get 
             {
                 var visibleItems = new List<ListMenuItemInfo>();
-                var menuItems = this.MenuItems;
+                var menuDblItems = this.MenuDblItems;
                 var viewItems = this.ViewInfo?.VisibleItems;
                 if (viewItems != null)
                 {
                     foreach (var viewItem in viewItems)
                     {
                         int absoluteIndex = this.Items.IndexOf(viewItem);
-                        var menuItem = (absoluteIndex >= 0 && absoluteIndex < menuItems.Length ? menuItems[absoluteIndex] : null);
+                        var menuDblItem = (absoluteIndex >= 0 && absoluteIndex < menuDblItems.Length ? menuDblItems[absoluteIndex] : null);
                         var filteredIndex = this.GetFilteredIndexFromAbsolute(absoluteIndex);
                         Rectangle? bounds = (filteredIndex.HasValue ? GetItemBounds(filteredIndex.Value, true) : null);
-                        visibleItems.Add(new ListMenuItemInfo(absoluteIndex, menuItem, filteredIndex, visibleItems.Count, bounds));
+                        visibleItems.Add(new ListMenuItemInfo(absoluteIndex, menuDblItem, filteredIndex, visibleItems.Count, bounds));
                     }
                 }
                 return visibleItems.ToArray();
             }
+        }
+        /// <summary>
+        /// Vrátí pole obsahující Filtrovaný index (na němž bude prvek zobrazen po zafiltrování) pro daný Absolutní index. 
+        /// Vrátí prázdné pole, pokud index je mimo rozsah anebo daný prvek není zobrazitelný.
+        /// </summary>
+        /// <param name="absoluteIndexes"></param>
+        /// <returns></returns>
+        protected int[] GetFilteredIndexesFromAbsolute(IEnumerable<int> absoluteIndexes)
+        {
+            var filteredIndexes = new List<int>();
+            if (absoluteIndexes != null)
+            {
+                var filteredItems = this.FilteredMenuItems;
+                if (filteredItems != null && filteredItems.Length > 0)
+                {
+                    foreach (var absoluteIndex in absoluteIndexes)
+                    {
+                        if (filteredItems.TryFindFirst(out var foundInfo, i => i.AbsoluteIndex == absoluteIndex && i.FilteredIndex.HasValue))
+                            filteredIndexes.Add(foundInfo.FilteredIndex.Value);
+                    }
+                }
+            }
+            return filteredIndexes.ToArray();
         }
         /// <summary>
         /// Vrátí Filtrovaný index (na němž bude prvek zobrazen po zafiltrování) pro daný Absolutní index. Vrátí null, pokud index je mimo rozsah anebo daný prvek není zobrazitelný.
@@ -2315,10 +2406,36 @@ SetSelected() - vstup           Absolutní
         /// <returns></returns>
         protected int? GetFilteredIndexFromAbsolute(int absoluteIndex)
         {
-            int visibleIndex = -1;
-            if (absoluteIndex >= 0 && absoluteIndex < this.Items.Count)
-                visibleIndex = this.GetVisibleIndex(absoluteIndex);
-            return (visibleIndex >= 0 ? (int?)visibleIndex : null);
+            if (absoluteIndex >= 0)
+            {
+                var filteredItems = this.FilteredMenuItems;
+                if (filteredItems != null && filteredItems.Length > 0 && filteredItems.TryFindFirst(out var foundInfo, i => i.AbsoluteIndex == absoluteIndex && i.FilteredIndex.HasValue))
+                    return foundInfo.FilteredIndex;
+            }
+            return null;
+        }
+        /// <summary>
+        /// Vrátí pole obsahující Absolutní index pro index Filtrovaný = vizuální. 
+        /// Vrátí prázdné pole, pokud index je mimo rozsah.
+        /// </summary>
+        /// <param name="filteredIndexes"></param>
+        /// <returns></returns>
+        protected int[] GetAbsoluteIndexesFromFiltered(IEnumerable<int> filteredIndexes)
+        {
+            var absoluteIndexes = new List<int>();
+            if (filteredIndexes != null)
+            {
+                var filteredItems = this.FilteredMenuItems;
+                if (filteredItems != null && filteredItems.Length > 0)
+                {
+                    foreach (var filteredIndex in filteredIndexes)
+                    {
+                        if (filteredItems.TryFindFirst(out var foundInfo, i => i.FilteredIndex.HasValue && i.FilteredIndex.Value == filteredIndex))
+                            absoluteIndexes.Add(foundInfo.AbsoluteIndex);
+                    }
+                }
+            }
+            return absoluteIndexes.ToArray();
         }
         /// <summary>
         /// Vrátí Absolutní index pro index Filtrovaný = vizuální. Vrátí null, pokud index je mimo rozsah.
@@ -2327,9 +2444,12 @@ SetSelected() - vstup           Absolutní
         /// <returns></returns>
         protected int? GetAbsoluteIndexFromFiltered(int filteredIndex)
         {
-            var filteredItems = this.FilteredMenuItems;
-            if (filteredItems != null && filteredItems.Length > 0 && filteredItems.TryFindFirst(out var foundInfo, i => i.FilteredIndex.HasValue && i.FilteredIndex.Value == filteredIndex))
-                return foundInfo.AbsoluteIndex;
+            if (filteredIndex >= 0)
+            {
+                var filteredItems = this.FilteredMenuItems;
+                if (filteredItems != null && filteredItems.Length > 0 && filteredItems.TryFindFirst(out var foundInfo, i => i.FilteredIndex.HasValue && i.FilteredIndex.Value == filteredIndex))
+                    return foundInfo.AbsoluteIndex;
+            }
             return null;
         }
         /// <summary>
@@ -2341,14 +2461,15 @@ SetSelected() - vstup           Absolutní
             /// Konstruktor
             /// </summary>
             /// <param name="absoluteIndex"></param>
-            /// <param name="menuItem"></param>
+            /// <param name="menuDblItem"></param>
             /// <param name="filteredIndex"></param>
             /// <param name="displayedIndex"></param>
             /// <param name="bounds"></param>
-            public ListMenuItemInfo(int absoluteIndex, IMenuItem menuItem, int? filteredIndex = null, int? displayedIndex = null, Rectangle? bounds = null)
+            public ListMenuItemInfo(int absoluteIndex, Tuple<ImageListBoxItem, IMenuItem> menuDblItem, int? filteredIndex = null, int? displayedIndex = null, Rectangle? bounds = null)
             {
                 AbsoluteIndex = absoluteIndex;
-                MenuItem = menuItem;
+                ListBoxItem = menuDblItem.Item1;
+                MenuItem = menuDblItem.Item2;
                 FilteredIndex = filteredIndex;
                 DisplayedIndex = displayedIndex;
                 Bounds = bounds;
@@ -2369,6 +2490,10 @@ SetSelected() - vstup           Absolutní
             /// Absolutní index = pozice v poli Items.
             /// </summary>
             public int AbsoluteIndex { get; private set; }
+            /// <summary>
+            /// Nativní Item v ListBoxu
+            /// </summary>
+            public ImageListBoxItem ListBoxItem { get; private set; }
             /// <summary>
             /// Data prvku. Pokud na této pozici není <see cref="IMenuItem"/>, je zde null.
             /// </summary>
@@ -3113,6 +3238,7 @@ SetSelected() - vstup           Absolutní
         {
             foreach (ControlKeyActionType action in actions)
                 _DoKeyAction(action, changeType, null, true);
+            _RunMenuItemsChanged(changeType);                        // Event o změně prvků volá "public" metoda DoKeyActions
         }
         /// <summary>
         /// Inicializace eventhandlerů a hodnot pro KeyActions
@@ -3133,10 +3259,12 @@ SetSelected() - vstup           Absolutní
             //  DxComponent.LogAddLine(LogActivityKind.DevExpressEvents, $"KeyDown: KeyData: [{e.KeyData}]; KeyCode: [{e.KeyCode}]");
 
             bool isHandled = false;
+            bool isChanged = false;
             switch (e.KeyData)
             {
                 case Keys.Delete:
                     isHandled = _DoKeyAction(ControlKeyActionType.Delete, DxItemsChangeType.UserInteractive, e);
+                    isChanged = true;
                     break;
                 case Keys.Control | Keys.A:
                     isHandled = _DoKeyAction(ControlKeyActionType.SelectAll, DxItemsChangeType.UserInteractive, e);
@@ -3148,7 +3276,10 @@ SetSelected() - vstup           Absolutní
                 case Keys.Control | Keys.X:
                     // Ctrl+X : pokud je povoleno, provedu to; pokud ale nelze provést Ctrl+X a přitom lze provést Ctrl+C, tak se provede to:
                     if (EnabledKeyActions.HasFlag(ControlKeyActionType.ClipCut))
+                    {
                         isHandled = _DoKeyAction(ControlKeyActionType.ClipCut, DxItemsChangeType.UserInteractive, e);
+                        isChanged = true;
+                    }
                     else if (EnabledKeyActions.HasFlag(ControlKeyActionType.ClipCopy))
                         isHandled = _DoKeyAction(ControlKeyActionType.ClipCopy, DxItemsChangeType.UserInteractive, e);
                     isHandled = true;            // I kdyby tato akce NEBYLA povolena, chci ji označit jako Handled = nechci, aby v případě NEPOVOLENÉ akce dával objekt nativně věci do clipbardu.
@@ -3156,24 +3287,31 @@ SetSelected() - vstup           Absolutní
                 case Keys.Control | Keys.V:
                     isHandled = _DoKeyAction(ControlKeyActionType.ClipPaste, DxItemsChangeType.UserInteractive, e);
                     isHandled = true;            // I kdyby tato akce NEBYLA povolena, chci ji označit jako Handled = nechci, aby v případě NEPOVOLENÉ akce dával objekt nativně věci do clipbardu.
+                    isChanged = true;
                     break;
                 case Keys.Alt | Keys.Home:
                     isHandled = _DoKeyAction(ControlKeyActionType.MoveTop, DxItemsChangeType.UserInteractive, e);
+                    isChanged = true;
                     break;
                 case Keys.Alt | Keys.Up:
                     isHandled = _DoKeyAction(ControlKeyActionType.MoveUp, DxItemsChangeType.UserInteractive, e);
+                    isChanged = true;
                     break;
                 case Keys.Alt | Keys.Down:
                     isHandled = _DoKeyAction(ControlKeyActionType.MoveDown, DxItemsChangeType.UserInteractive, e);
+                    isChanged = true;
                     break;
                 case Keys.Alt | Keys.End:
                     isHandled = _DoKeyAction(ControlKeyActionType.MoveBottom, DxItemsChangeType.UserInteractive, e);
+                    isChanged = true;
                     break;
                 case Keys.Control | Keys.Z:
                     isHandled = _DoKeyAction(ControlKeyActionType.Undo, DxItemsChangeType.UserInteractive, e);
+                    isChanged = true;
                     break;
                 case Keys.Control | Keys.Y:
                     isHandled = _DoKeyAction(ControlKeyActionType.Redo, DxItemsChangeType.UserInteractive, e);
+                    isChanged = true;
                     break;
                 case Keys.Return:
                 case Keys.Shift | Keys.Return:
@@ -3186,6 +3324,9 @@ SetSelected() - vstup           Absolutní
                         isHandled = _DoKeyAction(rowFilterAction, DxItemsChangeType.UserInteractive, e);
                     break;
             }
+            if (isChanged)
+                _RunMenuItemsChanged(DxItemsChangeType.UserInteractive);                        // Event o změně prvků volá "výchozí event" _KeyDown
+
             if (isHandled)
                 e.Handled = true; 
         }
@@ -3311,15 +3452,36 @@ SetSelected() - vstup           Absolutní
         /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
         private void _DoKeyActionMoveUp(DxItemsChangeType changeType)
         {
-            _MoveSelectedItems(
-                items =>
-                {   // Přesun o jeden prvek nahoru: najdeme nejmenší index z dodaných prvků, a přesuneme prvky na index o 1 menší, přinejmenším na 0:
-                    // Vstupní pole není null a má nejméně jeden prvek!
-                    int targetIndex = items.Select(i => i.AbsoluteIndex).Min() - 1;      // Cílový index je o 1 menší, než nejmenší vybraný index, 
-                    if (targetIndex < 0) targetIndex = 0;                                //  anebo 0 (když je vybrán prvek na indexu 0)
-                    return targetIndex;
-                },
-                changeType);
+            _MoveSelectedItems(getIndexUp, changeType);
+
+            // Metoda vrátí Target AbsoluteIndex pro přesun daných Selected prvků ve směru "O jednu pozici nahoru (k nižšímu indexu)":
+            int? getIndexUp(ListMenuItemInfo[] selectedItems)
+            {
+                if (selectedItems is null || selectedItems.Length == 0) return 0;
+
+                // Filtrované prvky = ty, které vyhovují řádkovému filtru a mohou být zobrazeny uživateli:
+                var filteredItems = this.FilteredMenuItems;
+
+                // 1. Najdu Min Absolute index z prvků Selected:
+                var minSelAbsIndex = selectedItems.Select(i => i.AbsoluteIndex).Min();
+                //   Pokud mezi vybranými prvky je prvek na indexu 0, pak výstupem je 0 = všechny Selected prvky umístíme na pozici 0 a následující:
+                if (minSelAbsIndex <= 0) return 0;
+                //   Anebo prvek na první zafiltrované pozici:
+                if (filteredItems.Length > 0 && minSelAbsIndex == filteredItems[0].AbsoluteIndex) return 0;
+
+                // 2. Nyní musím najít takový Filtered prvek, jehož Absolutní index je těsně před minSelAbsIndex, a jeho Absolut index bude Target pro přesun:
+                //  a) najdu fyzickou pozici našeho MinSelAbs prvku:
+                if (filteredItems.TryFindFirstIndex(i => i.AbsoluteIndex == minSelAbsIndex, out var minSelPosition))
+                {   // Pokud první Selectovaný prvek je mezi filtrovanými prvky druhý anebo další:
+                    //  pak Target Index = AbsoluteIndex prvku, který je mezi Filtrovanými prvky ten těsně předcházející
+                    //  Tady se právě řeší ono "Přesuneme prvek na vizuálním indexu 3 na pozici, na které je předchozí prvek na vizuálním indexu 2":
+                    // A tím, že pracuji s polem Filtered (=tedy ty prvky vyhovující řádkovému filtru), a v něm určuji pozice AbsoluteIndex, tím umožním přemístit prvky na výslednou fyzickou pozici = Absolute
+                    if (minSelPosition > 0)
+                        return filteredItems[minSelPosition - 1].AbsoluteIndex;
+                }
+
+                return 0;
+            }
         }
         /// <summary>
         /// Provedení klávesové akce: MoveDown
@@ -3327,16 +3489,38 @@ SetSelected() - vstup           Absolutní
         /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
         private void _DoKeyActionMoveDown(DxItemsChangeType changeType)
         {
-            _MoveSelectedItems(
-                items =>
-                {   // Přesun o jeden prvek dolů: najdeme nejmenší index z dodaných prvků, a přesuneme prvky na index o 1 vyšší, nebo null = na konec:
-                    // Vstupní pole není null a má nejméně jeden prvek!
-                    int targetIndex = items.Select(i => i.AbsoluteIndex).Min() + 1;      // Cílový index je o 1 větší, než nejmenší vybraný index, 
-                    int countRemain = this.ItemCount - items.Length;                     // Počet prvků v Listu, které NEJSOU přesouvány  (ItemCount: viditelné po filtrování)
-                    if (targetIndex < countRemain) return targetIndex;                   // Pokud cílový index bude menší než poslední zbývající prvek, pak prvky přesuneme pod něj
-                    return null;                                                         // null => prvky přemístíme na konec zbývajících prvků v Listu
-                },
-                changeType);
+            _MoveSelectedItems(getIndexDown, changeType);
+
+            // Metoda vrátí Target AbsoluteIndex pro přesun daných Selected prvků ve směru "O jednu pozici dolů (k vyššímu indexu)":
+            int? getIndexDown(ListMenuItemInfo[] selectedItems)
+            {
+                if (selectedItems is null || selectedItems.Length == 0) return null;
+
+                // Filtrované prvky = ty, které vyhovují řádkovému filtru a mohou být zobrazeny uživateli:
+                var filteredItems = this.FilteredMenuItems;
+                var filteredCount = filteredItems.Length;
+
+                // 1a. Najdu Min Absolute index z prvků Selected:
+                var minSelAbsIndex = selectedItems.Select(i => i.AbsoluteIndex).Min();
+                // 1b. Najdu Man Absolute index z prvků Selected:
+                var maxSelAbsIndex = selectedItems.Select(i => i.AbsoluteIndex).Max();
+                // Pokud nejvyšší AbsoluteIndex z vybraných prvků == AbsoluteIndex ze všech filtrovaných prvků, pak vrátíme null =>
+                //   všechny Selected prvky se přemístí na úplný konec seznamu:
+                if (filteredCount > 0 && maxSelAbsIndex == filteredItems[filteredCount - 1].AbsoluteIndex) return null;
+
+                // 2. Nyní musím najít takový Filtered prvek, jehož Absolutní index je těsně za maxSelAbsIndex, a jeho Absolut index bude Target pro přesun:
+                //  a) najdu fyzickou pozici našeho MaxSelAbs prvku:
+                if (filteredItems.TryFindFirstIndex(i => i.AbsoluteIndex == maxSelAbsIndex, out var maxSelPosition))
+                {   // Pokud první Selectovaný prvek je mezi filtrovanými prvky druhý anebo další:
+                    //  pak Target Index = AbsoluteIndex prvku, který je mezi Filtrovanými prvky ten těsně předcházející
+                    //  Tady se právě řeší ono "Přesuneme prvek na vizuálním indexu 3 na pozici, na které je předchozí prvek na vizuálním indexu 2":
+                    // A tím, že pracuji s polem Filtered (=tedy ty prvky vyhovující řádkovému filtru), a v něm určuji pozice AbsoluteIndex, tím umožním přemístit prvky na výslednou fyzickou pozici = Absolute
+                    if (maxSelPosition < (filteredCount - 1))
+                        return filteredItems[maxSelPosition + 1].AbsoluteIndex;
+                }
+
+                return null;
+            }
         }
         /// <summary>
         /// Provedení klávesové akce: MoveBottom
@@ -3403,6 +3587,7 @@ SetSelected() - vstup           Absolutní
         protected void InsertItems(IEnumerable<IMenuItem> sourceItems, int? insertAbsoluteIndex, bool selectNewItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
         {
             _InsertItems(sourceItems, insertAbsoluteIndex, selectNewItems, changeType);
+            _RunMenuItemsChanged(changeType);
         }
         /// <summary>
         /// Z this Listu odebere prvky na daných indexech. Index jsou absolutní, nikoli v rámci Visible (filtrovaných) prvků.
@@ -3412,6 +3597,7 @@ SetSelected() - vstup           Absolutní
         protected void RemoveIndexes(IEnumerable<int> removeAbsoluteIndexes, DxItemsChangeType changeType = DxItemsChangeType.Code)
         {
             this._RemoveIndexes(removeAbsoluteIndexes, changeType);
+            _RunMenuItemsChanged(changeType);
         }
         /// <summary>
         /// Z this Listu odebere všechny dané prvky
@@ -3421,6 +3607,7 @@ SetSelected() - vstup           Absolutní
         protected void RemoveItems(IEnumerable<IMenuItem> removeItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
         {
             this._RemoveItems(removeItems, changeType);
+            _RunMenuItemsChanged(changeType);
         }
         /// <summary>
         /// Metoda z dodané kolekce prvku vrátí jen ty platné.
@@ -3492,11 +3679,15 @@ SetSelected() - vstup           Absolutní
                 this.Items.AddRange(CreateListBoxItems(validItems));
             }
 
-            _RunMenuItemsChanged(changeType);
-
             this._InvalidateFilteredItems();
+
             if (selectNewItems)
+            {
+                if (selectedIndexes.Count > 0)
+                    this.CurrentAbsoluteIndex = selectedIndexes[0];
                 this.SelectedAbsoluteIndexes = selectedIndexes.ToArray();
+                this._UpdateViewInfo();
+            }
         }
         /// <summary>
         /// Provedení akce: Move[někam].
@@ -3524,8 +3715,8 @@ SetSelected() - vstup           Absolutní
             if (selectedItemsInfo is null || selectedItemsInfo.Length == 0) return;
 
             // Odebereme zdrojové prvky a vložíme je na zadaný index:
-            RemoveIndexes(selectedItemsInfo.Select(t => t.AbsoluteIndex));
-            InsertItems(selectedItemsInfo.Select(i => i.MenuItem), targetIndex, true);
+            _RemoveIndexes(selectedItemsInfo.Select(t => t.AbsoluteIndex), DxItemsChangeType.None);
+            _InsertItems(selectedItemsInfo.Select(i => i.MenuItem), targetIndex, true, changeType);
         }
         /// <summary>
         /// Z this Listu odebere prvky na daných indexech.
@@ -3566,6 +3757,17 @@ SetSelected() - vstup           Absolutní
             }
 
             this._InvalidateFilteredItems();
+        }
+
+        private void _UpdateViewInfo()
+        {
+            this.ViewInfo.Reset();
+            this.RecalcViewInfoState();
+            foreach (DevExpress.XtraEditors.ViewInfo.BaseListBoxViewInfo.ItemInfo item in this.ViewInfo.VisibleItems)
+            {
+                this.ViewInfo.UpdateItemState(item);
+                this.ViewInfo.UpdateItem(item);
+            }
         }
         #endregion
         #region DataExchange
@@ -3871,6 +4073,7 @@ SetSelected() - vstup           Absolutní
         private IndexRatio MouseDragTargetIndex;
         /// <summary>
         /// Obsahuje true, pokud v procesu Paint má být volána metoda <see cref="MouseDragPaint(PaintEventArgs)"/>.
+        /// Jejím účelem je vykreslit Target linku pro Drop pozici (Drag prvky a DragDrop mezi dva existující prvky).
         /// </summary>
         private bool MouseDragNeedRePaint { get { return (MouseDragTargetIndex != null); } }
         /// <summary>

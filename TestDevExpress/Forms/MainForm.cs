@@ -5421,25 +5421,29 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
 
             ControlKeyActionType sourceKeyActions = ControlKeyActionType.SelectAll | ControlKeyActionType.ClipCopy;
             DxDragDropActionType sourceDDActions = DxDragDropActionType.CopyItemsFrom;
-            _DragDropAList = new DxListBoxPanel() { SelectionMode = SelectionMode.MultiExtended, DragDropActions = sourceDDActions, EnabledKeyActions = sourceKeyActions };
-            _DragDropAList.Name = "AList";
-            _DragDropAList.MenuItems = _CreateSampleListItems(100, false, true);
+            _DragDropAList = new DxListBoxPanel() { Name = "AList" };
+            _DragDropAList.DxProperties.SelectionMode = SelectionMode.MultiExtended;
+            _DragDropAList.DxProperties.DragDropActions = sourceDDActions;
+            _DragDropAList.DxProperties.EnabledKeyActions = sourceKeyActions;
+            _DragDropAList.DxProperties.MenuItems = _CreateSampleListItems(100, false, true);
+            _DragDropAList.DxProperties.DataExchangeCrossType = DataExchangeCrossType.None;
+            _DragDropAList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Server;
             _DragDropAList.MouseDown += _DragDrop_MouseDown;
-            _DragDropAList.DataExchangeCrossType = DataExchangeCrossType.None;
-            _DragDropAList.RowFilterMode = DxListBoxPanel.FilterRowMode.Server;
             _PanelDragDrop.Controls.Add(_DragDropAList);
 
             ControlKeyActionType targetKeyActions = ControlKeyActionType.All;
             DxDragDropActionType targetDDActions = DxDragDropActionType.ReorderItems | DxDragDropActionType.ImportItemsInto | DxDragDropActionType.CopyItemsFrom | DxDragDropActionType.MoveItemsFrom;
-            _DragDropBList = new DxListBoxPanel() { SelectionMode = SelectionMode.MultiExtended, DragDropActions = targetDDActions, EnabledKeyActions = targetKeyActions };
-            _DragDropBList.Name = "BList";
-            _DragDropBList.DuplicityEnabled = false;
-            _DragDropBList.MenuItems = _CreateSampleListItems(18, true, false);
+            _DragDropBList = new DxListBoxPanel() { Name = "BList" };
+            _DragDropBList.DxProperties.SelectionMode = SelectionMode.MultiExtended;
+            _DragDropBList.DxProperties.DragDropActions = targetDDActions;
+            _DragDropBList.DxProperties.EnabledKeyActions = targetKeyActions;
+            _DragDropBList.DxProperties.DuplicityEnabled = false;
+            _DragDropBList.DxProperties.MenuItems = _CreateSampleListItems(18, true, false);
+            _DragDropBList.DxProperties.DataExchangeCrossType = DataExchangeCrossType.AllControlsInCurrentApplication | DataExchangeCrossType.AnyOtherApplications;
+            _DragDropBList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Server;
+            _DragDropBList.DxProperties.ButtonsPosition = ToolbarPosition.BottomSideCenter;
+            _DragDropBList.DxProperties.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.Move_All };
             _DragDropBList.MouseDown += _DragDrop_MouseDown;
-            _DragDropBList.DataExchangeCrossType = DataExchangeCrossType.AllControlsInCurrentApplication | DataExchangeCrossType.AnyOtherApplications;
-            _DragDropBList.RowFilterMode = DxListBoxPanel.FilterRowMode.Server;
-            _DragDropBList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
-            _DragDropBList.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.Move_All };
             _PanelDragDrop.Controls.Add(_DragDropBList);
 
             _DragDropCTree = new DxTreeList() { FilterBoxMode = RowFilterBoxMode.Server, DragDropActions = targetDDActions, EnabledKeyActions = sourceKeyActions };
