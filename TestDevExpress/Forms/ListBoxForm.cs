@@ -502,13 +502,13 @@ namespace TestDevExpress.Forms
         {
             StringBuilder sb = new StringBuilder();
             
-            sb.AppendLine("<b>SelectedItems</b>");
+            sb.AppendLine("<b><u>SelectedItems</u></b>");
             var selItems = _Sample4DblList.DxProperties.TargetSelectedMenuItems;
             foreach (var selItem in selItems)
                 sb.AppendLine("* " + selItem.Text);
             sb.AppendLine();
 
-            sb.AppendLine("<b>All Items</b>");
+            sb.AppendLine("<b><u>All Items</u></b>");
             var allItems = _Sample4DblList.DxProperties.TargetMenuItems;
             foreach (var allItem in allItems)
                 sb.AppendLine("* " + allItem.Text);
