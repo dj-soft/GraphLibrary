@@ -119,11 +119,32 @@ namespace Noris.Clients.Win.Components.AsolDX
             __DragAndDropEnabled = true;
             __ClipboardActionsEnabled = false;
             __ReorderItemsEnabled = true;
+            _AcceptButtonsPosition();
             _AcceptListStyles();
 
             // Eventy:
+            DxSourceProperties.SelectedItemsChanged += _SourceSelectedItemsChanged;
+            DxTargetProperties.SelectedItemsChanged += _TargetSelectedItemsChanged;
             DxSourceProperties.ListActionAfter += _SourceListActionAfter;
             DxTargetProperties.ListActionAfter += _TargetListActionAfter;
+        }
+        /// <summary>
+        /// Po změně Selected v Listu Source = vlevo
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _SourceSelectedItemsChanged(object sender, EventArgs e)
+        {
+            this._SetButtonsEnabled();
+        }
+        /// <summary>
+        /// Po změně Selected v Listu Target = vpravo
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _TargetSelectedItemsChanged(object sender, EventArgs e)
+        {
+            this._SetButtonsEnabled();
         }
         /// <summary>
         /// Událost po provedení jakékoli akce v Source Listu.
@@ -509,6 +530,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             _DoLayoutButtons();
         }
         /// <summary>
+        /// Společné buttony uprostřed mají být zobrazeny?
+        /// </summary>
+        private bool _ButtonsRequired { get { return (this.__CommonButtonsPosition != ToolbarPosition.None); } }
+        /// <summary>
         /// Umístí středové buttony
         /// </summary>
         private void _DoLayoutButtons()
@@ -522,7 +547,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             // Viditelnost:
             bool currentPanelVisible = this.__ButtonsPanel.IsSetVisible();
-            bool requestPanelVisible = this.__CommonButtonsPosition != ToolbarPosition.None;
+            bool requestPanelVisible = this._ButtonsRequired;
 
             // Panel nemá být viditelný:
             if (!requestPanelVisible)
@@ -593,7 +618,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _SetButtonsEnabled()
         {
-            DxListBoxPanel.EnableButtons(__Buttons, 2, 1, true, true, true);
+            if (!this._ButtonsRequired) return;
+
+            int totalLeftCount = this.DxSourceProperties.MenuItems?.Length ?? 0;
+            int selectedLeftCount = this.DxSourceProperties.SelectedMenuItems?.Length ?? 0;
+            int totalRightCount = this.DxTargetProperties.MenuItems?.Length ?? 0;
+            int selectedRightCount = this.DxTargetProperties.SelectedMenuItems?.Length ?? 0;
+            bool isEditable = true;
+            bool clipEnabled = this.DxProperties.ClipboardActionsEnabled;
+            bool undoRedoEnabled = this.DxTargetProperties.UndoRedoEnabled;
+
+            DxListBoxPanel.EnableButtons(__Buttons, totalLeftCount, selectedLeftCount, totalRightCount, selectedRightCount, isEditable, clipEnabled, undoRedoEnabled);
         }
         /// <summary>
         /// Provede akci danou buttonem <paramref name="sender"/>
@@ -1532,6 +1567,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="undoRedoEnabled"></param>
         internal static void EnableButtons(List<DxSimpleButton> buttons, int totalCount, int selectedCount, bool isEditable, bool clipEnabled, bool undoRedoEnabled)
         {
+            EnableButtons(buttons, totalCount, selectedCount, totalCount, selectedCount, isEditable, clipEnabled, undoRedoEnabled);
+        }
+        /// <summary>
+        /// Nastaví Enabled na všechny buttony v dodaném poli, podle stavu objektu
+        /// </summary>
+        /// <param name="buttons"></param>
+        /// <param name="totalLeftCount"></param>
+        /// <param name="selectedLeftCount"></param>
+        /// <param name="totalRightCount"></param>
+        /// <param name="selectedRightCount"></param>
+        /// <param name="isEditable"></param>
+        /// <param name="clipEnabled"></param>
+        /// <param name="undoRedoEnabled"></param>
+        internal static void EnableButtons(List<DxSimpleButton> buttons, int totalLeftCount, int selectedLeftCount, int totalRightCount, int selectedRightCount, bool isEditable, bool clipEnabled, bool undoRedoEnabled)
+        {
             if (buttons is null || buttons.Count == 0) return;
             foreach (var button in buttons)
             {
@@ -1546,23 +1596,23 @@ namespace Noris.Clients.Win.Components.AsolDX
                     case ControlKeyActionType.ClipCopy: return clipEnabled;
                     case ControlKeyActionType.ClipCut: return clipEnabled && isEditable;
                     case ControlKeyActionType.ClipPaste: return clipEnabled && isEditable;
-                    case ControlKeyActionType.Delete: return isEditable;
+                    case ControlKeyActionType.Delete: return selectedLeftCount > 0 && isEditable;
                     case ControlKeyActionType.Refresh: return true;
-                    case ControlKeyActionType.SelectAll: return totalCount > 0 && selectedCount < totalCount;
-                    case ControlKeyActionType.GoBegin: return totalCount > 0;
-                    case ControlKeyActionType.GoEnd: return totalCount > 0;
-                    case ControlKeyActionType.MoveTop: return isEditable && totalCount > 0;
-                    case ControlKeyActionType.MoveUp: return isEditable && totalCount > 0;
-                    case ControlKeyActionType.MoveDown: return isEditable && totalCount > 0;
-                    case ControlKeyActionType.MoveBottom: return isEditable && totalCount > 0;
+                    case ControlKeyActionType.SelectAll: return totalLeftCount > 0 && selectedLeftCount < totalLeftCount;
+                    case ControlKeyActionType.GoBegin: return totalLeftCount > 0;
+                    case ControlKeyActionType.GoEnd: return totalLeftCount > 0;
+                    case ControlKeyActionType.MoveTop: return isEditable && totalLeftCount > 0 && selectedLeftCount > 0;
+                    case ControlKeyActionType.MoveUp: return isEditable && totalLeftCount > 0 && selectedLeftCount > 0;
+                    case ControlKeyActionType.MoveDown: return isEditable && totalLeftCount > 0 && selectedLeftCount > 0;
+                    case ControlKeyActionType.MoveBottom: return isEditable && totalLeftCount > 0 && selectedLeftCount > 0;
                     case ControlKeyActionType.Undo: return isEditable && undoRedoEnabled;
                     case ControlKeyActionType.Redo: return isEditable && undoRedoEnabled;
                     case ControlKeyActionType.ActivateFilter: return true;
                     case ControlKeyActionType.FillKeyToFilter: return true;
-                    case ControlKeyActionType.CopyToRightOne: return selectedCount > 0;
-                    case ControlKeyActionType.CopyToRightAll: return totalCount > 0;
-                    case ControlKeyActionType.CopyToLeftOne: return selectedCount > 0;
-                    case ControlKeyActionType.CopyToLeftAll: return totalCount > 0;
+                    case ControlKeyActionType.CopyToRightOne: return selectedLeftCount > 0;
+                    case ControlKeyActionType.CopyToRightAll: return totalLeftCount > 0;
+                    case ControlKeyActionType.CopyToLeftOne: return selectedRightCount > 0;
+                    case ControlKeyActionType.CopyToLeftAll: return totalRightCount > 0;
                 }
                 return true;
             }

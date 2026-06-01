@@ -1052,6 +1052,164 @@ namespace Noris.Clients.Win.Components.AsolDX
             private bool _IsEnabled;
         }
         #endregion
+        #region AI Painter ve stylu SuperToolTip
+        /*
+
+using DevExpress.Utils;
+using DevExpress.Utils.Drawing;
+using DevExpress.Skins;
+using System;
+using System.Drawing;
+using System.Windows.Forms;
+
+// Vlastní okno s korektním vykreslením SuperToolTip obsahu
+public class SuperToolTipPreviewWindow : Form
+{
+    private SuperToolTip _superToolTip;
+    private SuperToolTipController _controller;
+    private SuperToolTipControlInfo _controlInfo;
+
+    public SuperToolTipPreviewWindow(SuperToolTip superToolTip)
+    {
+        _superToolTip = superToolTip;
+        
+        // Nastavte vlastnosti okna
+        this.FormBorderStyle = FormBorderStyle.None;
+        this.ShowInTaskbar = false;
+        this.StartPosition = FormStartPosition.Manual;
+        this.TopMost = true;
+        this.BackColor = Color.Transparent;
+        
+        // Vytvořte SuperToolTipController pro správné renderování
+        _controller = new SuperToolTipController();
+        
+        // Vypočítejte správnou velikost s DevExpress logikou
+        CalculateSize();
+        
+        this.DoubleBuffered = true;
+    }
+
+    private void CalculateSize()
+    {
+        // Vytvořte dočasný control pro měření
+        using (var tempControl = new Control())
+        {
+            tempControl.CreateControl();
+            
+            // Získejte informace o velikosti z SuperToolTip
+            var graphicsCache = new GraphicsCache();
+            var superTipSize = _controller.CalcWindowSize(
+                graphicsCache,
+                _superToolTip,
+                int.MaxValue
+            );
+            
+            graphicsCache.Dispose();
+            
+            this.ClientSize = new Size(
+                superTipSize.Width + 10,
+                superTipSize.Height + 10
+            );
+        }
+    }
+
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        base.OnPaint(e);
+        
+        if (_superToolTip == null) return;
+        
+        // Vytvořte graphics cache pro DevExpress painter
+        var graphicsCache = new GraphicsCache(e.Graphics);
+        
+        try
+        {
+            // Vykreslujte SuperToolTip pomocí DevExpress Painter
+            var toolTipPainter = new SuperToolTipPainter();
+            
+            var rect = new Rectangle(0, 0, this.ClientSize.Width, this.ClientSize.Height);
+            
+            // Zajistěte správný skin context
+            using (var skinProvider = new SkinProvider())
+            {
+                toolTipPainter.DrawSuperTip(
+                    graphicsCache,
+                    _superToolTip,
+                    rect,
+                    true  // allowGlyphContent
+                );
+            }
+        }
+        finally
+        {
+            graphicsCache.Dispose();
+        }
+    }
+
+    protected override void OnPaintBackground(PaintEventArgs e)
+    {
+        // Nevykreslujte background, aby se zachovaly DevExpress efekty
+        // base.OnPaintBackground(e);
+    }
+
+    public void ShowAtMousePosition()
+    {
+        Point mousePos = Control.MousePosition;
+        this.Location = new Point(
+            mousePos.X + 10,
+            mousePos.Y + 10
+        );
+        this.Show();
+    }
+}
+
+// Použití v hlavním formuláři
+public partial class MainForm : Form
+{
+    private SuperToolTipPreviewWindow _previewWindow;
+
+    private void Control_MouseDown(object sender, MouseEventArgs e)
+    {
+        if (e.Button == MouseButtons.Left)
+        {
+            var superToolTip = new SuperToolTip();
+            
+            var titleItem = new ToolTipTitleItem();
+            titleItem.Text = "Nadpis";
+            superToolTip.Items.Add(titleItem);
+            
+            var contentItem = new ToolTipItem();
+            contentItem.Text = "Obsah pro přetahování";
+            superToolTip.Items.Add(contentItem);
+
+            // Vytvořte preview okno s DevExpress renderingem
+            _previewWindow = new SuperToolTipPreviewWindow(superToolTip);
+            _previewWindow.ShowAtMousePosition();
+
+            this.DoDragDrop(sender, DragDropEffects.Copy | DragDropEffects.Move);
+        }
+    }
+
+    private void MainForm_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (_previewWindow != null && !_previewWindow.IsDisposed)
+        {
+            _previewWindow.Location = new Point(e.X + 10, e.Y + 10);
+        }
+    }
+
+    private void MainForm_MouseUp(object sender, MouseEventArgs e)
+    {
+        if (_previewWindow != null && !_previewWindow.IsDisposed)
+        {
+            _previewWindow.Close();
+            _previewWindow.Dispose();
+            _previewWindow = null;
+        }
+    }
+}
+        */
+        #endregion
     }
     #region interface IDxDragDropControl = Předpis pro prvek, který může být ZDROJEM anebo CÍLEM události Drag and Drop
     /// <summary>
