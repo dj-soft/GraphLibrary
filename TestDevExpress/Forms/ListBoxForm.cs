@@ -398,6 +398,7 @@ namespace TestDevExpress.Forms
             var sampleDblList = new DxDblListBoxPanel();
 
             sampleDblList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client;
+            sampleDblList.DxProperties.SplitterPosition = 360;
 
             /* Ostatní property nechám default:
             sampleDblList.DxProperties.ButtonsPosition = DxDblListBoxPanel.DblButtonsPositionType.Bottom;
@@ -408,6 +409,7 @@ namespace TestDevExpress.Forms
             */
             sampleDblList.DxProperties.SourceMenuItems = Randomizer.GetMenuItems(48, 80, Randomizer.ImageResourceType.PngSmall, true, true);
             sampleDblList.DxProperties.TargetMenuItems = Randomizer.GetMenuItems(3, 8, Randomizer.ImageResourceType.PngSmall, true, true);
+            sampleDblList.DxProperties.TargetMenuItemsChanged += _Sample4_TargetMenuItemsChanged;
 
             this._HostContainer.Controls.Add(sampleDblList);
 
@@ -425,23 +427,93 @@ namespace TestDevExpress.Forms
             _Sample4DblList?.RemoveControlFromParent();
             _Sample4DblList = null;
 
+            _DisposeSample4Params();
+        }
+
+        private void _Sample4_TargetMenuItemsChanged(object sender, DxListBoxMenuItemsChangedEventArgs e)
+        {
+            if (__Sample4ShowContentButton != null)
+            {
+                _Sample4_TargetMenuItemsChangeCounter++;
+                __Sample4ShowContentButton.Text = $"Obsah (Změna číslo {_Sample4_TargetMenuItemsChangeCounter})";
+            }
+        }
+        private int _Sample4_TargetMenuItemsChangeCounter;
+        private DxDblListBoxPanel _Sample4DblList;
+        #region Nastavování vlastností
+        private void _CreateSample4Params()
+        {
+            __Sample4ParamsValid = false;
+            var sampleDblList = _Sample4DblList;
+            int x = __SampleBounds.Left + 6;
+            int y1 = __SampleBounds.Top + 6;
+            int y2 = __SampleBounds.Top + 28;
+
+            __Sample4ModeLabel = DxComponent.CreateDxLabel(x, y1 + 4, 100, this._HostContainer, "DblListMode:");
+            __Sample4ModeCombo = DxComponent.CreateDxImageComboBox(x, y2, 185, this._HostContainer, _Sample4ParamsChanged, toolTipText: "Zvolte režim pro DblList");
+            __Sample4ModeCombo.ComboItems = new IMenuItem[]
+            {
+                new DataMenuItem(){ Text = "FixedSourceToFreeTarget", Tag = DxDblListBoxPanel.DblListModeType.Mode_FixedSourceToFreeTarget, ToolTipText = "Vlevo je neměnný zdroj, z něhož lze doprava přenášet libovolné položky, i opakovaně. Vpravo lze třídit a smazat. Vlevo nelze měnit." },
+                new DataMenuItem(){ Text = "Ballance", Tag = DxDblListBoxPanel.DblListModeType.Mode_Ballance },
+                new DataMenuItem(){ Text = "None", Tag = DxDblListBoxPanel.DblListModeType.None }
+            };
+            var dblListMode = _Sample4DblList.DxProperties.DblListMode;
+            __Sample4ModeCombo.SelectedComboItem = __Sample4ModeCombo.ComboItems.FirstOrDefault(mi => ((DxDblListBoxPanel.DblListModeType)mi.Tag) == dblListMode);
+            x += 195;
+
+            __Sample4ButtonsLabel = DxComponent.CreateDxLabel(x, y1 + 4, 100, this._HostContainer, "ButtonsPosition:");
+            __Sample4ButtonsCombo = DxComponent.CreateDxImageComboBox(x, y2, 185, this._HostContainer, _Sample4ParamsChanged, toolTipText: "Zvolte umístění buttonů okolo ListBoxů a mezi nimi uprostřed");
+            __Sample4ButtonsCombo.ComboItems = new IMenuItem[]
+            {
+                new DataMenuItem(){ Text = "None", Tag = DxDblListBoxPanel.DblButtonsPositionType.None },
+                new DataMenuItem(){ Text = "Bottom", Tag = DxDblListBoxPanel.DblButtonsPositionType.Bottom, ImageName = "svgimages/align/alignhorizontalbottom.svg" },
+                new DataMenuItem(){ Text = "Center", Tag = DxDblListBoxPanel.DblButtonsPositionType.Center, ImageName = "svgimages/align/alignverticalcenter.svg" },
+                new DataMenuItem(){ Text = "Bottom and Center", Tag = DxDblListBoxPanel.DblButtonsPositionType.BottomAndCenter, ImageName = "svgimages/align/alignverticalcenter.svg" },
+                new DataMenuItem(){ Text = "Right", Tag = DxDblListBoxPanel.DblButtonsPositionType.Right, ImageName = "svgimages/align/alignverticalright.svg" }
+            };
+            var dblListPosition = _Sample4DblList.DxProperties.ButtonsPosition;
+            __Sample4ButtonsCombo.SelectedComboItem = __Sample4ButtonsCombo.ComboItems.FirstOrDefault(mi => ((DxDblListBoxPanel.DblButtonsPositionType)mi.Tag) == dblListPosition);
+            x += 195;
+
+            __Sample4DragDropEnabledCheck = DxComponent.CreateDxCheckEdit(x, y1, 160, this._HostContainer, "DragAndDropEnabled", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, toolTipText: "Je povoleno přemístit prvky myší (zleva doprava, nahoru a dolů)");
+            __Sample4DragDropEnabledCheck.Checked = sampleDblList.DxProperties.DragAndDropEnabled;
+
+            __Sample4MoveAllEnabledCheck = DxComponent.CreateDxCheckEdit(x, y2, 160, this._HostContainer, "MoveAllEnabled", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, toolTipText: "Je povolena akce 'Zkopírovat všechny prvky bez nutnosti jejich označení'");
+            __Sample4MoveAllEnabledCheck.Checked = sampleDblList.DxProperties.MoveAllEnabled;
+            x += 165;
+
+
+            __Sample4ClipActionsEnabledCheck = DxComponent.CreateDxCheckEdit(x, y1, 160, this._HostContainer, "ClipboardActionsEnabled", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, toolTipText: "Jsou povoleny akce s Clipboardem (Ctrl+C, V, X)");
+            __Sample4ClipActionsEnabledCheck.Checked = sampleDblList.DxProperties.ClipboardActionsEnabled;
+
+            __Sample4DoubleClickEnabledCheck = DxComponent.CreateDxCheckEdit(x, y2, 160, this._HostContainer, "DoubleClickEnabled", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, toolTipText: "Je povolen DoubleClick: přžemístí označený prvek ze zdroje do druhého Listu na konec seznamu, bez ohledu na aktuální řádek v cíli");
+            __Sample4DoubleClickEnabledCheck.Checked = sampleDblList.DxProperties.DoubleClickEnabled;
+            x += 165;
+
+            x += 35;
+            __Sample4ShowContentButton = DxComponent.CreateDxSimpleButton(x, y1, 145, 40, this._HostContainer, "Zobrazit obsah", this._Sample4ShowClick);
+
+            __Sample4ParamsValid = true;
+        }
+        private void _DisposeSample4Params()
+        {
+            __Sample4ModeLabel.RemoveControlFromParent();
+            __Sample4ModeLabel = null;
+
+            __Sample4ModeCombo.RemoveControlFromParent();
+            __Sample4ModeCombo = null;
+
             __Sample4ButtonsLabel.RemoveControlFromParent();
             __Sample4ButtonsLabel = null;
 
             __Sample4ButtonsCombo.RemoveControlFromParent();
             __Sample4ButtonsCombo = null;
 
-            __Sample4SourceReadOnlyCheck.RemoveControlFromParent();
-            __Sample4SourceReadOnlyCheck = null;
-
             __Sample4MoveAllEnabledCheck.RemoveControlFromParent();
             __Sample4MoveAllEnabledCheck = null;
 
             __Sample4ClipActionsEnabledCheck.RemoveControlFromParent();
             __Sample4ClipActionsEnabledCheck = null;
-
-            __Sample4ReorderEnabledCheck.RemoveControlFromParent();
-            __Sample4ReorderEnabledCheck = null;
 
             __Sample4DragDropEnabledCheck.RemoveControlFromParent();
             __Sample4DragDropEnabledCheck = null;
@@ -452,70 +524,21 @@ namespace TestDevExpress.Forms
             __Sample4ShowContentButton.RemoveControlFromParent();
             __Sample4ShowContentButton = null;
         }
-        private DxDblListBoxPanel _Sample4DblList;
-        #region Nastavování vlastností
-        private void _CreateSample4Params()
-        {
-            __Sample4ParamsValid = false;
-            var sampleDblList = _Sample4DblList;
-            int x = __SampleBounds.Left + 6;
-            int y1 = __SampleBounds.Top + 6;
-            int y2 = __SampleBounds.Top + 28;
-            __Sample4ButtonsLabel = DxComponent.CreateDxLabel(x, y1 + 4, 100, this._HostContainer, "ButtonsPosition:");
-
-            __Sample4ButtonsCombo = DxComponent.CreateDxImageComboBox(x, y2, 185, this._HostContainer, _Sample4ParamsChanged);
-            __Sample4ButtonsCombo.ComboItems = new IMenuItem[]
-            {
-                new DataMenuItem(){ Text = "None", Tag = DxDblListBoxPanel.DblButtonsPositionType.None },
-                new DataMenuItem(){ Text = "Bottom", Tag = DxDblListBoxPanel.DblButtonsPositionType.Bottom, ImageName = "svgimages/align/alignhorizontalbottom.svg" },
-                new DataMenuItem(){ Text = "Center", Tag = DxDblListBoxPanel.DblButtonsPositionType.Center, ImageName = "svgimages/align/alignverticalcenter.svg" },
-                new DataMenuItem(){ Text = "Bottom and Center", Tag = DxDblListBoxPanel.DblButtonsPositionType.BottomAndCenter, ImageName = "svgimages/align/alignverticalcenter.svg" },
-                new DataMenuItem(){ Text = "Right", Tag = DxDblListBoxPanel.DblButtonsPositionType.Right, ImageName = "svgimages/align/alignverticalright.svg" }
-            };
-
-            var dblListPosition = _Sample4DblList.DxProperties.ButtonsPosition;
-            __Sample4ButtonsCombo.SelectedComboItem = __Sample4ButtonsCombo.ComboItems.FirstOrDefault(mi => ((DxDblListBoxPanel.DblButtonsPositionType)mi.Tag) == dblListPosition);
-            x += 195;
-
-            __Sample4SourceReadOnlyCheck = DxComponent.CreateDxCheckEdit(x, y1, 160, this._HostContainer, "SourceListReadOnly", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1);
-            __Sample4SourceReadOnlyCheck.Checked = sampleDblList.DxProperties.SourceListReadOnly;
-
-            __Sample4MoveAllEnabledCheck = DxComponent.CreateDxCheckEdit(x, y2, 160, this._HostContainer, "MoveAllEnabled", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1);
-            __Sample4MoveAllEnabledCheck.Checked = sampleDblList.DxProperties.MoveAllEnabled;
-            x += 165;
-
-            __Sample4ClipActionsEnabledCheck = DxComponent.CreateDxCheckEdit(x, y1, 160, this._HostContainer, "ClipboardActionsEnabled", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1);
-            __Sample4ClipActionsEnabledCheck.Checked = sampleDblList.DxProperties.ClipboardActionsEnabled;
-
-            __Sample4ReorderEnabledCheck = DxComponent.CreateDxCheckEdit(x, y2, 160, this._HostContainer, "ReorderItemsEnabled", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1);
-            __Sample4ReorderEnabledCheck.Checked = sampleDblList.DxProperties.ReorderItemsEnabled;
-            x += 165;
-
-            __Sample4DragDropEnabledCheck = DxComponent.CreateDxCheckEdit(x, y1, 160, this._HostContainer, "DragAndDropEnabled", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1);
-            __Sample4DragDropEnabledCheck.Checked = sampleDblList.DxProperties.DragAndDropEnabled;
-
-            __Sample4DoubleClickEnabledCheck = DxComponent.CreateDxCheckEdit(x, y2, 160, this._HostContainer, "DoubleClickEnabled", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1);
-            __Sample4DoubleClickEnabledCheck.Checked = sampleDblList.DxProperties.DoubleClickEnabled;
-            x += 165;
-            
-            __Sample4ShowContentButton = DxComponent.CreateDxSimpleButton(x, y1, 120, 40, this._HostContainer, "Zobrazit obsah", this._Sample4ShowClick);
-
-            __Sample4ParamsValid = true;
-        }
         private void _Sample4ParamsChanged(object sender, EventArgs args)
         {
             if (!__Sample4ParamsValid) return;
 
             var sampleDblList = _Sample4DblList;
 
+            if (__Sample4ModeCombo.SelectedComboItem != null && __Sample4ModeCombo.SelectedComboItem.Tag is DxDblListBoxPanel.DblListModeType dblListMode)
+                sampleDblList.DxProperties.DblListMode = dblListMode;
+
             if (__Sample4ButtonsCombo.SelectedComboItem != null && __Sample4ButtonsCombo.SelectedComboItem.Tag is DxDblListBoxPanel.DblButtonsPositionType buttonPosition)
                 sampleDblList.DxProperties.ButtonsPosition = buttonPosition;
 
-            sampleDblList.DxProperties.SourceListReadOnly = __Sample4SourceReadOnlyCheck.Checked;
+            sampleDblList.DxProperties.DragAndDropEnabled = __Sample4DragDropEnabledCheck.Checked;
             sampleDblList.DxProperties.MoveAllEnabled = __Sample4MoveAllEnabledCheck.Checked;
             sampleDblList.DxProperties.ClipboardActionsEnabled = __Sample4ClipActionsEnabledCheck.Checked;
-            sampleDblList.DxProperties.ReorderItemsEnabled = __Sample4ReorderEnabledCheck.Checked;
-            sampleDblList.DxProperties.DragAndDropEnabled = __Sample4DragDropEnabledCheck.Checked;
             sampleDblList.DxProperties.DoubleClickEnabled = __Sample4DoubleClickEnabledCheck.Checked;
         }
         private void _Sample4ShowClick(object sender, EventArgs args)
@@ -536,12 +559,12 @@ namespace TestDevExpress.Forms
 
             DxComponent.ShowMessageInfo(sb.ToString(), "Obsah Target Listboxu");
         }
+        private DxLabelControl __Sample4ModeLabel;
+        private DxImageComboBoxEdit __Sample4ModeCombo;
         private DxLabelControl __Sample4ButtonsLabel;
         private DxImageComboBoxEdit __Sample4ButtonsCombo;
-        private DxCheckEdit __Sample4SourceReadOnlyCheck;
         private DxCheckEdit __Sample4MoveAllEnabledCheck;
         private DxCheckEdit __Sample4ClipActionsEnabledCheck;
-        private DxCheckEdit __Sample4ReorderEnabledCheck;
         private DxCheckEdit __Sample4DragDropEnabledCheck;
         private DxCheckEdit __Sample4DoubleClickEnabledCheck;
         private DxSimpleButton __Sample4ShowContentButton;

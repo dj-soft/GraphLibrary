@@ -136,7 +136,8 @@ namespace TestDevExpress
                 DataMenuItem item = new DataMenuItem()
                 {
                     ItemId = "Item" + index.ToString(),
-                    Text = GetSentence(1, 6, false)
+                    Text = GetSentence(1, 6, false),
+                    ItemOrder = index
                 };
                 item.ImageName = GetIconName(imageType);
                 if (withToolTip)

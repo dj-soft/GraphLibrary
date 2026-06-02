@@ -1154,6 +1154,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
 
+            // Teprve po vložení souřadnic můžeme nastavit Visible:
+            foreach (var item in items)
+            {
+                if (item.Visible.HasValue && item.Control != null)
+                    item.Control.Visible = item.Visible.Value;
+            }
+
             return contentBounds;
         }
         #endregion
@@ -9995,25 +10002,25 @@ White
         DxFilterOperatorGreaterThanTip,
 
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
-        [DefaultMessageText("Alt+Home")]
+        [DefaultMessageText("Ctrl+Home")]
         DxKeyActionMoveTopTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Přesunout na začátek")]
         DxKeyActionMoveTopText,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
-        [DefaultMessageText("Alt+Nahoru")]
+        [DefaultMessageText("Ctrl+Nahoru")]
         DxKeyActionMoveUpTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Přesunout o řádek nahoru")]
         DxKeyActionMoveUpText,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
-        [DefaultMessageText("Alt+Dolů")]
+        [DefaultMessageText("Ctrl+Dolů")]
         DxKeyActionMoveDownTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Přesunout o řádek dolů")]
         DxKeyActionMoveDownText,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
-        [DefaultMessageText("Alt+End")]
+        [DefaultMessageText("Ctrl+End")]
         DxKeyActionMoveBottomTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Přesunout na konec")]
@@ -10055,10 +10062,10 @@ White
         [DefaultMessageText("Smazat")]
         DxKeyActionDeleteText,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
-        [DefaultMessageText("Vybrané doprava")]
+        [DefaultMessageText("Ctrl+Doprava")]
         DxKeyActionCopyToRightOneTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
-        [DefaultMessageText("Všechny vybrané položky přenese doprava")]
+        [DefaultMessageText("Vybrané položky přenese doprava")]
         DxKeyActionCopyToRightOneText,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Všechno doprava")]
@@ -10067,10 +10074,10 @@ White
         [DefaultMessageText("Všechny položky bez ohledu na výběr přenese doprava")]
         DxKeyActionCopyToRightAllText,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
-        [DefaultMessageText("Vybrané doleva")]
+        [DefaultMessageText("Ctrl+Doleva")]
         DxKeyActionCopyToLeftOneTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
-        [DefaultMessageText("Všechny vybrané položky přenese doleva")]
+        [DefaultMessageText("Vybrané položky přenese doleva")]
         DxKeyActionCopyToLeftOneText,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Všechno doleva")]

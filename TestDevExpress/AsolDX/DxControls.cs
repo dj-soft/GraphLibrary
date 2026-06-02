@@ -11546,6 +11546,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public Size Size { get; set; }
         /// <summary>
+        /// Nastavit tuto viditelnost poté, co je prvek umístěn na souřadnice
+        /// </summary>
+        public bool? Visible { get; set; }
+        /// <summary>
         /// Umístění.
         /// Setování hodnoty se propíše i do <see cref="Control"/>, pokud ten není null.
         /// </summary>
