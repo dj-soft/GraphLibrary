@@ -3999,58 +3999,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             RefreshBarItemTag(barItem, iRibbonItem);
         }
         /// <summary>
-        /// Nastaví dodaný styl písma do daného prvku, do jeho odpovídající Appearance, do všech stavů
-        /// </summary>
-        /// <param name="barItem"></param>
-        /// <param name="fontStyle"></param>
-        /// <param name="level"></param>
-        /// <param name="withReset"></param>
-        protected void FillBarItemFontStyle(BarItem barItem, System.Drawing.FontStyle fontStyle, int level, bool withReset = false)
-        {
-            var appearance = ((level == 0) ? barItem.ItemAppearance : barItem.ItemInMenuAppearance);
-            appearance.Normal.FontStyleDelta = fontStyle;
-            appearance.Hovered.FontStyleDelta = fontStyle;
-            appearance.Pressed.FontStyleDelta = fontStyle;
-            appearance.Disabled.FontStyleDelta = fontStyle;
-        }
-        /// <summary>
-        /// Do daného prvku Ribbonu vepíše vše pro jeho Image
-        /// </summary>
-        /// <param name="barItem"></param>
-        /// <param name="iRibbonItem"></param>
-        /// <param name="level">0 pro Ribbonitem, 1 a vyšší pro prvky v menu</param>
-        /// <param name="withReset"></param>
-        protected void FillBarItemImage(BarItem barItem, IRibbonItem iRibbonItem, int level, bool withReset = false)
-        {
-            if (barItem is DxBarCheckBoxToggle) return;                        // DxCheckBoxToggle si řídí Image sám
-
-            if ((iRibbonItem.ItemType == RibbonItemType.CheckButton || iRibbonItem.ItemType == RibbonItemType.CheckButtonPassive || iRibbonItem.ItemType == RibbonItemType.CheckBoxStandard || iRibbonItem.ItemType == RibbonItemType.CheckBoxPasive || iRibbonItem.ItemType == RibbonItemType.RadioItem) && barItem is BarBaseButtonItem barButton)
-                RibbonItemSetImageByChecked(iRibbonItem, barButton, level);    // S možností volby podle Checked
-            else
-                RibbonItemSetImageStandard(iRibbonItem, barItem, level);
-        }
-        /// <summary>
-        /// Připraví do prvku Ribbonu obrázek (ikonu) podle aktuálního stavu a dodané definice, pro standardní button
-        /// </summary>
-        /// <param name="iRibbonItem"></param>
-        /// <param name="barItem"></param>
-        /// <param name="level"></param>
-        protected void RibbonItemSetImageStandard(IRibbonItem iRibbonItem, BarItem barItem, int? level = null)
-        {
-            // Určíme, zda prvek je přímo v Ribbonu nebo až jako subpoložka:
-            //  Hodnota level se předává v procesu prvotní tvorby, pak Root prvek má level == 0;
-            //  Pokud hodnota level není předána, pak jsme volání z obsluhy kliknutí na prvek, a tam se spolehneme na hodnotu IRibbonItem.ParentItem.
-            bool isRootItem = (level.HasValue ? (level.Value == 0) : (iRibbonItem.ParentItem is null));
-
-            // Velikost obrázku: pro RootItem (vlastní prvky v Ribbonu) ve stylu Large nebo Default dáme obrázky Large, jinak dáme Small (pro malé prvky Ribbonu a pro položky menu, ty mají Level 1 a vyšší):
-            bool isLargeIcon = (isRootItem && (iRibbonItem.RibbonStyle.HasFlag(RibbonItemStyles.Large) || iRibbonItem.RibbonStyle == RibbonItemStyles.Default));
-            ResourceImageSizeType sizeType = (isLargeIcon ? ResourceImageSizeType.Large : ResourceImageSizeType.Small);
-
-            // Náhradní ikonky (pro nezadané nebo neexistující ImageName) budeme generovat jen pro level = 0 = Ribbon, a ne pro Menu!
-            string imageCaption = DxComponent.GetCaptionForRibbonImage(iRibbonItem, level);
-            DxComponent.ApplyImage(barItem.ImageOptions, iRibbonItem.ImageName, iRibbonItem.Image, sizeType, caption: imageCaption, prepareDisabledImage: iRibbonItem.PrepareDisabledImage, imageListMode: iRibbonItem.ImageListMode);
-        }
-        /// <summary>
         /// Připraví do prvku Ribbonu obrázek (ikonu) podle aktuálního stavu a dodané definice, pro button typu CheckButton nebo CheckBox
         /// </summary>
         /// <param name="iRibbonItem"></param>
