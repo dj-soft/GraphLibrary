@@ -4246,8 +4246,7 @@ SetSelected() - vstup           Absolutní
         /// <summary>
         /// Souhrn povolených akcí Drag and Drop
         /// </summary>
-        protected DxDragDropActionType DragDropActions { get { return _DragDropActions; } set { _DxDragDropInit(value); } }
-        private DxDragDropActionType _DragDropActions;
+        protected DxDragDropActionType DragDropActions { get { return _DragDropActions; } set { _DxDragDropInit(value); } } private DxDragDropActionType _DragDropActions;
         /// <summary>
         /// Vrátí true, pokud je povolena daná akce
         /// </summary>
@@ -4358,6 +4357,7 @@ SetSelected() - vstup           Absolutní
             }
             else
             {
+                args.TitleText = DxComponent.Localize(MsgCode.DxDragDropSourceItemsFormTitle);
                 args.SourceText = selectedItems.ToOneString(convertor: i => i.MenuItem?.ToString());
                 args.SourceObject = selectedItems;
                 args.SourceDragEnabled = true;

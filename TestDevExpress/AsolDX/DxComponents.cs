@@ -10092,6 +10092,10 @@ White
         DxKeyActionRedoText,
 
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Najděte cíl pro prvky:")]
+        DxDragDropSourceItemsFormTitle,
+
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Vytvořte nový graf...")]
         DxChartEditorTitleWizard,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>

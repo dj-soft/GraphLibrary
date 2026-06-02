@@ -304,7 +304,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {   // Synchronní metoda, v následujícím řádku proběhne kompletní proces Drag and Drop až do puštění myši:
             try
             {
-                DragFormCreate(DragArgs.SourceText, DragArgs.SourceTextAllowHtml);
+                DragFormCreate(DragArgs.TitleText, DragArgs.SourceText, DragArgs.SourceTextAllowHtml);
                 // V rámci metody _Owner.DoDragDrop() jsou volány níže uvedené metody, které řídí proces Drag and Drop...
                 DragDropEffects result = Owner.DoDragDrop(this, DragArgs.AllowedEffects);
                 // Teprve až proces Drag and Drop skončí, dostane se řízení na tento řádek...
@@ -697,13 +697,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vytvoří okno DragForm, naplní jej dodanými daty, a rozsvítí jej. Okno je nemodální.
         /// </summary>
-        /// <param name="text"></param>
+        /// <param name="titleText"></param>
+        /// <param name="infoText"></param>
         /// <param name="enableHtml"></param>
         /// <param name="enabled"></param>
-        private void DragFormCreate(string text, bool? enableHtml = null, bool? enabled = null)
+        private void DragFormCreate(string titleText, string infoText, bool? enableHtml = null, bool? enabled = null)
         {
-            _DragForm = new DxDragForm(this);
-            _DragForm.InfoText = text;
+            _DragForm = DxDragForm.CreateForm(this);
+            _DragForm.TitleText = titleText;
+            _DragForm.InfoText = infoText;
             _DragForm.InfoTextEnableHtml = enableHtml ?? true;
             _DragForm.IsEnabled = enabled ?? true;
         }
@@ -803,16 +805,30 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Barva pozadí dole Disabled
         /// </summary>
         public Color? DragFormBackColor2Disabled { get; set; }
+        internal class DxDragForm : DevExpress.XtraEditors.XtraForm // Form
+        {
+            public static DxDragForm CreateForm(DxDragDrop owner)
+            {
+                return new DxDragFormSimple(owner);
+            }
+            public virtual string TitleText { get; set; }
+            public virtual string InfoText { get; set; }
+            public virtual bool InfoTextEnableHtml { get; set; }
+            public virtual bool IsEnabled { get; set; }
+            public virtual Point Position { get; set; }
+        }
+        #endregion
+        #region DxDragFormSimple : DragAndDrop okno, verze Basic
         /// <summary>
         /// Formulář zobrazující informace v procesu Drag and Drop
         /// </summary>
-        private class DxDragForm : DevExpress.XtraEditors.XtraForm // Form
+        private class DxDragFormSimple : DxDragForm
         {
             /// <summary>
             /// Konstruktor
             /// </summary>
             /// <param name="owner"></param>
-            public DxDragForm(DxDragDrop owner)
+            public DxDragFormSimple(DxDragDrop owner)
             {
                 this._Owner = owner;
                 Initialize();
@@ -823,6 +839,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             private void Initialize()
             {
                 FormBorderStyle = FormBorderStyle.None;
+                this.MinimizeBox = false;
+                this.MaximizeBox = false;
+                this.ControlBox = false;
+                this.CloseBox = false;
                 AllowTransparency = true;
                 TransparencyKey = Color.Magenta;
                 BackColor = Color.Magenta;
@@ -832,21 +852,21 @@ namespace Noris.Clients.Win.Components.AsolDX
                 ShowInTaskbar = false;
                 TopLevel = true;
 
-                var label = new DxLabelControl() { Location = new Point(0, 0), Text = "", AllowHtmlString = true, BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder };
-                label.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
-                label.Padding = new Padding(3);
-                label.Appearance.GradientMode = LinearGradientMode.Vertical;
-                label.Appearance.Options.UseForeColor = true;
-                label.Appearance.Options.UseBackColor = true;
-                label.Appearance.TextOptions.WordWrap = DevExpress.Utils.WordWrap.Wrap;
-                label.Appearance.TextOptions.HAlignment = HorzAlignment.Near;
-                label.Appearance.Options.UseTextOptions = true;
-                label.AutoEllipsis = true;
-                label.AutoSizeMode = LabelAutoSizeMode.None;
+                var infoLabel = new DxLabelControl() { Location = new Point(0, 0), Text = "", AllowHtmlString = true, BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder };
+                infoLabel.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
+                infoLabel.Padding = new Padding(3);
+                infoLabel.Appearance.GradientMode = LinearGradientMode.Vertical;
+                infoLabel.Appearance.Options.UseForeColor = true;
+                infoLabel.Appearance.Options.UseBackColor = true;
+                infoLabel.Appearance.TextOptions.WordWrap = DevExpress.Utils.WordWrap.Wrap;
+                infoLabel.Appearance.TextOptions.HAlignment = HorzAlignment.Near;
+                infoLabel.Appearance.Options.UseTextOptions = true;
+                infoLabel.AutoEllipsis = true;
+                infoLabel.AutoSizeMode = LabelAutoSizeMode.None;
                 //             label.AutoSizeMode = DevExpress.XtraEditors.LabelAutoSizeMode.Vertical;
 
-                _InfoLabel = label;
-                this.Controls.Add(label);
+                _InfoLabel = infoLabel;
+                this.Controls.Add(infoLabel);
 
                 this.InitializeColors();
             }
@@ -950,10 +970,26 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var owner = this._Owner;
                 if (owner == null) return;
 
-                var infoLabel = _InfoLabel;
-                infoLabel.Text = infoText ?? "";
+                var labelText = "";
+                var labelUseHtml = allowHtmlString;
 
-                if (infoLabel.AllowHtmlString != allowHtmlString) infoLabel.AllowHtmlString = allowHtmlString;
+                string eol = "";
+                if (!String.IsNullOrEmpty(titleText))
+                {
+                    labelText = $"<b><u>{titleText}</u></b>";           // labelText = $"<b><u><size=+1>{titleText}</size></u></b>";
+                    eol = "<br><br>";
+                    labelUseHtml = true;
+                }
+
+                if (!String.IsNullOrEmpty(infoText))
+                {
+                    labelText += (eol + infoText);
+                }
+
+                // Naplním Label:
+                var infoLabel = _InfoLabel;
+                if (infoLabel.AllowHtmlString != allowHtmlString) infoLabel.AllowHtmlString = labelUseHtml;
+                infoLabel.Text = labelText;
 
                 var optimalSize = infoLabel.CalcBestSize();
                 var minSize = owner.DragFormMinSize;
@@ -1027,29 +1063,24 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Pozice okna
             /// </summary>
-            public Point Position { get { return _Position; } set { if (_Position != value) DragFormSetPosition(value); } }
-            private Point _Position;
+            public override Point Position { get { return _Position; } set { if (_Position != value) DragFormSetPosition(value); } } private Point _Position;
             /// <summary>
             /// Text titulku okna. 
             /// Aktuálně se nepoužívá.
             /// </summary>
-            public string TitleText { get { return _TitleText; } set { if (!String.Equals(value, _TitleText)) DragFormUpdateContent(value, _InfoText, _InfoTextEnableHtml); } }
-            private string _TitleText;
+            public override  string TitleText { get { return _TitleText; } set { if (!String.Equals(value, _TitleText)) DragFormUpdateContent(value, _InfoText, _InfoTextEnableHtml); } } private string _TitleText;
             /// <summary>
             /// Text informace okna.
             /// </summary>
-            public string InfoText { get { return _InfoText; } set { if (!String.Equals(value, _InfoText)) DragFormUpdateContent(_TitleText, value, _InfoTextEnableHtml); } }
-            private string _InfoText;
+            public override string InfoText { get { return _InfoText; } set { if (!String.Equals(value, _InfoText)) DragFormUpdateContent(_TitleText, value, _InfoTextEnableHtml); } } private string _InfoText;
             /// <summary>
             /// Příznak, že <see cref="InfoText"/> může obsahovat HTML značky
             /// </summary>
-            public bool InfoTextEnableHtml { get { return _InfoTextEnableHtml; } set { if (value != _InfoTextEnableHtml) DragFormUpdateContent(_TitleText, _InfoText, value); } }
-            private bool _InfoTextEnableHtml;
+            public override bool InfoTextEnableHtml { get { return _InfoTextEnableHtml; } set { if (value != _InfoTextEnableHtml) DragFormUpdateContent(_TitleText, _InfoText, value); } } private bool _InfoTextEnableHtml;
             /// <summary>
             /// Vzhled okna podle možnosti Enabled procesu Drag and Drop (false = šedivé okno)
             /// </summary>
-            public bool IsEnabled { get { return _IsEnabled; } set { if (value != _IsEnabled) DragFormSetEnabledColors(value); } }
-            private bool _IsEnabled;
+            public override bool IsEnabled { get { return _IsEnabled; } set { if (value != _IsEnabled) DragFormSetEnabledColors(value); } } private bool _IsEnabled;
         }
         #endregion
         #region AI Painter ve stylu SuperToolTip
@@ -1419,6 +1450,12 @@ public partial class MainForm : Form
         /// Libovolná data zdrojového objektu.
         /// </summary>
         public object SourceTag { get; set; }
+        /// <summary>
+        /// Titulek zobrazovaný v okně při Drag and Drop.
+        /// Obecně informuje o kopírování / přesouvání.
+        /// Může obsahovat HTML Tagy typu DevExpress, viz <see cref="SourceTextAllowHtml"/>.
+        /// </summary>
+        public string TitleText { get; set; }
         /// <summary>
         /// Text zobrazovaný v okně při Drag and Drop.
         /// Může obsahovat HTML Tagy typu DevExpress, viz <see cref="SourceTextAllowHtml"/>.
