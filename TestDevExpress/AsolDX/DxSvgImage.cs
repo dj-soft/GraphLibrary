@@ -716,7 +716,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="mirror"></param>
         private static void _GetArrowModifyDim(ref int dim, bool half, int size, bool mirror)
         {
-            if (mirror) dim = size - dim;
+            if (mirror) dim = 32 - dim;
             if (half) dim = dim / 2;
         }
         /// <summary>
@@ -1834,7 +1834,7 @@ M22,22H10v2H22v-2z " class="Black" />
         /// <summary>
         /// Aktuálně použitá verze algoritmu
         /// </summary>
-        private static SvgFormatVersionType FormatVersion { get { return SvgFormatVersionType.Version2026; } }
+        private static SvgFormatVersionType FormatVersion { get { return SvgFormatVersionType.Default; } }
         private enum SvgFormatVersionType
         {
             Default,

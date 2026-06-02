@@ -455,6 +455,9 @@ namespace TestDevExpress.Forms
             var imgFreeTarget = "@arrowsmall|right|green";
             var imgBallance = "devav/actions/pagenext.svg";   // "@arrow|right|blue";
 
+            var svgimg = DxComponent.GetVectorImage(imgBallance, true, ResourceImageSizeType.Small);
+            var svgXml = svgimg.ToXmlString();
+
             __Sample4ModeCombo.ComboItems = new IMenuItem[]
             {
                 new DataMenuItem(){ Text = "FixedSourceToFreeTarget", ImageName = imgFreeTarget, Tag = DxDblListBoxPanel.DblListModeType.Mode_FixedSourceToFreeTarget, ToolTipText = "Vlevo je neměnný zdroj, z něhož lze doprava přenášet libovolné položky, i opakovaně. Vpravo lze třídit a smazat. Vlevo nelze měnit." },
