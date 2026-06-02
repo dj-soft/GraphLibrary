@@ -10056,28 +10056,28 @@ White
         DxKeyActionDeleteText,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Vybrané doprava")]
-        DxKeyActionCopyToRightOneText,
-        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
-        [DefaultMessageText("Všechny vybrané položky přenese doprava")]
         DxKeyActionCopyToRightOneTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
-        [DefaultMessageText("Všechno doprava")]
-        DxKeyActionCopyToRightAllText,
+        [DefaultMessageText("Všechny vybrané položky přenese doprava")]
+        DxKeyActionCopyToRightOneText,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
-        [DefaultMessageText("Všechny položky bez ohledu na výběr přenese doprava")]
+        [DefaultMessageText("Všechno doprava")]
         DxKeyActionCopyToRightAllTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
-        [DefaultMessageText("Vybrané doleva")]
-        DxKeyActionCopyToLeftOneText,
+        [DefaultMessageText("Všechny položky bez ohledu na výběr přenese doprava")]
+        DxKeyActionCopyToRightAllText,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
-        [DefaultMessageText("Všechny vybrané položky přenese doleva")]
+        [DefaultMessageText("Vybrané doleva")]
         DxKeyActionCopyToLeftOneTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Všechny vybrané položky přenese doleva")]
+        DxKeyActionCopyToLeftOneText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Všechno doleva")]
-        DxKeyActionCopyToLeftAllText,
+        DxKeyActionCopyToLeftAllTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Všechny položky bez ohledu na výběr přenese doleva")]
-        DxKeyActionCopyToLeftAllTitle,
+        DxKeyActionCopyToLeftAllText,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Ctrl+Y")]
         DxKeyActionUndoTitle,
@@ -10090,7 +10090,6 @@ White
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("O krok vpřed. Znovu provede krok editace, který byl zrušen krokem zpět")]
         DxKeyActionRedoText,
-
 
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Vytvořte nový graf...")]
