@@ -15,6 +15,7 @@ using DevExpress.Utils;
 using DevExpress.Utils.Svg;
 
 using Noris.WS.DataContracts.Desktop.Data;
+using DevExpress.XtraBars.Customization;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -1741,11 +1742,24 @@ M22,22H10v2H22v-2z " class="Black" />
         /// <returns></returns>
         private static string _GetXmlBodyHeader(int size)
         {
-            string xml = $@"﻿<?xml version='1.0' encoding='UTF-8'?>
+            string xml = "";
+            switch (FormatVersion)
+            {
+                case SvgFormatVersionType.Version2026:
+                    xml = $@"﻿<?xml version='1.0' encoding='UTF-8'?>
+<svg x='0px' y='0px' viewBox='0 0 {size} {size}' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' xml:space='preserve' id='Layer_1' style='enable-background:new 0 0 {size} {size}'>
+  <g id='icon'>
+";
+                    break;
+                case SvgFormatVersionType.Default:
+                default:
+                    xml = $@"﻿<?xml version='1.0' encoding='UTF-8'?>
 <svg x='0' y='0' width='{size}' height='{size}' viewBox='0 0 {size} {size}' enable-background='new 0 0 {size} {size}' 
       version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' xml:space='preserve' id='Layer_1'>
   <g id='icon'>
 ";
+                    break;
+            }
             return xml.Replace("'", "\"");
         }
         /// <summary>
@@ -1816,6 +1830,15 @@ M22,22H10v2H22v-2z " class="Black" />
                 coordinate += modulo;
             }
             return result;
+        }
+        /// <summary>
+        /// Aktuálně použitá verze algoritmu
+        /// </summary>
+        private static SvgFormatVersionType FormatVersion { get { return SvgFormatVersionType.Version2026; } }
+        private enum SvgFormatVersionType
+        {
+            Default,
+            Version2026
         }
         #endregion
         #region Tvorba XML elementů a jejich částí pro jednotlivá grafická data

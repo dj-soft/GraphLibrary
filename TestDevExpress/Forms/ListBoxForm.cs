@@ -451,10 +451,14 @@ namespace TestDevExpress.Forms
 
             __Sample4ModeLabel = DxComponent.CreateDxLabel(x, y1 + 4, 100, this._HostContainer, "DblListMode:");
             __Sample4ModeCombo = DxComponent.CreateDxImageComboBox(x, y2, 185, this._HostContainer, _Sample4ParamsChanged, toolTipText: "Zvolte režim pro DblList");
+
+            var imgFreeTarget = "@arrowsmall|right|green";
+            var imgBallance = "devav/actions/pagenext.svg";   // "@arrow|right|blue";
+
             __Sample4ModeCombo.ComboItems = new IMenuItem[]
             {
-                new DataMenuItem(){ Text = "FixedSourceToFreeTarget", Tag = DxDblListBoxPanel.DblListModeType.Mode_FixedSourceToFreeTarget, ToolTipText = "Vlevo je neměnný zdroj, z něhož lze doprava přenášet libovolné položky, i opakovaně. Vpravo lze třídit a smazat. Vlevo nelze měnit." },
-                new DataMenuItem(){ Text = "Ballance", Tag = DxDblListBoxPanel.DblListModeType.Mode_Ballance },
+                new DataMenuItem(){ Text = "FixedSourceToFreeTarget", ImageName = imgFreeTarget, Tag = DxDblListBoxPanel.DblListModeType.Mode_FixedSourceToFreeTarget, ToolTipText = "Vlevo je neměnný zdroj, z něhož lze doprava přenášet libovolné položky, i opakovaně. Vpravo lze třídit a smazat. Vlevo nelze měnit." },
+                new DataMenuItem(){ Text = "Ballance", ImageName = imgBallance, Tag = DxDblListBoxPanel.DblListModeType.Mode_Ballance },
                 new DataMenuItem(){ Text = "None", Tag = DxDblListBoxPanel.DblListModeType.None }
             };
             var dblListMode = _Sample4DblList.DxProperties.DblListMode;
@@ -493,6 +497,7 @@ namespace TestDevExpress.Forms
             x += 35;
             __Sample4ShowContentButton = DxComponent.CreateDxSimpleButton(x, y1, 145, 40, this._HostContainer, "Zobrazit obsah", this._Sample4ShowClick);
 
+            _Sample4_TargetMenuItemsChangeCounter = 0;
             __Sample4ParamsValid = true;
         }
         private void _DisposeSample4Params()

@@ -4229,6 +4229,7 @@ SetSelected() - vstup           Absolutní
         protected void MoveSelectedItems(int? targetIndex, DxItemsChangeType changeType = DxItemsChangeType.Code)
         {
             _MoveItems(this.SelectedMenuInfos, targetIndex, changeType);
+            _RunMenuItemsChanged(changeType);
         }
         /// <summary>
         /// Do this listu vloží další prvky <paramref name="sourceItems"/>, počínaje aktuální pozicí vybraného prvku.
@@ -4245,9 +4246,11 @@ SetSelected() - vstup           Absolutní
             if (atCurrentIndex)
             {
                 var filteredIndex = this.SelectedIndex;                                  // SelectedIndex se vztahuje k prvkům viditelným, nikoli ke všem
-                insertAbsoluteIndex = this.GetAbsoluteIndexFromFiltered(filteredIndex);  // Tady získám Absolute index
+                insertAbsoluteIndex = this.GetAbsoluteIndexFromFiltered(filteredIndex);  // Tady získám Absolute index prvku, na kterém je kurzor
+                insertAbsoluteIndex++;                                                   // Ale InsertAtIndex bude až za tento prvek !!!  Bez tohoto incrementu by byl 'před aktuální prvek' !
             }
             _InsertItems(sourceItems, insertAbsoluteIndex, true, changeType);
+            _RunMenuItemsChanged(changeType);
         }
         /// <summary>
         /// Do this listu vloží další prvky <paramref name="sourceItems"/>, počínaje danou pozicí <paramref name="insertAbsoluteIndex"/>.<br/>
@@ -4420,7 +4423,9 @@ SetSelected() - vstup           Absolutní
 
             this._InvalidateFilteredItems();
         }
-
+        /// <summary>
+        /// Aktualizuje ViewInfo
+        /// </summary>
         private void _UpdateViewInfo()
         {
             this.ViewInfo.Reset();
