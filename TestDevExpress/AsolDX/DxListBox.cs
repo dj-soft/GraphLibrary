@@ -43,6 +43,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.SplitterPosition = 300;
 
             var listPanelSource = new DxListBoxPanel();
+            listPanelSource.DxProperties.ItemMouseDoubleClick += _SourceList_MouseDoubleClick;
             listPanelSource.Dock = DockStyle.Fill;
             this.Panel1.Controls.Add(listPanelSource);
             this.Panel1.MinSize = 120;
@@ -50,6 +51,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             var listPanelTarget = new DxListBoxPanel();
             listPanelTarget.Dock = DockStyle.Fill;
+            listPanelTarget.DxProperties.ItemMouseDoubleClick += _TargetList_MouseDoubleClick;
             this.Panel2.Controls.Add(listPanelTarget);
             this.Panel2.MinSize = 120;
             __TargetListPanel = listPanelTarget;
@@ -119,6 +121,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             __DragAndDropEnabled = true;
             __ClipboardActionsEnabled = false;
             __ReorderItemsEnabled = true;
+            __DoubleClickEnabled = true;
             _AcceptButtonsPosition();
             _AcceptListStyles();
 
@@ -145,42 +148,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _TargetSelectedItemsChanged(object sender, EventArgs e)
         {
             this._SetButtonsEnabled();
-        }
-        /// <summary>
-        /// Událost po provedení jakékoli akce v Source Listu.
-        /// Zde je prostor na tuto akci navázat, anebo vyřešit takové akce, které sám jednoduchý List nedokáže provést = akce předávání mezi dvěma Listy.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _SourceListActionAfter(object sender, DxListBoxActionEventArgs e)
-        {
-            switch (e.Action)
-            {
-                case ControlKeyActionType.CopyToRightOne:
-                    _DoCommonButtonClick(ControlKeyActionType.CopyToRightOne);
-                    break;
-                case ControlKeyActionType.CopyToRightAll:
-                    _DoCommonButtonClick(ControlKeyActionType.CopyToRightAll);
-                    break;
-            }
-        }
-        /// <summary>
-        /// Událost po provedení jakékoli akce v Target Listu.
-        /// Zde je prostor na tuto akci navázat, anebo vyřešit takové akce, které sám jednoduchý List nedokáže provést = akce předávání mezi dvěma Listy.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _TargetListActionAfter(object sender, DxListBoxActionEventArgs e)
-        {
-            switch (e.Action)
-            {
-                case ControlKeyActionType.CopyToLeftOne:
-                    _DoCommonButtonClick(ControlKeyActionType.CopyToLeftOne);
-                    break;
-                case ControlKeyActionType.CopyToLeftAll:
-                    _DoCommonButtonClick(ControlKeyActionType.CopyToLeftAll);
-                    break;
-            }
         }
         /// <summary>
         /// Instance ListBoxPanelu pro levý = Source panel
@@ -246,6 +213,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Výchozí hodnota je <c>true</c>.
         /// </summary>
         protected bool ReorderItemsEnabled { get { return __ReorderItemsEnabled; } set { __ReorderItemsEnabled = value; _AcceptListStyles(true, true); } } private bool __ReorderItemsEnabled;
+        /// <summary>
+        /// Pro tento Double ListBox je povolena akce DoubleClick myší: provede přesun / kopii vybraného prvku na druhou stranu, pokud to lze provést.
+        /// </summary>
+        protected bool DoubleClickEnabled { get { return __DoubleClickEnabled; } set { __DoubleClickEnabled = value; } } private bool __DoubleClickEnabled;
         /// <summary>
         /// Akceptuje hodnotu pozice buttonůdo <see cref="ButtonsPosition"/>
         /// </summary>
@@ -363,7 +334,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             // Klávesové akce musíme povolit do Source panelu bez ohledu na umístění Buttonů:
-            keyActions |= ControlKeyActionType.CopyToRightOne;
+            keyActions |= (ControlKeyActionType.CopyToRightOne | ControlKeyActionType.CopyToRightOneEnd);
             if (moveAllEnabled)
                 keyActions |= ControlKeyActionType.CopyToRightAll;
             
@@ -506,6 +477,67 @@ namespace Noris.Clients.Win.Components.AsolDX
             Custom
         }
         #endregion
+        #region Interakce mezi panely
+        /// <summary>
+        /// Událost po provedení jakékoli akce v Source Listu.
+        /// Zde je prostor na tuto akci navázat, anebo vyřešit takové akce, které sám jednoduchý List nedokáže provést = akce předávání mezi dvěma Listy.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _SourceListActionAfter(object sender, DxListBoxActionEventArgs e)
+        {
+            switch (e.Action)
+            {
+                case ControlKeyActionType.CopyToRightOne:
+                    DoCommonButtonClick(ControlKeyActionType.CopyToRightOne, e.ChangeType);
+                    break;
+                case ControlKeyActionType.CopyToRightOneEnd:
+                    DoCommonButtonClick(ControlKeyActionType.CopyToRightOneEnd, e.ChangeType);
+                    break;
+                case ControlKeyActionType.CopyToRightAll:
+                    DoCommonButtonClick(ControlKeyActionType.CopyToRightAll, e.ChangeType);
+                    break;
+            }
+        }
+        /// <summary>
+        /// DoubleClick na ListBoxu Source = vlevo: podle nastavení může provést akci ControlKeyActionType.CopyToRightOneEnd
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _SourceList_MouseDoubleClick(object sender, DxListBoxItemMouseClickEventArgs args)
+        {
+            if (this.DoubleClickEnabled && args.Item != null)
+                DoCommonButtonClick(ControlKeyActionType.CopyToRightOneEnd, DxItemsChangeType.UserInteractive);
+        }
+        /// <summary>
+        /// Událost po provedení jakékoli akce v Target Listu.
+        /// Zde je prostor na tuto akci navázat, anebo vyřešit takové akce, které sám jednoduchý List nedokáže provést = akce předávání mezi dvěma Listy.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _TargetListActionAfter(object sender, DxListBoxActionEventArgs e)
+        {
+            switch (e.Action)
+            {
+                case ControlKeyActionType.CopyToLeftOne:
+                    DoCommonButtonClick(ControlKeyActionType.CopyToLeftOne, e.ChangeType);
+                    break;
+                case ControlKeyActionType.CopyToLeftAll:
+                    DoCommonButtonClick(ControlKeyActionType.CopyToLeftAll, e.ChangeType);
+                    break;
+            }
+        }
+        /// <summary>
+        /// DoubleClick na ListBoxu Target = vpravo: podle nastavení může provést akci ControlKeyActionType.CopyToLeftOneEnd
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _TargetList_MouseDoubleClick(object sender, DxListBoxItemMouseClickEventArgs args)
+        {
+            if (this.DoubleClickEnabled && !this.SourceListReadOnly && args.Item != null)
+                DoCommonButtonClick(ControlKeyActionType.CopyToLeftOneEnd, DxItemsChangeType.UserInteractive);
+        }
+        #endregion
         #region Tlačítka uprostřed
         /// <summary>
         /// Inicializace pro středová tlačítka
@@ -642,29 +674,43 @@ namespace Noris.Clients.Win.Components.AsolDX
                 switch (actionType)
                 {
                     case ControlKeyActionType.CopyToRightOne:
+                    case ControlKeyActionType.CopyToRightOneEnd:
                     case ControlKeyActionType.CopyToRightAll:
                     case ControlKeyActionType.CopyToLeftOne:
+                    case ControlKeyActionType.CopyToLeftOneEnd:
                     case ControlKeyActionType.CopyToLeftAll:
-                        _DoCommonButtonClick(actionType);
+                        DoCommonButtonClick(actionType);
                         break;
                 }
             }
         }
-        private void _DoCommonButtonClick(ControlKeyActionType actionType)
+        /// <summary>
+        /// Provede danou společnou akci mezi dvěma Listy
+        /// </summary>
+        /// <param name="actionType"></param>
+        /// <param name="changeType"></param>
+        protected void DoCommonButtonClick(ControlKeyActionType actionType, DxItemsChangeType changeType = DxItemsChangeType.Code)
         {
             switch (actionType)
             {
                 case ControlKeyActionType.CopyToRightOne:
-                    DxTargetProperties.InsertItems(DxSourceProperties.SelectedMenuItems, true, true);
+                    DxTargetProperties.InsertItems(DxSourceProperties.SelectedMenuItems, true, true, changeType);
+                    break;
+                case ControlKeyActionType.CopyToRightOneEnd:
+                    DxTargetProperties.InsertItems(DxSourceProperties.SelectedMenuItems, false, true, changeType);
                     break;
                 case ControlKeyActionType.CopyToRightAll:
-                    DxTargetProperties.InsertItems(DxSourceProperties.MenuItems, true, true);
+                    DxTargetProperties.InsertItems(DxSourceProperties.MenuItems, true, true, changeType);
                     break;
+
                 case ControlKeyActionType.CopyToLeftOne:
-                    DxSourceProperties.InsertItems(DxTargetProperties.SelectedMenuItems, true, true);
+                    DxSourceProperties.InsertItems(DxTargetProperties.SelectedMenuItems, true, true, changeType);
+                    break;
+                case ControlKeyActionType.CopyToLeftOneEnd:
+                    DxSourceProperties.InsertItems(DxTargetProperties.SelectedMenuItems, false, true, changeType);
                     break;
                 case ControlKeyActionType.CopyToLeftAll:
-                    DxSourceProperties.InsertItems(DxTargetProperties.MenuItems, true, true);
+                    DxSourceProperties.InsertItems(DxTargetProperties.MenuItems, true, true, changeType);
                     break;
             }
         }
@@ -761,26 +807,30 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Výchozí hodnota je <c>true</c>.
             /// </summary>
             public bool ReorderItemsEnabled { get { return __Owner.ReorderItemsEnabled; } set { __Owner.ReorderItemsEnabled = value; } }
+            /// <summary>
+            /// Pro tento Double ListBox je povolena akce DoubleClick myší: provede přesun / kopii vybraného prvku na druhou stranu, pokud to lze provést.
+            /// </summary>
+            public bool DoubleClickEnabled { get { return __Owner.DoubleClickEnabled; } set { __Owner.DoubleClickEnabled = value; } }
             #endregion
             #region MenuItems
             /// <summary>
-            /// Prvky zdrojového Listu (vlevo) typované na <see cref="IMenuItem"/>.
+            /// Prvky zdrojového Listu (vlevo) typované na <see cref="ITextItem"/>.
             /// </summary>
-            public IMenuItem[] SourceMenuItems { get { return __Owner.DxSourceProperties.MenuItems; } set { __Owner.DxSourceProperties.MenuItems = value; } }
+            public ITextItem[] SourceMenuItems { get { return __Owner.DxSourceProperties.MenuItems; } set { __Owner.DxSourceProperties.MenuItems = value; } }
             /// <summary>
             /// Obsahuje pole prvků zdrojového Listu (vlevo), které jsou aktuálně Selected. 
             /// Lze setovat. Setování nastaví stav Selected na těch prvcích this.Items, které jsou Object.ReferenceEquals() shodné s některým dodaným prvkem. Ostatní budou not selected.
             /// </summary>
-            public IMenuItem[] SourceSelectedMenuItems { get { return __Owner.DxSourceProperties.SelectedMenuItems; } set { __Owner.DxSourceProperties.SelectedMenuItems = value; } }
+            public ITextItem[] SourceSelectedMenuItems { get { return __Owner.DxSourceProperties.SelectedMenuItems; } set { __Owner.DxSourceProperties.SelectedMenuItems = value; } }
             /// <summary>
-            /// Prvky cílového Listu (vpravo) typované na <see cref="IMenuItem"/>.
+            /// Prvky cílového Listu (vpravo) typované na <see cref="ITextItem"/>.
             /// </summary>
-            public IMenuItem[] TargetMenuItems { get { return __Owner.DxTargetProperties.MenuItems; } set { __Owner.DxTargetProperties.MenuItems = value; } }
+            public ITextItem[] TargetMenuItems { get { return __Owner.DxTargetProperties.MenuItems; } set { __Owner.DxTargetProperties.MenuItems = value; } }
             /// <summary>
             /// Obsahuje pole prvků cílového Listu (vpravo), které jsou aktuálně Selected. 
             /// Lze setovat. Setování nastaví stav Selected na těch prvcích this.Items, které jsou Object.ReferenceEquals() shodné s některým dodaným prvkem. Ostatní budou not selected.
             /// </summary>
-            public IMenuItem[] TargetSelectedMenuItems { get { return __Owner.DxTargetProperties.SelectedMenuItems; } set { __Owner.DxTargetProperties.SelectedMenuItems = value; } }
+            public ITextItem[] TargetSelectedMenuItems { get { return __Owner.DxTargetProperties.SelectedMenuItems; } set { __Owner.DxTargetProperties.SelectedMenuItems = value; } }
             #endregion
             #region Eventy
             /// <summary>
@@ -792,6 +842,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public event DxListBoxMenuItemsChangedDelegate TargetMenuItemsChanged { add { __Owner.DxTargetProperties.MenuItemsChanged += value; } remove { __Owner.DxTargetProperties.MenuItemsChanged -= value; } }
             #endregion
+            #region Akce, metody
+            /// <summary>
+            /// Provede danou společnou akci mezi dvěma Listy
+            /// </summary>
+            /// <param name="actionType"></param>
+            /// <param name="changeType"></param>
+            public void DoCommonButtonClick(ControlKeyActionType actionType, DxItemsChangeType changeType = DxItemsChangeType.Code) { __Owner.DoCommonButtonClick(actionType, changeType); }
+            #endregion
+
         }
         #endregion
     }
@@ -967,10 +1026,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Režim prvků v ListBoxu.
         /// </summary>
-        #region Jednoduchý List postavený nad položkami IMenuItem
+        #region Jednoduchý List postavený nad položkami ITextItem
         /// <summary>
         /// Aktuálně označené objekty. Může jich být i více, nebo žádný.
-        /// Objekty to mohou být různé, typicky <see cref="IMenuItem"/> nebo <see cref="System.Data.DataRowView"/>.
+        /// Objekty to mohou být různé, typicky <see cref="ITextItem"/> nebo <see cref="System.Data.DataRowView"/>.
         /// ID označených řádků je v poli <see cref="SelectedItemsId"/>.
         /// </summary>
         public object[] SelectedItems { get { return __ListBox.SelectedItems; } }
@@ -980,7 +1039,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public object[] SelectedItemsId { get { return __ListBox.SelectedItemsId; } }
         /// <summary>
         /// Prvek, na kterém je kurzor. Je jen jediný, nebo null.
-        /// Objekty to mohou být různé, typicky <see cref="IMenuItem"/> nebo <see cref="System.Data.DataRowView"/>.
+        /// Objekty to mohou být různé, typicky <see cref="ITextItem"/> nebo <see cref="System.Data.DataRowView"/>.
         /// ID aktivního řádku je v <see cref="CurrentItemId"/>.
         /// </summary>
         public object CurrentItem { get { return __ListBox.CurrentItem; } }
@@ -1500,8 +1559,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                     addOneButton(ControlKeyActionType.ClipPaste, requestedActions, "devav/actions/paste.svg", MsgCode.DxKeyActionClipPasteTitle, MsgCode.DxKeyActionClipPasteText);
 
                     addOneButton(ControlKeyActionType.CopyToRightOne, requestedActions, "@arrowsmall|right|blue", MsgCode.DxKeyActionCopyToRightOneTitle, MsgCode.DxKeyActionCopyToRightOneText);
+                    addOneButton(ControlKeyActionType.CopyToRightOneEnd, requestedActions, "@arrowsmall|right|violet", MsgCode.DxKeyActionCopyToRightOneTitle, MsgCode.DxKeyActionCopyToRightOneText);
                     addOneButton(ControlKeyActionType.CopyToRightAll, requestedActions, "@arrow|right|blue", MsgCode.DxKeyActionCopyToRightAllTitle, MsgCode.DxKeyActionCopyToRightAllText);
                     addOneButton(ControlKeyActionType.CopyToLeftOne, requestedActions, "@arrowsmall|left|blue", MsgCode.DxKeyActionCopyToLeftOneTitle, MsgCode.DxKeyActionCopyToLeftOneText);
+                    addOneButton(ControlKeyActionType.CopyToLeftOneEnd, requestedActions, "@arrowsmall|left|violet", MsgCode.DxKeyActionCopyToLeftOneTitle, MsgCode.DxKeyActionCopyToLeftOneText);
                     addOneButton(ControlKeyActionType.CopyToLeftAll, requestedActions, "@arrow|left|blue", MsgCode.DxKeyActionCopyToLeftAllTitle, MsgCode.DxKeyActionCopyToLeftAllText);
 
                     addOneButton(ControlKeyActionType.Undo, requestedActions, "svgimages/dashboards/undo.svg", MsgCode.DxKeyActionUndoTitle, MsgCode.DxKeyActionUndoText);
@@ -1610,8 +1671,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                     case ControlKeyActionType.ActivateFilter: return true;
                     case ControlKeyActionType.FillKeyToFilter: return true;
                     case ControlKeyActionType.CopyToRightOne: return selectedLeftCount > 0;
+                    case ControlKeyActionType.CopyToRightOneEnd: return selectedLeftCount > 0;
                     case ControlKeyActionType.CopyToRightAll: return totalLeftCount > 0;
                     case ControlKeyActionType.CopyToLeftOne: return selectedRightCount > 0;
+                    case ControlKeyActionType.CopyToLeftOneEnd: return selectedRightCount > 0;
                     case ControlKeyActionType.CopyToLeftAll: return totalRightCount > 0;
                 }
                 return true;
@@ -1849,21 +1912,21 @@ namespace Noris.Clients.Win.Components.AsolDX
             #endregion
             #region MenuItems
             /// <summary>
-            /// Prvky Listu typované na <see cref="IMenuItem"/>.
-            /// Pokud v Listu budou obsaženy jiné prvky než <see cref="IMenuItem"/>, pak na jejich místě v tomto poli bude null.
+            /// Prvky Listu typované na <see cref="ITextItem"/>.
+            /// Pokud v Listu budou obsaženy jiné prvky než <see cref="ITextItem"/>, pak na jejich místě v tomto poli bude null.
             /// Toto pole má stejný počet prvků jako pole this.Items
             /// Pole jako celek lze setovat: vymění se obsah, ale zachová se pozice.
             /// </summary>
-            public IMenuItem[] MenuItems { get { return __Owner.ListBox.DxProperties.MenuItems; } set { __Owner.ListBox.DxProperties.MenuItems = value; } }
+            public ITextItem[] MenuItems { get { return __Owner.ListBox.DxProperties.MenuItems; } set { __Owner.ListBox.DxProperties.MenuItems = value; } }
             /// <summary>
             /// Obsahuje pole prvků, které jsou aktuálně Selected. 
             /// Lze setovat. Setování nastaví stav Selected na těch prvcích this.Items, které jsou Object.ReferenceEquals() shodné s některým dodaným prvkem. Ostatní budou not selected.
             /// </summary>
-            public IMenuItem[] SelectedMenuItems { get { return __Owner.ListBox.DxProperties.SelectedMenuItems; } set { __Owner.ListBox.DxProperties.SelectedMenuItems = value; } }
+            public ITextItem[] SelectedMenuItems { get { return __Owner.ListBox.DxProperties.SelectedMenuItems; } set { __Owner.ListBox.DxProperties.SelectedMenuItems = value; } }
             /// <summary>
-            /// Aktuálně vybraný prvek typu <see cref="IMenuItem"/>. Lze setovat, ale pouze takový prvek, kteý je přítomen (hledá se <see cref="Object.ReferenceEquals(object, object)"/>).
+            /// Aktuálně vybraný prvek typu <see cref="ITextItem"/>. Lze setovat, ale pouze takový prvek, kteý je přítomen (hledá se <see cref="Object.ReferenceEquals(object, object)"/>).
             /// </summary>
-            public IMenuItem SelectedMenuItem { get { return __Owner.ListBox.DxProperties.SelectedMenuItem; } set { __Owner.ListBox.DxProperties.SelectedMenuItem = value; } }
+            public ITextItem SelectedMenuItem { get { return __Owner.ListBox.DxProperties.SelectedMenuItem; } set { __Owner.ListBox.DxProperties.SelectedMenuItem = value; } }
             /// <summary>
             /// Pole aktuálně dostupných položek z hlediska filtrování.
             /// <para/>
@@ -1931,7 +1994,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <param name="atCurrentIndex">Požadavek true = na pozici aktuálního prvku / false = na konec</param>
             /// <param name="selectNewItems">Nově vložené prvky mají být po vložení vybrané (Selected)?</param>
             /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
-            public void InsertItems(IEnumerable<IMenuItem> sourceItems, bool atCurrentIndex, bool selectNewItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
+            public void InsertItems(IEnumerable<ITextItem> sourceItems, bool atCurrentIndex, bool selectNewItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
             {
                 __Owner.ListBox.DxProperties.InsertItems(sourceItems, atCurrentIndex, selectNewItems, changeType);
             }
@@ -1947,7 +2010,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <param name="insertAbsoluteIndex">Absolutní index, kam do Items insertujeme první dodanou položku: 0=bude první na začátku, 1=bude za první existující, (Items.Count -1) = bude před poslední, Items.Count nebo null = ude Add na konec.</param>
             /// <param name="selectNewItems">Nově vložené prvky mají být po vložení vybrané (Selected)?</param>
             /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
-            public void InsertItems(IEnumerable<IMenuItem> sourceItems, int? insertAbsoluteIndex, bool selectNewItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
+            public void InsertItems(IEnumerable<ITextItem> sourceItems, int? insertAbsoluteIndex, bool selectNewItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
             {
                 __Owner.ListBox.DxProperties.InsertItems(sourceItems, insertAbsoluteIndex, selectNewItems, changeType);
             }
@@ -1965,7 +2028,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             /// <param name="removeItems"></param>
             /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
-            public void RemoveItems(IEnumerable<IMenuItem> removeItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
+            public void RemoveItems(IEnumerable<ITextItem> removeItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
             {
                 __Owner.ListBox.DxProperties.RemoveItems(removeItems, changeType);
             }
@@ -2129,23 +2192,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Režim prvků v ListBoxu.
         /// </summary>
         protected ListBoxItemsMode ItemsMode { get { return __ItemsMode; } }
-        #region Jednoduchý List postavený nad položkami IMenuItem
+        #region Jednoduchý List postavený nad položkami ITextItem
         /// <summary>
-        /// Prvky Listu typované na <see cref="IMenuItem"/>.
+        /// Prvky Listu typované na <see cref="ITextItem"/>.
         /// <para/>
         /// Jde o <b>všechny přítomné prvky Listu</b>: pokud bude aplikován klientský řádkový filtr, pak zde budou stále všechny prvky!<br/>
-        /// POkud na některé pozici nebude prvek typu <see cref="IMenuItem"/>, pak na jeho pozici je zde NULL.<br/>
+        /// POkud na některé pozici nebude prvek typu <see cref="ITextItem"/>, pak na jeho pozici je zde NULL.<br/>
         /// Pro získání pouze Zobrazitelných prvků listu je třeba načíst pole <see cref="CurrentVisibleMenuItems"/>.
         /// <para/>
-        /// Pokud v Listu budou obsaženy jiné prvky než <see cref="IMenuItem"/>, pak na jejich místě v tomto poli bude null.
+        /// Pokud v Listu budou obsaženy jiné prvky než <see cref="ITextItem"/>, pak na jejich místě v tomto poli bude null.
         /// Toto pole má stejný počet prvků jako pole this.Items
         /// Pole jako celek lze setovat: vymění se obsah, ale zachová se pozice.
         /// </summary>
-        protected IMenuItem[] MenuItems
+        protected ITextItem[] MenuItems
         {
             get
             {
-                return (__ItemsMode == ListBoxItemsMode.MenuItems ? this.Items.Select(i => i.Value as IMenuItem).ToArray() : null);
+                return (__ItemsMode == ListBoxItemsMode.MenuItems ? this.Items.Select(i => i.Value as ITextItem).ToArray() : null);
             }
             set
             {
@@ -2174,38 +2237,38 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Prvky Listu v páru: <see cref="ImageListBoxItem"/> a <see cref="IMenuItem"/>.
+        /// Prvky Listu v páru: <see cref="ImageListBoxItem"/> a <see cref="ITextItem"/>.
         /// <para/>
         /// Jde o <b>všechny přítomné prvky Listu</b>: pokud bude aplikován klientský řádkový filtr, pak zde budou stále všechny prvky!<br/>
-        /// POkud na některé pozici nebude prvek typu <see cref="IMenuItem"/>, pak na jeho pozici je zde NULL.<br/>
+        /// POkud na některé pozici nebude prvek typu <see cref="ITextItem"/>, pak na jeho pozici je zde NULL.<br/>
         /// Pro získání pouze Zobrazitelných prvků listu je třeba načíst pole <see cref="CurrentVisibleMenuItems"/>.
         /// <para/>
-        /// Pokud v Listu budou obsaženy jiné prvky než <see cref="IMenuItem"/>, pak na jejich místě v tomto poli bude null.
+        /// Pokud v Listu budou obsaženy jiné prvky než <see cref="ITextItem"/>, pak na jejich místě v tomto poli bude null.
         /// Toto pole má stejný počet prvků jako pole this.Items
         /// Pole jako celek lze setovat: vymění se obsah, ale zachová se pozice.
         /// </summary>
-        protected Tuple<ImageListBoxItem, IMenuItem>[] MenuDblItems
+        protected Tuple<ImageListBoxItem, ITextItem>[] MenuDblItems
         {
             get
             {
-                return (__ItemsMode == ListBoxItemsMode.MenuItems ? this.Items.Select(i => new Tuple<ImageListBoxItem, IMenuItem>(i, i.Value as IMenuItem)).ToArray() : null);
+                return (__ItemsMode == ListBoxItemsMode.MenuItems ? this.Items.Select(i => new Tuple<ImageListBoxItem, ITextItem>(i, i.Value as ITextItem)).ToArray() : null);
             }
         }
         /// <summary>
-        /// Vrátí pole připravených instancí <see cref="ImageListBoxItem"/> z dodaných <see cref="IMenuItem"/>,
+        /// Vrátí pole připravených instancí <see cref="ImageListBoxItem"/> z dodaných <see cref="ITextItem"/>,
         /// </summary>
         /// <param name="menuItem"></param>
         /// <returns></returns>
-        protected ImageListBoxItem[] CreateListBoxItems(IEnumerable<IMenuItem> menuItem)
+        protected ImageListBoxItem[] CreateListBoxItems(IEnumerable<ITextItem> menuItem)
         {
             return menuItem.Select(mi => CreateListBoxItem(mi)).ToArray();
         }
         /// <summary>
-        /// Vrátí instanci <see cref="ImageListBoxItem"/> z dodané <see cref="IMenuItem"/>,
+        /// Vrátí instanci <see cref="ImageListBoxItem"/> z dodané <see cref="ITextItem"/>,
         /// </summary>
         /// <param name="menuItem"></param>
         /// <returns></returns>
-        protected ImageListBoxItem CreateListBoxItem(IMenuItem menuItem)
+        protected ImageListBoxItem CreateListBoxItem(ITextItem menuItem)
         {
             var lbxItem = new ImageListBoxItem()
             {
@@ -2217,21 +2280,21 @@ namespace Noris.Clients.Win.Components.AsolDX
             return lbxItem;
         }
         /// <summary>
-        /// Metoda zkusí najít a vrátit <see cref="IMenuItem"/> z dodaného prvku ListBoxu
+        /// Metoda zkusí najít a vrátit <see cref="ITextItem"/> z dodaného prvku ListBoxu
         /// </summary>
         /// <param name="item"></param>
         /// <param name="menuItem"></param>
         /// <returns></returns>
-        private bool _TryFindMenuItem(object item, out IMenuItem menuItem)
+        private bool _TryFindMenuItem(object item, out ITextItem menuItem)
         {
             if (__ItemsMode == ListBoxItemsMode.MenuItems && item != null)
             {
-                if (item is DevExpress.XtraEditors.Controls.ImageListBoxItem listItem && listItem.Value is IMenuItem menuItem1)
+                if (item is DevExpress.XtraEditors.Controls.ImageListBoxItem listItem && listItem.Value is ITextItem menuItem1)
                 {
                     menuItem = menuItem1;
                     return true;
                 }
-                if (item is IMenuItem menuItem2)
+                if (item is ITextItem menuItem2)
                 {
                     menuItem = menuItem2;
                     return true;
@@ -2433,9 +2496,9 @@ SetSelected() - vstup           Absolutní
 
         */
         /// <summary>
-        /// Aktuálně SELECTOVANÉ prvky <see cref="IMenuItem"/>
+        /// Aktuálně SELECTOVANÉ prvky <see cref="ITextItem"/>
         /// </summary>
-        protected IMenuItem[] SelectedMenuItems 
+        protected ITextItem[] SelectedMenuItems 
         { 
             get
             {
@@ -2460,16 +2523,16 @@ SetSelected() - vstup           Absolutní
             }
         }
         /// <summary>
-        /// Aktuálně vybraný prvek typu <see cref="IMenuItem"/>. Lze setovat, ale pouze takový prvek, kteý je přítomen (hledá se <see cref="Object.ReferenceEquals(object, object)"/>).
+        /// Aktuálně vybraný prvek typu <see cref="ITextItem"/>. Lze setovat, ale pouze takový prvek, kteý je přítomen (hledá se <see cref="Object.ReferenceEquals(object, object)"/>).
         /// </summary>
-        protected IMenuItem SelectedMenuItem
+        protected ITextItem SelectedMenuItem
         {
             get
-            {   // Vrátím IMenuItem nalezený v aktuálně vybraném prvku:
+            {   // Vrátím ITextItem nalezený v aktuálně vybraném prvku:
                 return ((__ItemsMode == ListBoxItemsMode.MenuItems && this.Items.Count > 0 && _TryFindMenuItem(this.SelectedItem, out var menuItem)) ? menuItem : null);
             }
             set
-            {   // Najdu první prvek zdejšího pole, který v sobě obsahuje IMenuItem, který je identický s dodanou value:
+            {   // Najdu první prvek zdejšího pole, který v sobě obsahuje ITextItem, který je identický s dodanou value:
                 if (__ItemsMode == ListBoxItemsMode.MenuItems)
                 {
                     object selectedItem = null;
@@ -2599,86 +2662,6 @@ SetSelected() - vstup           Absolutní
         /// </summary>
         private ListMenuItemInfo[] __FilteredMenuItems;
         /// <summary>
-        /// Po změně obsahu klientského řádkového filtru invaliduje pole vyfiltrovaných řádků v komponentě.
-        /// Nastavuje aktivitu filtru: true = je třeba brát ohled na filtr / false = všechny položky Listu jsou platné / null = neměnit hodnotu (volající neví o stavu filtru).
-        /// </summary>
-        /// <param name="criteria">Aktuálně platný filtr</param>
-        private void _InvalidateFilteredItems(CriteriaOperator criteria)
-        {
-            __FilteredMenuItems = null;
-            __RowFilterCriteria = criteria;
-        }
-        /// <summary>
-        /// Po změně obsahu klientského řádkového filtru invaliduje pole vyfiltrovaných řádků v komponentě.
-        /// Nastavuje aktivitu filtru: true = je třeba brát ohled na filtr / false = všechny položky Listu jsou platné / null = neměnit hodnotu (volající neví o stavu filtru).
-        /// </summary>
-        /// <param name="filterIsActive">Filtr má být aktivní? null = neměnit hodnotu, ale invalidovat položky</param>
-        private void _InvalidateFilteredItems()
-        {
-            __FilteredMenuItems = null;
-        }
-        /// <summary>
-        /// Zajistí, že pole <see cref="__FilteredMenuItems"/> bude obsahovat not null platné filtrované položky
-        /// </summary>
-        private void _CheckFilteredItems()
-        {
-            if (__FilteredMenuItems is null)
-            {
-                ListMenuItemInfo[] filteredItems = null;
-                if (__ItemsMode == ListBoxItemsMode.MenuItems)
-                {
-                    var menuDblItems = this.MenuDblItems;                     // = ListItem + IMenuItem
-                    var rowFilter = __RowFilterCriteria;
-                    var filterIsActive = !(rowFilter is null);
-                    if (filterIsActive)
-                    {   // Máme filtr => vytvoříme prvotní soupis všech prvků včetně Absolute indexu:
-                        int absIdx = 0;
-                        var absMenuItems = menuDblItems.Select(i => new ListMenuItemInfo(absIdx++, i)).ToList();          // Absolutní index 0++; a všechny MenuItems
-                        // Vytvoříme evaluator pro typ ListMenuItemInfo, a pro CriteriaOperator: rowFilter
-                        var evaluator = new DevExpress.Data.Filtering.Helpers.ExpressionEvaluator(System.ComponentModel.TypeDescriptor.GetProperties(typeof(ListMenuItemInfo)), rowFilter);
-                        // Vytvoříme pole prvků, které vyhovují zadané podmínce (ale pole stále nemá naplěné hodnoty FilteredIndex):
-                        filteredItems = evaluator.Filter(absMenuItems).OfType<ListMenuItemInfo>().ToArray();
-                        // Nyní prostě projdu pole filteredItems (které nyní osbahuje jen filtrované prvky) a do jednotlivých objektů vepíšu postupně FilteredIndex:
-                        int visIdx = 0;
-                        filteredItems.ForEachExec(i => i.FilteredIndex = visIdx++);
-                    }
-                    else
-                    {   // Nemáme filtr => všechny MenuItems jsou Filtered:
-                        int absIdx = 0;
-                        int visIdx = 0;
-                        filteredItems = menuDblItems.Select(i => new ListMenuItemInfo(absIdx++, i, visIdx++)).ToArray();     // Absolutní index 0++; a všechny MenuItems, a FilteredIndex++
-                    }
-                }
-                else
-                {
-                    filteredItems = new ListMenuItemInfo[0];
-                }
-                __FilteredMenuItems = filteredItems;
-            }
-        }
-        /// <summary>
-        /// Aktuálně platný řádkový filtr, který byl naposledy aplikován
-        /// </summary>
-        private CriteriaOperator __RowFilterCriteria;
-        /// <summary>
-        /// Volá ListBox vždy, když z objektu Search je sestavena filtrační podmínka a ta je vložena do ListBoxu
-        /// </summary>
-        /// <param name="criteria"></param>
-        protected override void ApplyItemsFilter(CriteriaOperator criteria)
-        {
-            base.ApplyItemsFilter(criteria);
-            _InvalidateFilteredItems(criteria);
-        }
-        /// <summary>
-        /// Volá ListBox vždy, když z objektu Search je sestavena filtrační podmínka a ta je vložena do ListBoxu
-        /// </summary>
-        /// <param name="criteria"></param>
-        protected override void ApplyInlineSearch(CriteriaOperator criteria)
-        {
-            base.ApplyInlineSearch(criteria);
-            _InvalidateFilteredItems(criteria);
-        }
-        /// <summary>
         /// Pole nyní aktuálně viditelných prvků = aktuálně <b>zafiltrované</b> pomocí klientského filtru a <b>ve viditelné oblasti ListBoxu</b>.
         /// </summary>
         protected ListMenuItemInfo[] CurrentVisibleMenuItems 
@@ -2791,7 +2774,7 @@ SetSelected() - vstup           Absolutní
             /// <param name="filteredIndex"></param>
             /// <param name="displayedIndex"></param>
             /// <param name="bounds"></param>
-            public ListMenuItemInfo(int absoluteIndex, Tuple<ImageListBoxItem, IMenuItem> menuDblItem, int? filteredIndex = null, int? displayedIndex = null, Rectangle? bounds = null)
+            public ListMenuItemInfo(int absoluteIndex, Tuple<ImageListBoxItem, ITextItem> menuDblItem, int? filteredIndex = null, int? displayedIndex = null, Rectangle? bounds = null)
             {
                 AbsoluteIndex = absoluteIndex;
                 ListBoxItem = menuDblItem.Item1;
@@ -2821,9 +2804,9 @@ SetSelected() - vstup           Absolutní
             /// </summary>
             public ImageListBoxItem ListBoxItem { get; private set; }
             /// <summary>
-            /// Data prvku. Pokud na této pozici není <see cref="IMenuItem"/>, je zde null.
+            /// Data prvku. Pokud na této pozici není <see cref="ITextItem"/>, je zde null.
             /// </summary>
-            public IMenuItem MenuItem { get; private set; }
+            public ITextItem MenuItem { get; private set; }
             /// <summary>
             /// Text prvku tak jak je filtrován: protože Search control generuje filtr s odkazem na property jménem 'Column', tak tímto názvem se bude odkazuvat na zde uvedený text...
             /// </summary>
@@ -2842,6 +2825,94 @@ SetSelected() - vstup           Absolutní
             /// </summary>
             public Rectangle? Bounds { get; set; }
         }
+        #endregion
+        #region Spolupráce s klientským řádkovým filtrem
+        /// <summary>
+        /// Obsahuje true, pokud máme aktivní řádkový filtr. 
+        /// Ten je uložen v <see cref="__RowFilterCriteria"/>.
+        /// Vkládá se tam pomocí metody <see cref="ApplyItemsFilter(CriteriaOperator)"/>.
+        /// </summary>
+        private bool _HasRowFilter { get { return !(__RowFilterCriteria is null); } }
+        /// <summary>
+        /// Po změně obsahu klientského řádkového filtru invaliduje pole vyfiltrovaných řádků v komponentě.
+        /// Nastavuje aktivitu filtru: true = je třeba brát ohled na filtr / false = všechny položky Listu jsou platné / null = neměnit hodnotu (volající neví o stavu filtru).
+        /// </summary>
+        /// <param name="criteria">Aktuálně platný filtr</param>
+        private void _InvalidateFilteredItems(CriteriaOperator criteria)
+        {
+            __FilteredMenuItems = null;
+            __RowFilterCriteria = criteria;
+        }
+        /// <summary>
+        /// Po změně obsahu klientského řádkového filtru invaliduje pole vyfiltrovaných řádků v komponentě.
+        /// Nastavuje aktivitu filtru: true = je třeba brát ohled na filtr / false = všechny položky Listu jsou platné / null = neměnit hodnotu (volající neví o stavu filtru).
+        /// </summary>
+        private void _InvalidateFilteredItems()
+        {
+            __FilteredMenuItems = null;
+        }
+        /// <summary>
+        /// Zajistí, že pole <see cref="__FilteredMenuItems"/> bude obsahovat not null platné filtrované položky
+        /// </summary>
+        private void _CheckFilteredItems()
+        {
+            if (__FilteredMenuItems is null)
+            {
+                ListMenuItemInfo[] filteredItems = null;
+                if (__ItemsMode == ListBoxItemsMode.MenuItems)
+                {
+                    var menuDblItems = this.MenuDblItems;                     // = ListItem + ITextItem
+                    var rowFilter = __RowFilterCriteria;
+                    var filterIsActive = !(rowFilter is null);
+                    if (filterIsActive)
+                    {   // Máme filtr => vytvoříme prvotní soupis všech prvků včetně Absolute indexu:
+                        int absIdx = 0;
+                        var absMenuItems = menuDblItems.Select(i => new ListMenuItemInfo(absIdx++, i)).ToList();          // Absolutní index 0++; a všechny MenuItems
+                        // Vytvoříme evaluator pro typ ListMenuItemInfo, a pro CriteriaOperator: rowFilter
+                        var evaluator = new DevExpress.Data.Filtering.Helpers.ExpressionEvaluator(System.ComponentModel.TypeDescriptor.GetProperties(typeof(ListMenuItemInfo)), rowFilter);
+                        // Vytvoříme pole prvků, které vyhovují zadané podmínce (ale pole stále nemá naplěné hodnoty FilteredIndex):
+                        filteredItems = evaluator.Filter(absMenuItems).OfType<ListMenuItemInfo>().ToArray();
+                        // Nyní prostě projdu pole filteredItems (které nyní osbahuje jen filtrované prvky) a do jednotlivých objektů vepíšu postupně FilteredIndex:
+                        int visIdx = 0;
+                        filteredItems.ForEachExec(i => i.FilteredIndex = visIdx++);
+                    }
+                    else
+                    {   // Nemáme filtr => všechny MenuItems jsou Filtered:
+                        int absIdx = 0;
+                        int visIdx = 0;
+                        filteredItems = menuDblItems.Select(i => new ListMenuItemInfo(absIdx++, i, visIdx++)).ToArray();     // Absolutní index 0++; a všechny MenuItems, a FilteredIndex++
+                    }
+                }
+                else
+                {
+                    filteredItems = new ListMenuItemInfo[0];
+                }
+                __FilteredMenuItems = filteredItems;
+            }
+        }
+        /// <summary>
+        /// Aktuálně platný řádkový filtr, který byl naposledy aplikován
+        /// </summary>
+        private CriteriaOperator __RowFilterCriteria;
+        /// <summary>
+        /// Volá ListBox vždy, když z objektu Search je sestavena filtrační podmínka a ta je vložena do ListBoxu
+        /// </summary>
+        /// <param name="criteria"></param>
+        protected override void ApplyItemsFilter(CriteriaOperator criteria)
+        {
+            base.ApplyItemsFilter(criteria);
+            _InvalidateFilteredItems(criteria);
+        }
+        /// <summary>
+        /// Volá ListBox vždy, když z objektu Search je sestavena filtrační podmínka a ta je vložena do ListBoxu
+        /// </summary>
+        /// <param name="criteria"></param>
+        protected override void ApplyInlineSearch(CriteriaOperator criteria)
+        {
+            base.ApplyInlineSearch(criteria);
+            _InvalidateFilteredItems(criteria);
+        }
+
         #endregion
         #endregion
         #region Komplexní List postavený nad DataTable a Template
@@ -2995,16 +3066,20 @@ SetSelected() - vstup           Absolutní
         /// <param name="e"></param>
         private void _DrawItem(object sender, ListBoxDrawItemEventArgs e)
         {
-            if (__ItemsMode == ListBoxItemsMode.MenuItems && e.Item is IMenuItem iMenuItem)
+            if (__ItemsMode == ListBoxItemsMode.MenuItems && e.Item is ITextItem iTextItem)
             {
-                if (iMenuItem.FontStyle.HasValue)
+                if (iTextItem is ITextStyleItem iStyleItem)
                 {
-                    e.Appearance.FontStyleDelta = iMenuItem.FontStyle.Value;
-                    e.Appearance.Options.UseTextOptions = true;
+                    if (iStyleItem.FontStyle.HasValue)
+                    {
+                        e.Appearance.FontStyleDelta = iStyleItem.FontStyle.Value;
+                        e.Appearance.Options.UseTextOptions = true;
+                    }
                 }
+
                 // Pokud je režim kreslení "Directly", pak v této metodě zajistíme vykreslení obrázku napřímo bez rozmazání:
                 if (_DrawIMenuItemImageDirectly)
-                    _DrawIMenuItemImageDirect(e, iMenuItem);
+                    _DrawIMenuItemImageDirect(e, iTextItem);
             }
         }
         /// <summary>
@@ -3075,7 +3150,7 @@ SetSelected() - vstup           Absolutní
         /// </summary>
         /// <param name="e"></param>
         /// <param name="iMenuItem"></param>
-        private void _DrawIMenuItemImageDirect(ListBoxDrawItemEventArgs e, IMenuItem iMenuItem)
+        private void _DrawIMenuItemImageDirect(ListBoxDrawItemEventArgs e, ITextItem iMenuItem)
         {
             if (!_DrawIMenuItemImageDirectly) return;
             if (iMenuItem is null) return;
@@ -3108,7 +3183,7 @@ SetSelected() - vstup           Absolutní
             }
         }
         /// <summary>
-        /// Vykreslit obrázek pro IMenuItem napřímo do grafiky?
+        /// Vykreslit obrázek pro ITextItem napřímo do grafiky?
         /// </summary>
         private bool _DrawIMenuItemImageDirectly { get { return false; } }
         /// <summary>
@@ -3232,9 +3307,10 @@ SetSelected() - vstup           Absolutní
             bool hasItem = TryGetViewItemOnPoint(location, out var viewItem);
             if (hasItem)
             {
+                var item = this.GetDataItem(viewItem);
                 var itemId = this.GetItemId(viewItem);
 
-                DxListBoxItemMouseClickEventArgs args = new DxListBoxItemMouseClickEventArgs(buttons, location, Control.ModifierKeys, itemId);
+                DxListBoxItemMouseClickEventArgs args = new DxListBoxItemMouseClickEventArgs(buttons, location, Control.ModifierKeys, item, itemId);
                 if (!isDoubleClick)
                 {
                     OnItemMouseClick(args);
@@ -3368,10 +3444,10 @@ SetSelected() - vstup           Absolutní
             switch (__ItemsMode)
             {
                 case ListBoxItemsMode.MenuItems:
-                    // V režimu MenuItem máme prvky Listu postavené na interface IMenuItem;
+                    // V režimu MenuItem máme prvky Listu postavené na interface ITextItem;
                     // Ten implementuje ITextItem a tedy i IToolTipItem;
                     // A pro IToolTipItem umíme vytvořit DxSuperToolTip standardním postupem:
-                    if (item is IMenuItem menuItem)
+                    if (item is ITextItem menuItem)
                         return DxComponent.CreateDxSuperTip(menuItem);
                     break;
                 case ListBoxItemsMode.Table:
@@ -3422,22 +3498,22 @@ SetSelected() - vstup           Absolutní
         #region SelectedItems, CurrentItem
         /// <summary>
         /// Aktuálně označené objekty. Může jich být i více, nebo žádný.
-        /// Objekty to mohou být různé, typicky <see cref="IMenuItem"/> nebo <see cref="System.Data.DataRowView"/>.
+        /// Objekty to mohou být různé, typicky <see cref="ITextItem"/> nebo <see cref="System.Data.DataRowView"/>.
         /// ID označených řádků je v poli <see cref="SelectedItemsId"/>.
         /// </summary>
-        public new object[] SelectedItems { get { return base.SelectedItems.Select(li => GetDataItem(li)).ToArray(); } }         // ImageListBoxItem => Value => IMenuItem / DataRow
+        public new object[] SelectedItems { get { return base.SelectedItems.Select(li => GetDataItem(li)).ToArray(); } }         // ImageListBoxItem => Value => ITextItem / DataRow
         /// <summary>
         /// Pole obsahující ID selectovaných záznamů.
         /// </summary>
-        public object[] SelectedItemsId { get { return this.SelectedItems.Select(i => GetItemId(i)).ToArray(); } }               // ImageListBoxItem => Value => IMenuItem / DataRow => ItemId
+        public object[] SelectedItemsId { get { return this.SelectedItems.Select(i => GetItemId(i)).ToArray(); } }               // ImageListBoxItem => Value => ITextItem / DataRow => ItemId
         /// <summary>
         /// Prvek, na kterém je kurzor. Je jen jediný, nebo null.
-        /// Objekty to mohou být různé, typicky <see cref="IMenuItem"/> nebo <see cref="System.Data.DataRowView"/>.
+        /// Objekty to mohou být různé, typicky <see cref="ITextItem"/> nebo <see cref="System.Data.DataRowView"/>.
         /// ID aktivního řádku je v <see cref="CurrentItemId"/>.
         /// </summary>
         public object CurrentItem
         {
-            get { return GetDataItem(base.SelectedItem); }                               // ImageListBoxItem => Value => IMenuItem / DataRow
+            get { return GetDataItem(base.SelectedItem); }                               // ImageListBoxItem => Value => ITextItem / DataRow
         }
         /// <summary>
         /// Pole obsahující ID aktivního řádku.
@@ -3489,7 +3565,7 @@ SetSelected() - vstup           Absolutní
         protected DevExpress.XtraEditors.ViewInfo.BaseListBoxViewInfo.ItemInfo[] CurrentVisibleViewItems { get { return this.ViewInfo?.VisibleItems?.OfType<DevExpress.XtraEditors.ViewInfo.BaseListBoxViewInfo.ItemInfo>().ToArray(); } }
         /// <summary>
         /// Metoda dostává Item v rámci ListBoxu, což může být <see cref="DevExpress.XtraEditors.Controls.ImageListBoxItem"/> anebo <see cref="System.Data.DataRowView"/>.
-        /// Podle toho v nich vyhledá odpovídající datový prvek <see cref="IMenuItem"/> anebo <see cref="System.Data.DataRow"/> a ten vrátí.
+        /// Podle toho v nich vyhledá odpovídající datový prvek <see cref="ITextItem"/> anebo <see cref="System.Data.DataRow"/> a ten vrátí.
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
@@ -3503,7 +3579,7 @@ SetSelected() - vstup           Absolutní
             switch (__ItemsMode)
             {
                 case ListBoxItemsMode.MenuItems:
-                    if (item is IMenuItem menuItem)
+                    if (item is ITextItem menuItem)
                         return menuItem;
                     break;
                 case ListBoxItemsMode.Table:
@@ -3528,7 +3604,7 @@ SetSelected() - vstup           Absolutní
             switch (__ItemsMode)
             {
                 case ListBoxItemsMode.MenuItems:
-                    if (item is IMenuItem menuItem) 
+                    if (item is ITextItem menuItem) 
                         return menuItem.ItemId;
                     break;
                 case ListBoxItemsMode.Table:
@@ -3681,8 +3757,10 @@ SetSelected() - vstup           Absolutní
             doSingleAction(ControlKeyActionType.MoveBottom, _DoKeyActionMoveBottom);
             doSingleAction(ControlKeyActionType.Delete, _DoKeyActionDelete);
             doSingleAction(ControlKeyActionType.CopyToRightOne, null);                   // Pozn. pokud není dodaná metoda pro akci (=null), pak tuto akci má řešit pouze nadřazený container
-            doSingleAction(ControlKeyActionType.CopyToRightAll, null);                   //  - pomocí eventhandlerů ListActionBefore a ListActionAfter
+            doSingleAction(ControlKeyActionType.CopyToRightOneEnd, null);                //  - pomocí eventhandlerů ListActionBefore a ListActionAfter
+            doSingleAction(ControlKeyActionType.CopyToRightAll, null);
             doSingleAction(ControlKeyActionType.CopyToLeftOne, null);
+            doSingleAction(ControlKeyActionType.CopyToLeftOneEnd, null);
             doSingleAction(ControlKeyActionType.CopyToLeftAll, null);
             doSingleAction(ControlKeyActionType.Undo, _DoKeyActionUndo);
             doSingleAction(ControlKeyActionType.Redo, _DoKeyActionRedo);
@@ -3696,12 +3774,12 @@ SetSelected() - vstup           Absolutní
                 if (!actions.HasFlag(action)) return;                                    // Tato akce není požadována
                 if (!force && !enabledActions.HasFlag(action)) return;                   // Tato akce sice je požadována, ale není povolena
 
-                var argsBefore = new DxListBoxActionCancelEventArgs(actions, e);
+                var argsBefore = new DxListBoxActionCancelEventArgs(actions, changeType, e);
                 _RunListActionBefore(argsBefore);
                 if (!argsBefore.Cancel)
                 {
                     if (internalActionMethod != null) internalActionMethod(changeType);  // Provedu konkrétní akci, pokud je dodána; viz dole napž. _DoKeyActionCtrlA()
-                    var argsAfter = new DxListBoxActionEventArgs(actions, e);
+                    var argsAfter = new DxListBoxActionEventArgs(actions, changeType, e);
                     _RunListActionAfter(argsAfter);
                     handled = true;
                 }
@@ -3754,7 +3832,7 @@ SetSelected() - vstup           Absolutní
         private void _DoKeyActionCtrlV(DxItemsChangeType changeType)
         {
             if (!DataExchangeClipboardAcquire(out var data)) return;
-            if (data is IEnumerable<IMenuItem> items) InsertItems(items, true, true, DxItemsChangeType.Clipboard);
+            if (data is IEnumerable<ITextItem> items) InsertItems(items, true, true, DxItemsChangeType.Clipboard);
         }
         /// <summary>
         /// Provedení klávesové akce: Delete
@@ -3891,12 +3969,17 @@ SetSelected() - vstup           Absolutní
         /// <param name="atCurrentIndex">Požadavek true = na pozici aktuálního prvku / false = na konec</param>
         /// <param name="selectNewItems">Nově vložené prvky mají být po vložení vybrané (Selected)?</param>
         /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
-        protected void InsertItems(IEnumerable<IMenuItem> sourceItems, bool atCurrentIndex, bool selectNewItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
+        protected void InsertItems(IEnumerable<ITextItem> sourceItems, bool atCurrentIndex, bool selectNewItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
         {
             if (sourceItems is null || !sourceItems.Any()) return;
 
-            int? insertIndex = (atCurrentIndex && this.Items.Count > 0 && this.SelectedIndex >= 0 ? (int?)this.SelectedIndex : (int?)null);
-            _InsertItems(sourceItems, insertIndex, true, changeType);
+            int? insertAbsoluteIndex = null;
+            if (atCurrentIndex)
+            {
+                var filteredIndex = this.SelectedIndex;                                  // SelectedIndex se vztahuje k prvkům viditelným, nikoli ke všem
+                insertAbsoluteIndex = this.GetAbsoluteIndexFromFiltered(filteredIndex);  // Tady získám Absolute index
+            }
+            _InsertItems(sourceItems, insertAbsoluteIndex, true, changeType);
         }
         /// <summary>
         /// Do this listu vloží další prvky <paramref name="sourceItems"/>, počínaje danou pozicí <paramref name="insertAbsoluteIndex"/>.<br/>
@@ -3910,7 +3993,7 @@ SetSelected() - vstup           Absolutní
         /// <param name="insertAbsoluteIndex">Absolutní index, kam do Items insertujeme první dodanou položku: 0=bude první na začátku, 1=bude za první existující, (Items.Count -1) = bude před poslední, Items.Count nebo null = ude Add na konec.</param>
         /// <param name="selectNewItems">Nově vložené prvky mají být po vložení vybrané (Selected)?</param>
         /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
-        protected void InsertItems(IEnumerable<IMenuItem> sourceItems, int? insertAbsoluteIndex, bool selectNewItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
+        protected void InsertItems(IEnumerable<ITextItem> sourceItems, int? insertAbsoluteIndex, bool selectNewItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
         {
             _InsertItems(sourceItems, insertAbsoluteIndex, selectNewItems, changeType);
             _RunMenuItemsChanged(changeType);
@@ -3930,7 +4013,7 @@ SetSelected() - vstup           Absolutní
         /// </summary>
         /// <param name="removeItems"></param>
         /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
-        protected void RemoveItems(IEnumerable<IMenuItem> removeItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
+        protected void RemoveItems(IEnumerable<ITextItem> removeItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
         {
             this._RemoveItems(removeItems, changeType);
             _RunMenuItemsChanged(changeType);
@@ -3945,15 +4028,15 @@ SetSelected() - vstup           Absolutní
         /// <param name="items"></param>
         /// <param name="withCurrentList">Do kontroly duplicity zahrnout i stávající prvky Listu?</param>
         /// <returns></returns>
-        private IMenuItem[] _GetOnlyValidItems(IEnumerable<IMenuItem> items, bool withCurrentList)
+        private ITextItem[] _GetOnlyValidItems(IEnumerable<ITextItem> items, bool withCurrentList)
         {
-            List<IMenuItem> validItems = new List<IMenuItem>();
+            List<ITextItem> validItems = new List<ITextItem>();
             if (items != null)
             {
                 bool duplicityEnabled = this.DuplicityEnabled;
-                Dictionary<string, IMenuItem> itemIdDict = (duplicityEnabled ? null : 
+                Dictionary<string, ITextItem> itemIdDict = (duplicityEnabled ? null : 
                       (withCurrentList ? this.MenuItems.Where(i => i.ItemId != null).CreateDictionary(i => i.ItemId, true) : 
-                      new Dictionary<string, IMenuItem>()));
+                      new Dictionary<string, ITextItem>()));
                 foreach (var item in items)
                 {
                     if (item is null) continue;
@@ -3979,7 +4062,7 @@ SetSelected() - vstup           Absolutní
         /// <param name="insertAbsoluteIndex">Absolutní index, kam do Items insertujeme první dodanou položku: 0=bude první na začátku, 1=bude za první existující, (Items.Count -1) = bude před poslední, Items.Count nebo null = ude Add na konec.</param>
         /// <param name="selectNewItems">Nově vložené prvky mají být po vložení vybrané (Selected)?</param>
         /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
-        private void _InsertItems(IEnumerable<IMenuItem> sourceItems, int? insertAbsoluteIndex, bool selectNewItems, DxItemsChangeType changeType)
+        private void _InsertItems(IEnumerable<ITextItem> sourceItems, int? insertAbsoluteIndex, bool selectNewItems, DxItemsChangeType changeType)
         {
             if (sourceItems is null || !sourceItems.Any()) return;
 
@@ -3994,7 +4077,19 @@ SetSelected() - vstup           Absolutní
                 foreach (var sourceItem in validItems)
                 {
                     selectedIndexes.Add(targetIndex);                          // Budoucí Selected prvky: pokud první dávám Insert na pozici [0], tak [0] bude Selected
-                    this.Items.Insert(targetIndex++, CreateListBoxItem(sourceItem));
+                    if (!_HasRowFilter)
+                    {   // Pokud nemám řádkový filtr, je to triviální:
+                        this.Items.Insert(targetIndex++, CreateListBoxItem(sourceItem));
+                    }
+                    else
+                    {   // S řádkovým filtrem je potíž:
+                        var criteria = this.__RowFilterCriteria;
+                        this.ApplyItemsFilter(null);
+                        // Insertovat prvky budeme bez řádkového filtru:
+                        this.Items.Insert(targetIndex++, CreateListBoxItem(sourceItem));
+                        // A filtr aplikujeme poté:
+                        this.ApplyItemsFilter(criteria);
+                    }
                 }
             }
             else
@@ -4067,7 +4162,7 @@ SetSelected() - vstup           Absolutní
         /// </summary>
         /// <param name="removeItems"></param>
         /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
-        private void _RemoveItems(IEnumerable<IMenuItem> removeItems, DxItemsChangeType changeType)
+        private void _RemoveItems(IEnumerable<ITextItem> removeItems, DxItemsChangeType changeType)
         {
             if (removeItems == null) return;
             if (this.__ItemsMode != ListBoxItemsMode.MenuItems) return;
@@ -4350,15 +4445,15 @@ SetSelected() - vstup           Absolutní
             this.Invalidate();
         }
         /// <summary>
-        /// Pokusí se najít v argumentu <see cref="DxDragDropArgs"/> zdrojový objekt <c>SourceObject</c>, a z něj získat pole prvků <see cref="IMenuItem"/>.
+        /// Pokusí se najít v argumentu <see cref="DxDragDropArgs"/> zdrojový objekt <c>SourceObject</c>, a z něj získat pole prvků <see cref="ITextItem"/>.
         /// </summary>
         /// <param name="args"></param>
         /// <param name="items"></param>
         /// <returns></returns>
-        private bool DxDragTargetTryGetItems(DxDragDropArgs args, out IMenuItem[] items)
+        private bool DxDragTargetTryGetItems(DxDragDropArgs args, out ITextItem[] items)
         {
             items = null;
-            if (args.SourceObject is IEnumerable<IMenuItem> menuItems) { items = menuItems.ToArray(); return true; }
+            if (args.SourceObject is IEnumerable<ITextItem> menuItems) { items = menuItems.ToArray(); return true; }
             if (args.SourceObject is IEnumerable<ListMenuItemInfo> listItemsInfo) { items = listItemsInfo.Select(i => i.MenuItem).ToArray(); return true; }
             return false;
         }
@@ -4796,25 +4891,25 @@ SetSelected() - vstup           Absolutní
             #endregion
             #region MenuItems
             /// <summary>
-            /// Prvky Listu typované na <see cref="IMenuItem"/>.
+            /// Prvky Listu typované na <see cref="ITextItem"/>.
             /// <para/>
             /// Jde o <b>všechny přítomné prvky Listu</b>: pokud bude aplikován klientský řádkový filtr, pak zde budou stále všechny prvky!<br/>
-            /// POkud na některé pozici nebude prvek typu <see cref="IMenuItem"/>, pak na jeho pozici je zde NULL.<br/>
+            /// POkud na některé pozici nebude prvek typu <see cref="ITextItem"/>, pak na jeho pozici je zde NULL.<br/>
             /// Pro získání pouze Zobrazitelných prvků listu je třeba načíst pole <see cref="CurrentVisibleMenuItems"/>.
             /// <para/>
-            /// Pokud v Listu budou obsaženy jiné prvky než <see cref="IMenuItem"/>, pak na jejich místě v tomto poli bude null.
+            /// Pokud v Listu budou obsaženy jiné prvky než <see cref="ITextItem"/>, pak na jejich místě v tomto poli bude null.
             /// Toto pole má stejný počet prvků jako pole this.Items
             /// Pole jako celek lze setovat: vymění se obsah, ale zachová se pozice.
             /// </summary>
-            public IMenuItem[] MenuItems { get { return __Owner.MenuItems; } set { __Owner.MenuItems = value; } }
+            public ITextItem[] MenuItems { get { return __Owner.MenuItems; } set { __Owner.MenuItems = value; } }
             /// <summary>
-            /// Aktuálně vybraný prvek typu <see cref="IMenuItem"/>. Lze setovat, ale pouze takový prvek, kteý je přítomen (hledá se <see cref="Object.ReferenceEquals(object, object)"/>).
+            /// Aktuálně vybraný prvek typu <see cref="ITextItem"/>. Lze setovat, ale pouze takový prvek, kteý je přítomen (hledá se <see cref="Object.ReferenceEquals(object, object)"/>).
             /// </summary>
-            public IMenuItem SelectedMenuItem { get { return __Owner.SelectedMenuItem; } set { __Owner.SelectedMenuItem = value; } }
+            public ITextItem SelectedMenuItem { get { return __Owner.SelectedMenuItem; } set { __Owner.SelectedMenuItem = value; } }
             /// <summary>
-            /// Aktuálně SELECTOVANÉ prvky <see cref="IMenuItem"/>
+            /// Aktuálně SELECTOVANÉ prvky <see cref="ITextItem"/>
             /// </summary>
-            public IMenuItem[] SelectedMenuItems { get { return __Owner.SelectedMenuItems; } set { __Owner.SelectedMenuItems = value; } }
+            public ITextItem[] SelectedMenuItems { get { return __Owner.SelectedMenuItems; } set { __Owner.SelectedMenuItems = value; } }
             /// <summary>
             /// Pole aktuálně dostupných položek z hlediska filtrování.
             /// <para/>
@@ -4880,7 +4975,7 @@ SetSelected() - vstup           Absolutní
             /// <param name="atCurrentIndex">Požadavek true = na pozici aktuálního prvku / false = na konec</param>
             /// <param name="selectNewItems">Nově vložené prvky mají být po vložení vybrané (Selected)?</param>
             /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
-            public void InsertItems(IEnumerable<IMenuItem> sourceItems, bool atCurrentIndex, bool selectNewItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
+            public void InsertItems(IEnumerable<ITextItem> sourceItems, bool atCurrentIndex, bool selectNewItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
             {
                 __Owner.InsertItems(sourceItems, atCurrentIndex, selectNewItems, changeType);
             }
@@ -4896,7 +4991,7 @@ SetSelected() - vstup           Absolutní
             /// <param name="insertAbsoluteIndex">Absolutní index, kam do Items insertujeme první dodanou položku: 0=bude první na začátku, 1=bude za první existující, (Items.Count -1) = bude před poslední, Items.Count nebo null = ude Add na konec.</param>
             /// <param name="selectNewItems">Nově vložené prvky mají být po vložení vybrané (Selected)?</param>
             /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
-            public void InsertItems(IEnumerable<IMenuItem> sourceItems, int? insertAbsoluteIndex, bool selectNewItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
+            public void InsertItems(IEnumerable<ITextItem> sourceItems, int? insertAbsoluteIndex, bool selectNewItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
             {
                 __Owner.InsertItems(sourceItems, insertAbsoluteIndex, selectNewItems, changeType);
             }
@@ -4914,7 +5009,7 @@ SetSelected() - vstup           Absolutní
             /// </summary>
             /// <param name="removeItems"></param>
             /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
-            public void RemoveItems(IEnumerable<IMenuItem> removeItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
+            public void RemoveItems(IEnumerable<ITextItem> removeItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
             {
                 __Owner.RemoveItems(removeItems, changeType);
             }
@@ -5829,7 +5924,7 @@ SetSelected() - vstup           Absolutní
         /// </summary>
         None,
         /// <summary>
-        /// Jednotlivé položky, <see cref="IMenuItem"/>, pole <see cref="DxListBoxControl.MenuItems"/>.
+        /// Jednotlivé položky, <see cref="ITextItem"/>, pole <see cref="DxListBoxControl.MenuItems"/>.
         /// Podporuje vykreslování ikon.
         /// </summary>
         MenuItems,
@@ -5902,16 +5997,22 @@ SetSelected() - vstup           Absolutní
         /// Konstruktor
         /// </summary>
         /// <param name="action">Probíhající akce</param>
+        /// <param name="changeType">Důvod změny</param>
         /// <param name="keys">Stisknutá klávesa, může být null</param>
-        public DxListBoxActionEventArgs(ControlKeyActionType action, KeyEventArgs keys)
+        public DxListBoxActionEventArgs(ControlKeyActionType action, DxItemsChangeType changeType, KeyEventArgs keys)
         {
             this.Action = action;
+            this.ChangeType = changeType;
             this.Keys = keys;
         }
         /// <summary>
         /// Probíhající akce
         /// </summary>
         public ControlKeyActionType Action { get; }
+        /// <summary>
+        /// Důvod změny
+        /// </summary>
+        public DxItemsChangeType ChangeType { get; }
         /// <summary>
         /// Stisknutá klávesa, může být null
         /// </summary>
@@ -5933,9 +6034,10 @@ SetSelected() - vstup           Absolutní
         /// Konstruktor
         /// </summary>
         /// <param name="action">Probíhající akce</param>
+        /// <param name="changeType">Důvod změny</param>
         /// <param name="keys">Stisknutá klávesa, může být null</param>
-        public DxListBoxActionCancelEventArgs(ControlKeyActionType action, KeyEventArgs e)
-            : base(action, e)
+        public DxListBoxActionCancelEventArgs(ControlKeyActionType action, DxItemsChangeType changeType, KeyEventArgs keys)
+            : base(action, changeType, keys)
         {
             Cancel = false;
         }
@@ -5962,12 +6064,14 @@ SetSelected() - vstup           Absolutní
         /// <param name="buttons"></param>
         /// <param name="location"></param>
         /// <param name="modifierKeys"></param>
+        /// <param name="item"></param>
         /// <param name="itemId"></param>
-        public DxListBoxItemMouseClickEventArgs(MouseButtons buttons, Point location, Keys modifierKeys, object itemId)
+        public DxListBoxItemMouseClickEventArgs(MouseButtons buttons, Point location, Keys modifierKeys, object item, object itemId)
         {
             this.Buttons = buttons;
             this.Location = location;
             this.ModifierKeys = modifierKeys;
+            this.Item = item;
             this.ItemId = itemId;
         }
         /// <summary>
@@ -5982,6 +6086,10 @@ SetSelected() - vstup           Absolutní
         /// Modifikátorové klávesy (Ctrl, Shift, Alt)
         /// </summary>
         public Keys ModifierKeys { get; }
+        /// <summary>
+        /// Prvek pod myší: může to být <see cref="ITextItem"/> anebo <see cref="System.Data.DataRow"/>, podle režimu Listu
+        /// </summary>
+        public object Item { get; }
         /// <summary>
         /// ID prvku pod myší
         /// </summary>

@@ -12555,21 +12555,29 @@ namespace Noris.Clients.Win.Components.AsolDX
         FillKeyToFilter = 0x8000,
 
         /// <summary>
-        /// Kopírovat prvek / vybrané prvky zleva doprava
+        /// Kopírovat prvek / vybrané prvky zleva doprava, před první Selected prvek vpravo
         /// </summary>
         CopyToRightOne = 0x00010000,
         /// <summary>
+        /// Kopírovat prvek / vybrané prvky zleva doprava, na konec cílového seznamu
+        /// </summary>
+        CopyToRightOneEnd = 0x00020000,
+        /// <summary>
         /// Kopírovat všechny prvky zleva doprava
         /// </summary>
-        CopyToRightAll = 0x00020000,
+        CopyToRightAll = 0x00040000,
         /// <summary>
-        /// Kopírovat prvek / vybrané prvky zprava doleva
+        /// Kopírovat prvek / vybrané prvky zprava doleva, před první Selected prvek vlevo
         /// </summary>
-        CopyToLeftOne = 0x00040000,
+        CopyToLeftOne = 0x00100000,
+        /// <summary>
+        /// Kopírovat prvek / vybrané prvky zprava doleva, na konec zdrojového seznamu
+        /// </summary>
+        CopyToLeftOneEnd = 0x00200000,
         /// <summary>
         /// Kopírovat všechny prvky zprava doleva
         /// </summary>
-        CopyToLeftAll = 0x00080000,
+        CopyToLeftAll = 0x00400000,
 
         /// <summary>
         /// Oddělovač = prostor velikosti 1/4 buttonu na šířku/výšku
@@ -12603,7 +12611,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Všechny kopie doleva/doprava
         /// </summary>
-        Copy_All = CopyToRightOne | CopyToRightAll | CopyToLeftOne | CopyToLeftAll,
+        Copy_All = CopyToRightOne | CopyToRightOneEnd | CopyToRightAll | CopyToLeftOne | CopyToLeftOneEnd | CopyToLeftAll,
 
         /// <summary>
         /// Všechny akce

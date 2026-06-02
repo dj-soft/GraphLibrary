@@ -320,7 +320,7 @@ namespace TestDevExpress.Forms
             sampleListA.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client;
             sampleListA.DxProperties.SelectionMode = SelectionMode.MultiExtended;
             sampleListA.DxProperties.ButtonsPosition = ToolbarPosition.BottomSideCenter;
-            sampleListA.DxProperties.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.SelectAll, ControlKeyActionType.Delimiter, ControlKeyActionType.CopyToRightOne, ControlKeyActionType.CopyToRightAll, ControlKeyActionType.CopyToRightOne, ControlKeyActionType.CopyToRightAll };
+            sampleListA.DxProperties.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.SelectAll, ControlKeyActionType.Delimiter, ControlKeyActionType.CopyToRightOne, ControlKeyActionType.CopyToRightOneEnd, ControlKeyActionType.CopyToRightAll };
             sampleListA.DxProperties.EnabledKeyActions = ControlKeyActionType.None;
             sampleListA.DxProperties.DragDropActions = DxDragDropActionType.CopyItemsFrom;
             sampleListA.DxProperties.MenuItems = Randomizer.GetMenuItems(36, 80, Randomizer.ImageResourceType.PngSmall, true);
@@ -332,7 +332,7 @@ namespace TestDevExpress.Forms
             sampleListB.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client;
             sampleListB.DxProperties.SelectionMode = SelectionMode.MultiExtended;
             sampleListB.DxProperties.ButtonsPosition = ToolbarPosition.BottomSideCenter;
-            sampleListB.DxProperties.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.SelectAll, ControlKeyActionType.Delimiter, ControlKeyActionType.Delete, ControlKeyActionType.CopyToLeftOne, ControlKeyActionType.CopyToLeftAll, ControlKeyActionType.Delimiter, ControlKeyActionType.Move_All };
+            sampleListB.DxProperties.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.SelectAll, ControlKeyActionType.Delimiter, ControlKeyActionType.Delete, ControlKeyActionType.CopyToLeftOne, ControlKeyActionType.CopyToLeftOneEnd, ControlKeyActionType.CopyToLeftAll, ControlKeyActionType.Delimiter, ControlKeyActionType.Move_All };
             sampleListB.DxProperties.EnabledKeyActions = ControlKeyActionType.None;
             sampleListB.DxProperties.DragDropActions = DxDragDropActionType.ImportItemsInto | DxDragDropActionType.ReorderItems;
             sampleListB.DxProperties.MenuItems = Randomizer.GetMenuItems(7, Randomizer.ImageResourceType.PngSmall, true);
@@ -356,8 +356,13 @@ namespace TestDevExpress.Forms
             switch (e.Action)
             {
                 case ControlKeyActionType.CopyToRightOne:
+                    _Sample3ListB.DxProperties.InsertItems(_Sample3ListA.DxProperties.SelectedMenuItems, true, true, DxItemsChangeType.UserInteractive);
+                    break;
+                case ControlKeyActionType.CopyToRightOneEnd:
+                    _Sample3ListB.DxProperties.InsertItems(_Sample3ListA.DxProperties.SelectedMenuItems, false, true, DxItemsChangeType.UserInteractive);
+                    break;
                 case ControlKeyActionType.CopyToRightAll:
-
+                    _Sample3ListB.DxProperties.InsertItems(_Sample3ListA.DxProperties.MenuItems, true, true, DxItemsChangeType.UserInteractive);
                     break;
             }
         }
@@ -366,8 +371,13 @@ namespace TestDevExpress.Forms
             switch (e.Action)
             {
                 case ControlKeyActionType.CopyToLeftOne:
+                    _Sample3ListA.DxProperties.InsertItems(_Sample3ListB.DxProperties.SelectedMenuItems, true, true, DxItemsChangeType.UserInteractive);
+                    break;
+                case ControlKeyActionType.CopyToLeftOneEnd:
+                    _Sample3ListA.DxProperties.InsertItems(_Sample3ListB.DxProperties.SelectedMenuItems, false, true, DxItemsChangeType.UserInteractive);
+                    break;
                 case ControlKeyActionType.CopyToLeftAll:
-
+                    _Sample3ListA.DxProperties.InsertItems(_Sample3ListB.DxProperties.MenuItems, true, true, DxItemsChangeType.UserInteractive);
                     break;
             }
         }
@@ -435,6 +445,12 @@ namespace TestDevExpress.Forms
 
             __Sample4DragDropEnabledCheck.RemoveControlFromParent();
             __Sample4DragDropEnabledCheck = null;
+
+            __Sample4DoubleClickEnabledCheck.RemoveControlFromParent();
+            __Sample4DoubleClickEnabledCheck = null;
+
+            __Sample4ShowContentButton.RemoveControlFromParent();
+            __Sample4ShowContentButton = null;
         }
         private DxDblListBoxPanel _Sample4DblList;
         #region Nastavování vlastností
@@ -477,9 +493,12 @@ namespace TestDevExpress.Forms
 
             __Sample4DragDropEnabledCheck = DxComponent.CreateDxCheckEdit(x, y1, 160, this._HostContainer, "DragAndDropEnabled", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1);
             __Sample4DragDropEnabledCheck.Checked = sampleDblList.DxProperties.DragAndDropEnabled;
-            x += 165;
 
-            DxComponent.CreateDxSimpleButton(x, y1, 120, 40, this._HostContainer, "Zobrazit obsah", this._Sample4ShowClick);
+            __Sample4DoubleClickEnabledCheck = DxComponent.CreateDxCheckEdit(x, y2, 160, this._HostContainer, "DoubleClickEnabled", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1);
+            __Sample4DoubleClickEnabledCheck.Checked = sampleDblList.DxProperties.DoubleClickEnabled;
+            x += 165;
+            
+            __Sample4ShowContentButton = DxComponent.CreateDxSimpleButton(x, y1, 120, 40, this._HostContainer, "Zobrazit obsah", this._Sample4ShowClick);
 
             __Sample4ParamsValid = true;
         }
@@ -497,6 +516,7 @@ namespace TestDevExpress.Forms
             sampleDblList.DxProperties.ClipboardActionsEnabled = __Sample4ClipActionsEnabledCheck.Checked;
             sampleDblList.DxProperties.ReorderItemsEnabled = __Sample4ReorderEnabledCheck.Checked;
             sampleDblList.DxProperties.DragAndDropEnabled = __Sample4DragDropEnabledCheck.Checked;
+            sampleDblList.DxProperties.DoubleClickEnabled = __Sample4DoubleClickEnabledCheck.Checked;
         }
         private void _Sample4ShowClick(object sender, EventArgs args)
         {
@@ -523,6 +543,8 @@ namespace TestDevExpress.Forms
         private DxCheckEdit __Sample4ClipActionsEnabledCheck;
         private DxCheckEdit __Sample4ReorderEnabledCheck;
         private DxCheckEdit __Sample4DragDropEnabledCheck;
+        private DxCheckEdit __Sample4DoubleClickEnabledCheck;
+        private DxSimpleButton __Sample4ShowContentButton;
 
         private bool __Sample4ParamsValid;
         #endregion
