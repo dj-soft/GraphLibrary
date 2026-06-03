@@ -320,7 +320,7 @@ namespace TestDevExpress.Forms
             sampleListA.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client;
             sampleListA.DxProperties.SelectionMode = SelectionMode.MultiExtended;
             sampleListA.DxProperties.ButtonsPosition = ToolbarPosition.BottomSideCenter;
-            sampleListA.DxProperties.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.SelectAll, ControlKeyActionType.Delimiter, ControlKeyActionType.CopyToRightOne, ControlKeyActionType.CopyToRightOneEnd, ControlKeyActionType.CopyToRightAll };
+            sampleListA.DxProperties.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.SelectAll, ControlKeyActionType.Delimiter, ControlKeyActionType.CopyToTargetOneE, ControlKeyActionType.CopyToTargetOneC, ControlKeyActionType.CopyToTargetAllE };
             sampleListA.DxProperties.EnabledKeyActions = ControlKeyActionType.None;
             sampleListA.DxProperties.DragDropActions = DxDragDropActionType.CopyItemsFrom;
             sampleListA.DxProperties.MenuItems = Randomizer.GetMenuItems(36, 80, Randomizer.ImageResourceType.PngSmall, true);
@@ -332,7 +332,7 @@ namespace TestDevExpress.Forms
             sampleListB.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client;
             sampleListB.DxProperties.SelectionMode = SelectionMode.MultiExtended;
             sampleListB.DxProperties.ButtonsPosition = ToolbarPosition.BottomSideCenter;
-            sampleListB.DxProperties.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.SelectAll, ControlKeyActionType.Delimiter, ControlKeyActionType.Delete, ControlKeyActionType.CopyToLeftOne, ControlKeyActionType.CopyToLeftOneEnd, ControlKeyActionType.CopyToLeftAll, ControlKeyActionType.Delimiter, ControlKeyActionType.Move_All };
+            sampleListB.DxProperties.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.SelectAll, ControlKeyActionType.Delimiter, ControlKeyActionType.Delete, ControlKeyActionType.CopyToSourceOneE, ControlKeyActionType.CopyToSourceOneC, ControlKeyActionType.CopyToSourceAllE, ControlKeyActionType.Delimiter, ControlKeyActionType.Move_All };
             sampleListB.DxProperties.EnabledKeyActions = ControlKeyActionType.None;
             sampleListB.DxProperties.DragDropActions = DxDragDropActionType.ImportItemsInto | DxDragDropActionType.ReorderItems;
             sampleListB.DxProperties.MenuItems = Randomizer.GetMenuItems(7, Randomizer.ImageResourceType.PngSmall, true);
@@ -355,14 +355,17 @@ namespace TestDevExpress.Forms
         {
             switch (e.Action)
             {
-                case ControlKeyActionType.CopyToRightOne:
+                case ControlKeyActionType.CopyToTargetOneC:
                     _Sample3ListB.DxProperties.InsertItems(_Sample3ListA.DxProperties.SelectedMenuItems, true, true, DxItemsChangeType.UserInteractive);
                     break;
-                case ControlKeyActionType.CopyToRightOneEnd:
+                case ControlKeyActionType.CopyToTargetOneE:
                     _Sample3ListB.DxProperties.InsertItems(_Sample3ListA.DxProperties.SelectedMenuItems, false, true, DxItemsChangeType.UserInteractive);
                     break;
-                case ControlKeyActionType.CopyToRightAll:
+                case ControlKeyActionType.CopyToTargetAllC:
                     _Sample3ListB.DxProperties.InsertItems(_Sample3ListA.DxProperties.MenuItems, true, true, DxItemsChangeType.UserInteractive);
+                    break;
+                case ControlKeyActionType.CopyToTargetAllE:
+                    _Sample3ListB.DxProperties.InsertItems(_Sample3ListA.DxProperties.MenuItems, false, true, DxItemsChangeType.UserInteractive);
                     break;
             }
         }
@@ -370,14 +373,17 @@ namespace TestDevExpress.Forms
         {
             switch (e.Action)
             {
-                case ControlKeyActionType.CopyToLeftOne:
+                case ControlKeyActionType.CopyToSourceOneC:
                     _Sample3ListA.DxProperties.InsertItems(_Sample3ListB.DxProperties.SelectedMenuItems, true, true, DxItemsChangeType.UserInteractive);
                     break;
-                case ControlKeyActionType.CopyToLeftOneEnd:
+                case ControlKeyActionType.CopyToSourceOneE:
                     _Sample3ListA.DxProperties.InsertItems(_Sample3ListB.DxProperties.SelectedMenuItems, false, true, DxItemsChangeType.UserInteractive);
                     break;
-                case ControlKeyActionType.CopyToLeftAll:
+                case ControlKeyActionType.CopyToSourceAllC:
                     _Sample3ListA.DxProperties.InsertItems(_Sample3ListB.DxProperties.MenuItems, true, true, DxItemsChangeType.UserInteractive);
+                    break;
+                case ControlKeyActionType.CopyToSourceAllE:
+                    _Sample3ListA.DxProperties.InsertItems(_Sample3ListB.DxProperties.MenuItems, false, true, DxItemsChangeType.UserInteractive);
                     break;
             }
         }
