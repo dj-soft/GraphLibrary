@@ -65,10 +65,10 @@ namespace TestDevExpress.Forms
             var data = createData(120);
 
             __ThreadListBox = DxComponent.CreateDxListBox(300, 28, 544, 416, __MainPanel);
-            __ThreadListBox.HtmlTemplates.Add(template);
-            __ThreadListBox.DataSource = data;
-            __ThreadListBox.ItemAutoHeight = true;
-            __ThreadListBox.ContextButtons.Add(new DevExpress.Utils.ContextItem() { Visibility = DevExpress.Utils.ContextItemVisibility.Visible, Size = new WinDraw.Size(24, 24) });
+            __ThreadListBox.DxProperties.HtmlTemplates.Add(template);
+            __ThreadListBox.DxProperties.DataSource = data;
+            __ThreadListBox.DxProperties.ItemAutoHeight = true;
+            __ThreadListBox.DxProperties.ContextButtons.Add(new DevExpress.Utils.ContextItem() { Visibility = DevExpress.Utils.ContextItemVisibility.Visible, Size = new WinDraw.Size(24, 24) });
 
             __Searcher = new DevExpress.XtraEditors.SearchControl();
             __Searcher.Bounds = new Rectangle(300, 6, 544, 20);
@@ -245,17 +245,17 @@ namespace TestDevExpress.Forms
             var data = new List<ThreadListData>();
 
             __ThreadListBox = DxComponent.CreateDxListBox(300, 28, 544, 416, __MainPanel);
-            __ThreadListBox.Templates.Add(template);
-            __ThreadListBox.DataSource = data;
-            __ThreadListBox.ItemAutoHeight = true;
+            __ThreadListBox.DxProperties.Templates.Add(template);
+            __ThreadListBox.DxProperties.DataSource = data;
+            __ThreadListBox.DxProperties.ItemAutoHeight = true;
 
-            __ThreadListBox.ContextButtons.Add(new DevExpress.Utils.ContextItem() { Visibility = DevExpress.Utils.ContextItemVisibility.Visible, Size = new WinDraw.Size(24, 24) });
-            __ThreadListBox.HorizontalScrollbar = true;
-            __ThreadListBox.HorzScrollStep = 1;
+            __ThreadListBox.DxProperties.ContextButtons.Add(new DevExpress.Utils.ContextItem() { Visibility = DevExpress.Utils.ContextItemVisibility.Visible, Size = new WinDraw.Size(24, 24) });
+            __ThreadListBox.DxProperties.HorizontalScrollbar = true;
+            __ThreadListBox.DxProperties.HorzScrollStep = 1;
 
-            __ThreadListBox.CustomizeItem += __ThreadListBoxTyped_CustomizeItem;
-            __ThreadListBox.CustomItemDisplayText += __ThreadListBoxTyped_CustomItemDisplayText;
-            __ThreadListBox.CustomItemTemplate += __ThreadListBoxTyped_CustomItemTemplate;
+            __ThreadListBox.DxProperties.CustomizeItem += __ThreadListBoxTyped_CustomizeItem;
+            __ThreadListBox.DxProperties.CustomItemDisplayText += __ThreadListBoxTyped_CustomItemDisplayText;
+            __ThreadListBox.DxProperties.CustomItemTemplate += __ThreadListBoxTyped_CustomItemTemplate;
 
             data.AddRange(createData(120));
 
@@ -381,17 +381,17 @@ namespace TestDevExpress.Forms
             var data = createData(120);
 
             __ThreadListBox = DxComponent.CreateDxListBox(300, 28, 544, 416, __MainPanel);
-            __ThreadListBox.Templates.Add(template);
-            __ThreadListBox.DataSource = data;
-            __ThreadListBox.ItemAutoHeight = true;
+            __ThreadListBox.DxProperties.Templates.Add(template);
+            __ThreadListBox.DxProperties.DataSource = data;
+            __ThreadListBox.DxProperties.ItemAutoHeight = true;
 
-            __ThreadListBox.ContextButtons.Add(new DevExpress.Utils.ContextItem() { Visibility = DevExpress.Utils.ContextItemVisibility.Visible, Size = new WinDraw.Size(24, 24) });
-            __ThreadListBox.HorizontalScrollbar = true;
-            __ThreadListBox.HorzScrollStep = 1;
+            __ThreadListBox.DxProperties.ContextButtons.Add(new DevExpress.Utils.ContextItem() { Visibility = DevExpress.Utils.ContextItemVisibility.Visible, Size = new WinDraw.Size(24, 24) });
+            __ThreadListBox.DxProperties.HorizontalScrollbar = true;
+            __ThreadListBox.DxProperties.HorzScrollStep = 1;
 
-            __ThreadListBox.CustomItemTemplate += _ThreadListBoxTable_CustomItemTemplate;         // Vybere pro konkrétní prvek jednu z vícero šablon
+            __ThreadListBox.DxProperties.CustomItemTemplate += _ThreadListBoxTable_CustomItemTemplate;         // Vybere pro konkrétní prvek jednu z vícero šablon
             //  __ThreadListBox.CustomItemDisplayText += _ThreadListBoxTable_CustomItemDisplayText;   // Modifikuje text zobrazovaný v buňce => ale pozor, má smysl jen pro primitivní ListBox (jeden řádek = jeden text)
-            __ThreadListBox.CustomizeItem += _ThreadListBoxTable_CustomizeItem;                   // Aktualizuje Image pro buňku = pro TemplateItem
+            __ThreadListBox.DxProperties.CustomizeItem += _ThreadListBoxTable_CustomizeItem;                   // Aktualizuje Image pro buňku = pro TemplateItem
 
             __Searcher = new DevExpress.XtraEditors.SearchControl();
             __Searcher.Bounds = new Rectangle(300, 6, 544, 20);

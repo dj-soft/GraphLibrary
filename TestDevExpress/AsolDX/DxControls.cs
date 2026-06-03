@@ -6199,7 +6199,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _ListBox.Enter += _AnyControlEnter;
             _ListBox.KeyDown += _ListBox_KeyDown;
             _ListBox.DxProperties.PaintList += _ListBox_PaintList;
-            _ListBox.SelectedIndexChanged += _ListBox_SelectedIndexChanged;
+            _ListBox.DxProperties.SelectedIndexChanged += _ListBox_SelectedIndexChanged;
 
             _ResourceNames = DxComponent.GetResourceNames(withApplication: false, withDevExpress: true);
             _ResourceFilter = "";

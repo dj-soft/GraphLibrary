@@ -1240,21 +1240,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Objekty to mohou být různé, typicky <see cref="ITextItem"/> nebo <see cref="System.Data.DataRowView"/>.
         /// ID označených řádků je v poli <see cref="SelectedItemsId"/>.
         /// </summary>
-        public object[] SelectedItems { get { return __ListBox.SelectedItems; } }
+        public object[] SelectedItems { get { return __ListBox.DxProperties.SelectedItems; } }
         /// <summary>
         /// Pole obsahující ID selectovaných záznamů.
         /// </summary>
-        public object[] SelectedItemsId { get { return __ListBox.SelectedItemsId; } }
+        public object[] SelectedItemsId { get { return __ListBox.DxProperties.SelectedItemsId; } }
         /// <summary>
         /// Prvek, na kterém je kurzor. Je jen jediný, nebo null.
         /// Objekty to mohou být různé, typicky <see cref="ITextItem"/> nebo <see cref="System.Data.DataRowView"/>.
         /// ID aktivního řádku je v <see cref="CurrentItemId"/>.
         /// </summary>
-        public object CurrentItem { get { return __ListBox.CurrentItem; } }
+        public object CurrentItem { get { return __ListBox.DxProperties.CurrentItem; } }
         /// <summary>
         /// Pole obsahující ID aktivního řádku.
         /// </summary>
-        public object CurrentItemId { get { return __ListBox.CurrentItemId; } }
+        public object CurrentItemId { get { return __ListBox.DxProperties.CurrentItemId; } }
         #endregion
         #endregion
         #region Filtrování položek: klientské / serverové
@@ -1509,8 +1509,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (e.KeyCode == Keys.Enter || e.KeyCode == Keys.Down)
             {
                 e.IsInputKey = false;
-                this.__ListBox.UnSelectAll();
-                this.__ListBox.SelectedIndex = 0;
+                this.__ListBox.DxProperties.UnSelectAll();
+                this.__ListBox.DxProperties.SelectedIndex = 0;
                 this.__ListBox.Focus();
             }
         }
@@ -1692,8 +1692,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _SetButtonsEnabled()
         {
-            int totalCount = this.__ListBox.VisibleItemsCount;
-            int selectedCount = this.__ListBox.SelectedItemsCount;
+            int totalCount = this.__ListBox.DxProperties.VisibleItemsCount;
+            int selectedCount = this.__ListBox.DxProperties.SelectedItemsCount;
             bool undoRedoEnabled = this.DxProperties.UndoRedoEnabled;
             DxListBoxPanel.EnableButtons(__Buttons, totalCount, selectedCount, true, true, undoRedoEnabled);
         }
@@ -2155,15 +2155,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Pole aktuálně dostupných položek z hlediska filtrování.
             /// <para/>
             /// Pole obsahuje pouze ty položky z <see cref="MenuItems"/>, které jsou aktuálně <b>vyhovující řádkovému filtru</b>.<br/>
-            /// Prvky v tomto poli MAJÍ naplněny hodnoty <see cref="DxListBoxControl.ListMenuItemInfo.AbsoluteIndex"/> a <see cref="DxListBoxControl.ListMenuItemInfo.MenuItem"/> a <see cref="DxListBoxControl.ListMenuItemInfo.FilteredIndex"/>.<br/>
-            /// Prvky v tomto poli NEMAJÍ naplněny hodnoty <see cref="DxListBoxControl.ListMenuItemInfo.DisplayedIndex"/> a <see cref="DxListBoxControl.ListMenuItemInfo.Bounds"/>.<br/>
+            /// Prvky v tomto poli MAJÍ naplněny hodnoty <see cref="DxListBoxNative.ListMenuItemInfo.AbsoluteIndex"/> a <see cref="DxListBoxNative.ListMenuItemInfo.MenuItem"/> a <see cref="DxListBoxNative.ListMenuItemInfo.FilteredIndex"/>.<br/>
+            /// Prvky v tomto poli NEMAJÍ naplněny hodnoty <see cref="DxListBoxNative.ListMenuItemInfo.DisplayedIndex"/> a <see cref="DxListBoxNative.ListMenuItemInfo.Bounds"/>.<br/>
             /// Pole není null. Může mít 0 prvků.
             /// </summary>
-            public DxListBoxControl.ListMenuItemInfo[] FilteredMenuItems { get { return __Owner.ListBox.DxProperties.FilteredMenuItems; } }
+            public DxListBoxNative.ListMenuItemInfo[] FilteredMenuItems { get { return __Owner.ListBox.DxProperties.FilteredMenuItems; } }
             /// <summary>
             /// Pole nyní aktuálně viditelných prvků = aktuálně <b>zafiltrované</b> pomocí klientského filtru a <b>ve viditelné oblasti ListBoxu</b>.
             /// </summary>
-            public DxListBoxControl.ListMenuItemInfo[] CurrentVisibleMenuItems { get { return __Owner.ListBox.DxProperties.CurrentVisibleMenuItems; } }
+            public DxListBoxNative.ListMenuItemInfo[] CurrentVisibleMenuItems { get { return __Owner.ListBox.DxProperties.CurrentVisibleMenuItems; } }
             #endregion
             #region Table + Template
             /// <summary>
@@ -2356,80 +2356,38 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private void _Initialize()
         {
-            __ListBox = new DxListBoxNative();
-            __ListBox.Dock = DockStyle.Fill;
+            this.BorderStyle = BorderStyles.NoBorder;
+
+            __ListBoxNative = new DxListBoxNative();
+            __ListBoxNative.Dock = DockStyle.Fill;
             __HScrollBar = new DevExpress.XtraEditors.HScrollBar();
             __HScrollBar.Visible = false;
             __HScrollBar.Dock = DockStyle.Bottom;
-            this.Controls.Add(__ListBox);
+            this.Controls.Add(__ListBoxNative);
             this.Controls.Add(__HScrollBar);
         }
-        private DxListBoxNative __ListBox;
+        private DxListBoxNative __ListBoxNative;
         private DevExpress.XtraEditors.HScrollBar __HScrollBar;
         #endregion
         #region Zpřístupnění věcí z ListBoxu
         /// <summary>
-        /// Gets or sets the style controller component that provides style settings for this control.
+        /// Vlastní ListBox
         /// </summary>
-        public IStyleController StyleController { get { return __ListBox.StyleController; } set { __ListBox.StyleController = value; } }
-        /// <summary>
-        /// Gets or sets the index of the currently selected item.
-        /// </summary>
-        public int SelectedIndex { get { return __ListBox.SelectedIndex; } set { __ListBox.SelectedIndex = value; } }
-        /// <summary>
-        /// Allows you to respond to item selection.
-        /// </summary>
-        public event EventHandler SelectedIndexChanged { add { __ListBox.SelectedIndexChanged += value; } remove { __ListBox.SelectedIndexChanged -= value; } }
-        /// <summary>
-        /// Počet položek zbylých po vyfiltrování
-        /// </summary>
-        public int VisibleItemsCount { get { return __ListBox.ItemCount; } }
-        /// <summary>
-        /// Počet položek označených
-        /// </summary>
-        public int SelectedItemsCount { get { return __ListBox.SelectedIndices.Count; } }
-        /// <summary>
-        /// Aktuálně označené objekty. Může jich být i více, nebo žádný.
-        /// Objekty to mohou být různé, typicky <see cref="ITextItem"/> nebo <see cref="System.Data.DataRowView"/>.
-        /// ID označených řádků je v poli <see cref="SelectedItemsId"/>.
-        /// </summary>
-        public object[] SelectedItems { get { return __ListBox.SelectedItems; } }
-        /// <summary>
-        /// Pole obsahující ID selectovaných záznamů.
-        /// </summary>
-        public object[] SelectedItemsId { get { return __ListBox.SelectedItemsId; } }
-        /// <summary>
-        /// Gets or sets the index of the currently selected item.
-        /// </summary>
-        public int CurrentItem { get { return __ListBox.SelectedIndex; } set { __ListBox.SelectedIndex = value; } }
-        /// <summary>
-        /// Gets or sets the index of the currently selected item.
-        /// </summary>
-        public int CurrentItemId { get { return __ListBox.SelectedIndex; } set { __ListBox.SelectedIndex = value; } }
-
-
-
-        /// <summary>
-        /// Unselects all items when multiple item selection is enabled.
-        /// </summary>
-        public void UnSelectAll() { __ListBox.UnSelectAll(); }
-
+        public DxListBoxNative ListBoxNative { get { return __ListBoxNative; } }
         #endregion
-
-
         #region Implementace všech interface skrz __ListBox
-        DxDragDrop IDxDragDropControl.DxDragDrop => ((IDxDragDropControl)__ListBox).DxDragDrop;
-        DxDragDropActionType IDxDragDropControl.DragDropActions => ((IDxDragDropControl)__ListBox).DragDropActions;
-        void IDxDragDropControl.DoDragSource(DxDragDropArgs args) { ((IDxDragDropControl)__ListBox).DoDragSource(args); }
-        void IDxDragDropControl.DoDragTarget(DxDragDropArgs args) { ((IDxDragDropControl)__ListBox).DoDragTarget(args); }
-        void IUndoRedoControl.DoUndoStep(object state) { ((IUndoRedoControl)__ListBox).DoUndoStep(state); }
-        void IUndoRedoControl.DoRedoStep(object state) { ((IUndoRedoControl)__ListBox).DoRedoStep(state); }
-        void IDxToolTipDynamicClient.PrepareSuperTipForPoint(DxToolTipDynamicPrepareArgs args) { ((IDxToolTipDynamicClient)__ListBox).PrepareSuperTipForPoint(args); }
-        void IListenerZoomChange.ZoomChanged() { ((IListenerZoomChange)__ListBox).ZoomChanged(); }
-        void ISearchControlClient.SetSearchControl(ISearchControl searchControl) { ((ISearchControlClient)__ListBox).SetSearchControl(searchControl); }
-        SearchControlProviderBase ISearchControlClient.CreateSearchProvider() { return ((ISearchControlClient)__ListBox).CreateSearchProvider(); }
-        void ISearchControlClient.ApplyFindFilter(SearchInfoBase searchInfo) { ((ISearchControlClient)__ListBox).ApplyFindFilter(searchInfo); }
-        bool ISearchControlClient.IsAttachedToSearchControl => ((ISearchControlClient)__ListBox).IsAttachedToSearchControl;
+        DxDragDrop IDxDragDropControl.DxDragDrop => ((IDxDragDropControl)__ListBoxNative).DxDragDrop;
+        DxDragDropActionType IDxDragDropControl.DragDropActions => ((IDxDragDropControl)__ListBoxNative).DragDropActions;
+        void IDxDragDropControl.DoDragSource(DxDragDropArgs args) { ((IDxDragDropControl)__ListBoxNative).DoDragSource(args); }
+        void IDxDragDropControl.DoDragTarget(DxDragDropArgs args) { ((IDxDragDropControl)__ListBoxNative).DoDragTarget(args); }
+        void IUndoRedoControl.DoUndoStep(object state) { ((IUndoRedoControl)__ListBoxNative).DoUndoStep(state); }
+        void IUndoRedoControl.DoRedoStep(object state) { ((IUndoRedoControl)__ListBoxNative).DoRedoStep(state); }
+        void IDxToolTipDynamicClient.PrepareSuperTipForPoint(DxToolTipDynamicPrepareArgs args) { ((IDxToolTipDynamicClient)__ListBoxNative).PrepareSuperTipForPoint(args); }
+        void IListenerZoomChange.ZoomChanged() { ((IListenerZoomChange)__ListBoxNative).ZoomChanged(); }
+        void ISearchControlClient.SetSearchControl(ISearchControl searchControl) { ((ISearchControlClient)__ListBoxNative).SetSearchControl(searchControl); }
+        SearchControlProviderBase ISearchControlClient.CreateSearchProvider() { return ((ISearchControlClient)__ListBoxNative).CreateSearchProvider(); }
+        void ISearchControlClient.ApplyFindFilter(SearchInfoBase searchInfo) { ((ISearchControlClient)__ListBoxNative).ApplyFindFilter(searchInfo); }
+        bool ISearchControlClient.IsAttachedToSearchControl => ((ISearchControlClient)__ListBoxNative).IsAttachedToSearchControl;
         #endregion
         #region DxProperties : property + třída, která do sebe shrnuje čistě jen Nephrite vlastnosti
         /// <summary>
@@ -2456,71 +2414,79 @@ namespace Noris.Clients.Win.Components.AsolDX
                 __Owner = owner;
             }
             private DxListBoxControl __Owner;
+            /// <summary>
+            /// Přímo instance<see cref="DxListBoxNative"/>
+            /// </summary>
+            private DxListBoxNative ListBoxNative { get { return __Owner.ListBoxNative; } }
+            /// <summary>
+            /// Přímo vlastnosti <see cref="DxListBoxNative"/>
+            /// </summary>
+            private DxListBoxNative.DxPropertiesInfo DxListProperties { get { return ListBoxNative.DxProperties; } }
             #endregion
             #region Vlastnosti
             /// <summary>
             /// Výška prvku
             /// </summary>
-            public int ItemHeight { get { return __Owner.ItemHeight; } set { __Owner.ItemHeight = value; } }
+            public int ItemHeight { get { return DxListProperties.ItemHeight; } set { DxListProperties.ItemHeight = value; } }
             /// <summary>
             /// Přídavek k výšce jednoho řádku ListBoxu v pixelech.
             /// Hodnota 0 a záporná: bude nastaveno <see cref="DevExpress.XtraEditors.BaseListBoxControl.ItemAutoHeight"/> = true.
             /// Kladná hodnota přidá daný počet pixelů nad a pod text = zvýší výšku řádku o 2x <see cref="ItemHeightPadding"/>.
             /// Hodnota vyšší než 10 se akceptuje jako 10.
             /// </summary>
-            public int ItemHeightPadding { get { return __Owner.ItemHeightPadding; } set { __Owner.ItemHeightPadding = value; } }
+            public int ItemHeightPadding { get { return DxListProperties.ItemHeightPadding; } set { DxListProperties.ItemHeightPadding = value; } }
             /// <summary>
             /// Režim prvků v ListBoxu.
             /// </summary>
-            public ListBoxItemsMode ItemsMode { get { return __Owner.ItemsMode; } }
+            public ListBoxItemsMode ItemsMode { get { return DxListProperties.ItemsMode; } }
             /// <summary>
             /// Povoluje se výběr více prvků pomocí Ctrl+Mouse?
             /// </summary>
-            public bool MultiSelectEnabled { get { return __Owner.MultiSelectEnabled; } set { __Owner.MultiSelectEnabled = value; } }
+            public bool MultiSelectEnabled { get { return DxListProperties.MultiSelectEnabled; } set { DxListProperties.MultiSelectEnabled = value; } }
             /// <summary>
             /// Konkrétní režim MultiSelectu
             /// </summary>
-            public SelectionMode SelectionMode { get { return __Owner.SelectionMode; } set { __Owner.SelectionMode = value; } }
+            public SelectionMode SelectionMode { get { return DxListProperties.SelectionMode; } set { DxListProperties.SelectionMode = value; } }
             /// <summary>
             /// Gets or sets whether to arrange items across multiple columns if the ListBox cannot fit all items vertically.
             /// true to arrange items across multiple columns; otherwise, false.
             /// </summary>
-            public virtual bool MultiColumn { get { return __Owner.MultiColumn; } set { __Owner.MultiColumn = value; } }
+            public virtual bool MultiColumn { get { return DxListProperties.MultiColumn; } set { DxListProperties.MultiColumn = value; } }
             /// <summary>
             /// Šířky sloupců zobrazených v režimu <see cref="ItemsMode"/>: <see cref="ListBoxItemsMode.MenuItems"/>
             /// </summary>
-            public int[] MenuItemColumnWidths { get { return __Owner.MenuItemColumnWidths; } set { __Owner.MenuItemColumnWidths = value; } }
+            public int[] MenuItemColumnWidths { get { return DxListProperties.MenuItemColumnWidths; } set { DxListProperties.MenuItemColumnWidths = value; } }
             /// <summary>
             /// Pokud obsahuje true, pak List smí obsahovat duplicitní klíče (defaultní hodnota je true).
             /// Pokud je false, pak vložení dalšího záznamu s klíčem, který už v Listu je, bude ignorováno.
             /// Pozor, pokud List obsahuje nějaké duplicitní záznamy a poté bude nastaveno <see cref="DuplicityEnabled"/> na false, NEBUDOU duplicitní záznamy odstraněny.
             /// </summary>
-            public bool DuplicityEnabled { get { return __Owner.DuplicityEnabled; } set { __Owner.DuplicityEnabled = value; } }
+            public bool DuplicityEnabled { get { return DxListProperties.DuplicityEnabled; } set { DxListProperties.DuplicityEnabled = value; } }
             /// <summary>
             /// Pokud obsahuje true, pak List si po každé změně položek zajistí Sort svých položek v <see cref="DxListBoxControl.MenuItems"/> podle hodnoty <see cref="ITextItem.ItemOrder"/>.
             /// Pokud je false, pak se nic takového neprovádí.
             /// Není dobré kombinovat s akcemi MoveUp/Down, protože nedávají smysl.
             /// </summary>
-            public bool AutoSortItems { get { return __Owner.AutoSortItems; } set { __Owner.AutoSortItems = value; } }
+            public bool AutoSortItems { get { return DxListProperties.AutoSortItems; } set { DxListProperties.AutoSortItems = value; } }
             /// <summary>
             /// Povolené akce dané klávesami v ListBoxu.
             /// Výchozí je <see cref="ControlKeyActionType.None"/>
             /// </summary>
-            public ControlKeyActionType EnabledKeyActions { get { return __Owner.EnabledKeyActions; } set { __Owner.EnabledKeyActions = value; } }
+            public ControlKeyActionType EnabledKeyActions { get { return DxListProperties.EnabledKeyActions; } set { DxListProperties.EnabledKeyActions = value; } }
             /// <summary>
             /// Povolené akce dané buttony. Buttony přidává Panel, o nich ListBox netuší. Proto se mu externě dodává pole povolených akcí od Buttonů, aby ListBox věděl, co může provádět za akce.
             /// Výchozí je <see cref="ControlKeyActionType.None"/>
             /// </summary>
-            public ControlKeyActionType EnabledButtonsActions { get { return __Owner.EnabledButtonsActions; } set { __Owner.EnabledButtonsActions = value; } }
+            public ControlKeyActionType EnabledButtonsActions { get { return DxListProperties.EnabledButtonsActions; } set { DxListProperties.EnabledButtonsActions = value; } }
             /// <summary>
             /// Velikost ikon
             /// </summary>
-            public ResourceImageSizeType ItemSizeType { get { return __Owner.ItemSizeType; } set { __Owner.ItemSizeType = value; } }
+            public ResourceImageSizeType ItemSizeType { get { return DxListProperties.ItemSizeType; } set { DxListProperties.ItemSizeType = value; } }
             /// <summary>
             /// ID tohoto objektu, je vkládáno do balíčku s daty při CtrlC, CtrlX a při DragAndDrop z tohoto zdroje.
             /// Je součástí Exchange dat uložených do <see cref="DataExchangeContainer.DataSourceId"/>.
             /// </summary>
-            public string DataExchangeCurrentControlId { get { return __Owner.DataExchangeCurrentControlId; } set { __Owner.DataExchangeCurrentControlId = value; } }
+            public string DataExchangeCurrentControlId { get { return DxListProperties.DataExchangeCurrentControlId; } set { DxListProperties.DataExchangeCurrentControlId = value; } }
             /// <summary>
             /// Režim výměny dat při pokusu o vkládání do tohoto objektu.
             /// Pokud některý jiný objekt provedl Ctrl+C, pak svoje data vložil do balíčku <see cref="DataExchangeContainer"/>,
@@ -2531,30 +2497,89 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// a pokud ano, pak prověří, zda this control může akceptovat data ze zdroje v balíčku uvedeného, na základě nastavení režimu výměny v <see cref="DataExchangeCrossType"/>
             /// a ID zdrojového controlu podle <see cref="DataExchangeAcceptSourceControlId"/>.
             /// </summary>
-            public DataExchangeCrossType DataExchangeCrossType { get { return __Owner.DataExchangeCrossType; } set { __Owner.DataExchangeCrossType = value; } }
+            public DataExchangeCrossType DataExchangeCrossType { get { return DxListProperties.DataExchangeCrossType; } set { DxListProperties.DataExchangeCrossType = value; } }
             /// <summary>
             /// Povolené zdroje dat pro vkládání do this controlu pomocí výměnného balíčku <see cref="DataExchangeContainer"/>.
             /// </summary>
-            public string DataExchangeAcceptSourceControlId { get { return __Owner.DataExchangeAcceptSourceControlId; } set { __Owner.DataExchangeAcceptSourceControlId = value; } }
+            public string DataExchangeAcceptSourceControlId { get { return DxListProperties.DataExchangeAcceptSourceControlId; } set { DxListProperties.DataExchangeAcceptSourceControlId = value; } }
             /// <summary>
             /// Souhrn povolených akcí Drag and Drop
             /// </summary>
-            public DxDragDropActionType DragDropActions { get { return __Owner.DragDropActions; } set { __Owner.DragDropActions = value; } }
+            public DxDragDropActionType DragDropActions { get { return DxListProperties.DragDropActions; } set { DxListProperties.DragDropActions = value; } }
             /// <summary>
             /// UndoRedoEnabled List má povoleny akce Undo a Redo?
             /// </summary>
-            public bool UndoRedoEnabled { get { return __Owner.UndoRedoEnabled; } set { __Owner.UndoRedoEnabled = value; } }
+            public bool UndoRedoEnabled { get { return DxListProperties.UndoRedoEnabled; } set { DxListProperties.UndoRedoEnabled = value; } }
             /// <summary>
             /// Controller UndoRedo.
             /// Pokud není povoleno <see cref="UndoRedoController"/>, je zde null.
             /// Pokud je povoleno, je zde vždy instance. 
             /// Instanci lze setovat, lze ji sdílet mezi více / všemi controly na jedné stránce / okně.
             /// </summary>
-            public UndoRedoController UndoRedoController { get { return __Owner.UndoRedoController; } set { __Owner.UndoRedoController = value; } }
+            public UndoRedoController UndoRedoController { get { return DxListProperties.UndoRedoController; } set { DxListProperties.UndoRedoController = value; } }
             /// <summary>
             /// Controller ToolTipu
             /// </summary>
-            public DxToolTipController DxToolTipController { get { return __Owner.DxToolTipController; } }
+            public DxToolTipController DxToolTipController { get { return DxListProperties.DxToolTipController; } }
+
+            /// <summary>
+            /// Gets or sets the style controller component that provides style settings for this control.
+            /// </summary>
+            public IStyleController StyleController { get { return ListBoxNative.StyleController; } set { ListBoxNative.StyleController = value; } }
+            /// <summary>
+            /// Gets or sets the index of the currently selected item.
+            /// </summary>
+            public int SelectedIndex { get { return ListBoxNative.SelectedIndex; } set { ListBoxNative.SelectedIndex = value; } }
+            /// <summary>
+            /// Allows you to respond to item selection.
+            /// </summary>
+            public event EventHandler SelectedIndexChanged { add { ListBoxNative.SelectedIndexChanged += value; } remove { ListBoxNative.SelectedIndexChanged -= value; } }
+            /// <summary>
+            /// Počet položek zbylých po vyfiltrování
+            /// </summary>
+            public int VisibleItemsCount { get { return ListBoxNative.ItemCount; } }
+            /// <summary>
+            /// Počet položek označených
+            /// </summary>
+            public int SelectedItemsCount { get { return ListBoxNative.SelectedIndices.Count; } }
+            /// <summary>
+            /// Aktuálně označené objekty. Může jich být i více, nebo žádný.
+            /// Objekty to mohou být různé, typicky <see cref="ITextItem"/> nebo <see cref="System.Data.DataRowView"/>.
+            /// ID označených řádků je v poli <see cref="SelectedItemsId"/>.
+            /// </summary>
+            public object[] SelectedItems { get { return ListBoxNative.SelectedItems; } }
+            /// <summary>
+            /// Pole obsahující ID selectovaných záznamů.
+            /// </summary>
+            public object[] SelectedItemsId { get { return ListBoxNative.SelectedItemsId; } }
+            /// <summary>
+            /// Gets or sets the index of the currently selected item.
+            /// </summary>
+            public int CurrentItem { get { return ListBoxNative.SelectedIndex; } set { ListBoxNative.SelectedIndex = value; } }
+            /// <summary>
+            /// Gets or sets the index of the currently selected item.
+            /// </summary>
+            public int CurrentItemId { get { return ListBoxNative.SelectedIndex; } set { ListBoxNative.SelectedIndex = value; } }
+
+            /// <summary>
+            /// Gets or sets whether item height is automatically calculated to fit item contents. In auto-height mode, different items may have different heights.
+            /// </summary>
+            public bool ItemAutoHeight { get { return ListBoxNative.ItemAutoHeight; } set { ListBoxNative.ItemAutoHeight = value; } }
+            /// <summary>
+            /// Provides access to the collection of context buttons displayed in the control.
+            /// </summary>
+            public ContextItemCollection ContextButtons { get { return ListBoxNative.ContextButtons; } }
+            /// <summary>
+            /// Gets or sets whether a horizontal scroll bar is enabled when the control’s items are displayed in a single column and some of them exceed the control’s width.
+            /// </summary>
+            public bool HorizontalScrollbar { get { return ListBoxNative.HorizontalScrollbar; } set { ListBoxNative.HorizontalScrollbar = value; } }
+            /// <summary>
+            /// Gets or sets the offset by which the control is scrolled horizontally when the
+            /// scrollbar buttons are clicked. This property is in effect in single column display
+            /// mode, when the BaseListBoxControl.HorizontalScrollbar property is set to true.
+            /// </summary>
+            public int HorzScrollStep { get { return ListBoxNative.HorzScrollStep; } set { ListBoxNative.HorzScrollStep = value; } }
+
             #endregion
             #region MenuItems
             /// <summary>
@@ -2568,15 +2593,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Toto pole má stejný počet prvků jako pole this.Items
             /// Pole jako celek lze setovat: vymění se obsah, ale zachová se pozice.
             /// </summary>
-            public ITextItem[] MenuItems { get { return __Owner.MenuItems; } set { __Owner.MenuItems = value; } }
+            public ITextItem[] MenuItems { get { return DxListProperties.MenuItems; } set { DxListProperties.MenuItems = value; } }
             /// <summary>
             /// Aktuálně vybraný prvek typu <see cref="ITextItem"/>. Lze setovat, ale pouze takový prvek, kteý je přítomen (hledá se <see cref="Object.ReferenceEquals(object, object)"/>).
             /// </summary>
-            public ITextItem SelectedMenuItem { get { return __Owner.SelectedMenuItem; } set { __Owner.SelectedMenuItem = value; } }
+            public ITextItem SelectedMenuItem { get { return DxListProperties.SelectedMenuItem; } set { DxListProperties.SelectedMenuItem = value; } }
             /// <summary>
             /// Aktuálně SELECTOVANÉ prvky <see cref="ITextItem"/>
             /// </summary>
-            public ITextItem[] SelectedMenuItems { get { return __Owner.SelectedMenuItems; } set { __Owner.SelectedMenuItems = value; } }
+            public ITextItem[] SelectedMenuItems { get { return DxListProperties.SelectedMenuItems; } set { DxListProperties.SelectedMenuItems = value; } }
             /// <summary>
             /// Pole aktuálně dostupných položek z hlediska filtrování.
             /// <para/>
@@ -2585,21 +2610,21 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Prvky v tomto poli NEMAJÍ naplněny hodnoty <see cref="ListMenuItemInfo.DisplayedIndex"/> a <see cref="ListMenuItemInfo.Bounds"/>.<br/>
             /// Pole není null. Může mít 0 prvků.
             /// </summary>
-            public ListMenuItemInfo[] FilteredMenuItems { get { return __Owner.FilteredMenuItems; } }
+            public DxListBoxNative.ListMenuItemInfo[] FilteredMenuItems { get { return DxListProperties.FilteredMenuItems; } }
             /// <summary>
             /// Pole nyní aktuálně viditelných prvků = aktuálně <b>zafiltrované</b> pomocí klientského filtru a <b>ve viditelné oblasti ListBoxu</b>.
             /// </summary>
-            public ListMenuItemInfo[] CurrentVisibleMenuItems { get { return __Owner.CurrentVisibleMenuItems; } }
+            public DxListBoxNative.ListMenuItemInfo[] CurrentVisibleMenuItems { get { return DxListProperties.CurrentVisibleMenuItems; } }
             #endregion
             #region Table + Template
             /// <summary>
             /// Tabulka s daty
             /// </summary>
-            public System.Data.DataTable DataTable { get { return __Owner.DataTable; } set { __Owner.DataTable = value; } }
+            public System.Data.DataTable DataTable { get { return DxListProperties.DataTable; } set { DxListProperties.DataTable = value; } }
             /// <summary>
             /// Šablona pro zobrazení dat z <see cref="DataTable"/>
             /// </summary>
-            public DxListBoxTemplate DxTemplate { get { return __Owner.DxTemplate; } set { __Owner.DxTemplate = value; } }
+            public DxListBoxTemplate DxTemplate { get { return DxListProperties.DxTemplate; } set { DxListProperties.DxTemplate = value; } }
             /// <summary>
             /// Metoda vytvoří Simple template pro ikonu a pro text
             /// </summary>
@@ -2610,7 +2635,19 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <param name="iconSize"></param>
             /// <returns></returns>
             public DxListBoxTemplate CreateSimpleDxTemplate(string columnNameItemId, string columnNameIcon, string columnNameText, string columnNameToolTip = null, int? iconSize = null)
-            { return __Owner.CreateSimpleDxTemplate(columnNameItemId, columnNameIcon, columnNameText, columnNameToolTip, iconSize); }
+            { return DxListProperties.CreateSimpleDxTemplate(columnNameItemId, columnNameIcon, columnNameText, columnNameToolTip, iconSize); }
+            /// <summary>
+            /// Stores HTML and CSS-based templates used to render listbox items.
+            /// </summary>
+            public DevExpress.Utils.Html.HtmlTemplateCollection HtmlTemplates { get { return ListBoxNative.HtmlTemplates; } }
+            /// <summary>
+            /// Stores regular item templates used to render listbox items.
+            /// </summary>
+            public ItemTemplateRepositoryBase Templates { get { return ListBoxNative.Templates; } }
+            /// <summary>
+            /// Gets or sets the data source that provides items to display in the control.
+            /// </summary>
+            public object DataSource { get { return ListBoxNative.DataSource; } set { ListBoxNative.DataSource = value; } }
             #endregion
             #region Akce = metody
             /// <summary>
@@ -2621,7 +2658,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <param name="actions"></param>
             public void DoKeyActions(DxItemsChangeType changeType, params ControlKeyActionType[] actions)
             {
-                __Owner.DoKeyActions(changeType, actions);
+                DxListProperties.DoKeyActions(changeType, actions);
             }
             /// <summary>
             /// Metoda zajistí přesunutí označených prvků na danou pozici.
@@ -2633,7 +2670,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
             public void MoveSelectedItems(int? targetIndex, DxItemsChangeType changeType = DxItemsChangeType.Code)
             {
-                __Owner.MoveSelectedItems(targetIndex, changeType);
+                DxListProperties.MoveSelectedItems(targetIndex, changeType);
             }
             /// <summary>
             /// Do this listu vloží další prvky <paramref name="sourceItems"/>, počínaje aktuální pozicí vybraného prvku.
@@ -2644,7 +2681,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
             public void InsertItems(IEnumerable<ITextItem> sourceItems, bool atCurrentIndex, bool selectNewItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
             {
-                __Owner.InsertItems(sourceItems, atCurrentIndex, selectNewItems, changeType);
+                DxListProperties.InsertItems(sourceItems, atCurrentIndex, selectNewItems, changeType);
             }
             /// <summary>
             /// Do this listu vloží další prvky <paramref name="sourceItems"/>, počínaje danou pozicí <paramref name="insertAbsoluteIndex"/>.<br/>
@@ -2660,7 +2697,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
             public void InsertItems(IEnumerable<ITextItem> sourceItems, int? insertAbsoluteIndex, bool selectNewItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
             {
-                __Owner.InsertItems(sourceItems, insertAbsoluteIndex, selectNewItems, changeType);
+                DxListProperties.InsertItems(sourceItems, insertAbsoluteIndex, selectNewItems, changeType);
             }
             /// <summary>
             /// Z this Listu odebere prvky na daných indexech. Index jsou absolutní, nikoli v rámci Visible (filtrovaných) prvků.
@@ -2669,7 +2706,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
             public void RemoveIndexes(IEnumerable<int> removeAbsoluteIndexes, DxItemsChangeType changeType = DxItemsChangeType.Code)
             {
-                __Owner.RemoveIndexes(removeAbsoluteIndexes, changeType);
+                DxListProperties.RemoveIndexes(removeAbsoluteIndexes, changeType);
             }
             /// <summary>
             /// Z this Listu odebere všechny dané prvky
@@ -2678,56 +2715,74 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
             public void RemoveItems(IEnumerable<ITextItem> removeItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
             {
-                __Owner.RemoveItems(removeItems, changeType);
+                DxListProperties.RemoveItems(removeItems, changeType);
+            }
+            /// <summary>
+            /// Unselects all items when multiple item selection is enabled.
+            /// </summary>
+            public void UnSelectAll() 
+            {
+                ListBoxNative.UnSelectAll();
             }
             #endregion
             #region Eventy
             /// <summary>
             /// Proběhne po jednoduchém kliknutí na prvek
             /// </summary>
-            public event DxListBoxItemMouseClickDelegate ItemMouseClick { add { __Owner.ItemMouseClick += value; } remove { __Owner.ItemMouseClick -= value; } }
+            public event DxListBoxItemMouseClickDelegate ItemMouseClick { add { DxListProperties.ItemMouseClick += value; } remove { DxListProperties.ItemMouseClick -= value; } }
             /// <summary>
             /// Proběhne po double kliknutí na prvek
             /// </summary>
-            public event DxListBoxItemMouseClickDelegate ItemMouseDoubleClick { add { __Owner.ItemMouseDoubleClick += value; } remove { __Owner.ItemMouseDoubleClick -= value; } }
+            public event DxListBoxItemMouseClickDelegate ItemMouseDoubleClick { add { DxListProperties.ItemMouseDoubleClick += value; } remove { DxListProperties.ItemMouseDoubleClick -= value; } }
             /// <summary>
             /// Proběhne po stisku klávesy Enter na prvku
             /// </summary>
-            public event DxListBoxItemKeyDelegate ItemEnterKeyDown { add { __Owner.ItemEnterKeyDown += value; } remove { __Owner.ItemEnterKeyDown -= value; } }
+            public event DxListBoxItemKeyDelegate ItemEnterKeyDown { add { DxListProperties.ItemEnterKeyDown += value; } remove { DxListProperties.ItemEnterKeyDown -= value; } }
             /// <summary>
             /// Událost volaná po vykreslení základu Listu, před vykreslením Reorder ikony
             /// </summary>
-            public event PaintEventHandler PaintList { add { __Owner.PaintList += value; } remove { __Owner.PaintList -= value; } }
+            public event PaintEventHandler PaintList { add { DxListProperties.PaintList += value; } remove { DxListProperties.PaintList -= value; } }
             /// <summary>
             /// Událost vyvolaná před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
             /// </summary>
-            public event DxListBoxActionCancelDelegate ListActionBefore { add { __Owner.ListActionBefore += value; } remove { __Owner.ListActionBefore -= value; } }
+            public event DxListBoxActionCancelDelegate ListActionBefore { add { DxListProperties.ListActionBefore += value; } remove { DxListProperties.ListActionBefore -= value; } }
             /// <summary>
             /// Událost vyvolaná po provedení kteréhokoli požadavku
             /// </summary>
-            public event DxListBoxActionDelegate ListActionAfter { add { __Owner.ListActionAfter += value; } remove { __Owner.ListActionAfter -= value; } }
+            public event DxListBoxActionDelegate ListActionAfter { add { DxListProperties.ListActionAfter += value; } remove { DxListProperties.ListActionAfter -= value; } }
             /// <summary>
             /// Událost volaná po změně selected prvků.<br/>
             /// Aktuální vybrané prvky jsou k dispozici v <see cref="SelectedItems"/>, jejich ID v <see cref="SelectedItemsId"/>.
             /// Prvek s kurzorem je v <see cref="CurrentItem"/>, jeho ID je v <see cref="CurrentItemId"/>.
             /// </summary>
-            public event EventHandler SelectedItemsChanged { add { __Owner.SelectedItemsChanged += value; } remove { __Owner.SelectedItemsChanged -= value; } }
+            public event EventHandler SelectedItemsChanged { add { DxListProperties.SelectedItemsChanged += value; } remove { DxListProperties.SelectedItemsChanged -= value; } }
             /// <summary>
             /// Proběhne po změně v poli <see cref="MenuItems"/>
             /// </summary>
-            public event System.ComponentModel.ListChangedEventHandler ListItemsChanged { add { __Owner.ListItemsChanged += value; } remove { __Owner.ListItemsChanged -= value; } }
+            public event System.ComponentModel.ListChangedEventHandler ListItemsChanged { add { DxListProperties.ListItemsChanged += value; } remove { DxListProperties.ListItemsChanged -= value; } }
             /// <summary>
             /// Událost volaná po změně prvků Listu typu MenuItems.<br/>
             /// </summary>
-            public event DxListBoxMenuItemsChangedDelegate MenuItemsChanged { add { __Owner.MenuItemsChanged += value; } remove { __Owner.MenuItemsChanged -= value; } }
+            public event DxListBoxMenuItemsChangedDelegate MenuItemsChanged { add { DxListProperties.MenuItemsChanged += value; } remove { DxListProperties.MenuItemsChanged -= value; } }
             /// <summary>
             /// Po změně stavu Undo/Redo
             /// </summary>
-            public event EventHandler UndoRedoEnabledChanged { add { __Owner.UndoRedoEnabledChanged += value; } remove { __Owner.UndoRedoEnabledChanged -= value; } }
+            public event EventHandler UndoRedoEnabledChanged { add { DxListProperties.UndoRedoEnabledChanged += value; } remove { DxListProperties.UndoRedoEnabledChanged -= value; } }
+            /// <summary>
+            /// Allows you to customize templated items dynamically.
+            /// </summary>
+            public event CustomizeTemplatedItemEventHandler CustomizeItem { add { ListBoxNative.CustomizeItem += value; } remove { ListBoxNative.CustomizeItem -= value; } }
+            /// <summary>
+            /// Enables custom display text to be provided for control items.
+            /// </summary>
+            public event CustomItemDisplayTextEventHandler CustomItemDisplayText { add { ListBoxNative.CustomItemDisplayText += value; } remove { ListBoxNative.CustomItemDisplayText -= value; } }
+            /// <summary>
+            /// Allows you to assign custom templates to listbox items.
+            /// </summary>
+            public event CustomItemTemplateEventHandler CustomItemTemplate { add { ListBoxNative.CustomItemTemplate += value; } remove { ListBoxNative.CustomItemTemplate -= value; } }
             #endregion
         }
         #endregion
-
     }
     /// <summary>
     /// ListBoxControl s podporou pro drag and drop a reorder, ale bez ScrollBaru pro Columns
@@ -5674,7 +5729,302 @@ SetSelected() - vstup           Absolutní
         protected event EventHandler UndoRedoEnabledChanged;
 
         #endregion
-        
+        #region DxProperties : property + třída, která do sebe shrnuje čistě jen Nephrite vlastnosti
+        /// <summary>
+        /// Souhrn vlastností (data a eventy), které tato třída poskytuje systému Nephrite
+        /// </summary>
+        public DxPropertiesInfo DxProperties
+        {
+            get
+            {
+                if (__DxProperties is null)
+                    __DxProperties = new DxPropertiesInfo(this);
+                return __DxProperties;
+            }
+        }
+        private DxPropertiesInfo __DxProperties;
+        /// <summary>
+        /// Třída pro Nephrite vlastnosti
+        /// </summary>
+        public class DxPropertiesInfo
+        {
+            #region Konstruktor
+            internal DxPropertiesInfo(DxListBoxNative owner)
+            {
+                __Owner = owner;
+            }
+            private DxListBoxNative __Owner;
+            #endregion
+            #region Vlastnosti
+            /// <summary>
+            /// Výška prvku
+            /// </summary>
+            public int ItemHeight { get { return __Owner.ItemHeight; } set { __Owner.ItemHeight = value; } }
+            /// <summary>
+            /// Přídavek k výšce jednoho řádku ListBoxu v pixelech.
+            /// Hodnota 0 a záporná: bude nastaveno <see cref="DevExpress.XtraEditors.BaseListBoxControl.ItemAutoHeight"/> = true.
+            /// Kladná hodnota přidá daný počet pixelů nad a pod text = zvýší výšku řádku o 2x <see cref="ItemHeightPadding"/>.
+            /// Hodnota vyšší než 10 se akceptuje jako 10.
+            /// </summary>
+            public int ItemHeightPadding { get { return __Owner.ItemHeightPadding; } set { __Owner.ItemHeightPadding = value; } }
+            /// <summary>
+            /// Režim prvků v ListBoxu.
+            /// </summary>
+            public ListBoxItemsMode ItemsMode { get { return __Owner.ItemsMode; } }
+            /// <summary>
+            /// Povoluje se výběr více prvků pomocí Ctrl+Mouse?
+            /// </summary>
+            public bool MultiSelectEnabled { get { return __Owner.MultiSelectEnabled; } set { __Owner.MultiSelectEnabled = value; } }
+            /// <summary>
+            /// Konkrétní režim MultiSelectu
+            /// </summary>
+            public SelectionMode SelectionMode { get { return __Owner.SelectionMode; } set { __Owner.SelectionMode = value; } }
+            /// <summary>
+            /// Gets or sets whether to arrange items across multiple columns if the ListBox cannot fit all items vertically.
+            /// true to arrange items across multiple columns; otherwise, false.
+            /// </summary>
+            public virtual bool MultiColumn { get { return __Owner.MultiColumn; } set { __Owner.MultiColumn = value; } }
+            /// <summary>
+            /// Šířky sloupců zobrazených v režimu <see cref="ItemsMode"/>: <see cref="ListBoxItemsMode.MenuItems"/>
+            /// </summary>
+            public int[] MenuItemColumnWidths { get { return __Owner.MenuItemColumnWidths; } set { __Owner.MenuItemColumnWidths = value; } }
+            /// <summary>
+            /// Pokud obsahuje true, pak List smí obsahovat duplicitní klíče (defaultní hodnota je true).
+            /// Pokud je false, pak vložení dalšího záznamu s klíčem, který už v Listu je, bude ignorováno.
+            /// Pozor, pokud List obsahuje nějaké duplicitní záznamy a poté bude nastaveno <see cref="DuplicityEnabled"/> na false, NEBUDOU duplicitní záznamy odstraněny.
+            /// </summary>
+            public bool DuplicityEnabled { get { return __Owner.DuplicityEnabled; } set { __Owner.DuplicityEnabled = value; } }
+            /// <summary>
+            /// Pokud obsahuje true, pak List si po každé změně položek zajistí Sort svých položek v <see cref="DxListBoxControl.MenuItems"/> podle hodnoty <see cref="ITextItem.ItemOrder"/>.
+            /// Pokud je false, pak se nic takového neprovádí.
+            /// Není dobré kombinovat s akcemi MoveUp/Down, protože nedávají smysl.
+            /// </summary>
+            public bool AutoSortItems { get { return __Owner.AutoSortItems; } set { __Owner.AutoSortItems = value; } }
+            /// <summary>
+            /// Povolené akce dané klávesami v ListBoxu.
+            /// Výchozí je <see cref="ControlKeyActionType.None"/>
+            /// </summary>
+            public ControlKeyActionType EnabledKeyActions { get { return __Owner.EnabledKeyActions; } set { __Owner.EnabledKeyActions = value; } }
+            /// <summary>
+            /// Povolené akce dané buttony. Buttony přidává Panel, o nich ListBox netuší. Proto se mu externě dodává pole povolených akcí od Buttonů, aby ListBox věděl, co může provádět za akce.
+            /// Výchozí je <see cref="ControlKeyActionType.None"/>
+            /// </summary>
+            public ControlKeyActionType EnabledButtonsActions { get { return __Owner.EnabledButtonsActions; } set { __Owner.EnabledButtonsActions = value; } }
+            /// <summary>
+            /// Velikost ikon
+            /// </summary>
+            public ResourceImageSizeType ItemSizeType { get { return __Owner.ItemSizeType; } set { __Owner.ItemSizeType = value; } }
+            /// <summary>
+            /// ID tohoto objektu, je vkládáno do balíčku s daty při CtrlC, CtrlX a při DragAndDrop z tohoto zdroje.
+            /// Je součástí Exchange dat uložených do <see cref="DataExchangeContainer.DataSourceId"/>.
+            /// </summary>
+            public string DataExchangeCurrentControlId { get { return __Owner.DataExchangeCurrentControlId; } set { __Owner.DataExchangeCurrentControlId = value; } }
+            /// <summary>
+            /// Režim výměny dat při pokusu o vkládání do tohoto objektu.
+            /// Pokud některý jiný objekt provedl Ctrl+C, pak svoje data vložil do balíčku <see cref="DataExchangeContainer"/>,
+            /// přidal k tomu svoje ID controlu (jako zdejší <see cref="DataExchangeCurrentControlId"/>) do <see cref="DataExchangeContainer.DataSourceId"/>,
+            /// do balíčku se přidalo ID aplikace do <see cref="DataExchangeContainer.ApplicationGuid"/>, a tato data jsou uložena v Clipboardu.
+            /// <para/>
+            /// Pokud nyní zdejší control zaeviduje klávesu Ctrl+V, pak zjistí, zda v Clipboardu existuje balíček <see cref="DataExchangeContainer"/>,
+            /// a pokud ano, pak prověří, zda this control může akceptovat data ze zdroje v balíčku uvedeného, na základě nastavení režimu výměny v <see cref="DataExchangeCrossType"/>
+            /// a ID zdrojového controlu podle <see cref="DataExchangeAcceptSourceControlId"/>.
+            /// </summary>
+            public DataExchangeCrossType DataExchangeCrossType { get { return __Owner.DataExchangeCrossType; } set { __Owner.DataExchangeCrossType = value; } }
+            /// <summary>
+            /// Povolené zdroje dat pro vkládání do this controlu pomocí výměnného balíčku <see cref="DataExchangeContainer"/>.
+            /// </summary>
+            public string DataExchangeAcceptSourceControlId { get { return __Owner.DataExchangeAcceptSourceControlId; } set { __Owner.DataExchangeAcceptSourceControlId = value; } }
+            /// <summary>
+            /// Souhrn povolených akcí Drag and Drop
+            /// </summary>
+            public DxDragDropActionType DragDropActions { get { return __Owner.DragDropActions; } set { __Owner.DragDropActions = value; } }
+            /// <summary>
+            /// UndoRedoEnabled List má povoleny akce Undo a Redo?
+            /// </summary>
+            public bool UndoRedoEnabled { get { return __Owner.UndoRedoEnabled; } set { __Owner.UndoRedoEnabled = value; } }
+            /// <summary>
+            /// Controller UndoRedo.
+            /// Pokud není povoleno <see cref="UndoRedoController"/>, je zde null.
+            /// Pokud je povoleno, je zde vždy instance. 
+            /// Instanci lze setovat, lze ji sdílet mezi více / všemi controly na jedné stránce / okně.
+            /// </summary>
+            public UndoRedoController UndoRedoController { get { return __Owner.UndoRedoController; } set { __Owner.UndoRedoController = value; } }
+            /// <summary>
+            /// Controller ToolTipu
+            /// </summary>
+            public DxToolTipController DxToolTipController { get { return __Owner.DxToolTipController; } }
+            #endregion
+            #region MenuItems
+            /// <summary>
+            /// Prvky Listu typované na <see cref="ITextItem"/>.
+            /// <para/>
+            /// Jde o <b>všechny přítomné prvky Listu</b>: pokud bude aplikován klientský řádkový filtr, pak zde budou stále všechny prvky!<br/>
+            /// POkud na některé pozici nebude prvek typu <see cref="ITextItem"/>, pak na jeho pozici je zde NULL.<br/>
+            /// Pro získání pouze Zobrazitelných prvků listu je třeba načíst pole <see cref="CurrentVisibleMenuItems"/>.
+            /// <para/>
+            /// Pokud v Listu budou obsaženy jiné prvky než <see cref="ITextItem"/>, pak na jejich místě v tomto poli bude null.
+            /// Toto pole má stejný počet prvků jako pole this.Items
+            /// Pole jako celek lze setovat: vymění se obsah, ale zachová se pozice.
+            /// </summary>
+            public ITextItem[] MenuItems { get { return __Owner.MenuItems; } set { __Owner.MenuItems = value; } }
+            /// <summary>
+            /// Aktuálně vybraný prvek typu <see cref="ITextItem"/>. Lze setovat, ale pouze takový prvek, kteý je přítomen (hledá se <see cref="Object.ReferenceEquals(object, object)"/>).
+            /// </summary>
+            public ITextItem SelectedMenuItem { get { return __Owner.SelectedMenuItem; } set { __Owner.SelectedMenuItem = value; } }
+            /// <summary>
+            /// Aktuálně SELECTOVANÉ prvky <see cref="ITextItem"/>
+            /// </summary>
+            public ITextItem[] SelectedMenuItems { get { return __Owner.SelectedMenuItems; } set { __Owner.SelectedMenuItems = value; } }
+            /// <summary>
+            /// Pole aktuálně dostupných položek z hlediska filtrování.
+            /// <para/>
+            /// Pole obsahuje pouze ty položky z <see cref="MenuItems"/>, které jsou aktuálně <b>vyhovující řádkovému filtru</b>.<br/>
+            /// Prvky v tomto poli MAJÍ naplněny hodnoty <see cref="ListMenuItemInfo.AbsoluteIndex"/> a <see cref="ListMenuItemInfo.MenuItem"/> a <see cref="ListMenuItemInfo.FilteredIndex"/>.<br/>
+            /// Prvky v tomto poli NEMAJÍ naplněny hodnoty <see cref="ListMenuItemInfo.DisplayedIndex"/> a <see cref="ListMenuItemInfo.Bounds"/>.<br/>
+            /// Pole není null. Může mít 0 prvků.
+            /// </summary>
+            public ListMenuItemInfo[] FilteredMenuItems { get { return __Owner.FilteredMenuItems; } }
+            /// <summary>
+            /// Pole nyní aktuálně viditelných prvků = aktuálně <b>zafiltrované</b> pomocí klientského filtru a <b>ve viditelné oblasti ListBoxu</b>.
+            /// </summary>
+            public ListMenuItemInfo[] CurrentVisibleMenuItems { get { return __Owner.CurrentVisibleMenuItems; } }
+            #endregion
+            #region Table + Template
+            /// <summary>
+            /// Tabulka s daty
+            /// </summary>
+            public System.Data.DataTable DataTable { get { return __Owner.DataTable; } set { __Owner.DataTable = value; } }
+            /// <summary>
+            /// Šablona pro zobrazení dat z <see cref="DataTable"/>
+            /// </summary>
+            public DxListBoxTemplate DxTemplate { get { return __Owner.DxTemplate; } set { __Owner.DxTemplate = value; } }
+            /// <summary>
+            /// Metoda vytvoří Simple template pro ikonu a pro text
+            /// </summary>
+            /// <param name="columnNameItemId"></param>
+            /// <param name="columnNameIcon"></param>
+            /// <param name="columnNameText"></param>
+            /// <param name="columnNameToolTip"></param>
+            /// <param name="iconSize"></param>
+            /// <returns></returns>
+            public DxListBoxTemplate CreateSimpleDxTemplate(string columnNameItemId, string columnNameIcon, string columnNameText, string columnNameToolTip = null, int? iconSize = null)
+            { return __Owner.CreateSimpleDxTemplate(columnNameItemId, columnNameIcon, columnNameText, columnNameToolTip, iconSize); }
+            #endregion
+            #region Akce = metody
+            /// <summary>
+            /// Provede zadané akce v pořadí jak jsou zadány. Pokud v jedné hodnotě je více akcí (<see cref="ControlKeyActionType"/> je typu Flags), pak jsou prováděny v pořadí bitů od nejnižšího.
+            /// Upozornění: požadované akce budou provedeny i tehdy, když v <see cref="EnabledKeyActions"/> nejsou povoleny = tamní hodnota má za úkol omezit uživatele, ale ne aplikační kód, který danou akci může provést i tak.
+            /// </summary>
+            /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
+            /// <param name="actions"></param>
+            public void DoKeyActions(DxItemsChangeType changeType, params ControlKeyActionType[] actions)
+            {
+                __Owner.DoKeyActions(changeType, actions);
+            }
+            /// <summary>
+            /// Metoda zajistí přesunutí označených prvků na danou pozici.
+            /// Pokud je zadaná pozice 0, pak jsou prvky přemístěny v jejich pořadí úplně na začátek Listu.
+            /// Pokud je daná pozice 1, a stávající List má alespoň jeden prvek, pak dané prvky jsou přemístěny za první prvek.
+            /// Pokud je daná pozice null nebo větší než počet prvků, jsou prvky přemístěny na konec listu.
+            /// </summary>
+            /// <param name="targetIndex"></param>
+            /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
+            public void MoveSelectedItems(int? targetIndex, DxItemsChangeType changeType = DxItemsChangeType.Code)
+            {
+                __Owner.MoveSelectedItems(targetIndex, changeType);
+            }
+            /// <summary>
+            /// Do this listu vloží další prvky <paramref name="sourceItems"/>, počínaje aktuální pozicí vybraného prvku.
+            /// </summary>
+            /// <param name="sourceItems"></param>
+            /// <param name="atCurrentIndex">Požadavek true = na pozici aktuálního prvku / false = na konec</param>
+            /// <param name="selectNewItems">Nově vložené prvky mají být po vložení vybrané (Selected)?</param>
+            /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
+            public void InsertItems(IEnumerable<ITextItem> sourceItems, bool atCurrentIndex, bool selectNewItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
+            {
+                __Owner.InsertItems(sourceItems, atCurrentIndex, selectNewItems, changeType);
+            }
+            /// <summary>
+            /// Do this listu vloží další prvky <paramref name="sourceItems"/>, počínaje danou pozicí <paramref name="insertAbsoluteIndex"/>.<br/>
+            /// Pokud je zadaná pozice 0, pak jsou prvky vloženy v jejich pořadí úplně na začátek Listu.<br/>
+            /// Pokud je daná pozice 1, a stávající List má alespoň jeden prvek, pak dané prvky jsou vloženy za první prvek.<br/>
+            /// Pokud je daná pozice null nebo větší než počet prvků, jsou dané prvky přidány na konec listu.
+            /// <para/>
+            /// Pozor: daná pozice <paramref name="insertAbsoluteIndex"/> se vztahuje k prvkům pole <see cref="MenuItems"/> = veškeré prvky, nikoliv <see cref="CurrentVisibleMenuItems"/> = aktuálně zafiltrované prvky!
+            /// </summary>
+            /// <param name="sourceItems"></param>
+            /// <param name="insertAbsoluteIndex">Absolutní index, kam do Items insertujeme první dodanou položku: 0=bude první na začátku, 1=bude za první existující, (Items.Count -1) = bude před poslední, Items.Count nebo null = ude Add na konec.</param>
+            /// <param name="selectNewItems">Nově vložené prvky mají být po vložení vybrané (Selected)?</param>
+            /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
+            public void InsertItems(IEnumerable<ITextItem> sourceItems, int? insertAbsoluteIndex, bool selectNewItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
+            {
+                __Owner.InsertItems(sourceItems, insertAbsoluteIndex, selectNewItems, changeType);
+            }
+            /// <summary>
+            /// Z this Listu odebere prvky na daných indexech. Index jsou absolutní, nikoli v rámci Visible (filtrovaných) prvků.
+            /// </summary>
+            /// <param name="removeAbsoluteIndexes"></param>
+            /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
+            public void RemoveIndexes(IEnumerable<int> removeAbsoluteIndexes, DxItemsChangeType changeType = DxItemsChangeType.Code)
+            {
+                __Owner.RemoveIndexes(removeAbsoluteIndexes, changeType);
+            }
+            /// <summary>
+            /// Z this Listu odebere všechny dané prvky
+            /// </summary>
+            /// <param name="removeItems"></param>
+            /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
+            public void RemoveItems(IEnumerable<ITextItem> removeItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
+            {
+                __Owner.RemoveItems(removeItems, changeType);
+            }
+            #endregion
+            #region Eventy
+            /// <summary>
+            /// Proběhne po jednoduchém kliknutí na prvek
+            /// </summary>
+            public event DxListBoxItemMouseClickDelegate ItemMouseClick { add { __Owner.ItemMouseClick += value; } remove { __Owner.ItemMouseClick -= value; } }
+            /// <summary>
+            /// Proběhne po double kliknutí na prvek
+            /// </summary>
+            public event DxListBoxItemMouseClickDelegate ItemMouseDoubleClick { add { __Owner.ItemMouseDoubleClick += value; } remove { __Owner.ItemMouseDoubleClick -= value; } }
+            /// <summary>
+            /// Proběhne po stisku klávesy Enter na prvku
+            /// </summary>
+            public event DxListBoxItemKeyDelegate ItemEnterKeyDown { add { __Owner.ItemEnterKeyDown += value; } remove { __Owner.ItemEnterKeyDown -= value; } }
+            /// <summary>
+            /// Událost volaná po vykreslení základu Listu, před vykreslením Reorder ikony
+            /// </summary>
+            public event PaintEventHandler PaintList { add { __Owner.PaintList += value; } remove { __Owner.PaintList -= value; } }
+            /// <summary>
+            /// Událost vyvolaná před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
+            /// </summary>
+            public event DxListBoxActionCancelDelegate ListActionBefore { add { __Owner.ListActionBefore += value; } remove { __Owner.ListActionBefore -= value; } }
+            /// <summary>
+            /// Událost vyvolaná po provedení kteréhokoli požadavku
+            /// </summary>
+            public event DxListBoxActionDelegate ListActionAfter { add { __Owner.ListActionAfter += value; } remove { __Owner.ListActionAfter -= value; } }
+            /// <summary>
+            /// Událost volaná po změně selected prvků.<br/>
+            /// Aktuální vybrané prvky jsou k dispozici v <see cref="SelectedItems"/>, jejich ID v <see cref="SelectedItemsId"/>.
+            /// Prvek s kurzorem je v <see cref="CurrentItem"/>, jeho ID je v <see cref="CurrentItemId"/>.
+            /// </summary>
+            public event EventHandler SelectedItemsChanged { add { __Owner.SelectedItemsChanged += value; } remove { __Owner.SelectedItemsChanged -= value; } }
+            /// <summary>
+            /// Proběhne po změně v poli <see cref="MenuItems"/>
+            /// </summary>
+            public event System.ComponentModel.ListChangedEventHandler ListItemsChanged { add { __Owner.ListItemsChanged += value; } remove { __Owner.ListItemsChanged -= value; } }
+            /// <summary>
+            /// Událost volaná po změně prvků Listu typu MenuItems.<br/>
+            /// </summary>
+            public event DxListBoxMenuItemsChangedDelegate MenuItemsChanged { add { __Owner.MenuItemsChanged += value; } remove { __Owner.MenuItemsChanged -= value; } }
+            /// <summary>
+            /// Po změně stavu Undo/Redo
+            /// </summary>
+            public event EventHandler UndoRedoEnabledChanged { add { __Owner.UndoRedoEnabledChanged += value; } remove { __Owner.UndoRedoEnabledChanged -= value; } }
+            #endregion
+        }
+        #endregion
     }
     #endregion
     #region class DxListBoxTemplate : data pro tvorbu šablony v ListBoxu
@@ -5743,7 +6093,7 @@ SetSelected() - vstup           Absolutní
         /// Konvertuje zdejší data o layoutu jednotlivých buněk <see cref="Elements"/> = <see cref="IListBoxTemplateElement"/> do fyzické deklarace šablony Template do dodaného Listu.
         /// </summary>
         /// <param name="targetList"></param>
-        public void ApplyTemplateToList(DxListBoxControl targetList)
+        public void ApplyTemplateToList(DxListBoxNative targetList)
         {
             targetList.Templates.Clear();
 

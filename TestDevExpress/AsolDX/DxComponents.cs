@@ -2682,7 +2682,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             var inst = Instance;
 
             DxListBoxControl listBox = new DxListBoxControl() { Bounds = new Rectangle(x, y, w, h) };
-            listBox.StyleController = inst._InputStyle;
+            listBox.DxProperties.StyleController = inst._InputStyle;
             if (dock.HasValue) listBox.Dock = dock.Value;
             if (multiColumn.HasValue) listBox.DxProperties.MultiColumn = multiColumn.Value;
             if (selectionMode.HasValue) listBox.DxProperties.SelectionMode = selectionMode.Value;
@@ -2695,7 +2695,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (visible.HasValue) listBox.Visible = visible.Value;
             if (tabStop.HasValue) listBox.TabStop = tabStop.Value;
 
-            if (selectedIndexChanged != null) listBox.SelectedIndexChanged += selectedIndexChanged;
+            if (selectedIndexChanged != null) listBox.DxProperties.SelectedIndexChanged += selectedIndexChanged;
             if (parent != null) parent.Controls.Add(listBox);
             if (shiftY) y = y + listBox.Height + inst._DetailYSpaceText;
 
@@ -2735,7 +2735,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             int h = height ?? 100;
 
             DxListBoxPanel listBoxPanel = new DxListBoxPanel() { Bounds = new Rectangle(x, y, w, h) };
-            listBoxPanel.ListBox.StyleController = inst._InputStyle;
+            listBoxPanel.ListBox.DxProperties.StyleController = inst._InputStyle;
             if (dock.HasValue) listBoxPanel.Dock = dock.Value;
             if (multiColumn.HasValue) listBoxPanel.DxProperties.MultiColumn = multiColumn.Value;
             if (filterRowMode.HasValue) listBoxPanel.DxProperties.RowFilterMode = filterRowMode.Value;
@@ -2749,7 +2749,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (visible.HasValue) listBoxPanel.Visible = visible.Value;
             if (tabStop.HasValue) listBoxPanel.TabStop = tabStop.Value;
 
-            if (selectedIndexChanged != null) listBoxPanel.ListBox.SelectedIndexChanged += selectedIndexChanged;
+            if (selectedIndexChanged != null) listBoxPanel.ListBox.DxProperties.SelectedIndexChanged += selectedIndexChanged;
             if (parent != null) parent.Controls.Add(listBoxPanel);
 
             return listBoxPanel;
