@@ -1767,13 +1767,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                     addOneButton(ControlKeyActionType.ClipPaste, requestedActions, "devav/actions/paste.svg", MsgCode.DxKeyActionClipPasteTitle, MsgCode.DxKeyActionClipPasteText);
 
                     addOneButton(ControlKeyActionType.CopyToTargetOneC, requestedActions, "@arrowsmall|right|blue", MsgCode.DxKeyActionCopyToRightOneTitle, MsgCode.DxKeyActionCopyToRightOneText);
-                    addOneButton(ControlKeyActionType.CopyToTargetOneE, requestedActions, "@arrowsmall|right|violet", MsgCode.DxKeyActionCopyToRightOneTitle, MsgCode.DxKeyActionCopyToRightOneText);
+                    addOneButton(ControlKeyActionType.CopyToTargetOneE, requestedActions, "@arrowsmall|right|green", MsgCode.DxKeyActionCopyToRightOneTitle, MsgCode.DxKeyActionCopyToRightOneText);
                     addOneButton(ControlKeyActionType.CopyToTargetAllC, requestedActions, "@arrow|right|blue", MsgCode.DxKeyActionCopyToRightAllTitle, MsgCode.DxKeyActionCopyToRightAllText);
-                    addOneButton(ControlKeyActionType.CopyToTargetAllE, requestedActions, "@arrow|right|violet", MsgCode.DxKeyActionCopyToRightAllTitle, MsgCode.DxKeyActionCopyToRightAllText);
+                    addOneButton(ControlKeyActionType.CopyToTargetAllE, requestedActions, "@arrow|right|green", MsgCode.DxKeyActionCopyToRightAllTitle, MsgCode.DxKeyActionCopyToRightAllText);
                     addOneButton(ControlKeyActionType.CopyToSourceOneC, requestedActions, "@arrowsmall|left|blue", MsgCode.DxKeyActionCopyToLeftOneTitle, MsgCode.DxKeyActionCopyToLeftOneText);
-                    addOneButton(ControlKeyActionType.CopyToSourceOneE, requestedActions, "@arrowsmall|left|violet", MsgCode.DxKeyActionCopyToLeftOneTitle, MsgCode.DxKeyActionCopyToLeftOneText);
+                    addOneButton(ControlKeyActionType.CopyToSourceOneE, requestedActions, "@arrowsmall|left|green", MsgCode.DxKeyActionCopyToLeftOneTitle, MsgCode.DxKeyActionCopyToLeftOneText);
                     addOneButton(ControlKeyActionType.CopyToSourceAllC, requestedActions, "@arrow|left|blue", MsgCode.DxKeyActionCopyToLeftAllTitle, MsgCode.DxKeyActionCopyToLeftAllText);
-                    addOneButton(ControlKeyActionType.CopyToSourceAllE, requestedActions, "@arrow|left|violet", MsgCode.DxKeyActionCopyToLeftAllTitle, MsgCode.DxKeyActionCopyToLeftAllText);
+                    addOneButton(ControlKeyActionType.CopyToSourceAllE, requestedActions, "@arrow|left|green", MsgCode.DxKeyActionCopyToLeftAllTitle, MsgCode.DxKeyActionCopyToLeftAllText);
 
                     addOneButton(ControlKeyActionType.Undo, requestedActions, "svgimages/dashboards/undo.svg", MsgCode.DxKeyActionUndoTitle, MsgCode.DxKeyActionUndoText);
                     addOneButton(ControlKeyActionType.Redo, requestedActions, "svgimages/dashboards/redo.svg", MsgCode.DxKeyActionRedoTitle, MsgCode.DxKeyActionRedoText);
@@ -2361,7 +2361,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             __ListBoxNative = new DxListBoxNative();
             __ListBoxNative.Dock = DockStyle.Fill;
             __HScrollBar = new DevExpress.XtraEditors.HScrollBar();
-            __HScrollBar.Visible = false;
+            __HScrollBar.Height = 12;
+            __HScrollBar.Opacity = 0.60f;
+            __HScrollBar.Visible = true;
             __HScrollBar.Dock = DockStyle.Bottom;
             this.Controls.Add(__ListBoxNative);
             this.Controls.Add(__HScrollBar);
