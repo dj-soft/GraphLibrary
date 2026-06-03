@@ -292,6 +292,7 @@ namespace TestDevExpress.Forms
             sampleList.DxProperties.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.Move_All };
             sampleList.DxProperties.EnabledKeyActions = ControlKeyActionType.Move_All;
             sampleList.DxProperties.DragDropActions = DxDragDropActionType.ReorderItems;
+
             sampleList.DxProperties.MenuItems = Randomizer.GetMenuItems(36, 80, Randomizer.ImageResourceType.PngSmall, true);
             _AddEventHandlers(sampleList, true);
             this._HostContainer.Controls.Add(sampleList);
@@ -586,7 +587,54 @@ namespace TestDevExpress.Forms
         private bool __Sample4ParamsValid;
         #endregion
         #endregion
+        #region Sample 5
+        /// <summary>
+        /// Metoda je volaná reflexí v <see cref="DxMainContentPrepare"/> na základě atributu [Initializer()] !!!
+        /// </summary>
+        [Initializer(5)]
+        private void _PrepareSample5()
+        {
+            __Samples.Add(new SampleInfo("List s Columns", _CreateSample5, _DisposeSample5, true));
+        }
+        private void _CreateSample5()
+        {
+            var menuItems = Randomizer.GetMenuItems(48, 72, Randomizer.ImageResourceType.PngSmall);
+            foreach (var menuItem in menuItems.OfType<DataMenuItem>())
+                createCells(menuItem);
 
+            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, (240 + 120 + 120 + 40), 320) };
+            sampleList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client;
+            sampleList.DxProperties.MultiSelectEnabled = true;
+            sampleList.DxProperties.ButtonsPosition = ToolbarPosition.BottomSideCenter;
+            sampleList.DxProperties.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.Move_All };
+            sampleList.DxProperties.EnabledKeyActions = ControlKeyActionType.Move_All;
+            sampleList.DxProperties.DragDropActions = DxDragDropActionType.ReorderItems;
+
+            sampleList.DxProperties.MenuItems = menuItems;
+            sampleList.DxProperties.MenuItemColumnWidths = new int[] { 240, 120, 120 };
+            _AddEventHandlers(sampleList, true);
+            this._HostContainer.Controls.Add(sampleList);
+
+            _Sample5List = sampleList;
+
+            void createCells(DataMenuItem menuItem)
+            {
+                var t1 = Randomizer.GetSentence(2, 4, false);
+                var t2 = Randomizer.GetSentence(1, 2, false);
+                var t3 = Randomizer.GetSentence(1, 2, false);
+                menuItem.Text = $"{t1}  {t2}  {t3}";
+                menuItem.Cells = new string[] { t1, t2, t3 };
+                menuItem.ToolTipTitle = t1;
+
+            }
+        }
+        private void _DisposeSample5()
+        {
+            _Sample5List?.RemoveControlFromParent();
+            _Sample5List = null;
+        }
+        private DxListBoxPanel _Sample5List;
+        #endregion
         #region Sample 11
         /// <summary>
         /// Metoda je volaná reflexí v <see cref="DxMainContentPrepare"/> na základě atributu [Initializer()] !!!

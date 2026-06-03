@@ -11210,7 +11210,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// Definice prvku umístěného v Ribbonu nebo podpoložka prvku Ribbonu (položka menu / split ribbonu atd) nebo jako prvek ListBoxu nebo ComboBoxu
     /// </summary>
     [DebuggerDisplay("{DebugText}")]
-    public class DataTextItem : ITextItem
+    public class DataTextItem : ITextItem, ICellsItem
     {
         /// <summary>
         /// Konstruktor
@@ -11358,6 +11358,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Styl zobrazení
         /// </summary>
         public virtual BarItemPaintStyle ItemPaintStyle { get; set; }
+
+        // Implementujeme interface IToolTipItem:
         /// <summary>
         /// Ikona ToolTipu
         /// </summary>
@@ -11383,6 +11385,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Titulek okna ToolTip (DAJ 0079867 3.3.2026: Pokud nebyl dodán explicitní titulek ToolTipu, pak nebudeme vracet nic náhradního)
         /// </summary>
         string IToolTipItem.ToolTipTitle { get { return ToolTipTitle; } }
+
+        // Implementujeme interface ICellsItem:
+        /// <summary>
+        /// Obsah jednotlivých buněk (sloupce atd)
+        /// </summary>
+        public string[] Cells { get; set; }
+    }
+    /// <summary>
+    /// Definice prvku, který obsahuje stringové pole <see cref="Cells"/>
+    /// </summary>
+    public interface ICellsItem
+    {
+        /// <summary>
+        /// Obsah jednotlivých buněk (sloupce atd)
+        /// </summary>
+        string[] Cells { get; }
     }
     /// <summary>
     /// Definice jednoduchého prvku, který nese ID, text, ikony, tooltip a Tag

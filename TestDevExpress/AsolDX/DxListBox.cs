@@ -15,7 +15,9 @@ using DevExpress.Data.Filtering;
 using DevExpress.Utils;
 using DevExpress.XtraEditors;
 using DevExpress.XtraEditors.Controls;
+using DevExpress.XtraEditors.Drawing;
 using DevExpress.XtraEditors.TableLayout;
+using DevExpress.XtraEditors.ViewInfo;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -2037,6 +2039,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public virtual bool MultiColumn { get { return __Owner.ListBox.DxProperties.MultiColumn; } set { __Owner.ListBox.DxProperties.MultiColumn = value; } }
             /// <summary>
+            /// Šířky sloupců zobrazených v režimu <see cref="ItemsMode"/>: <see cref="ListBoxItemsMode.MenuItems"/>
+            /// </summary>
+            public int[] MenuItemColumnWidths { get { return __Owner.ListBox.DxProperties.MenuItemColumnWidths; } set { __Owner.ListBox.DxProperties.MenuItemColumnWidths = value; } }
+            /// <summary>
             /// Pokud obsahuje true, pak List smí obsahovat duplicitní klíče (defaultní hodnota je true).
             /// Pokud je false, pak vložení dalšího záznamu s klíčem, který už v Listu je, bude ignorováno.
             /// Pozor, pokud List obsahuje nějaké duplicitní záznamy a poté bude nastaveno <see cref="DuplicityEnabled"/> na false, NEBUDOU duplicitní záznamy odstraněny.
@@ -2409,7 +2415,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Režim prvků v ListBoxu.
         /// </summary>
-        protected ListBoxItemsMode ItemsMode { get { return __ItemsMode; } }
+        protected ListBoxItemsMode ItemsMode { get { return _ItemsMode; } }
         #region Jednoduchý List postavený nad položkami ITextItem
         /// <summary>
         /// Prvky Listu typované na <see cref="ITextItem"/>.
@@ -2426,7 +2432,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             get
             {
-                return (__ItemsMode == ListBoxItemsMode.MenuItems ? this.Items.Select(i => i.Value as ITextItem).ToArray() : null);
+                return (_ItemsMode == ListBoxItemsMode.MenuItems ? this.Items.Select(i => i.Value as ITextItem).ToArray() : null);
             }
             set
             {
@@ -2440,14 +2446,14 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (AutoSortItems)
                         validItems = _GetSortedItems(validItems);
 
-                    __ItemsMode = ListBoxItemsMode.MenuItems;
+                    _ItemsMode = ListBoxItemsMode.MenuItems;
                     _StoreItemsSilent(validItems);
                     _SetItemsAsPrevious(validItems);
                 }
                 else
                 {
                     this.Items.Clear();
-                    __ItemsMode = ListBoxItemsMode.None;
+                    _ItemsMode = ListBoxItemsMode.None;
                 }
             }
         }
@@ -2466,7 +2472,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             get
             {
-                return (__ItemsMode == ListBoxItemsMode.MenuItems ? this.Items.Select(i => new Tuple<ImageListBoxItem, ITextItem>(i, i.Value as ITextItem)).ToArray() : null);
+                return (_ItemsMode == ListBoxItemsMode.MenuItems ? this.Items.Select(i => new Tuple<ImageListBoxItem, ITextItem>(i, i.Value as ITextItem)).ToArray() : null);
             }
         }
         /// <summary>
@@ -2497,7 +2503,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Obsahuje true, pokud jsme v režimu 
         /// </summary>
-        private bool _NeedSortItems { get { return (this.__ItemsMode == ListBoxItemsMode.MenuItems && this.AutoSortItems); } }
+        private bool _NeedSortItems { get { return (this._ItemsMode == ListBoxItemsMode.MenuItems && this.AutoSortItems); } }
         /// <summary>
         /// Účelem metody je zajistit, že tento <see cref="DxListBoxControl"/> bude mít setříděné položky v <c>Items</c>, pokud tomu tak má být.
         /// Metoda se má volat po jakémkoli přidání položek (protože po odebrání položek není třeba data třídit), a po změně hodnoty <see cref="AutoSortItems"/>.
@@ -2582,7 +2588,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private bool _TryFindMenuItem(object item, out ITextItem menuItem)
         {
-            if (__ItemsMode == ListBoxItemsMode.MenuItems && item != null)
+            if (_ItemsMode == ListBoxItemsMode.MenuItems && item != null)
             {
                 if (item is DevExpress.XtraEditors.Controls.ImageListBoxItem listItem && listItem.Value is ITextItem menuItem1)
                 {
@@ -2607,9 +2613,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             // Pokud aktuálně nejsme v režimu MenuItems, a přitom máme položky v poli this.Items, pak se do režimu MenuItems přepneme nyní:
             //  Někdo asi vložil položky přímo do nativního soupisu...
-            if (__ItemsMode != ListBoxItemsMode.MenuItems && this.Items.Count > 0)
+            if (_ItemsMode != ListBoxItemsMode.MenuItems && this.Items.Count > 0)
             {
-                __ItemsMode = ListBoxItemsMode.MenuItems;
+                _ItemsMode = ListBoxItemsMode.MenuItems;
                 if (__DataTable != null) __DataTable = null;
                 _InvalidateFilteredItems();
             }
@@ -2824,11 +2830,11 @@ SetSelected() - vstup           Absolutní
         {
             get
             {   // Vrátím ITextItem nalezený v aktuálně vybraném prvku:
-                return ((__ItemsMode == ListBoxItemsMode.MenuItems && this.Items.Count > 0 && _TryFindMenuItem(this.SelectedItem, out var menuItem)) ? menuItem : null);
+                return ((_ItemsMode == ListBoxItemsMode.MenuItems && this.Items.Count > 0 && _TryFindMenuItem(this.SelectedItem, out var menuItem)) ? menuItem : null);
             }
             set
             {   // Najdu první prvek zdejšího pole, který v sobě obsahuje ITextItem, který je identický s dodanou value:
-                if (__ItemsMode == ListBoxItemsMode.MenuItems)
+                if (_ItemsMode == ListBoxItemsMode.MenuItems)
                 {
                     object selectedItem = null;
                     if (this.Items.Count > 0 && value != null)
@@ -3159,7 +3165,7 @@ SetSelected() - vstup           Absolutní
             if (__FilteredMenuItems is null)
             {
                 ListMenuItemInfo[] filteredItems = null;
-                if (__ItemsMode == ListBoxItemsMode.MenuItems)
+                if (_ItemsMode == ListBoxItemsMode.MenuItems)
                 {
                     var menuDblItems = this.MenuDblItems;                     // = ListItem + ITextItem
                     var rowFilter = __RowFilterCriteria;
@@ -3290,7 +3296,7 @@ SetSelected() - vstup           Absolutní
         /// </summary>
         protected System.Data.DataTable DataTable
         {
-            get { return (__ItemsMode == ListBoxItemsMode.Table ? __DataTable : null); }
+            get { return (_ItemsMode == ListBoxItemsMode.Table ? __DataTable : null); }
             set
             {
                 this.DataSource = null;
@@ -3299,12 +3305,12 @@ SetSelected() - vstup           Absolutní
                 if (value != null)
                 {
                     this.DataSource = value;
-                    __ItemsMode = ListBoxItemsMode.Table;
+                    _ItemsMode = ListBoxItemsMode.Table;
                     _ReloadDxTemplate();
                 }
                 else
                 {
-                    __ItemsMode = ListBoxItemsMode.None;
+                    _ItemsMode = ListBoxItemsMode.None;
                 }
             }
         }
@@ -3328,7 +3334,7 @@ SetSelected() - vstup           Absolutní
         private void _ReloadDxTemplate()
         {
             var dxTemplate = __DxTemplate;
-            if (dxTemplate != null && __ItemsMode == ListBoxItemsMode.Table)
+            if (dxTemplate != null && _ItemsMode == ListBoxItemsMode.Table)
                 dxTemplate.ApplyTemplateToList(this);
         }
         /// <summary>
@@ -3378,7 +3384,12 @@ SetSelected() - vstup           Absolutní
         /// <summary>
         /// Aktuální režim položek
         /// </summary>
-        private ListBoxItemsMode __ItemsMode;
+        private ListBoxItemsMode _ItemsMode { get { return __ItemsMode; } set { _SetItemsMode(value); } } private ListBoxItemsMode __ItemsMode;
+        private void _SetItemsMode(ListBoxItemsMode itemsMode)
+        {
+            __ItemsMode = itemsMode;
+            _RefreshColumnsMode();
+        }
         #endregion
         #region Rozšířené property
         /// <summary>
@@ -3441,7 +3452,7 @@ SetSelected() - vstup           Absolutní
         /// <param name="e"></param>
         private void _DrawItem(object sender, ListBoxDrawItemEventArgs e)
         {
-            if (__ItemsMode == ListBoxItemsMode.MenuItems && e.Item is ITextItem iTextItem)
+            if (_ItemsMode == ListBoxItemsMode.MenuItems && e.Item is ITextItem iTextItem)
             {
                 if (iTextItem is ITextStyleItem iStyleItem)
                 {
@@ -3510,6 +3521,133 @@ SetSelected() - vstup           Absolutní
         /// </summary>
         private object[] __LastSelectedItems;
         #endregion
+        #region DxListBoxPainter : ListBox s více sloupci vedle sebe z jednoho ITextItem
+        /// <summary>
+        /// Šířky sloupců zobrazených v režimu <see cref="ItemsMode"/>: <see cref="ListBoxItemsMode.MenuItems"/>
+        /// </summary>
+        protected int[] MenuItemColumnWidths { get { return __MenuItemColumnWidths; } set { _SetMenuItemColumnWidths(value); } } private int[] __MenuItemColumnWidths;
+        private void _SetMenuItemColumnWidths(int[] columnWidths)
+        {
+            __MenuItemColumnWidths = columnWidths;
+            _RefreshColumnsMode();
+        }
+        /// <summary>
+        /// Offset vodorovný = posun obsahu textu v režimu MutliColumn.
+        /// Kladné číslo říká, který obsahový pixel bude zobrazen na souřadnici X = 0 v textovém prostoru.
+        /// Tedy kladné číslo = odsouvání vodorovného scrollbaru doprava.
+        /// </summary>
+        protected int MenuItemColumnOffset { get; set; }
+        /// <summary>
+        /// Vytvoří náš vlastní painter
+        /// </summary>
+        /// <returns></returns>
+        protected override BaseControlPainter CreatePainter()
+        {
+            var painter = new DxListBoxPainter(this);
+            return painter;
+        }
+        /// <summary>
+        /// Podle hodnot <see cref="ItemsMode"/> a <see cref="MenuItemColumnWidths"/> určí hodnotu pro <see cref="UseMenuItemColumnPainting"/>
+        /// </summary>
+        private void _RefreshColumnsMode()
+        {
+            var itemsMode = this._ItemsMode;
+            var columnWidths = this.__MenuItemColumnWidths;
+            __UseMenuItemColumnPainting = (itemsMode == ListBoxItemsMode.MenuItems && columnWidths != null && columnWidths.Length > 1);
+        }
+        /// <summary>
+        /// Mají se používat sloupce v režimu MenuItems?
+        /// </summary>
+        protected bool UseMenuItemColumnPainting { get { return __UseMenuItemColumnPainting; } } private bool __UseMenuItemColumnPainting;
+        /// <summary>
+        /// Painter, který dovoluje vykreslit jeden Item s více sloupci
+        /// </summary>
+        protected class DxListBoxPainter : DevExpress.XtraEditors.Drawing.PainterImageListBox
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="owner"></param>
+            public DxListBoxPainter(DxListBoxControl owner)
+            {
+                __Owner = owner;
+            }
+            DxListBoxControl __Owner;
+            /// <summary>
+            /// Vykreslení jednoho prvku ListBoxu
+            /// </summary>
+            /// <param name="info"></param>
+            /// <param name="itemInfo"></param>
+            /// <param name="e"></param>
+            protected override void DrawItemCore(ControlGraphicsInfoArgs info, BaseListBoxViewInfo.ItemInfo itemInfo, ListBoxDrawItemEventArgs e)
+            {
+                if (__Owner.UseMenuItemColumnPainting && e.Item is ICellsItem cellsItem && cellsItem.Cells != null)
+                {   // Prvek s vykreslením Columns
+                    itemInfo.Text = "";
+                    base.DrawItemCore(info, itemInfo, e);
+                    this.DrawItemCells(info, itemInfo, e, cellsItem);
+                }
+                else
+                {   // Prvek standardní:
+                    base.DrawItemCore(info, itemInfo, e);
+                }
+            }
+            /// <summary>
+            /// Vykreslí buňky (Cells) do pozice Itemu v ListBoxu, akceptuje Offset daný scrollbarem v Owneru <see cref="DxListBoxControl.MenuItemColumnOffset"/>
+            /// </summary>
+            /// <param name="info"></param>
+            /// <param name="itemInfo"></param>
+            /// <param name="e"></param>
+            /// <param name="cellsItem"></param>
+            protected void DrawItemCells(ControlGraphicsInfoArgs info, BaseListBoxViewInfo.ItemInfo itemInfo, ListBoxDrawItemEventArgs e, ICellsItem cellsItem)
+            {
+                var clipState = info.Cache.SaveClip();
+                try
+                {
+                    var cells = cellsItem.Cells;                                             // Jednotlivé buňky do sloupců
+                    var cellsCount = cells?.Length ?? 0;
+                    var offset = __Owner.MenuItemColumnOffset;
+                    var itemBounds = itemInfo.TextRect;
+                    var textX = itemBounds.X - offset;
+                    var columns = __Owner.MenuItemColumnWidths;
+                    for (int c = 0; c < columns.Length; c++)
+                    {
+                        var colWidth = columns[c];
+                        var text = (c < cellsCount ? cells[c] : "");
+                        drawText(itemBounds, text, ref textX, columns[c]);
+                    }
+                }
+                finally
+                {
+                    info.Cache.RestoreClipRelease(clipState);
+                }
+
+                // Vykreslí text jedné buňky
+                void drawText(Rectangle outerBounds, string txt, ref int tx, int cw)
+                {
+                    if (!String.IsNullOrEmpty(txt))
+                    {
+                        var textBounds = new Rectangle(tx + 1, outerBounds.Y, cw - 2, outerBounds.Height);
+                        var clipBounds = Rectangle.Intersect(outerBounds, textBounds);
+                        if (clipBounds.Width > 2)
+                        {
+                            info.Cache.SetClip(clipBounds);
+                            // Vykreslí text na posunuté pozici (bude oříznutý na hranicích textRect)
+                            TextRenderer.DrawText(
+                                e.Cache.Graphics,
+                                txt,
+                                e.Appearance.Font,
+                                textBounds,                                                        // new Point(textBounds.X, textBounds.Y),
+                                e.Appearance.ForeColor,
+                                TextFormatFlags.NoClipping | TextFormatFlags.VerticalCenter);      // TextFormatFlags.VerticalCenter 
+                        }
+                    }
+                    // Průběžná pozice X pro následující sloupec:
+                    tx += cw;
+                }
+            }
+        }
+        #endregion
         #region Images
         /// <summary>
         /// Inicializace pro Images
@@ -3521,7 +3659,7 @@ SetSelected() - vstup           Absolutní
             this.__ItemImageSize = null;
         }
         /// <summary>
-        /// Vykreslí Image v režimu <see cref="__ItemsMode"/> == <see cref="ListBoxItemsMode.MenuItems"/>.
+        /// Vykreslí Image v režimu <see cref="_ItemsMode"/> == <see cref="ListBoxItemsMode.MenuItems"/>.
         /// </summary>
         /// <param name="e"></param>
         /// <param name="iMenuItem"></param>
@@ -3585,7 +3723,7 @@ SetSelected() - vstup           Absolutní
         /// <param name="e"></param>
         private void _ListBoxCustomizeItem(object sender, DevExpress.XtraEditors.CustomizeTemplatedItemEventArgs e)
         {
-            switch (__ItemsMode)
+            switch (_ItemsMode)
             {
                 case ListBoxItemsMode.MenuItems:
                     break;
@@ -3816,7 +3954,7 @@ SetSelected() - vstup           Absolutní
         {
             string toolTipTitle = null;
             string toolTipText = null;
-            switch (__ItemsMode)
+            switch (_ItemsMode)
             {
                 case ListBoxItemsMode.MenuItems:
                     // V režimu MenuItem máme prvky Listu postavené na interface ITextItem;
@@ -3951,7 +4089,7 @@ SetSelected() - vstup           Absolutní
             if (item is DevExpress.XtraEditors.Controls.ImageListBoxItem lbxItem) item = lbxItem.Value;
             if (item is System.Data.DataRowView rowView) item = rowView.Row;
 
-            switch (__ItemsMode)
+            switch (_ItemsMode)
             {
                 case ListBoxItemsMode.MenuItems:
                     if (item is ITextItem menuItem)
@@ -3976,7 +4114,7 @@ SetSelected() - vstup           Absolutní
             if (item is DevExpress.XtraEditors.Controls.ImageListBoxItem lbxItem) item = lbxItem.Value;
             if (item is System.Data.DataRowView rowView) item = rowView.Row;
 
-            switch (__ItemsMode)
+            switch (_ItemsMode)
             {
                 case ListBoxItemsMode.MenuItems:
                     if (item is ITextItem menuItem) 
@@ -4526,7 +4664,7 @@ SetSelected() - vstup           Absolutní
         private void _RemoveItems(IEnumerable<ITextItem> removeItems, DxItemsChangeType changeType)
         {
             if (removeItems == null) return;
-            if (this.__ItemsMode != ListBoxItemsMode.MenuItems) return;
+            if (this._ItemsMode != ListBoxItemsMode.MenuItems) return;
 
             var removeArray = removeItems.ToArray();
             var listItems = this.MenuItems;                          // _RemoveItems musí odebírat prvky z kompletního pole, ne jen z viditelných prvků
@@ -4768,6 +4906,8 @@ SetSelected() - vstup           Absolutní
                 }
                 // Odebereme zdrojové prvky:
                 this._RemoveIndexes(selectedItemsInfo.Select(t => t.AbsoluteIndex), changeType);
+                // Vyvoláme event, changeType je buď DragAndDrop (když Source <> Target) anebo None (když TargetIsSource), pak se fyzicky event nevyvolá:
+                _RunMenuItemsChanged(changeType);
             }
         }
         /// <summary>
@@ -4802,6 +4942,7 @@ SetSelected() - vstup           Absolutní
             {
                 var insertIndex = (args.InsertIndex.HasValue ? GetAbsoluteIndexFromFiltered(args.InsertIndex.Value) : null);
                 _InsertItems(sourceItems, insertIndex, true, DxItemsChangeType.DragAndDrop);
+                _RunMenuItemsChanged(DxItemsChangeType.DragAndDrop);
             }
             
             MouseDragTargetIndex = null;
@@ -5200,6 +5341,10 @@ SetSelected() - vstup           Absolutní
             /// true to arrange items across multiple columns; otherwise, false.
             /// </summary>
             public virtual bool MultiColumn { get { return __Owner.MultiColumn; } set { __Owner.MultiColumn = value; } }
+            /// <summary>
+            /// Šířky sloupců zobrazených v režimu <see cref="ItemsMode"/>: <see cref="ListBoxItemsMode.MenuItems"/>
+            /// </summary>
+            public int[] MenuItemColumnWidths { get { return __Owner.MenuItemColumnWidths; } set { __Owner.MenuItemColumnWidths = value; } }
             /// <summary>
             /// Pokud obsahuje true, pak List smí obsahovat duplicitní klíče (defaultní hodnota je true).
             /// Pokud je false, pak vložení dalšího záznamu s klíčem, který už v Listu je, bude ignorováno.
