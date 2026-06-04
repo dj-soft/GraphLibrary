@@ -3164,7 +3164,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public int ItemHeightDesign
         {
             get { return __ItemHeightDesign; }
-            set { __ItemHeightDesign = value; _ApplyDesignHeight(); }
+            set { bool isChanged = (value != __ItemHeightDesign); __ItemHeightDesign = value; if (isChanged) _ApplyDesignHeight(); }
         }
         private int __ItemHeightDesign = 0;
         /// <summary>
@@ -3177,7 +3177,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected int ItemHeightPaddingDesign
         {
             get { return __ItemHeightPaddingDesign; }
-            set { __ItemHeightPaddingDesign = value; _ApplyDesignHeight(); }
+            set { bool isChanged = (value != __ItemHeightPaddingDesign); __ItemHeightPaddingDesign = value; if (isChanged) _ApplyDesignHeight(); }
         }
         private int __ItemHeightPaddingDesign = 0;
         /// <summary>
@@ -3328,8 +3328,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             var menuItems = this.MenuItems;
             if (menuItems.Length <= 1) return;
 
+            var selectedItems = this.SelectedMenuItems;
+
             var sortedItems = _GetSortedItems(menuItems);
             _StoreItemsSilent(sortedItems);
+
+            this.SelectedMenuItems = selectedItems;
         }
         /// <summary>
         /// Vrátí dodané pole setříděné podle hodnoty <see cref="ITextItem.ItemOrder"/>.
@@ -3619,7 +3623,7 @@ SetSelected() - vstup           Absolutní
             {
                 return this.SelectedMenuInfos.Select(i => i.MenuItem).Where(m => m != null).ToArray();
             } 
-            set 
+            set
             {
                 var selectedIndexes = new List<int>();
                 var selectedItems = value;
@@ -3989,7 +3993,7 @@ SetSelected() - vstup           Absolutní
                         int absIdx = 0;
                         var absMenuItems = menuDblItems.Select(i => new ListMenuItemInfo(absIdx++, i)).ToList();          // Absolutní index 0++; a všechny MenuItems
                         // Vytvoříme evaluator pro typ ListMenuItemInfo, a pro CriteriaOperator: rowFilter
-                        var evaluator = new DevExpress.Data.Filtering.Helpers.ExpressionEvaluator(System.ComponentModel.TypeDescriptor.GetProperties(typeof(ListMenuItemInfo)), rowFilter);
+                        var evaluator = new DevExpress.Data.Filtering.Helpers.ExpressionEvaluator(System.ComponentModel.TypeDescriptor.GetProperties(typeof(ListMenuItemInfo)), rowFilter, false);
                         // Vytvoříme pole prvků, které vyhovují zadané podmínce (ale pole stále nemá naplěné hodnoty FilteredIndex):
                         filteredItems = evaluator.Filter(absMenuItems).OfType<ListMenuItemInfo>().ToArray();
                         // Nyní prostě projdu pole filteredItems (které nyní osbahuje jen filtrované prvky) a do jednotlivých objektů vepíšu postupně FilteredIndex:
@@ -4226,7 +4230,7 @@ SetSelected() - vstup           Absolutní
         /// Pokud je false, pak se nic takového neprovádí.
         /// Není dobré kombinovat s akcemi MoveUp/Down, protože nedávají smysl.
         /// </summary>
-        protected bool AutoSortItems { get { return __AutoSortItems; } set { __AutoSortItems = value; _CheckSortedMenuItems(); } } private bool __AutoSortItems;
+        protected bool AutoSortItems { get { return __AutoSortItems; } set { bool isChange = (value != __AutoSortItems); __AutoSortItems = value; if (isChange && value) _CheckSortedMenuItems(); } } private bool __AutoSortItems;
         /// <summary>
         /// Povoluje se výběr více prvků pomocí Ctrl+Mouse?
         /// </summary>
@@ -4239,6 +4243,7 @@ SetSelected() - vstup           Absolutní
         /// <param name="e"></param>
         protected override void OnEnter(EventArgs e)
         {
+            this.IsFocused = true;
             base.OnEnter(e);
             CheckFocused();
         }
@@ -4249,7 +4254,21 @@ SetSelected() - vstup           Absolutní
         protected override void OnLeave(EventArgs e)
         {
             base.OnLeave(e);
+            this.IsFocused = false;
         }
+        /// <summary>
+        /// Řeší nemilé chování, kdy ListBox poprvé dostane kliknutí myší na prvek, obslouží si OnSelectionChanged, ale nedá do sebe Focus.
+        /// Takže pak klávesový stisk nechodí do ListBoxu.
+        /// </summary>
+        protected void CheckFocused()
+        {
+            if (!base.Focused && IsFocused)
+                base.Focus();
+        }
+        /// <summary>
+        /// true = Prvek prošel metodou OnEnter / false = odešel z metody OnLeave
+        /// </summary>
+        protected bool IsFocused { get; set; }
         /// <summary>
         /// Při vykreslování
         /// </summary>
@@ -4336,15 +4355,6 @@ SetSelected() - vstup           Absolutní
         /// Posledně zapamatovaný stav <see cref="SelectedItems"/>
         /// </summary>
         private object[] __LastSelectedItems;
-        /// <summary>
-        /// Řeší nemilé chování, kdy ListBox poprvé dostane kliknutí myší na prvek, obslouží si OnSelectionChanged, ale nedá do sebe Focus.
-        /// Takže pak klávesový stisk nechodí do ListBoxu.
-        /// </summary>
-        protected void CheckFocused()
-        {
-            if (!base.Focused)
-                base.Focus();
-        }
         #endregion
         #region DxListBoxPainter : ListBox s více sloupci vedle sebe z jednoho ITextItem
         /// <summary>

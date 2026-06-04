@@ -573,18 +573,32 @@ namespace TestDevExpress.Forms
 
             var sampleDblList = _Sample4DblList;
 
-            if (__Sample4ModeCombo.SelectedComboItem != null && __Sample4ModeCombo.SelectedComboItem.Tag is DxDblListBoxPanel.DblListModeType dblListMode)
-                sampleDblList.DxProperties.DblListMode = dblListMode;
+            if (Object.ReferenceEquals(sender, __Sample4ModeCombo))
+            {
+                if (__Sample4ModeCombo.SelectedComboItem != null && __Sample4ModeCombo.SelectedComboItem.Tag is DxDblListBoxPanel.DblListModeType dblListMode)
+                {
+                    sampleDblList.DxProperties.DblListMode = dblListMode;
+                    _Sample4SetTitles();
+                }
+            }
 
-            if (__Sample4ButtonsCombo.SelectedComboItem != null && __Sample4ButtonsCombo.SelectedComboItem.Tag is DxDblListBoxPanel.DblButtonsPositionType buttonPosition)
-                sampleDblList.DxProperties.ButtonsPosition = buttonPosition;
+            if (Object.ReferenceEquals(sender, __Sample4ButtonsCombo))
+            {
+                if (__Sample4ButtonsCombo.SelectedComboItem != null && __Sample4ButtonsCombo.SelectedComboItem.Tag is DxDblListBoxPanel.DblButtonsPositionType buttonPosition)
+                    sampleDblList.DxProperties.ButtonsPosition = buttonPosition;
+            }
 
-            sampleDblList.DxProperties.DragAndDropEnabled = __Sample4DragDropEnabledCheck.Checked;
-            sampleDblList.DxProperties.MoveAllEnabled = __Sample4MoveAllEnabledCheck.Checked;
-            sampleDblList.DxProperties.ClipboardActionsEnabled = __Sample4ClipActionsEnabledCheck.Checked;
-            sampleDblList.DxProperties.DoubleClickEnabled = __Sample4DoubleClickEnabledCheck.Checked;
+            if (Object.ReferenceEquals(sender, __Sample4DragDropEnabledCheck))
+                sampleDblList.DxProperties.DragAndDropEnabled = __Sample4DragDropEnabledCheck.Checked;
 
-            _Sample4SetTitles();
+            if (Object.ReferenceEquals(sender, __Sample4MoveAllEnabledCheck))
+                sampleDblList.DxProperties.MoveAllEnabled = __Sample4MoveAllEnabledCheck.Checked;
+
+            if (Object.ReferenceEquals(sender, __Sample4ClipActionsEnabledCheck))
+                sampleDblList.DxProperties.ClipboardActionsEnabled = __Sample4ClipActionsEnabledCheck.Checked;
+
+            if (Object.ReferenceEquals(sender, __Sample4DoubleClickEnabledCheck))
+                sampleDblList.DxProperties.DoubleClickEnabled = __Sample4DoubleClickEnabledCheck.Checked;
         }
         private void _Sample4ShowClick(object sender, EventArgs args)
         {
