@@ -2428,17 +2428,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.AutoSizeMode = DevExpress.XtraEditors.LabelAutoSizeMode.None;
             this.Appearance.FontStyleDelta = FontStyle.Bold;
             this.Padding = new Padding(12, 3, 3, 5);
+            this.__TitleLineWidth = 2;
         }
         protected override void OnPaint(PaintEventArgs e)
         {
-            DrawTitleLine(e.Graphics, e.ClipRectangle);
+            DrawTitleLine(e.Graphics, e.ClipRectangle, TitleLineWidth);
             base.OnPaint(e);
-        }
-        public static void DrawTitleLine(Graphics graphics, Rectangle bounds)
-        {
-            var color = DxComponent.SkinColorSet.AccentPaint ?? Color.BlueViolet;
-            Rectangle titleBounds = new Rectangle(bounds.Left, bounds.Bottom - 2, bounds.Width, 2);
-            DxComponent.PaintDrawLine(graphics, titleBounds, color, Color.Transparent);
         }
         #region Rozšířené property
         /// <summary>
@@ -2499,6 +2494,54 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             base.OnMouseLeave(e);
             this.HasMouse = false;
+        }
+        #endregion
+        #region Podtržení
+        /// <summary>
+        /// Obsahuje optimální výšku celého Labelu, v aktuální pozici (Monitor DPI) a fontu dle Appearance, plus šířku linky <see cref="TitleLineWidth"/> 
+        /// </summary>
+        public int HeightOptimal
+        {
+            get
+            {
+                var textHeight = this.Appearance.GetFont().GetHeight(this.DeviceDpi) + 2f;
+                var lineHeight = this.TitleLineWidth;
+                if (lineHeight > 0) textHeight += (2 + lineHeight);
+                return (int)(Math.Ceiling(textHeight));
+            }
+        }
+        /// <summary>
+        /// Šířka podtrhávací linky. 0 = bez ní.
+        /// </summary>
+        public int TitleLineWidth
+        {
+            get { return __TitleLineWidth; }
+            set 
+            {
+                var width = (value < 0 ? 0 : (value > 12 ? 12 : value));
+                if (width != __TitleLineWidth)
+                {
+                    __TitleLineWidth = width;
+                    this.Invalidate();
+                }
+            } 
+        }
+        private int __TitleLineWidth;
+        /// <summary>
+        /// Vykreslí podtrhávací linku do dolní části daného prostoru
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="width"></param>
+        public static void DrawTitleLine(Graphics graphics, Rectangle bounds, int? width = null)
+        {
+            int w = width ?? 2;
+            if (w > 0)
+            {
+                var color = DxComponent.SkinColorSet.AccentPaint ?? Color.BlueViolet;
+                Rectangle titleBounds = new Rectangle(bounds.Left, bounds.Bottom - 2, bounds.Width, 2);
+                DxComponent.PaintDrawLine(graphics, titleBounds, color, Color.Transparent);
+            }
         }
         #endregion
     }

@@ -267,6 +267,7 @@ namespace TestDevExpress.Forms
 
             var sampleList = new DxListBoxPanel() { Dock = DockStyle.Fill };                       // ListBox je Docked v Split.Panel1 a tak mu interaktivně měníme šířku
             sampleList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.None;
+            sampleList.DxProperties.TitleText = "ListBox s jedníém sloupcem";
             sampleList.DxProperties.MenuItems = Randomizer.GetMenuItems(24, 60, Randomizer.ImageResourceType.PngSmall);
             sampleList.DxProperties.MenuItemColumnWidths = new int[] { 400 };                      // Jediný sloupec, pro jediný text v řádku, ale umožní vodorovný Scroll
             _AddEventHandlers(sampleList, false);                                                  // ... , false)  =>  pro ListBox neresizovat výšku 
@@ -419,11 +420,13 @@ namespace TestDevExpress.Forms
         }
         private void _CreateSample4()
         {
-            var sampleDblList = new DxDblListBoxPanel();
+            var bounds = __SampleBounds;
+            var dblListBounds = new Rectangle(bounds.X, bounds.Y + 62, bounds.Width, bounds.Height - 65);
+            var sampleDblList = new DxDblListBoxPanel() { Bounds = dblListBounds };
 
             sampleDblList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client;
 
-            var position = (_Sample4SplitPosition > 0 ? _Sample5SplitPosition : 360);
+            var position = (_Sample4SplitPosition > 0 ? _Sample4SplitPosition : 360);
             sampleDblList.DxProperties.SplitterPosition = position;
 
             /* Ostatní property nechám default:
@@ -438,23 +441,21 @@ namespace TestDevExpress.Forms
             sampleDblList.DxProperties.TargetMenuItemsChanged += _Sample4_TargetMenuItemsChanged;
 
             sampleDblList.SplitterPositionChanged += Sample4DblList_SplitterPositionChanged;
-
             this._HostContainer.Controls.Add(sampleDblList);
 
             _Sample4DblList = sampleDblList;
 
             _CreateSample4Params();                        // Params = prvky pro nastavování vlastností pro testy různého nastavení
+            _Sample4SetTitles();
         }
-
         private void Sample4DblList_SplitterPositionChanged(object sender, EventArgs e)
         {
             _Sample4SplitPosition = _Sample4DblList.SplitterPosition;
         }
-
         private void _CreateLayout4()
         {
             var bounds = __SampleBounds;
-            _Sample4DblList.Bounds = new Rectangle(bounds.X, bounds.Y + 55, bounds.Width, bounds.Height - 58);
+            _Sample4DblList.Bounds = new Rectangle(bounds.X, bounds.Y + 62, bounds.Width, bounds.Height - 65);
         }
         private void _DisposeSample4()
         {
@@ -463,7 +464,6 @@ namespace TestDevExpress.Forms
 
             _DisposeSample4Params();
         }
-
         private void _Sample4_TargetMenuItemsChanged(object sender, DxListBoxMenuItemsChangedEventArgs e)
         {
             if (__Sample4ShowContentButton != null)
@@ -583,6 +583,8 @@ namespace TestDevExpress.Forms
             sampleDblList.DxProperties.MoveAllEnabled = __Sample4MoveAllEnabledCheck.Checked;
             sampleDblList.DxProperties.ClipboardActionsEnabled = __Sample4ClipActionsEnabledCheck.Checked;
             sampleDblList.DxProperties.DoubleClickEnabled = __Sample4DoubleClickEnabledCheck.Checked;
+
+            _Sample4SetTitles();
         }
         private void _Sample4ShowClick(object sender, EventArgs args)
         {
@@ -601,6 +603,27 @@ namespace TestDevExpress.Forms
             sb.AppendLine();
 
             DxComponent.ShowMessageInfo(sb.ToString(), "Obsah Target Listboxu");
+        }
+        private void _Sample4SetTitles()
+        {
+            var mode = _Sample4DblList.DxProperties.DblListMode;
+            switch (mode)
+            {
+                case DxDblListBoxPanel.DblListModeType.Mode_FixedSourceToFreeTarget:
+                    _Sample4DblList.DxProperties.SourceTitleText = "Nekonečný zdroj:";
+                    _Sample4DblList.DxProperties.TargetTitleText = "Vybrané prvky:";
+                    break;
+
+                case DxDblListBoxPanel.DblListModeType.Mode_Ballance:
+                    _Sample4DblList.DxProperties.SourceTitleText = "Dosud nepoužité prvky:";
+                    _Sample4DblList.DxProperties.TargetTitleText = "Již použité prvky:";
+                    break;
+
+                case DxDblListBoxPanel.DblListModeType.None:
+                    _Sample4DblList.DxProperties.SourceTitleText = null;
+                    _Sample4DblList.DxProperties.TargetTitleText = null;
+                    break;
+            }
         }
         private DxLabelControl __Sample4ModeLabel;
         private DxImageComboBoxEdit __Sample4ModeCombo;

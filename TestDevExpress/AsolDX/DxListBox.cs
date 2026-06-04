@@ -8,10 +8,12 @@ using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using DevExpress.Data.Filtering;
+using DevExpress.PivotGrid.OLAP;
 using DevExpress.Utils;
 using DevExpress.XtraEditors;
 using DevExpress.XtraEditors.Controls;
@@ -170,6 +172,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected DxListBoxControl TargetListBox { get { return __TargetListPanel.ListBox; } }
         #endregion
         #region Definice vzhledu a chování - propojené pro oba ListBoxy
+        /// <summary>
+        /// Text zobrazený nad řádkovým filtrem v panelu Source jako titulek controlu.
+        /// </summary>
+        protected string SourceTitleText { get { return DxSourceProperties.TitleText; } set { DxSourceProperties.TitleText = value; _SetDblTitleTextVisible(); } }
+        /// <summary>
+        /// Text zobrazený nad řádkovým filtrem v panelu Target jako titulek controlu.
+        /// </summary>
+        protected string TargetTitleText { get { return DxTargetProperties.TitleText; } set { DxTargetProperties.TitleText = value; _SetDblTitleTextVisible(); } }
+        /// <summary>
+        /// Podle obsahu titulku v <see cref="DxSourceProperties"/> anebo <see cref="DxTargetProperties"/> určí, zda titulky budou zobrazeny nebo ne. 
+        /// Jejich viditelnost (shodná pro oba panely) pak nastaví do obou panelů.
+        /// </summary>
+        private void _SetDblTitleTextVisible()
+        {
+            bool hasTitles = !String.IsNullOrEmpty(SourceTitleText) || !String.IsNullOrEmpty(TargetTitleText);
+            DxSourceProperties.TitleTextVisible = hasTitles;
+            DxTargetProperties.TitleTextVisible = hasTitles;
+        }
         /// <summary>
         /// Režim chování <see cref="DxDblListBoxPanel"/>.
         /// <para/>
@@ -696,7 +716,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             // Viditelnost:
             bool currentPanelVisible = this.__ButtonsPanel.IsSetVisible();
-            bool requestPanelVisible = this._ButtonsRequired;
+            bool requestPanelVisible = this._ButtonsRequired && (__Buttons != null && __Buttons.Count > 0);
 
             // Panel nemá být viditelný:
             if (!requestPanelVisible)
@@ -953,6 +973,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             #endregion
             #region Vlastnosti
             /// <summary>
+            /// Text zobrazený nad řádkovým filtrem v panelu Source jako titulek controlu.
+            /// </summary>
+            public string SourceTitleText { get { return __Owner.SourceTitleText; } set { __Owner.SourceTitleText = value; } }
+            /// <summary>
+            /// Text zobrazený nad řádkovým filtrem v panelu Target jako titulek controlu.
+            /// </summary>
+            public string TargetTitleText { get { return __Owner.TargetTitleText; } set { __Owner.TargetTitleText = value; } }
+            /// <summary>
             /// Instance ListBoxPanelu pro levý = Source panel
             /// </summary>
             public DxListBoxPanel SourceListPanel { get { return __Owner.SourceListPanel; } }
@@ -1082,11 +1110,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void Initialize()
         {
+            __TitleLabel = new DxTitleLabelControl() { Text = "", Visible = false };
             __ListBox = new DxListBoxControl();
             __Buttons = new List<DxSimpleButton>();
             __ButtonsPosition = ToolbarPosition.RightSideCenter;
             __ButtonsTypes = null;
             __ButtonsSize = ResourceImageSizeType.Medium;
+            this.Controls.Add(__TitleLabel);
             this.Controls.Add(__ListBox);
             this.Padding = new Padding(0);
             this.ClientSizeChanged += _ClientSizeChanged;
@@ -1130,8 +1160,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _MainControlFocus()
         {
-            this.__ListBox.Select();
-            this.__ListBox.Focus();
+            this.__ListBox.ListBoxNative.Select();
+            this.__ListBox.ListBoxNative.Focus();
         }
         /// <summary>
         /// Proběhne po změně v poli <see cref="MenuItems"/>
@@ -1174,6 +1204,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (innerBounds.Width >= 30 && innerBounds.Height >= 30)
                 {
                     _ButtonsLayout(ref innerBounds);
+                    _TitleLayout(ref innerBounds);
                     _RowFilterLayout(ref innerBounds);
                     __ListBox.Bounds = new Rectangle(innerBounds.X, innerBounds.Y, innerBounds.Width - 0, innerBounds.Height);
                 }
@@ -1194,6 +1225,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             catch { /* Chyby v Dispose občas nastanou v DevExpress, který něco likviduje v GC threadu a nemá přístup do GUI. */ }
         }
+        /// <summary>
+        /// Objekt pro label titulek
+        /// </summary>
+        private DxTitleLabelControl __TitleLabel;
         /// <summary>
         /// Instance ListBoxu
         /// </summary>
@@ -1229,6 +1264,79 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Velikost tlačítek
         /// </summary>
         protected ResourceImageSizeType ButtonsSize { get { return __ButtonsSize; } set { __ButtonsSize = value; DoLayout(); } }
+        #endregion
+        #region Titulek
+        /// <summary>
+        /// Text zobrazený nad řádkovým filtrem jako titulek controlu. Jeho zobrazování řídí hodnota <see cref="TitleTextVisible"/>.
+        /// </summary>
+        protected string TitleText { get { return __TitleText; } set { __TitleText = value; _AcceptTitle(); } } private string __TitleText;
+        /// <summary>
+        /// Zobrazovat titulkový text?
+        /// <para/>
+        /// null = výchozí: titulek bude zobrazen, pokud bude neprázdný. Pokud nebude zobrazen, budou ostatní controly začínat nahoře na souřadnici Y = 0.<br/>
+        /// false: titulek nebude zobrazen, bez ohledu na obsah. Ostatní controly budou začínat nahoře na souřadnici Y = 0.<br/>
+        /// true: titulek bude zobrazen, i když by byl prázdný. Ostatní controly budou začínat pod prostorem titulku.
+        /// <para/>
+        /// Toto chování je zde proto, abychom v <see cref="DxDblListBoxPanel"/> mohli mít titulek například jen na jedné straně, ale sousední ListBox pak zobrazuje prázdný prostor.
+        /// </summary>
+        protected bool? TitleTextVisible { get { return __TitleTextVisible; } set { __TitleTextVisible = value; _AcceptTitle(); } } private bool? __TitleTextVisible;
+        /// <summary>
+        /// Akceptuje hodnoty zadané do <see cref="TitleText"/> a <see cref="TitleTextVisible"/>, naství viditelnost titulku a zajistí Layout.
+        /// </summary>
+        private void _AcceptTitle()
+        {
+            // Obsah textu - pokud by se změnil, a přitom se nezmění jeho Visible (již nastavené na true):
+            var titleText = TitleText;
+            var requestText = titleText ?? "";
+            var currentText = __TitleLabel.Text;
+            if (!String.Equals(requestText, currentText, StringComparison.InvariantCulture))
+                __TitleLabel.Text = requestText;
+
+            var titleTextVisible = TitleTextVisible;
+            bool currentIsVisible = (titleTextVisible.HasValue ? titleTextVisible.Value : !String.IsNullOrEmpty(requestText));
+
+            if (currentIsVisible != __TitleTextVisibleCurrent)
+            {
+                __TitleTextVisibleCurrent = currentIsVisible;
+                DoLayout();
+            }
+        }
+        /// <summary>
+        /// Zajistí layout pro TitleText
+        /// </summary>
+        /// <param name="innerBounds"></param>
+        private void _TitleLayout(ref Rectangle innerBounds)
+        {
+            bool currentVisible = __TitleLabel.Visible;
+            bool requestVisible = __TitleTextVisibleCurrent;
+            if (!requestVisible)
+            {   // Bez titulku:
+                if (currentVisible)
+                    __TitleLabel.Visible = false;
+            }
+            else
+            {   // S titulkem:
+                var currentText = __TitleLabel.Text;
+                var requestText = TitleText;
+                if (!String.Equals(requestText, currentText, StringComparison.InvariantCulture))
+                    __TitleLabel.Text = requestText ?? "";
+
+                var tHeight = __TitleLabel.HeightOptimal;
+                var tBounds = new Rectangle(innerBounds.X, innerBounds.Y + 2, innerBounds.Width, tHeight);
+                if (__TitleLabel.Bounds != tBounds)
+                    __TitleLabel.Bounds = tBounds;
+
+                var innerTop = tBounds.Bottom + 3;
+                innerBounds = new Rectangle(innerBounds.X, innerTop, innerBounds.Width, innerBounds.Height - innerTop);
+
+                if (!currentVisible)
+                    __TitleLabel.Visible = true;
+            }
+        }
+        /// <summary>
+        /// Aktuálně platná hodnota viditelnosti titulku
+        /// </summary>
+        private bool __TitleTextVisibleCurrent;
         #endregion
         #region Data = položky, a layout = Template
         /// <summary>
@@ -1430,7 +1538,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _RowFilterClientPrepare()
         {
             __RowFilterClient = new DxSearchControl();
-            __RowFilterClient.Client = __ListBox;
+            __RowFilterClient.Client = __ListBox.ListBoxNative;
             __RowFilterClient.Properties.NullValuePrompt = DxComponent.Localize(MsgCode.DxFilterBoxNullValuePrompt);   // "Hledat"
             __RowFilterClient.TabStop = false;
             __RowFilterClient.Properties.ShowMRUButton = false;
@@ -1511,7 +1619,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 e.IsInputKey = false;
                 this.__ListBox.DxProperties.UnSelectAll();
                 this.__ListBox.DxProperties.SelectedIndex = 0;
-                this.__ListBox.Focus();
+                this._MainControlFocus();
             }
         }
         /// <summary>
@@ -2011,6 +2119,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             #endregion
             #region Vlastnosti
             /// <summary>
+            /// Text zobrazený nad řádkovým filtrem jako titulek controlu. Jeho zobrazování řídí hodnota <see cref="TitleTextVisible"/>.
+            /// </summary>
+            public string TitleText { get { return __Owner.TitleText; } set { __Owner.TitleText = value; } }
+            /// <summary>
+            /// Zobrazovat titulkový text?
+            /// <para/>
+            /// null = výchozí: titulek bude zobrazen, pokud bude neprázdný. Pokud nebude zobrazen, budou ostatní controly začínat nahoře na souřadnici Y = 0.<br/>
+            /// false: titulek nebude zobrazen, bez ohledu na obsah. Ostatní controly budou začínat nahoře na souřadnici Y = 0.<br/>
+            /// true: titulek bude zobrazen, i když by byl prázdný. Ostatní controly budou začínat pod prostorem titulku.
+            /// <para/>
+            /// Toto chování je zde proto, abychom v <see cref="DxDblListBoxPanel"/> mohli mít titulek například jen na jedné straně, ale sousední ListBox pak zobrazuje prázdný prostor.
+            /// </summary>
+            public bool? TitleTextVisible { get { return __Owner.TitleTextVisible; } set { __Owner.TitleTextVisible = value; } }
+            /// <summary>
             /// Výška prvku
             /// </summary>
             public int ItemHeight { get { return __Owner.ListBox.DxProperties.ItemHeight; } set { __Owner.ListBox.DxProperties.ItemHeight = value; } }
@@ -2366,7 +2488,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.BorderStyle = BorderStyles.NoBorder;
             this.Size = new Size(350, 500);
 
-            __ListBoxNative = new DxListBoxNative();
+            __ListBoxNative = new DxListBoxNative() { TabStop = true, TabIndex = 0 };
             __HScrollBar = new DevExpress.XtraEditors.HScrollBar();
             __HScrollBar.Opacity = 0.60f;
             __HScrollBar.ValueChanged += _HScrollBar_ValueChanged;
@@ -2377,6 +2499,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             _DoLayout(null);
 
             this.ClientSizeChanged += _ClientSizeChanged;
+        }
+        protected override void OnGotFocus(EventArgs e)
+        {
+            base.OnGotFocus(e);
+            __ListBoxNative.Focus();
         }
         /// <summary>
         /// Změna velikosti vyvolá úpravu layoutu včetně výpočtu 
@@ -4113,6 +4240,7 @@ SetSelected() - vstup           Absolutní
         protected override void OnEnter(EventArgs e)
         {
             base.OnEnter(e);
+            CheckFocused();
         }
         /// <summary>
         /// Při odchodu focusu
@@ -4170,6 +4298,7 @@ SetSelected() - vstup           Absolutní
         protected override void OnSelectionChanged()
         {
             base.OnSelectionChanged();
+            CheckFocused();
             if (this.IsRealSelectionChanged(true))
             {
                 this._ToolTipHide();
@@ -4207,6 +4336,15 @@ SetSelected() - vstup           Absolutní
         /// Posledně zapamatovaný stav <see cref="SelectedItems"/>
         /// </summary>
         private object[] __LastSelectedItems;
+        /// <summary>
+        /// Řeší nemilé chování, kdy ListBox poprvé dostane kliknutí myší na prvek, obslouží si OnSelectionChanged, ale nedá do sebe Focus.
+        /// Takže pak klávesový stisk nechodí do ListBoxu.
+        /// </summary>
+        protected void CheckFocused()
+        {
+            if (!base.Focused)
+                base.Focus();
+        }
         #endregion
         #region DxListBoxPainter : ListBox s více sloupci vedle sebe z jednoho ITextItem
         /// <summary>
