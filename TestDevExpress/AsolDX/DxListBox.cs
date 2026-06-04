@@ -3447,6 +3447,50 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             _RunItemsListChanged(e);
         }
+        /// <summary>
+        /// Metoda zkusí najít prvek <see cref="ITextItem"/> pro zadaný absolutní index.
+        /// </summary>
+        /// <param name="absoluteIndex"></param>
+        /// <param name="menuItem"></param>
+        /// <returns></returns>
+        private bool _TryGetMenuItemAtAbsoluteIndex(int? absoluteIndex, out ITextItem menuItem)
+        {
+            if (this.ItemsMode == ListBoxItemsMode.MenuItems && absoluteIndex.HasValue && absoluteIndex.Value >= 0)
+            {
+                var menuItems = this.MenuItems;
+                if (absoluteIndex.Value < menuItems.Length)
+                {
+                    var item = menuItems[absoluteIndex.Value];
+                    if (item != null)
+                    {
+                        menuItem = item;
+                        return true;
+                    }
+                }
+            }
+            menuItem = null;
+            return false;
+        }
+        /// <summary>
+        /// Metoda zkusí najít absolutní index pro daný prvek <see cref="ITextItem"/>
+        /// </summary>
+        /// <param name="menuItem"></param>
+        /// <param name="absoluteIndex"></param>
+        /// <returns></returns>
+        private bool _TryGetAbsoluteIndexOfMenuItem(ITextItem menuItem, out int? absoluteIndex)
+        {
+            if (this.ItemsMode == ListBoxItemsMode.MenuItems && menuItem != null)
+            {
+                var menuItems = this.MenuItems;
+                if (menuItems.TryFindFirstIndex(i => Object.ReferenceEquals(i, menuItem), out var index))
+                {
+                    absoluteIndex = index;
+                    return true;
+                }
+            }
+            absoluteIndex = null;
+            return false;
+        }
         #region SelectedMenuItems, FilteredItems, CurrentVisibleItems
         /*     Popis indexů a metod:
 
@@ -5288,7 +5332,8 @@ SetSelected() - vstup           Absolutní
                 // 1. Najdu Min Absolute index z prvků Selected:
                 var minSelAbsIndex = selectedItems.Select(i => i.AbsoluteIndex).Min();
                 //   Pokud mezi vybranými prvky je prvek na indexu 0, pak výstupem je 0 = všechny Selected prvky umístíme na pozici 0 a následující:
-                if (minSelAbsIndex <= 0) return 0;
+                //   Pokud je vybrán pouze jeden prvek, a ten je na pozici 0, pak není třeba přenos provádět (vrátíme -1):
+                if (minSelAbsIndex <= 0) return (selectedItems.Length == 1 ? -1 : 0);
                 //   Anebo prvek na první zafiltrované pozici:
                 if (filteredItems.Length > 0 && minSelAbsIndex == filteredItems[0].AbsoluteIndex) return 0;
 
@@ -5339,7 +5384,7 @@ SetSelected() - vstup           Absolutní
                     //  Tady se právě řeší ono "Přesuneme prvek na vizuálním indexu 3 na pozici, na které je předchozí prvek na vizuálním indexu 2":
                     // A tím, že pracuji s polem Filtered (=tedy ty prvky vyhovující řádkovému filtru), a v něm určuji pozice AbsoluteIndex, tím umožním přemístit prvky na výslednou fyzickou pozici = Absolute
                     if (maxSelPosition < (filteredCount - 1))
-                        return filteredItems[maxSelPosition + 1].AbsoluteIndex;
+                        return filteredItems[maxSelPosition + 1].AbsoluteIndex + 1;
                 }
 
                 return null;
@@ -5517,22 +5562,41 @@ SetSelected() - vstup           Absolutní
             var selectedItemsInfo = this.SelectedMenuInfos;
             if (selectedItemsInfo.Length == 0) return;
 
-            var targetIndex = targetIndexLocator(selectedItemsInfo);
-            _MoveItems(selectedItemsInfo, targetIndex, changeType);
+            var insertAbsoluteIndex = targetIndexLocator(selectedItemsInfo);
+            _MoveItems(selectedItemsInfo, insertAbsoluteIndex, changeType);
         }
         /// <summary>
         /// Provedení akce: přesuň zdejší dodané prvky na cílovou pozici.
         /// </summary>
         /// <param name="selectedItemsInfo"></param>
-        /// <param name="targetIndex"></param>
+        /// <param name="insertAbsoluteIndex"></param>
         /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
-        private void _MoveItems(ListMenuItemInfo[] selectedItemsInfo, int? targetIndex, DxItemsChangeType changeType)
+        private void _MoveItems(ListMenuItemInfo[] selectedItemsInfo, int? insertAbsoluteIndex, DxItemsChangeType changeType)
         {
             if (selectedItemsInfo is null || selectedItemsInfo.Length == 0) return;
 
-            // Odebereme zdrojové prvky a vložíme je na zadaný index:
+            // Toto je cesta, jak neprovádět přesun: typicky máme označen jeden prvek na indexu 0, a přesun je směrem nahoru.
+            //   Pak metoda _DoKeyActionMoveUp() najde Selected prvek na indexu 0, a pokud prvek je jen jeden, tak nemá smysl provádět přesun => vyhodnotí insertAbsoluteIndex = -1:
+            if (insertAbsoluteIndex.HasValue && insertAbsoluteIndex.Value < 0) return;
+
+            // Před odebráním prvků si najdeme cílový Target prvek podle indexu insertAbsoluteIndex = za tento prvek chceme provést Insert:
+            _TryGetMenuItemAtAbsoluteIndex(insertAbsoluteIndex, out var insertTargetItem);
+
+            // Odebereme zdrojové prvky:
             _RemoveIndexes(selectedItemsInfo.Select(t => t.AbsoluteIndex), DxItemsChangeType.None);
-            _InsertItems(selectedItemsInfo.Select(i => i.MenuItem), targetIndex, true, changeType);
+
+            // Po odebrání prvků (selectedItemsInfo) se změnily indexy zbývajících prvků v poli, nyní tedy najdu aktuální absolutní index právě toho prvku, za který máme insertovat dodané prvky:
+            _TryGetAbsoluteIndexOfMenuItem(insertTargetItem, out var targetAbsoluteIndex);
+
+            // Pokud na vstupu byl dán InsertIndex, pro který jsme našli InsertItem, 
+            //   ale po odebrání Selected prvků jsme už pro InsertItem nenašli jeho TargetIndex,
+            //   pak to znamená, že tento prvek (InsertItem) byl mezi těmi, které jsme odebrali!
+            // To typicky nastane pouze při přesunu nahoru, kdy máme vybrány prvky např. 0,1,3 a insertAbsoluteIndex je pak roven 0.
+            //   V tom případě jako targetAbsoluteIndex akceptujeme ten vstupní, namísto null => to by dalo přesun na konec!
+            if (insertAbsoluteIndex.HasValue && insertTargetItem != null && !targetAbsoluteIndex.HasValue) targetAbsoluteIndex = insertAbsoluteIndex;
+
+            // A vložíme je na aktuálně platný absolutní target index:
+            _InsertItems(selectedItemsInfo.Select(i => i.MenuItem), targetAbsoluteIndex, true, changeType);
         }
         /// <summary>
         /// Z this Listu odebere prvky na daných indexech.
@@ -5836,8 +5900,8 @@ SetSelected() - vstup           Absolutní
             // Vložit prvky do this Listu, na daný index, a selectovat je:
             if (DxDragTargetTryGetItems(args, out var sourceItems))
             {
-                var insertIndex = (args.InsertIndex.HasValue ? GetAbsoluteIndexFromFiltered(args.InsertIndex.Value) : null);
-                _InsertItems(sourceItems, insertIndex, true, DxItemsChangeType.DragAndDrop);
+                var insertAbsoluteIndex = (args.InsertIndex.HasValue ? GetAbsoluteIndexFromFiltered(args.InsertIndex.Value) : null);
+                _InsertItems(sourceItems, insertAbsoluteIndex, true, DxItemsChangeType.DragAndDrop);
                 _RunMenuItemsChanged(DxItemsChangeType.DragAndDrop);
             }
             
