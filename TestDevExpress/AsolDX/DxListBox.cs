@@ -2974,6 +2974,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             #endregion
             #region Akce = metody
             /// <summary>
+            /// Zajistí, že položka na daném indexu bude ve viditelné oblasti
+            /// </summary>
+            /// <param name="absoluteIndex"></param>
+            public void MakeItemVisible(int absoluteIndex) 
+            {
+                DxListProperties.MakeItemVisible(absoluteIndex);
+            }
+            /// <summary>
             /// Provede zadané akce v pořadí jak jsou zadány. Pokud v jedné hodnotě je více akcí (<see cref="ControlKeyActionType"/> je typu Flags), pak jsou prováděny v pořadí bitů od nejnižšího.
             /// Upozornění: požadované akce budou provedeny i tehdy, když v <see cref="EnabledKeyActions"/> nejsou povoleny = tamní hodnota má za úkol omezit uživatele, ale ne aplikační kód, který danou akci může provést i tak.
             /// </summary>
@@ -3766,6 +3774,16 @@ SetSelected() - vstup           Absolutní
                     base.MakeItemVisible(base.SelectedIndex);
                 }
             }
+        }
+        /// <summary>
+        /// Zajistí, že položka na daném absolutním indexu bude ve viditelné oblasti
+        /// </summary>
+        /// <param name="absoluteIndex"></param>
+        protected void MakeItemVisibleAtAbsoluteIndex(int absoluteIndex)
+        {
+            var filteredIndex = this.GetFilteredIndexFromAbsolute(absoluteIndex);
+            if (filteredIndex.HasValue)
+                this.MakeItemVisible(filteredIndex.Value);
         }
         /// <summary>
         /// Pole aktuálně dostupných položek z hlediska filtrování.
@@ -6360,6 +6378,14 @@ SetSelected() - vstup           Absolutní
             { return __Owner.CreateSimpleDxTemplate(columnNameItemId, columnNameIcon, columnNameText, columnNameToolTip, iconSize); }
             #endregion
             #region Akce = metody
+            /// <summary>
+            /// Zajistí, že položka na daném indexu bude ve viditelné oblasti
+            /// </summary>
+            /// <param name="absoluteIndex"></param>
+            public void MakeItemVisible(int absoluteIndex)
+            {
+                __Owner.MakeItemVisibleAtAbsoluteIndex(absoluteIndex);
+            }
             /// <summary>
             /// Provede zadané akce v pořadí jak jsou zadány. Pokud v jedné hodnotě je více akcí (<see cref="ControlKeyActionType"/> je typu Flags), pak jsou prováděny v pořadí bitů od nejnižšího.
             /// Upozornění: požadované akce budou provedeny i tehdy, když v <see cref="EnabledKeyActions"/> nejsou povoleny = tamní hodnota má za úkol omezit uživatele, ale ne aplikační kód, který danou akci může provést i tak.
