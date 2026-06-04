@@ -259,20 +259,37 @@ namespace TestDevExpress.Forms
         }
         private void _CreateSample1()
         {
-            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 450, 320) };
+            var position = (_Sample1SplitPosition > 0 ? _Sample1SplitPosition : 320);
+            _Sample1Split = new DxSplitContainerControl() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 800, 600), SplitterOrientation = Orientation.Horizontal, FixedPanel = DevExpress.XtraEditors.SplitFixedPanel.Panel1, SplitterPosition = position };
+            _Sample1Split.SplitterMoved += _Sample1Split_SplitterMoved;
+            this._HostContainer.Controls.Add(_Sample1Split);
+            __ResizedControls.Add(_Sample1Split);                                                  // Pro _Sample1Split resizovat výšku
+
+            var sampleList = new DxListBoxPanel() { Dock = DockStyle.Fill };                       // ListBox je Docked v Split.Panel1 a tak mu interaktivně měníme šířku
             sampleList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.None;
             sampleList.DxProperties.MenuItems = Randomizer.GetMenuItems(24, 60, Randomizer.ImageResourceType.PngSmall);
-            _AddEventHandlers(sampleList, true);
-            this._HostContainer.Controls.Add(sampleList);
+            sampleList.DxProperties.MenuItemColumnWidths = new int[] { 400 };                      // Jediný sloupec, pro jediný text v řádku, ale umožní vodorovný Scroll
+            _AddEventHandlers(sampleList, false);                                                  // ... , false)  =>  pro ListBox neresizovat výšku 
+
+            this._Sample1Split.Panel1.Controls.Add(sampleList);
 
             _Sample1List = sampleList;
+        }
+        private void _Sample1Split_SplitterMoved(object sender, EventArgs e)
+        {
+            _Sample1SplitPosition = _Sample1Split.SplitterPosition;
         }
         private void _DisposeSample1()
         {
             _Sample1List?.RemoveControlFromParent();
             _Sample1List = null;
+
+            _Sample1Split?.RemoveControlFromParent();
+            _Sample1Split = null;
         }
+        private DxSplitContainerControl _Sample1Split;
         private DxListBoxPanel _Sample1List;
+        private int _Sample1SplitPosition;
         #endregion
         #region Sample 2
         /// <summary>
@@ -306,7 +323,7 @@ namespace TestDevExpress.Forms
         }
         private DxListBoxPanel _Sample2List;
         #endregion
-        #region Sample 3
+        #region Sample 3 Dva samostatné ListBoxy
         /// <summary>
         /// Metoda je volaná reflexí v <see cref="DxMainContentPrepare"/> na základě atributu [Initializer()] !!!
         /// </summary>
@@ -405,7 +422,9 @@ namespace TestDevExpress.Forms
             var sampleDblList = new DxDblListBoxPanel();
 
             sampleDblList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client;
-            sampleDblList.DxProperties.SplitterPosition = 360;
+
+            var position = (_Sample4SplitPosition > 0 ? _Sample5SplitPosition : 360);
+            sampleDblList.DxProperties.SplitterPosition = position;
 
             /* Ostatní property nechám default:
             sampleDblList.DxProperties.ButtonsPosition = DxDblListBoxPanel.DblButtonsPositionType.Bottom;
@@ -418,12 +437,20 @@ namespace TestDevExpress.Forms
             sampleDblList.DxProperties.TargetMenuItems = Randomizer.GetMenuItems(3, 8, Randomizer.ImageResourceType.PngSmall, true, true);
             sampleDblList.DxProperties.TargetMenuItemsChanged += _Sample4_TargetMenuItemsChanged;
 
+            sampleDblList.SplitterPositionChanged += Sample4DblList_SplitterPositionChanged;
+
             this._HostContainer.Controls.Add(sampleDblList);
 
             _Sample4DblList = sampleDblList;
 
             _CreateSample4Params();                        // Params = prvky pro nastavování vlastností pro testy různého nastavení
         }
+
+        private void Sample4DblList_SplitterPositionChanged(object sender, EventArgs e)
+        {
+            _Sample4SplitPosition = _Sample4DblList.SplitterPosition;
+        }
+
         private void _CreateLayout4()
         {
             var bounds = __SampleBounds;
@@ -447,6 +474,7 @@ namespace TestDevExpress.Forms
         }
         private int _Sample4_TargetMenuItemsChangeCounter;
         private DxDblListBoxPanel _Sample4DblList;
+        private int _Sample4SplitPosition;
         #region Nastavování vlastností
         private void _CreateSample4Params()
         {
@@ -587,7 +615,7 @@ namespace TestDevExpress.Forms
         private bool __Sample4ParamsValid;
         #endregion
         #endregion
-        #region Sample 5
+        #region Sample 5 ColumnWidths + ScrollBar
         /// <summary>
         /// Metoda je volaná reflexí v <see cref="DxMainContentPrepare"/> na základě atributu [Initializer()] !!!
         /// </summary>
@@ -598,11 +626,17 @@ namespace TestDevExpress.Forms
         }
         private void _CreateSample5()
         {
+            var position = (_Sample5SplitPosition > 0 ? _Sample5SplitPosition : 320);
+            _Sample5Split = new DxSplitContainerControl() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 800, 600), SplitterOrientation = Orientation.Horizontal, FixedPanel = DevExpress.XtraEditors.SplitFixedPanel.Panel1, SplitterPosition = position };
+            _Sample5Split.SplitterMoved += _Sample5Split_SplitterMoved;
+            this._HostContainer.Controls.Add(_Sample5Split);
+            __ResizedControls.Add(_Sample5Split);                                                  // Pro _Sample1Split resizovat výšku
+
             var menuItems = Randomizer.GetMenuItems(48, 72, Randomizer.ImageResourceType.PngSmall);
             foreach (var menuItem in menuItems.OfType<DataMenuItem>())
                 createCells(menuItem);
 
-            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, (240 + 120 + 120 + 40), 320) };
+            var sampleList = new DxListBoxPanel() { Dock = DockStyle.Fill };                       // ListBox je Docked v Split.Panel1 a tak mu interaktivně měníme šířku
             sampleList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client;
             sampleList.DxProperties.MultiSelectEnabled = true;
             sampleList.DxProperties.ButtonsPosition = ToolbarPosition.BottomSideCenter;
@@ -612,8 +646,9 @@ namespace TestDevExpress.Forms
 
             sampleList.DxProperties.MenuItems = menuItems;
             sampleList.DxProperties.MenuItemColumnWidths = new int[] { 240, 120, 120 };
-            _AddEventHandlers(sampleList, true);
-            this._HostContainer.Controls.Add(sampleList);
+            _AddEventHandlers(sampleList, false);                                                  // ... , false)  =>  pro ListBox neresizovat výšku 
+
+            this._Sample5Split.Panel1.Controls.Add(sampleList);
 
             _Sample5List = sampleList;
 
@@ -628,12 +663,21 @@ namespace TestDevExpress.Forms
 
             }
         }
+        private void _Sample5Split_SplitterMoved(object sender, EventArgs e)
+        {
+            _Sample5SplitPosition = _Sample5Split.SplitterPosition;
+        }
         private void _DisposeSample5()
         {
             _Sample5List?.RemoveControlFromParent();
             _Sample5List = null;
+
+            _Sample5Split?.RemoveControlFromParent();
+            _Sample5Split = null;
         }
+        private DxSplitContainerControl _Sample5Split;
         private DxListBoxPanel _Sample5List;
+        private int _Sample5SplitPosition;
         #endregion
         #region Sample 11
         /// <summary>

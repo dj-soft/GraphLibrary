@@ -2043,6 +2043,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public int[] MenuItemColumnWidths { get { return __Owner.ListBox.DxProperties.MenuItemColumnWidths; } set { __Owner.ListBox.DxProperties.MenuItemColumnWidths = value; } }
             /// <summary>
+            /// Šířky sloupců zobrazených v režimu <see cref="ItemsMode"/>: <see cref="ListBoxItemsMode.MenuItems"/>, validované, aktuální platné dle Zoomu a DPI, namísto případných záporných hodnot obsahuje 0.
+            /// </summary>
+            public int[] MenuItemColumnWidthsCurrent { get { return __Owner.ListBox.DxProperties.MenuItemColumnWidthsCurrent; } }
+            /// <summary>
             /// Pokud obsahuje true, pak List smí obsahovat duplicitní klíče (defaultní hodnota je true).
             /// Pokud je false, pak vložení dalšího záznamu s klíčem, který už v Listu je, bude ignorováno.
             /// Pozor, pokud List obsahuje nějaké duplicitní záznamy a poté bude nastaveno <see cref="DuplicityEnabled"/> na false, NEBUDOU duplicitní záznamy odstraněny.
@@ -2354,28 +2358,210 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             this._Initialize();
         }
+        /// <summary>
+        /// Inicializace
+        /// </summary>
         private void _Initialize()
         {
             this.BorderStyle = BorderStyles.NoBorder;
+            this.Size = new Size(350, 500);
 
             __ListBoxNative = new DxListBoxNative();
-            __ListBoxNative.Dock = DockStyle.Fill;
             __HScrollBar = new DevExpress.XtraEditors.HScrollBar();
-            __HScrollBar.Height = 12;
             __HScrollBar.Opacity = 0.60f;
-            __HScrollBar.Visible = true;
-            __HScrollBar.Dock = DockStyle.Bottom;
+            __HScrollBar.ValueChanged += _HScrollBar_ValueChanged;
             this.Controls.Add(__ListBoxNative);
             this.Controls.Add(__HScrollBar);
+
+            _HScrollCurrentState = null;
+            _DoLayout(null);
+
+            this.ClientSizeChanged += _ClientSizeChanged;
         }
-        private DxListBoxNative __ListBoxNative;
-        private DevExpress.XtraEditors.HScrollBar __HScrollBar;
-        #endregion
-        #region Zpřístupnění věcí z ListBoxu
+        /// <summary>
+        /// Změna velikosti vyvolá úpravu layoutu včetně výpočtu 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ClientSizeChanged(object sender, EventArgs e)
+        {
+            this._DoLayout(_HScrollBarRequiredState);
+        }
         /// <summary>
         /// Vlastní ListBox
         /// </summary>
         public DxListBoxNative ListBoxNative { get { return __ListBoxNative; } }
+        private DxListBoxNative __ListBoxNative;
+        private DevExpress.XtraEditors.HScrollBar __HScrollBar;
+        #endregion
+        #region Layout a Dolní ScrollBar
+        /// <summary>
+        /// Aktuální hodnota nastavená na dolním ScrollBaru
+        /// </summary>
+        internal int HScrollBarValue { get { return __HScrollBar?.Value ?? 0; } }
+        /// <summary>
+        /// Zajistí layout ListBoxu + ScrollBaru včetně všech 
+        /// </summary>
+        /// <param name="requiredState"></param>
+        private void _DoLayout(HScrollBarInfo requiredState)
+        {
+            var listBox = this.__ListBoxNative;
+            var scrollBar = this.__HScrollBar;
+            if (listBox is null || scrollBar is null) return;
+
+            var currentState = _HScrollCurrentState;
+
+            // Pokud dolní ScrollBar je nyní viditelný, ale nemá být, tak jej zhasnu hned na začátku:
+            bool currentVisible = scrollBar.IsSetVisible();
+            bool requiredVisible = requiredState?.Visible ?? false;
+            if (currentVisible && !requiredVisible)
+                scrollBar.Visible = false;
+
+            var clientBounds = this.ClientRectangle;
+            var listBounds = clientBounds;
+            if (requiredVisible)
+            {
+                var scrH = DxComponent.ZoomToGui(12, this.DeviceDpi);
+                var scrW = clientBounds.Width - (requiredState.LeftSpace + requiredState.RightSpace);
+                var scrollBounds = new Rectangle(requiredState.LeftSpace, clientBounds.Height - scrH, scrW, scrH);
+                __HScrollBar.Bounds = scrollBounds;
+                __HScrollBar.Minimum = 0;
+                __HScrollBar.Maximum = requiredState.ColumnsSumWidth;
+                __HScrollBar.LargeChange = scrW;
+                listBounds.Height = listBounds.Height - scrH;
+            }
+            __ListBoxNative.Bounds = listBounds;
+
+            // Pokud dolní ScrollBar není viditelný, ale nemá být, tak jej zobrazím až na konci:
+            if (!currentVisible && requiredVisible)
+                scrollBar.Visible = true;
+
+            // Aktuální stav si uložíme pro budoucí porovnání:
+            _HScrollCurrentState = requiredState;
+        }
+        /// <summary>
+        /// Pokud dolní Scrollbar má být vidět a není, anebo naopak nemá být vidět ale je, pak to zajistí včetně layoutu
+        /// </summary>
+        private void _CheckHScrollBar()
+        {
+            var currentState = __HScrollCurrentState;
+            var requiredState = _HScrollBarRequiredState;
+            if (!HScrollBarInfo.HasEqualContent(currentState, requiredState))
+                _DoLayout(requiredState);
+        }
+        /// <summary>
+        /// Aktuální souhrnné informace pro zobrazení dolního Scrollbaru. Vždy aktuálně vypočítané pro aktuální rozměr panelu, DPI a Zoom, a sadu sloupců.
+        /// </summary>
+        private HScrollBarInfo _HScrollBarRequiredState
+        {
+            get
+            {
+                if (DxProperties.ItemsMode != ListBoxItemsMode.MenuItems) return null;                       // HScrollBar potřebuji pouze v režimu MenuItems
+                if (!DxProperties.MenuItemDrawColumns) return null;                                          //  ... a když používáme Columns
+
+                var columnWidths = DxProperties.MenuItemColumnWidthsCurrent;                                 // GUI šířky sloupců
+                var clientBounds = this.ClientRectangle;
+                if (clientBounds.Width < 50 || clientBounds.Height < 50) return null;                        // Možná bychom HScrollBar potřebovali, ale není na něj místo
+
+                var columnsSumWidth = columnWidths.Sum();                                                    // Suma šířek sloupců dle zadání, již v GUI pixelech
+
+                var cLeftMargin = DxComponent.ZoomToGui(2, this.DeviceDpi);                                  // Šířka levého Margin v ListBoxu, v GUI pixelech
+                var cImageSize = DxComponent.GetImageSize(DxProperties.ItemSizeType, true, this.DeviceDpi);  // Aktuální velikost ikony, v GUI pixelech
+                var leftSpace = cLeftMargin + cImageSize.Width;
+
+                var rightScroll = ScrollBarBase.GetVerticalScrollBarWidth();                                 // Šířka scrollbaru vpravo, v GUI pixelech, do rozmezí 10-50, budu ji rezervovat vždy!!!
+                rightScroll = (rightScroll < 10 ? 10 : (rightScroll > 50 ? 50 : rightScroll));
+                var rightSpace = rightScroll + 1;                                                            // Šířka prostoru vpravo, v aktuálních pixelech (to už vrací přepočtené DevExpress)
+
+                var itemTextWidth = clientBounds.Width - (leftSpace + rightSpace);                           // Fyzická šířka prostoru uvnitř ListBoxu, kde se zobrazuje text Itemu
+
+                var visible = (columnsSumWidth > itemTextWidth);                                             // dolní Scrollbar potřebujeme tehdy, když šířka sloupců je větší, než je prostor pro text Itemu
+                
+                return new HScrollBarInfo()
+                {
+                    Visible = visible,
+                    ContainerClientBounds = clientBounds,
+                    ListTotalWidth = clientBounds.Width,
+                    LeftSpace = leftSpace,
+                    RightSpace = rightSpace,
+                    ItemTextWidth = itemTextWidth,
+                    ColumnsSumWidth = columnsSumWidth,
+                };
+            }
+        }
+        /// <summary>
+        /// Po změně pozice na ScrollBaru vyvoláme překreslení Listu = vložíme do něj aktuální hodnotu z ScrollBaru, a ListBox si ji validuje a zareaguje na změnu překreslením
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _HScrollBar_ValueChanged(object sender, EventArgs e)
+        {
+            this.__ListBoxNative.DxProperties.MenuItemColumnOffset = this.__HScrollBar.Value;
+        }
+        /// <summary>
+        /// Aktuální stav Scrollbaru. Setování do této property zajistí přenos Visible do fyzického Controlu. Nepřenáší jiné hodnoty.
+        /// </summary>
+        private HScrollBarInfo _HScrollCurrentState 
+        {
+            get { return __HScrollCurrentState; }
+            set { __HScrollCurrentState = value; }
+        }
+        private HScrollBarInfo __HScrollCurrentState;
+        /// <summary>
+        /// Informace pro dolní ScrollBar
+        /// </summary>
+        private class HScrollBarInfo
+        {
+            /// <summary>
+            /// Vrátí true, pokud dva dodané objekty obsahují shodná data
+            /// </summary>
+            /// <param name="a"></param>
+            /// <param name="b"></param>
+            /// <returns></returns>
+            public static bool HasEqualContent(HScrollBarInfo a, HScrollBarInfo b)
+            {
+                var an = a is null;
+                var bn = b is null;
+                if (an && bn) return true;
+                if (an || bn) return false;
+
+                return ((a.Visible == b.Visible)
+                     && (a.ListTotalWidth == b.ListTotalWidth)
+                     && (a.LeftSpace == b.LeftSpace)
+                     && (a.RightSpace == b.RightSpace)
+                     && (a.ItemTextWidth == b.ItemTextWidth)
+                     && (a.ColumnsSumWidth == b.ColumnsSumWidth));
+            }
+            /// <summary>
+            /// ScrollBar má být viditelný
+            /// </summary>
+            public bool Visible { get; set; }
+            /// <summary>
+            /// Prostor pro klientské objekty v Parentu: do této šířky se vypočítává velikost Listu a ScrollBaru
+            /// </summary>
+            public Rectangle ContainerClientBounds { get; set; }
+            /// <summary>
+            /// Celková šířka prostoru pro ListBox (v aktuálních GUI pixelech)
+            /// </summary>
+            public int ListTotalWidth { get; set; }
+            /// <summary>
+            /// Režijní prostor vlevo (pod ikonou) (v aktuálních GUI pixelech)
+            /// </summary>
+            public int LeftSpace { get; set; }
+            /// <summary>
+            /// Režijní prostor vpravo (pod pravým ScrollBarem) (v aktuálních GUI pixelech)
+            /// </summary>
+            public int RightSpace { get; set; }
+            /// <summary>
+            /// Fyzická šířka prostoru pro obsah textu (v aktuálních GUI pixelech)
+            /// </summary>
+            public int ItemTextWidth { get; set; }
+            /// <summary>
+            /// Celková šířka sloupců = šířka virtuálního obsah (v aktuálních GUI pixelech)
+            /// </summary>
+            public int ColumnsSumWidth { get; set; }
+        }
         #endregion
         #region Implementace všech interface skrz __ListBox
         DxDragDrop IDxDragDropControl.DxDragDrop => ((IDxDragDropControl)__ListBoxNative).DxDragDrop;
@@ -2454,10 +2640,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// true to arrange items across multiple columns; otherwise, false.
             /// </summary>
             public virtual bool MultiColumn { get { return DxListProperties.MultiColumn; } set { DxListProperties.MultiColumn = value; } }
-            /// <summary>
-            /// Šířky sloupců zobrazených v režimu <see cref="ItemsMode"/>: <see cref="ListBoxItemsMode.MenuItems"/>
-            /// </summary>
-            public int[] MenuItemColumnWidths { get { return DxListProperties.MenuItemColumnWidths; } set { DxListProperties.MenuItemColumnWidths = value; } }
             /// <summary>
             /// Pokud obsahuje true, pak List smí obsahovat duplicitní klíče (defaultní hodnota je true).
             /// Pokud je false, pak vložení dalšího záznamu s klíčem, který už v Listu je, bude ignorováno.
@@ -2595,7 +2777,19 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Toto pole má stejný počet prvků jako pole this.Items
             /// Pole jako celek lze setovat: vymění se obsah, ale zachová se pozice.
             /// </summary>
-            public ITextItem[] MenuItems { get { return DxListProperties.MenuItems; } set { DxListProperties.MenuItems = value; } }
+            public ITextItem[] MenuItems { get { return DxListProperties.MenuItems; } set { DxListProperties.MenuItems = value; __Owner._CheckHScrollBar(); } }
+            /// <summary>
+            /// Obsahuje true, pokud aktuální ListBox je v režimu <see cref="ListBoxItemsMode.MenuItems"/> a má zadané šířky sloupců do <see cref="MenuItemColumnWidths"/>, pak tedy pracuje v režimu více buněk
+            /// </summary>
+            public bool MenuItemDrawColumns { get { return DxListProperties.MenuItemDrawColumns; } }
+            /// <summary>
+            /// Šířky sloupců zobrazených v režimu <see cref="ItemsMode"/>: <see cref="ListBoxItemsMode.MenuItems"/>
+            /// </summary>
+            public int[] MenuItemColumnWidths { get { return DxListProperties.MenuItemColumnWidths; } set { DxListProperties.MenuItemColumnWidths = value; __Owner._CheckHScrollBar(); } }
+            /// <summary>
+            /// Šířky sloupců zobrazených v režimu <see cref="ItemsMode"/>: <see cref="ListBoxItemsMode.MenuItems"/>, validované, aktuální platné dle Zoomu a DPI, namísto případných záporných hodnot obsahuje 0.
+            /// </summary>
+            public int[] MenuItemColumnWidthsCurrent { get { return DxListProperties.MenuItemColumnWidthsCurrent; } }
             /// <summary>
             /// Aktuálně vybraný prvek typu <see cref="ITextItem"/>. Lze setovat, ale pouze takový prvek, kteý je přítomen (hledá se <see cref="Object.ReferenceEquals(object, object)"/>).
             /// </summary>
@@ -2622,11 +2816,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Tabulka s daty
             /// </summary>
-            public System.Data.DataTable DataTable { get { return DxListProperties.DataTable; } set { DxListProperties.DataTable = value; } }
+            public System.Data.DataTable DataTable { get { return DxListProperties.DataTable; } set { DxListProperties.DataTable = value; __Owner._CheckHScrollBar(); } }
             /// <summary>
             /// Šablona pro zobrazení dat z <see cref="DataTable"/>
             /// </summary>
-            public DxListBoxTemplate DxTemplate { get { return DxListProperties.DxTemplate; } set { DxListProperties.DxTemplate = value; } }
+            public DxListBoxTemplate DxTemplate { get { return DxListProperties.DxTemplate; } set { DxListProperties.DxTemplate = value; __Owner._CheckHScrollBar(); } }
             /// <summary>
             /// Metoda vytvoří Simple template pro ikonu a pro text
             /// </summary>
@@ -2649,7 +2843,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Gets or sets the data source that provides items to display in the control.
             /// </summary>
-            public object DataSource { get { return ListBoxNative.DataSource; } set { ListBoxNative.DataSource = value; } }
+            public object DataSource { get { return ListBoxNative.DataSource; } set { ListBoxNative.DataSource = value; __Owner._CheckHScrollBar(); } }
             #endregion
             #region Akce = metody
             /// <summary>
@@ -2805,6 +2999,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             OnImageInit();
             DuplicityEnabled = true;
             ItemSizeType = ResourceImageSizeType.Small;
+            _ApplyDesignHeight();
             this.Items.ListChanged += _ListItemsChanged;
             DrawItem += _DrawItem;
         }
@@ -2829,32 +3024,79 @@ namespace Noris.Clients.Win.Components.AsolDX
             catch { /* Chyby v Dispose občas nastanou v DevExpress, který něco likviduje v GC threadu a nemá přístup do GUI. */ }
         }
         /// <summary>
-        /// Přídavek k výšce jednoho řádku ListBoxu v pixelech.
+        /// Výška prvku, fyzická hodnota v ListBoxu
+        /// </summary>
+        public override int ItemHeight
+        {
+            get { return base.ItemHeight; }
+            set { base.ItemHeight = value; }
+        }
+        /// <summary>
+        /// Výška prvku, Design hodnota (na ní se aplikuje Zoom a DPI)
+        /// </summary>
+        public int ItemHeightDesign
+        {
+            get { return __ItemHeightDesign; }
+            set { __ItemHeightDesign = value; _ApplyDesignHeight(); }
+        }
+        private int __ItemHeightDesign = 0;
+        /// <summary>
+        /// Přídavek k výšce jednoho řádku ListBoxu v Design pixelech = Design hodnota (na ní se aplikuje Zoom a DPI).
+        /// <para/>
         /// Hodnota 0 a záporná: bude nastaveno <see cref="DevExpress.XtraEditors.BaseListBoxControl.ItemAutoHeight"/> = true.
-        /// Kladná hodnota přidá daný počet pixelů nad a pod text = zvýší výšku řádku o 2x <see cref="ItemHeightPadding"/>.
+        /// Kladná hodnota přidá daný počet pixelů nad a pod text = zvýší výšku řádku o 2x <see cref="ItemHeightPaddingDesign"/>.
         /// Hodnota vyšší než 10 se akceptuje jako 10.
         /// </summary>
-        protected int ItemHeightPadding
+        protected int ItemHeightPaddingDesign
         {
-            get { return _ItemHeightPadding; }
-            set
+            get { return __ItemHeightPaddingDesign; }
+            set { __ItemHeightPaddingDesign = value; _ApplyDesignHeight(); }
+        }
+        private int __ItemHeightPaddingDesign = 0;
+        /// <summary>
+        /// Aplikuje hodnoty <see cref="ItemHeightDesign"/> a <see cref="ItemHeightPaddingDesign"/> plus DPI a ZOOM do <see cref="ItemHeight"/>
+        /// </summary>
+        private void _ApplyDesignHeight()
+        {
+            var itemHeightPaddingGui = DxComponent.ZoomToGui(__ItemHeightPaddingDesign, this.DeviceDpi);
+            var itemHeightGui = DxComponent.ZoomToGui(__ItemHeightDesign, this.DeviceDpi);
+
+            if (itemHeightPaddingGui > 0)
             {
-                if (value > 0)
-                {
-                    int padding = (value > 10 ? 10 : value);
-                    int fontheight = this.Appearance.GetFont().Height;
-                    this.ItemAutoHeight = false;
-                    this.ItemHeight = fontheight + (2 * padding);
-                    _ItemHeightPadding = padding;
-                }
-                else
-                {
-                    this.ItemAutoHeight = true;
-                    _ItemHeightPadding = 0;
-                }
+                int padding = (itemHeightPaddingGui > 10 ? 10 : itemHeightPaddingGui);
+                int fontheight = this.Appearance.GetFont().Height;
+                this.ItemAutoHeight = false;
+                this.ItemHeight = fontheight + (2 * padding);
+            }
+            else if (itemHeightGui > 0)
+            {
+                this.ItemAutoHeight = false;
+                this.ItemHeight = itemHeightGui;
+            }
+            else
+            {
+                this.ItemAutoHeight = true;
             }
         }
-        private int _ItemHeightPadding = 0;
+        #endregion
+        #region Zoom a DPI
+        void IListenerZoomChange.ZoomChanged() { OnDpiZoomChanged(); }
+        /// <summary>
+        /// Po změně Zoomu / DPI resetujeme...
+        /// </summary>
+        protected override void OnScaleDpiChanged()
+        {
+            base.OnScaleDpiChanged();
+            OnDpiZoomChanged();
+        }
+        /// <summary>
+        /// Po změně Zoomu a DPI
+        /// </summary>
+        protected virtual void OnDpiZoomChanged()
+        {
+            ImageSizeCacheReset();
+            _ApplyDesignHeight();
+        }
         #endregion
         #region Data = položky, a layout = Template
         /// <summary>
@@ -3833,7 +4075,7 @@ SetSelected() - vstup           Absolutní
         private void _SetItemsMode(ListBoxItemsMode itemsMode)
         {
             __ItemsMode = itemsMode;
-            _RefreshColumnsMode();
+            _RefreshMenuItemDrawColumns();
         }
         #endregion
         #region Rozšířené property
@@ -3968,20 +4210,75 @@ SetSelected() - vstup           Absolutní
         #endregion
         #region DxListBoxPainter : ListBox s více sloupci vedle sebe z jednoho ITextItem
         /// <summary>
+        /// Obsahuje true, pokud aktuální ListBox je v režimu <see cref="ListBoxItemsMode.MenuItems"/> a má zadané šířky sloupců do <see cref="MenuItemColumnWidths"/>, pak tedy pracuje v režimu více buněk
+        /// </summary>
+        protected bool MenuItemDrawColumns { get { return __MenuItemDrawColumns; } }
+        /// <summary>
+        /// Podle hodnot <see cref="ItemsMode"/> a <see cref="MenuItemColumnWidths"/> určí hodnotu pro <see cref="MenuItemDrawColumns"/>
+        /// </summary>
+        private void _RefreshMenuItemDrawColumns()
+        {
+            var itemsMode = this._ItemsMode;
+            var columnWidths = this.__MenuItemColumnWidths;
+            __MenuItemDrawColumns = (itemsMode == ListBoxItemsMode.MenuItems && columnWidths != null && ((columnWidths.Length == 1 && columnWidths[0] > 0) || columnWidths.Length > 1));
+        }
+        private bool __MenuItemDrawColumns;
+        /// <summary>
         /// Šířky sloupců zobrazených v režimu <see cref="ItemsMode"/>: <see cref="ListBoxItemsMode.MenuItems"/>
         /// </summary>
         protected int[] MenuItemColumnWidths { get { return __MenuItemColumnWidths; } set { _SetMenuItemColumnWidths(value); } } private int[] __MenuItemColumnWidths;
+        /// <summary>
+        /// Šířky sloupců zobrazených v režimu <see cref="ItemsMode"/>: <see cref="ListBoxItemsMode.MenuItems"/>, validované, aktuální platné dle Zoomu a DPI, namísto případných záporných hodnot obsahuje 0.
+        /// </summary>
+        protected int[] MenuItemColumnWidthsCurrent
+        {
+            get
+            {
+                var columnWidths = MenuItemColumnWidths;
+                if (columnWidths is null) return null;
+                var deviceDpi = this.DeviceDpi;
+                return columnWidths.Select(w => (w > 0 ? DxComponent.ZoomToGui(w, deviceDpi) : 0)).ToArray();
+            }
+        }
+        /// <summary>
+        /// Setuje šířky sloupců a refreshuje <see cref="MenuItemDrawColumns"/>
+        /// </summary>
+        /// <param name="columnWidths"></param>
         private void _SetMenuItemColumnWidths(int[] columnWidths)
         {
             __MenuItemColumnWidths = columnWidths;
-            _RefreshColumnsMode();
+            _RefreshMenuItemDrawColumns();
         }
         /// <summary>
         /// Offset vodorovný = posun obsahu textu v režimu MutliColumn.
         /// Kladné číslo říká, který obsahový pixel bude zobrazen na souřadnici X = 0 v textovém prostoru.
         /// Tedy kladné číslo = odsouvání vodorovného scrollbaru doprava.
         /// </summary>
-        protected int MenuItemColumnOffset { get; set; }
+        protected int MenuItemColumnOffset 
+        {
+            get { return __MenuItemColumnOffset; }
+            set
+            {
+                var oldValue = __MenuItemColumnOffset;
+                var newValue = value;
+
+                if (__MenuItemDrawColumns)
+                {
+                    if (newValue < 0) newValue = 0;
+                    if (newValue > 0)
+                    {
+                        var columnWidth = MenuItemColumnWidthsCurrent.Sum();
+                        if (newValue > columnWidth) newValue = columnWidth;
+                    }
+                }
+
+                __MenuItemColumnOffset = newValue;
+
+                if (__MenuItemDrawColumns && newValue != oldValue)
+                    this.Refresh();
+            }
+        }
+        private int __MenuItemColumnOffset;
         /// <summary>
         /// Vytvoří náš vlastní painter
         /// </summary>
@@ -3991,19 +4288,6 @@ SetSelected() - vstup           Absolutní
             var painter = new DxListBoxPainter(this);
             return painter;
         }
-        /// <summary>
-        /// Podle hodnot <see cref="ItemsMode"/> a <see cref="MenuItemColumnWidths"/> určí hodnotu pro <see cref="UseMenuItemColumnPainting"/>
-        /// </summary>
-        private void _RefreshColumnsMode()
-        {
-            var itemsMode = this._ItemsMode;
-            var columnWidths = this.__MenuItemColumnWidths;
-            __UseMenuItemColumnPainting = (itemsMode == ListBoxItemsMode.MenuItems && columnWidths != null && columnWidths.Length > 1);
-        }
-        /// <summary>
-        /// Mají se používat sloupce v režimu MenuItems?
-        /// </summary>
-        protected bool UseMenuItemColumnPainting { get { return __UseMenuItemColumnPainting; } } private bool __UseMenuItemColumnPainting;
         /// <summary>
         /// Painter, který dovoluje vykreslit jeden Item s více sloupci
         /// </summary>
@@ -4026,11 +4310,11 @@ SetSelected() - vstup           Absolutní
             /// <param name="e"></param>
             protected override void DrawItemCore(ControlGraphicsInfoArgs info, BaseListBoxViewInfo.ItemInfo itemInfo, ListBoxDrawItemEventArgs e)
             {
-                if (__Owner.UseMenuItemColumnPainting && e.Item is ICellsItem cellsItem && cellsItem.Cells != null)
+                if (__Owner.MenuItemDrawColumns && e.Item is ITextItem textItem)
                 {   // Prvek s vykreslením Columns
                     itemInfo.Text = "";
                     base.DrawItemCore(info, itemInfo, e);
-                    this.DrawItemCells(info, itemInfo, e, cellsItem);
+                    this.DrawItemCells(info, itemInfo, e, textItem);
                 }
                 else
                 {   // Prvek standardní:
@@ -4043,21 +4327,31 @@ SetSelected() - vstup           Absolutní
             /// <param name="info"></param>
             /// <param name="itemInfo"></param>
             /// <param name="e"></param>
-            /// <param name="cellsItem"></param>
-            protected void DrawItemCells(ControlGraphicsInfoArgs info, BaseListBoxViewInfo.ItemInfo itemInfo, ListBoxDrawItemEventArgs e, ICellsItem cellsItem)
+            /// <param name="textItem"></param>
+            protected void DrawItemCells(ControlGraphicsInfoArgs info, BaseListBoxViewInfo.ItemInfo itemInfo, ListBoxDrawItemEventArgs e, ITextItem textItem)
             {
                 var clipState = info.Cache.SaveClip();
                 try
                 {
-                    var cells = cellsItem.Cells;                                             // Jednotlivé buňky do sloupců
+                    // Vykreslíme jednotlivé texty z jednotlivých Cells do "virtuálních" sloupců v ListBoxu.
+                    string[] cells;
+                    if (textItem is ICellsItem cellsItem && cellsItem.Cells != null)
+                        // Pokud dodaný objekt implementuje ICellsItem, a jeho Cells jsou zadané, pak je akceptujeme jako buňky:
+                        cells = cellsItem.Cells;
+                    else
+                        // Jinak budeme kreslit jednu buňku do prvního Columnu, a její obsah = ITextItem.Text:
+                        //   Tímto způsobem dovolujeme "posouvat" = scrollovat obsah jedné textové buňky:
+                        cells = new string[] { textItem.Text };
+
                     var cellsCount = cells?.Length ?? 0;
                     var offset = __Owner.MenuItemColumnOffset;
                     var itemBounds = itemInfo.TextRect;
                     var textX = itemBounds.X - offset;
-                    var columns = __Owner.MenuItemColumnWidths;
+                    var columns = __Owner.MenuItemColumnWidthsCurrent;
                     for (int c = 0; c < columns.Length; c++)
-                    {
+                    {   // Všechny definované sloupce:
                         var colWidth = columns[c];
+                        // Buňka (v cells) nemusí být pro tento sloupec deklarovaná:
                         var text = (c < cellsCount ? cells[c] : "");
                         drawText(itemBounds, text, ref textX, columns[c]);
                     }
@@ -4076,8 +4370,8 @@ SetSelected() - vstup           Absolutní
                         var clipBounds = Rectangle.Intersect(outerBounds, textBounds);
                         if (clipBounds.Width > 2)
                         {
+                            // Vykreslí text na posunuté pozici (bude správně posunutý do textBounds, ale bude oříznutý na hranicích (outerBounds × textBounds))
                             info.Cache.SetClip(clipBounds);
-                            // Vykreslí text na posunuté pozici (bude oříznutý na hranicích textRect)
                             TextRenderer.DrawText(
                                 e.Cache.Graphics,
                                 txt,
@@ -4209,19 +4503,10 @@ SetSelected() - vstup           Absolutní
         /// <summary>
         /// Po změně Zoomu / DPI resetujeme...
         /// </summary>
-        private void SizeCacheReset()
+        private void ImageSizeCacheReset()
         {
             __ItemImageSize = null;
         }
-        /// <summary>
-        /// Po změně Zoomu / DPI resetujeme...
-        /// </summary>
-        protected override void OnScaleDpiChanged()
-        {
-            base.OnScaleDpiChanged();
-            SizeCacheReset();
-        }
-        void IListenerZoomChange.ZoomChanged() { SizeCacheReset(); }
         /// <summary>
         /// Velikost ikon, null = je nutno spočítat
         /// </summary>
@@ -5761,14 +6046,14 @@ SetSelected() - vstup           Absolutní
             /// <summary>
             /// Výška prvku
             /// </summary>
-            public int ItemHeight { get { return __Owner.ItemHeight; } set { __Owner.ItemHeight = value; } }
+            public int ItemHeight { get { return __Owner.ItemHeightDesign; } set { __Owner.ItemHeightDesign = value; } }
             /// <summary>
             /// Přídavek k výšce jednoho řádku ListBoxu v pixelech.
             /// Hodnota 0 a záporná: bude nastaveno <see cref="DevExpress.XtraEditors.BaseListBoxControl.ItemAutoHeight"/> = true.
             /// Kladná hodnota přidá daný počet pixelů nad a pod text = zvýší výšku řádku o 2x <see cref="ItemHeightPadding"/>.
             /// Hodnota vyšší než 10 se akceptuje jako 10.
             /// </summary>
-            public int ItemHeightPadding { get { return __Owner.ItemHeightPadding; } set { __Owner.ItemHeightPadding = value; } }
+            public int ItemHeightPadding { get { return __Owner.ItemHeightPaddingDesign; } set { __Owner.ItemHeightPaddingDesign = value; } }
             /// <summary>
             /// Režim prvků v ListBoxu.
             /// </summary>
@@ -5787,9 +6072,23 @@ SetSelected() - vstup           Absolutní
             /// </summary>
             public virtual bool MultiColumn { get { return __Owner.MultiColumn; } set { __Owner.MultiColumn = value; } }
             /// <summary>
+            /// Obsahuje true, pokud aktuální ListBox je v režimu <see cref="ListBoxItemsMode.MenuItems"/> a má zadané šířky sloupců do <see cref="MenuItemColumnWidths"/>, pak tedy pracuje v režimu více buněk
+            /// </summary>
+            public bool MenuItemDrawColumns { get { return __Owner.MenuItemDrawColumns; } }
+            /// <summary>
             /// Šířky sloupců zobrazených v režimu <see cref="ItemsMode"/>: <see cref="ListBoxItemsMode.MenuItems"/>
             /// </summary>
             public int[] MenuItemColumnWidths { get { return __Owner.MenuItemColumnWidths; } set { __Owner.MenuItemColumnWidths = value; } }
+            /// <summary>
+            /// Šířky sloupců zobrazených v režimu <see cref="ItemsMode"/>: <see cref="ListBoxItemsMode.MenuItems"/>, validované, aktuální platné dle Zoomu a DPI, namísto případných záporných hodnot obsahuje 0.
+            /// </summary>
+            public int[] MenuItemColumnWidthsCurrent { get { return __Owner.MenuItemColumnWidthsCurrent; } }
+            /// <summary>
+            /// Offset vodorovný = posun obsahu textu v režimu MutliColumn.
+            /// Kladné číslo říká, který obsahový pixel bude zobrazen na souřadnici X = 0 v textovém prostoru.
+            /// Tedy kladné číslo = odsouvání vodorovného scrollbaru doprava.
+            /// </summary>
+            public int MenuItemColumnOffset { get { return __Owner.MenuItemColumnOffset; } set { __Owner.MenuItemColumnOffset = value; } }
             /// <summary>
             /// Pokud obsahuje true, pak List smí obsahovat duplicitní klíče (defaultní hodnota je true).
             /// Pokud je false, pak vložení dalšího záznamu s klíčem, který už v Listu je, bude ignorováno.

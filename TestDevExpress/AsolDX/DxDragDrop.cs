@@ -37,12 +37,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Konstruktor
         /// </summary>
         /// <param name="owner"></param>
-        public DxDragDrop(IDxDragDropControl owner)
+        /// <param name="appWindow">Main okno aplikace</param>
+        public DxDragDrop(IDxDragDropControl owner, IWin32Window appWindow = null)
         {
             if (_LastId > 2000000000) _LastId = 0;
             _Id = ++_LastId;
 
             __Owner = new WeakTarget<IDxDragDropControl>(owner);
+            __AppWindow = appWindow;
+
             DragFormInitProperties();
             DragButtons = MouseButtons.Left | MouseButtons.Right;
             DoDragReset();
@@ -676,6 +679,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private IDxDragDropControl Owner { get { return __Owner?.Target; } } private WeakTarget<IDxDragDropControl> __Owner;
         /// <summary>
+        /// Hlavní okno aplikace, pro příjemnější práci s Drag oknem
+        /// </summary>
+        private IWin32Window __AppWindow;
+        /// <summary>
         /// Posledně známý Source objekt, to když this je Target prvek.
         /// V průběhu Drag and Drop se mění.
         /// </summary>
@@ -689,9 +696,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Interní stavy procesu, řídí začátek = MouseDown, a Wait to Drag
         /// </summary>
         private enum DragStateType { None, Over, DownWait, DownDrag }
-
-
-
         #endregion
         #region Mini okno pro zobrazení informací o DragDrop
         /// <summary>
@@ -721,7 +725,26 @@ namespace Noris.Clients.Win.Components.AsolDX
             dragForm.Position = this.DragFormCurrentLocation;
 
             if (!dragForm.Visible)
-                dragForm.Show();
+            {
+                var appWindow = SearchAppWindow(__AppWindow, Owner);
+                dragForm.Show(appWindow);
+            }
+        }
+        /// <summary>
+        /// Pokusí se najít Main okno aplikace
+        /// </summary>
+        /// <param name="appWindow"></param>
+        /// <param name="owner"></param>
+        /// <returns></returns>
+        private IWin32Window SearchAppWindow(IWin32Window appWindow, IDxDragDropControl owner)
+        {
+            if (appWindow is null)
+            {
+                appWindow = DxComponent.MainForm;
+                if (owner is Control control && control.IsHandleCreated)
+                    appWindow = control.SearchForTopParent();
+            }
+            return appWindow;
         }
         /// <summary>
         /// Zahodí okno Drag form
