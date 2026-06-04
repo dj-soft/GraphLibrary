@@ -1863,16 +1863,16 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     addOneButton(ControlKeyActionType.Delimiter, requestedActions, "", MsgCode.None, MsgCode.None);
 
-                    addOneButton(ControlKeyActionType.MoveTop, requestedActions, "@arrowsmall|top|blue", MsgCode.DxKeyActionMoveTopTitle, MsgCode.DxKeyActionMoveTopText);
-                    addOneButton(ControlKeyActionType.MoveUp, requestedActions, "@arrowsmall|up|blue", MsgCode.DxKeyActionMoveUpTitle, MsgCode.DxKeyActionMoveUpText);
-                    addOneButton(ControlKeyActionType.MoveDown, requestedActions, "@arrowsmall|down|blue", MsgCode.DxKeyActionMoveDownTitle, MsgCode.DxKeyActionMoveDownText);
-                    addOneButton(ControlKeyActionType.MoveBottom, requestedActions, "@arrowsmall|bottom|blue", MsgCode.DxKeyActionMoveBottomTitle, MsgCode.DxKeyActionMoveBottomText);
-                    addOneButton(ControlKeyActionType.Refresh, requestedActions, "devav/actions/refresh.svg", MsgCode.DxKeyActionRefreshTitle, MsgCode.DxKeyActionRefreshText);
-                    addOneButton(ControlKeyActionType.SelectAll, requestedActions, "@editsmall|all|blue", MsgCode.DxKeyActionSelectAllTitle, MsgCode.DxKeyActionSelectAllText);
-                    addOneButton(ControlKeyActionType.Delete, requestedActions, "@editsmall|del|red", MsgCode.DxKeyActionDeleteTitle, MsgCode.DxKeyActionDeleteText);
-                    addOneButton(ControlKeyActionType.ClipCopy, requestedActions, "devav/actions/copy.svg", MsgCode.DxKeyActionClipCopyTitle, MsgCode.DxKeyActionClipCopyText);
-                    addOneButton(ControlKeyActionType.ClipCut, requestedActions, "devav/actions/cut.svg", MsgCode.DxKeyActionClipCutTitle, MsgCode.DxKeyActionClipCutText);
-                    addOneButton(ControlKeyActionType.ClipPaste, requestedActions, "devav/actions/paste.svg", MsgCode.DxKeyActionClipPasteTitle, MsgCode.DxKeyActionClipPasteText);
+                    addOneButton(ControlKeyActionType.MoveTop, requestedActions, ImageName.DxKeyActionMoveTop, MsgCode.DxKeyActionMoveTopTitle, MsgCode.DxKeyActionMoveTopText);
+                    addOneButton(ControlKeyActionType.MoveUp, requestedActions, ImageName.DxKeyActionMoveUp, MsgCode.DxKeyActionMoveUpTitle, MsgCode.DxKeyActionMoveUpText);
+                    addOneButton(ControlKeyActionType.MoveDown, requestedActions, ImageName.DxKeyActionMoveDown, MsgCode.DxKeyActionMoveDownTitle, MsgCode.DxKeyActionMoveDownText);
+                    addOneButton(ControlKeyActionType.MoveBottom, requestedActions, ImageName.DxKeyActionMoveBottom, MsgCode.DxKeyActionMoveBottomTitle, MsgCode.DxKeyActionMoveBottomText);
+                    addOneButton(ControlKeyActionType.Refresh, requestedActions, ImageName.DxKeyActionRefresh, MsgCode.DxKeyActionRefreshTitle, MsgCode.DxKeyActionRefreshText);
+                    addOneButton(ControlKeyActionType.SelectAll, requestedActions, ImageName.DxKeyActionSelectAll, MsgCode.DxKeyActionSelectAllTitle, MsgCode.DxKeyActionSelectAllText);
+                    addOneButton(ControlKeyActionType.Delete, requestedActions, ImageName.DxKeyActionDelete, MsgCode.DxKeyActionDeleteTitle, MsgCode.DxKeyActionDeleteText);
+                    addOneButton(ControlKeyActionType.ClipCopy, requestedActions, ImageName.DxKeyActionClipCopy, MsgCode.DxKeyActionClipCopyTitle, MsgCode.DxKeyActionClipCopyText);
+                    addOneButton(ControlKeyActionType.ClipCut, requestedActions, ImageName.DxKeyActionClipCut, MsgCode.DxKeyActionClipCutTitle, MsgCode.DxKeyActionClipCutText);
+                    addOneButton(ControlKeyActionType.ClipPaste, requestedActions, ImageName.DxKeyActionClipPaste, MsgCode.DxKeyActionClipPasteTitle, MsgCode.DxKeyActionClipPasteText);
 
                     addOneButton(ControlKeyActionType.CopyToTargetOneC, requestedActions, "@arrowsmall|right|blue", MsgCode.DxKeyActionCopyToRightOneTitle, MsgCode.DxKeyActionCopyToRightOneText);
                     addOneButton(ControlKeyActionType.CopyToTargetOneE, requestedActions, "@arrowsmall|right|green", MsgCode.DxKeyActionCopyToRightOneTitle, MsgCode.DxKeyActionCopyToRightOneText);
