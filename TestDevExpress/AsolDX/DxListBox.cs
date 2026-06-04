@@ -3448,7 +3448,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             _RunItemsListChanged(e);
         }
         /// <summary>
-        /// Metoda zkusí najít prvek <see cref="ITextItem"/> pro zadaný absolutní index.
+        /// Metoda zkusí najít prvek <see cref="ITextItem"/> pro zadaný absolutní index.<br/>
+        /// Jde o párovou metodu k <see cref="_TryGetAbsoluteIndexOfMenuItem(ITextItem, out int?)"/>.
+        /// <para/>
+        /// Tyto dvě metody slouží k nalezení prvku a jeho indexu na základě prvního výskytu datového prvku <see cref="ITextItem"/> (v poli <see cref="MenuItems"/>).
+        /// Upozornění: v tomto poli se může vyskytovat jedna instance <see cref="ITextItem"/> na více pozicích (pokud jsou povoleny duplicity), takže tato sada metod nemusí vracet jednoznačné výsledky.
+        /// Vhodnější metody pro jednoznačné vyhledání jsou <see cref="_TryGetListItemAtAbsoluteIndex(int?, out ImageListBoxItem)"/> a <see cref="_TryGetAbsoluteIndexOfListItem(ImageListBoxItem, out int?)"/>.
         /// </summary>
         /// <param name="absoluteIndex"></param>
         /// <param name="menuItem"></param>
@@ -3472,7 +3477,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             return false;
         }
         /// <summary>
-        /// Metoda zkusí najít absolutní index pro daný prvek <see cref="ITextItem"/>
+        /// Metoda zkusí najít absolutní index pro daný prvek <see cref="ITextItem"/>.<br/>
+        /// Jde o párovou metodu k <see cref="_TryGetMenuItemAtAbsoluteIndex(int?, out ITextItem)"/>.
+        /// <para/>
+        /// Tyto dvě metody slouží k nalezení prvku a jeho indexu na základě prvního výskytu datového prvku <see cref="ITextItem"/> (v poli <see cref="MenuItems"/>).
+        /// Upozornění: v tomto poli se může vyskytovat jedna instance <see cref="ITextItem"/> na více pozicích (pokud jsou povoleny duplicity), takže tato sada metod nemusí vracet jednoznačné výsledky.
+        /// Vhodnější metody pro jednoznačné vyhledání jsou <see cref="_TryGetListItemAtAbsoluteIndex(int?, out ImageListBoxItem)"/> a <see cref="_TryGetAbsoluteIndexOfListItem(ImageListBoxItem, out int?)"/>.
         /// </summary>
         /// <param name="menuItem"></param>
         /// <param name="absoluteIndex"></param>
@@ -3486,6 +3496,64 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     absoluteIndex = index;
                     return true;
+                }
+            }
+            absoluteIndex = null;
+            return false;
+        }
+        /// <summary>
+        /// Metoda zkusí najít prvek <see cref="ImageListBoxItem"/> pro zadaný absolutní index..<br/>
+        /// Jde o párovou metodu k <see cref="_TryGetAbsoluteIndexOfListItem(ImageListBoxItem, out int?)"/>.
+        /// <para/>
+        /// Tyto dvě metody slouží k nalezení prvku a jeho indexu jednoznačně přes celý List, a to i v situaci, kdy List obsahuje ve více svých položkách (Items) tentýž objekt <see cref="ITextItem"/> (v poli <see cref="MenuItems"/>).
+        /// K tomu dochází tehdy, když do Target Listu opakovaně vkládáme jednu položku ze Source listu = tedy pokud josu např. povoleny duplicity.
+        /// Pak není možné jednoznačně najít index prvku podle objektu <see cref="IMenuItem"/>, protože vyhledá první nalezenou instanci z několika přítomných.
+        /// </summary>
+        /// <param name="absoluteIndex"></param>
+        /// <param name="listItem"></param>
+        /// <returns></returns>
+        private bool _TryGetListItemAtAbsoluteIndex(int? absoluteIndex, out ImageListBoxItem listItem)
+        {
+            if (this.ItemsMode == ListBoxItemsMode.MenuItems && absoluteIndex.HasValue && absoluteIndex.Value >= 0)
+            {
+                var listItems = this.Items;
+                if (absoluteIndex.Value < listItems.Count)
+                {
+                    var item = listItems[absoluteIndex.Value];
+                    if (item != null)
+                    {
+                        listItem = item;
+                        return true;
+                    }
+                }
+            }
+            listItem = null;
+            return false;
+        }
+        /// <summary>
+        /// Metoda zkusí najít absolutní index pro daný prvek <see cref="ImageListBoxItem"/>.<br/>
+        /// Jde o párovou metodu k <see cref="_TryGetListItemAtAbsoluteIndex(int?, out ImageListBoxItem)"/>.
+        /// <para/>
+        /// Tyto dvě metody slouží k nalezení prvku a jeho indexu jednoznačně přes celý List, a to i v situaci, kdy List obsahuje ve více svých položkách (Items) tentýž objekt <see cref="ITextItem"/> (v poli <see cref="MenuItems"/>).
+        /// K tomu dochází tehdy, když do Target Listu opakovaně vkládáme jednu položku ze Source listu = tedy pokud josu např. povoleny duplicity.
+        /// Pak není možné jednoznačně najít index prvku podle objektu <see cref="IMenuItem"/>, protože vyhledá první nalezenou instanci z několika přítomných.
+        /// </summary>
+        /// <param name="listItem"></param>
+        /// <param name="absoluteIndex"></param>
+        /// <returns></returns>
+        private bool _TryGetAbsoluteIndexOfListItem(ImageListBoxItem listItem, out int? absoluteIndex)
+        {
+            if (this.ItemsMode == ListBoxItemsMode.MenuItems && listItem != null)
+            {
+                var listItems = this.Items;
+                var listCount = listItems.Count;
+                for (int index = 0; index < listCount; index++)
+                {
+                    if (Object.ReferenceEquals(listItems[index], listItem))
+                    {
+                        absoluteIndex = index;
+                        return true;
+                    }
                 }
             }
             absoluteIndex = null;
@@ -5579,14 +5647,14 @@ SetSelected() - vstup           Absolutní
             //   Pak metoda _DoKeyActionMoveUp() najde Selected prvek na indexu 0, a pokud prvek je jen jeden, tak nemá smysl provádět přesun => vyhodnotí insertAbsoluteIndex = -1:
             if (insertAbsoluteIndex.HasValue && insertAbsoluteIndex.Value < 0) return;
 
-            // Před odebráním prvků si najdeme cílový Target prvek podle indexu insertAbsoluteIndex = za tento prvek chceme provést Insert:
-            _TryGetMenuItemAtAbsoluteIndex(insertAbsoluteIndex, out var insertTargetItem);
+            // Před odebráním prvků si najdeme cílový Target prvek (ListItem prvek) podle indexu insertAbsoluteIndex = za tento prvek chceme provést Insert:
+            _TryGetListItemAtAbsoluteIndex(insertAbsoluteIndex, out var insertTargetItem);
 
             // Odebereme zdrojové prvky:
             _RemoveIndexes(selectedItemsInfo.Select(t => t.AbsoluteIndex), DxItemsChangeType.None);
 
-            // Po odebrání prvků (selectedItemsInfo) se změnily indexy zbývajících prvků v poli, nyní tedy najdu aktuální absolutní index právě toho prvku, za který máme insertovat dodané prvky:
-            _TryGetAbsoluteIndexOfMenuItem(insertTargetItem, out var targetAbsoluteIndex);
+            // Po odebrání prvků (selectedItemsInfo) se změnily indexy zbývajících prvků v poli, nyní tedy najdu aktuální absolutní index právě toho prvku (ListItem prvek), za který máme insertovat dodané prvky:
+            _TryGetAbsoluteIndexOfListItem(insertTargetItem, out var targetAbsoluteIndex);
 
             // Pokud na vstupu byl dán InsertIndex, pro který jsme našli InsertItem, 
             //   ale po odebrání Selected prvků jsme už pro InsertItem nenašli jeho TargetIndex,
