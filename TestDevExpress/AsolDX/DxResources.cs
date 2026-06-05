@@ -3897,108 +3897,265 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// Knihovna názvů standardních ikon klienta.
     /// Pomocí této třídy je možno nasměrovat jakoukoli fixně definovanou ikonu na potřebný zdroj.
     /// </summary>
-    public static class ImageName
+    public class ImageName
     {
+        #region Singleton a inicializace na defaultní názvy ikon
+        /// <summary>
+        /// Singleton se jmény
+        /// </summary>
+        private static ImageName Names
+        {
+            get
+            {
+                if (__Names is null)
+                {
+                    lock (__Lock)
+                    {
+                        if (__Names is null)
+                            __Names = new ImageName();
+                    }
+                }
+                return __Names;
+            }
+        }
+        /// <summary>
+        /// Private konstruktor
+        /// </summary>
+        private ImageName()
+        { }
+        private static ImageName __Names;
+        private static object __Lock = new object();
+        #endregion
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxFormIcon = "svgimages/spreadsheet/conditionalformatting.svg";
+        public static string DxFormIcon { get { return Names.__DxFormIcon; } set { Names.__DxFormIcon = value; } } 
+        private string __DxFormIcon = "svgimages/spreadsheet/conditionalformatting.svg";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxLayoutCloseSvg { get { return Names.__DxLayoutCloseSvg; } set { Names.__DxLayoutCloseSvg = value; } }
+        private string __DxLayoutCloseSvg = "svgimages/hybriddemoicons/bottompanel/hybriddemo_close.svg";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxLayoutDockLeftSvg { get { return Names.__DxLayoutDockLeftSvg; } set { Names.__DxLayoutDockLeftSvg = value; } } 
+        private string __DxLayoutDockLeftSvg = "svgimages/align/alignverticalleft.svg";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxLayoutDockTopSvg { get { return Names.__DxLayoutDockTopSvg; } set { Names.__DxLayoutDockTopSvg = value; } }
+        private string __DxLayoutDockTopSvg = "svgimages/align/alignhorizontaltop.svg";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxLayoutDockBottomSvg { get { return Names.__DxLayoutDockBottomSvg; } set { Names.__DxLayoutDockBottomSvg = value; } }
+        private string __DxLayoutDockBottomSvg = "svgimages/align/alignhorizontalbottom.svg";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxLayoutDockRightSvg { get { return Names.__DxLayoutDockRightSvg; } set { Names.__DxLayoutDockRightSvg = value; } }
+        private string __DxLayoutDockRightSvg = "svgimages/align/alignverticalright.svg";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxLayoutClosePng { get { return Names.__DxLayoutClosePng; } set { Names.__DxLayoutClosePng = value; } }
+        private string __DxLayoutClosePng = "devav/actions/delete_16x16.png";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxLayoutDockLeftPng { get { return Names.__DxLayoutDockLeftPng; } set { Names.__DxLayoutDockLeftPng = value; } }
+        private string __DxLayoutDockLeftPng = "images/alignment/alignverticalleft_16x16.png";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxLayoutDockTopPng { get { return Names.__DxLayoutDockTopPng; } set { Names.__DxLayoutDockTopPng = value; } }
+        private string __DxLayoutDockTopPng = "images/alignment/alignhorizontaltop_16x16.png";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxLayoutDockBottomPng { get { return Names.__DxLayoutDockBottomPng; } set { Names.__DxLayoutDockBottomPng = value; } }
+        private string __DxLayoutDockBottomPng = "images/alignment/alignhorizontalbottom_16x16.png";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxLayoutDockRightPng { get { return Names.__DxLayoutDockRightPng; } set { Names.__DxLayoutDockRightPng = value; } }
+        private string __DxLayoutDockRightPng = "images/alignment/alignverticalright_16x16.png";
 
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxLayoutCloseSvg = "svgimages/hybriddemoicons/bottompanel/hybriddemo_close.svg";
+        public static string DxRibbonQatMenuAdd { get { return Names.__DxRibbonQatMenuAdd; } set { Names.__DxRibbonQatMenuAdd = value; } }
+        private string __DxRibbonQatMenuAdd = "svgimages/icon%20builder/actions_add.svg";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxLayoutDockLeftSvg = "svgimages/align/alignverticalleft.svg";
+        public static string DxRibbonQatMenuRemove { get { return Names.__DxRibbonQatMenuRemove; } set { Names.__DxRibbonQatMenuRemove = value; } }
+        private string __DxRibbonQatMenuRemove = "svgimages/icon%20builder/actions_remove.svg";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxLayoutDockTopSvg = "svgimages/align/alignhorizontaltop.svg";
+        public static string DxRibbonQatMenuMoveUp { get { return Names.__DxRibbonQatMenuMoveUp; } set { Names.__DxRibbonQatMenuMoveUp = value; } }
+        private string __DxRibbonQatMenuMoveUp = "svgimages/icon%20builder/actions_arrow2up.svg";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxLayoutDockBottomSvg = "svgimages/align/alignhorizontalbottom.svg";
+        public static string DxRibbonQatMenuMoveDown { get { return Names.__DxRibbonQatMenuMoveDown; } set { Names.__DxRibbonQatMenuMoveDown = value; } }
+        private string __DxRibbonQatMenuMoveDown = "svgimages/icon%20builder/actions_arrow2down.svg";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxLayoutDockRightSvg = "svgimages/align/alignverticalright.svg";
-        /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxLayoutClosePng = "devav/actions/delete_16x16.png";
-        /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxLayoutDockLeftPng = "images/alignment/alignverticalleft_16x16.png";
-        /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxLayoutDockTopPng = "images/alignment/alignhorizontaltop_16x16.png";
-        /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxLayoutDockBottomPng = "images/alignment/alignhorizontalbottom_16x16.png";
-        /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxLayoutDockRightPng = "images/alignment/alignverticalright_16x16.png";
+        public static string DxRibbonQatMenuShowManager { get { return Names.__DxRibbonQatMenuShowManager; } set { Names.__DxRibbonQatMenuShowManager = value; } }
+        private string __DxRibbonQatMenuShowManager = "svgimages/scheduling/viewsettings.svg";
 
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxRibbonQatMenuAdd = "svgimages/icon%20builder/actions_add.svg";
+        public static string DxBarCheckToggleNull { get { return Names.__DxBarCheckToggleNull; } set { Names.__DxBarCheckToggleNull = value; } }
+        private string __DxBarCheckToggleNull = "images/xaf/templatesv2images/bo_unknown_disabled.svg";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxRibbonQatMenuRemove = "svgimages/icon%20builder/actions_remove.svg";
+        public static string DxBarCheckToggleFalse { get { return Names.__DxBarCheckToggleFalse; } set { Names.__DxBarCheckToggleFalse = value; } }
+        private string __DxBarCheckToggleFalse = "svgimages/icon%20builder/actions_deletecircled.svg";    //  "svgimages/xaf/state_validation_invalid.svg";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxRibbonQatMenuMoveUp = "svgimages/icon%20builder/actions_arrow2up.svg";
-        /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxRibbonQatMenuMoveDown = "svgimages/icon%20builder/actions_arrow2down.svg";
-        /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxRibbonQatMenuShowManager = "svgimages/scheduling/viewsettings.svg";
+        public static string DxBarCheckToggleTrue { get { return Names.__DxBarCheckToggleTrue; } set { Names.__DxBarCheckToggleTrue = value; } }
+        private string __DxBarCheckToggleTrue = "svgimages/icon%20builder/actions_checkcircled.svg";      //  "svgimages/xaf/state_validation_valid.svg";
 
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxBarCheckToggleNull = "images/xaf/templatesv2images/bo_unknown_disabled.svg";
+        public static string DxImagePickerClearFilter { get { return Names.__DxImagePickerClearFilter; } set { Names.__DxImagePickerClearFilter = value; } }
+        private string __DxImagePickerClearFilter = "pic_0/UI/FilterBox/CancelFilter";                    // "svgimages/spreadsheet/clearfilter.svg";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxBarCheckToggleFalse = "svgimages/icon%20builder/actions_deletecircled.svg";    //  "svgimages/xaf/state_validation_invalid.svg";
+        public static string DxImagePickerClipboarCopy { get { return Names.__DxImagePickerClipboarCopy; } set { Names.__DxImagePickerClipboarCopy = value; } }
+        private string __DxImagePickerClipboarCopy = "svgimages/xaf/action_copy.svg";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxBarCheckToggleTrue = "svgimages/icon%20builder/actions_checkcircled.svg";      //  "svgimages/xaf/state_validation_valid.svg";
+        public static string DxImagePickerClipboarCopyHot { get { return Names.__DxImagePickerClipboarCopyHot; } set { Names.__DxImagePickerClipboarCopyHot = value; } }
+        private string __DxImagePickerClipboarCopyHot = "svgimages/xaf/action_modeldifferences_copy.svg";
 
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxImagePickerClearFilter = "pic_0/UI/FilterBox/CancelFilter";                    // "svgimages/spreadsheet/clearfilter.svg";
+        public static string DxFilterBoxMenu { get { return Names.__DxFilterBoxMenu; } set { Names.__DxFilterBoxMenu = value; } }
+        private string __DxFilterBoxMenu = "svgimages/dashboards/horizontallines.svg";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxImagePickerClipboarCopy = "svgimages/xaf/action_copy.svg";
+        public static string DxFilterClearFilter { get { return Names.__DxFilterClearFilter; } set { Names.__DxFilterClearFilter = value; } }
+        private string __DxFilterClearFilter = "pic_0/UI/FilterBox/CancelFilter";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxImagePickerClipboarCopyHot = "svgimages/xaf/action_modeldifferences_copy.svg";
+        public static string DxFilterOperatorContains { get { return Names.__DxFilterOperatorContains; } set { Names.__DxFilterOperatorContains = value; } }
+        private string __DxFilterOperatorContains = "pic_0/UI/FilterBox/Contains";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxFilterOperatorDoesNotContain { get { return Names.__DxFilterOperatorDoesNotContain; } set { Names.__DxFilterOperatorDoesNotContain = value; } }
+        private string __DxFilterOperatorDoesNotContain = "pic_0/UI/FilterBox/DoesNotContain";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxFilterOperatorEndWith { get { return Names.__DxFilterOperatorEndWith; } set { Names.__DxFilterOperatorEndWith = value; } }
+        private string __DxFilterOperatorEndWith = "pic_0/UI/FilterBox/EndWith";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxFilterOperatorDoesNotEndWith { get { return Names.__DxFilterOperatorDoesNotEndWith; } set { Names.__DxFilterOperatorDoesNotEndWith = value; } }
+        private string __DxFilterOperatorDoesNotEndWith = "pic_0/UI/FilterBox/DoesNotEndWith";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxFilterOperatorMatch { get { return Names.__DxFilterOperatorMatch; } set { Names.__DxFilterOperatorMatch = value; } }
+        private string __DxFilterOperatorMatch = "pic_0/UI/FilterBox/Match";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxFilterOperatorDoesNotMatch { get { return Names.__DxFilterOperatorDoesNotMatch; } set { Names.__DxFilterOperatorDoesNotMatch = value; } }
+        private string __DxFilterOperatorDoesNotMatch = "pic_0/UI/FilterBox/DoesNotMatch";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxFilterOperatorStartWith { get { return Names.__DxFilterOperatorStartWith; } set { Names.__DxFilterOperatorStartWith = value; } }
+        private string __DxFilterOperatorStartWith = "pic_0/UI/FilterBox/DoesNotStartWith";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxFilterOperatorDoesNotStartWith { get { return Names.__DxFilterOperatorDoesNotStartWith; } set { Names.__DxFilterOperatorDoesNotStartWith = value; } }
+        private string __DxFilterOperatorDoesNotStartWith = "pic_0/UI/FilterBox/DoesNotStartWith";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxFilterOperatorEquals { get { return Names.__DxFilterOperatorEquals; } set { Names.__DxFilterOperatorEquals = value; } }
+        private string __DxFilterOperatorEquals = "pic_0/UI/FilterBox/Equals";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxFilterOperatorGreaterThan { get { return Names.__DxFilterOperatorGreaterThan; } set { Names.__DxFilterOperatorGreaterThan = value; } }
+        private string __DxFilterOperatorGreaterThan = "pic_0/UI/FilterBox/GreaterThan";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxFilterOperatorGreaterThanOrEqualTo { get { return Names.__DxFilterOperatorGreaterThanOrEqualTo; } set { Names.__DxFilterOperatorGreaterThanOrEqualTo = value; } }
+        private string __DxFilterOperatorGreaterThanOrEqualTo = "pic_0/UI/FilterBox/GreaterThanOrEqualTo";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxFilterOperatorLessThan { get { return Names.__DxFilterOperatorLessThan; } set { Names.__DxFilterOperatorLessThan = value; } }
+        private string __DxFilterOperatorLessThan = "pic_0/UI/FilterBox/LessThan";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxFilterOperatorLessThanOrEqualTo { get { return Names.__DxFilterOperatorLessThanOrEqualTo; } set { Names.__DxFilterOperatorLessThanOrEqualTo = value; } }
+        private string __DxFilterOperatorLessThanOrEqualTo = "pic_0/UI/FilterBox/LessThanOrEqualTo";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxFilterOperatorLike { get { return Names.__DxFilterOperatorLike; } set { Names.__DxFilterOperatorLike = value; } }
+        private string __DxFilterOperatorLike = "pic_0/UI/FilterBox/Like";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxFilterOperatorNotEquals { get { return Names.__DxFilterOperatorNotEquals; } set { Names.__DxFilterOperatorNotEquals = value; } }
+        private string __DxFilterOperatorNotEquals = "pic_0/UI/FilterBox/NotEquals";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxFilterOperatorNotLike { get { return Names.__DxFilterOperatorNotLike; } set { Names.__DxFilterOperatorNotLike = value; } }
+        private string __DxFilterOperatorNotLike = "pic_0/UI/FilterBox/NotLike";
 
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxFilterBoxMenu = "svgimages/dashboards/horizontallines.svg";
+        public static string DxDialogApply { get { return Names.__DxDialogApply; } set { Names.__DxDialogApply = value; } }
+        private string __DxDialogApply = "svgimages/outlook%20inspired/markcomplete.svg";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxFilterClearFilter = "pic_0/UI/FilterBox/CancelFilter";
+        public static string DxDialogCancel { get { return Names.__DxDialogCancel; } set { Names.__DxDialogCancel = value; } }
+        private string __DxDialogCancel = "svgimages/outlook%20inspired/delete.svg";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxFilterOperatorContains = "pic_0/UI/FilterBox/Contains";
+        public static string DxDialogIconInfo { get { return Names.__DxDialogIconInfo; } set { Names.__DxDialogIconInfo = value; } }
+        private string __DxDialogIconInfo = "pic_0/Win/MessageBox/info";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxFilterOperatorDoesNotContain = "pic_0/UI/FilterBox/DoesNotContain";
+        public static string DxDialogIconWarning { get { return Names.__DxDialogIconWarning; } set { Names.__DxDialogIconWarning = value; } }
+        private string __DxDialogIconWarning = "pic_0/Win/MessageBox/warning";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxFilterOperatorEndWith = "pic_0/UI/FilterBox/EndWith";
+        public static string DxDialogIconError { get { return Names.__DxDialogIconError; } set { Names.__DxDialogIconError = value; } }
+        private string __DxDialogIconError = "pic_0/Win/MessageBox/error";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxFilterOperatorDoesNotEndWith = "pic_0/UI/FilterBox/DoesNotEndWith";
+        public static string DxDialogIconSave { get { return Names.__DxDialogIconSave; } set { Names.__DxDialogIconSave = value; } }
+        private string __DxDialogIconSave = "pic_0/Menu/frmsave";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxFilterOperatorMatch = "pic_0/UI/FilterBox/Match";
-        /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxFilterOperatorDoesNotMatch = "pic_0/UI/FilterBox/DoesNotMatch";
-        /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxFilterOperatorStartWith = "pic_0/UI/FilterBox/DoesNotStartWith";
-        /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxFilterOperatorDoesNotStartWith = "pic_0/UI/FilterBox/DoesNotStartWith";
-        /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxFilterOperatorEquals = "pic_0/UI/FilterBox/Equals";
-        /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxFilterOperatorGreaterThan = "pic_0/UI/FilterBox/GreaterThan";
-        /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxFilterOperatorGreaterThanOrEqualTo = "pic_0/UI/FilterBox/GreaterThanOrEqualTo";
-        /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxFilterOperatorLessThan = "pic_0/UI/FilterBox/LessThan";
-        /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxFilterOperatorLessThanOrEqualTo = "pic_0/UI/FilterBox/LessThanOrEqualTo";
-        /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxFilterOperatorLike = "pic_0/UI/FilterBox/Like";
-        /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxFilterOperatorNotEquals = "pic_0/UI/FilterBox/NotEquals";
-        /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxFilterOperatorNotLike = "pic_0/UI/FilterBox/NotLike";
+        public static string DxDialogIconSaveAs { get { return Names.__DxDialogIconSaveAs; } set { Names.__DxDialogIconSaveAs = value; } }
+        private string __DxDialogIconSaveAs = "pic_0/Menu/SaveAs";
 
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxDialogApply = "svgimages/outlook%20inspired/markcomplete.svg";
+        public static string DxKeyActionMoveTop { get { return Names.__DxKeyActionMoveTop; } set { Names.__DxKeyActionMoveTop = value; } }
+        private string __DxKeyActionMoveTop = "@arrowsmall|top|blue";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxDialogCancel = "svgimages/outlook%20inspired/delete.svg";
+        public static string DxKeyActionMoveUp { get { return Names.__DxKeyActionMoveUp; } set { Names.__DxKeyActionMoveUp = value; } }
+        private string __DxKeyActionMoveUp = "@arrowsmall|up|blue";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxDialogIconInfo = "pic_0/Win/MessageBox/info";
+        public static string DxKeyActionMoveDown { get { return Names.__DxKeyActionMoveDown; } set { Names.__DxKeyActionMoveDown = value; } }
+        private string __DxKeyActionMoveDown = "@arrowsmall|down|blue";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxDialogIconWarning = "pic_0/Win/MessageBox/warning";
+        public static string DxKeyActionMoveBottom { get { return Names.__DxKeyActionMoveBottom; } set { Names.__DxKeyActionMoveBottom = value; } }
+        private string __DxKeyActionMoveBottom = "@arrowsmall|bottom|blue";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxDialogIconError = "pic_0/Win/MessageBox/error";
+        public static string DxKeyActionRefresh { get { return Names.__DxKeyActionRefresh; } set { Names.__DxKeyActionRefresh = value; } }
+        private string __DxKeyActionRefresh = "devav/actions/refresh.svg";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxDialogIconSave = "pic_0/Menu/frmsave";
+        public static string DxKeyActionSelectAll { get { return Names.__DxKeyActionSelectAll; } set { Names.__DxKeyActionSelectAll = value; } }
+        private string __DxKeyActionSelectAll = "@editsmall|all|blue";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public const string DxDialogIconSaveAs = "pic_0/Menu/SaveAs";
+        public static string DxKeyActionDelete { get { return Names.__DxKeyActionDelete; } set { Names.__DxKeyActionDelete = value; } }
+        private string __DxKeyActionDelete = "@editsmall|del|red";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxKeyActionClipCopy { get { return Names.__DxKeyActionClipCopy; } set { Names.__DxKeyActionClipCopy = value; } }
+        private string __DxKeyActionClipCopy = "devav/actions/copy.svg";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxKeyActionClipCut { get { return Names.__DxKeyActionClipCut; } set { Names.__DxKeyActionClipCut = value; } }
+        private string __DxKeyActionClipCut = "devav/actions/cut.svg";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxKeyActionClipPaste { get { return Names.__DxKeyActionClipPaste; } set { Names.__DxKeyActionClipPaste = value; } }
+        private string __DxKeyActionClipPaste = "devav/actions/paste.svg";
+
+
+
+
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxKeyActionCopyToRightOneC { get { return Names.__DxKeyActionCopyToRightOneC; } set { Names.__DxKeyActionCopyToRightOneC = value; } }
+        private string __DxKeyActionCopyToRightOneC = "@arrowsmall|right|blue";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxKeyActionCopyToRightOneE { get { return Names.__DxKeyActionCopyToRightOneE; } set { Names.__DxKeyActionCopyToRightOneE = value; } }
+        private string __DxKeyActionCopyToRightOneE = "@arrowsmall|right|green";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxKeyActionCopyToRightAllC { get { return Names.__DxKeyActionCopyToRightAllC; } set { Names.__DxKeyActionCopyToRightAllC = value; } }
+        private string __DxKeyActionCopyToRightAllC = "@arrow|right|blue";
+
+        addOneButton(ControlKeyActionType.CopyToTargetAllE, requestedActions, "@arrow|right|green", MsgCode.DxKeyActionCopyToRightAllTitle, MsgCode.DxKeyActionCopyToRightAllText);
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxKeyActionClipPaste { get { return Names.__DxKeyActionClipPaste; } set { Names.__DxKeyActionClipPaste = value; } }
+        private string __DxKeyActionClipPaste = "devav/actions/paste.svg";
+
+        addOneButton(ControlKeyActionType.CopyToSourceOneC, requestedActions, "@arrowsmall|left|blue", MsgCode.DxKeyActionCopyToLeftOneTitle, MsgCode.DxKeyActionCopyToLeftOneText);
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxKeyActionClipPaste { get { return Names.__DxKeyActionClipPaste; } set { Names.__DxKeyActionClipPaste = value; } }
+        private string __DxKeyActionClipPaste = "devav/actions/paste.svg";
+
+        addOneButton(ControlKeyActionType.CopyToSourceOneE, requestedActions, "@arrowsmall|left|green", MsgCode.DxKeyActionCopyToLeftOneTitle, MsgCode.DxKeyActionCopyToLeftOneText);
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxKeyActionClipPaste { get { return Names.__DxKeyActionClipPaste; } set { Names.__DxKeyActionClipPaste = value; } }
+        private string __DxKeyActionClipPaste = "devav/actions/paste.svg";
+
+        addOneButton(ControlKeyActionType.CopyToSourceAllC, requestedActions, "@arrow|left|blue", MsgCode.DxKeyActionCopyToLeftAllTitle, MsgCode.DxKeyActionCopyToLeftAllText);
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxKeyActionClipPaste { get { return Names.__DxKeyActionClipPaste; } set { Names.__DxKeyActionClipPaste = value; } }
+        private string __DxKeyActionClipPaste = "devav/actions/paste.svg";
+
+        addOneButton(ControlKeyActionType.CopyToSourceAllE, requestedActions, "@arrow|left|green", MsgCode.DxKeyActionCopyToLeftAllTitle, MsgCode.DxKeyActionCopyToLeftAllText);
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxKeyActionClipPaste { get { return Names.__DxKeyActionClipPaste; } set { Names.__DxKeyActionClipPaste = value; } }
+        private string __DxKeyActionClipPaste = "devav/actions/paste.svg";
+
+
+        addOneButton(ControlKeyActionType.Undo, requestedActions, "svgimages/dashboards/undo.svg", MsgCode.DxKeyActionUndoTitle, MsgCode.DxKeyActionUndoText);
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxKeyActionClipPaste { get { return Names.__DxKeyActionClipPaste; } set { Names.__DxKeyActionClipPaste = value; } }
+        private string __DxKeyActionClipPaste = "devav/actions/paste.svg";
+
+        addOneButton(ControlKeyActionType.Redo, requestedActions, "svgimages/dashboards/redo.svg", MsgCode.DxKeyActionRedoTitle, MsgCode.DxKeyActionRedoText);
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxKeyActionClipPaste { get { return Names.__DxKeyActionClipPaste; } set { Names.__DxKeyActionClipPaste = value; } }
+        private string __DxKeyActionClipPaste = "devav/actions/paste.svg";
+
+
+
+
     }
     #endregion
     #region class DxBmpImageList : Kolekce Images rozšířená o možnost reloadu při změně barevnosti
