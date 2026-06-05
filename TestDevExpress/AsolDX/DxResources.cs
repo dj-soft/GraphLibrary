@@ -86,8 +86,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="useZoom"></param>
         /// <param name="targetDpi">DPI controlu (typicky <see cref="System.Windows.Forms.Control.DeviceDpi"/>)</param>
         /// <param name="resultModulo">Násobek pixelů pro výsledné číslo, abychom nevraceli např. 17. Typicky 2 nebo 4. Při výsledku 16px * Zoom 130% = 21px a modulo 4 vrátíme 20px (zarovnáme dolů na celé 4px)</param>
+        /// <param name="maxSize">Maximální možná velikost. Pokud vyjde větší, pak výsledek budeme zmenšovat (s akceptováním <paramref name="resultModulo"/>) tak, aby výsledek byl rovný nebo menší</param>
         /// <returns></returns>
-        public static Size GetImageSize(ResourceImageSizeType? sizeType, bool useZoom = true, int? targetDpi = null, int? resultModulo = null)
+        public static Size GetImageSize(ResourceImageSizeType? sizeType, bool useZoom = true, int? targetDpi = null, int? resultModulo = null, int? maxSize = null)
         {
             if (!sizeType.HasValue) sizeType = ResourceImageSizeType.Medium;
             int s;
@@ -111,10 +112,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (useZoom)
             {
                 s = (targetDpi.HasValue ? ZoomToGui(s, targetDpi.Value) : ZoomToGui(s));
+                var m = 1;
                 if (resultModulo.HasValue && resultModulo.Value > 1 && resultModulo.Value <= 16)
                 {
-                    int m = resultModulo.Value;
+                    m = resultModulo.Value;
                     s = (s / m) * m;                       // s:21  /  m:4  =  5       5 * m:4  =  20
+                }
+                if (maxSize.HasValue && maxSize.Value > 8 && s > maxSize.Value)
+                {   // Máme danou MaxSize, a aktuální velikost je větší?
+                    // Budeme aktuální velikost zmenšovat v kroku Modulo (bez zadání resultModulo pak po 1),
+                    //  až výsledná velikost bude <= maxSize:
+                    while (s > maxSize.Value)
+                        s -= m;
                 }
             }
             return new Size(s, s);
@@ -4104,9 +4113,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static string DxKeyActionClipPaste { get { return Names.__DxKeyActionClipPaste; } set { Names.__DxKeyActionClipPaste = value; } }
         private string __DxKeyActionClipPaste = "devav/actions/paste.svg";
 
-
-
-
         /// <summary>Standardní ikona pro danou příležitost</summary>
         public static string DxKeyActionCopyToRightOneC { get { return Names.__DxKeyActionCopyToRightOneC; } set { Names.__DxKeyActionCopyToRightOneC = value; } }
         private string __DxKeyActionCopyToRightOneC = "@arrowsmall|right|blue";
@@ -4116,45 +4122,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>Standardní ikona pro danou příležitost</summary>
         public static string DxKeyActionCopyToRightAllC { get { return Names.__DxKeyActionCopyToRightAllC; } set { Names.__DxKeyActionCopyToRightAllC = value; } }
         private string __DxKeyActionCopyToRightAllC = "@arrow|right|blue";
-
-        addOneButton(ControlKeyActionType.CopyToTargetAllE, requestedActions, "@arrow|right|green", MsgCode.DxKeyActionCopyToRightAllTitle, MsgCode.DxKeyActionCopyToRightAllText);
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public static string DxKeyActionClipPaste { get { return Names.__DxKeyActionClipPaste; } set { Names.__DxKeyActionClipPaste = value; } }
-        private string __DxKeyActionClipPaste = "devav/actions/paste.svg";
-
-        addOneButton(ControlKeyActionType.CopyToSourceOneC, requestedActions, "@arrowsmall|left|blue", MsgCode.DxKeyActionCopyToLeftOneTitle, MsgCode.DxKeyActionCopyToLeftOneText);
+        public static string DxKeyActionCopyToRightAllE { get { return Names.__DxKeyActionCopyToRightAllE; } set { Names.__DxKeyActionCopyToRightAllE = value; } }
+        private string __DxKeyActionCopyToRightAllE = "@arrow|right|green";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public static string DxKeyActionClipPaste { get { return Names.__DxKeyActionClipPaste; } set { Names.__DxKeyActionClipPaste = value; } }
-        private string __DxKeyActionClipPaste = "devav/actions/paste.svg";
-
-        addOneButton(ControlKeyActionType.CopyToSourceOneE, requestedActions, "@arrowsmall|left|green", MsgCode.DxKeyActionCopyToLeftOneTitle, MsgCode.DxKeyActionCopyToLeftOneText);
+        public static string DxKeyActionCopyToLeftOneC { get { return Names.__DxKeyActionCopyToLeftOneC; } set { Names.__DxKeyActionCopyToLeftOneC = value; } }
+        private string __DxKeyActionCopyToLeftOneC = "@arrowsmall|left|blue";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public static string DxKeyActionClipPaste { get { return Names.__DxKeyActionClipPaste; } set { Names.__DxKeyActionClipPaste = value; } }
-        private string __DxKeyActionClipPaste = "devav/actions/paste.svg";
-
-        addOneButton(ControlKeyActionType.CopyToSourceAllC, requestedActions, "@arrow|left|blue", MsgCode.DxKeyActionCopyToLeftAllTitle, MsgCode.DxKeyActionCopyToLeftAllText);
+        public static string DxKeyActionCopyToLeftOneE { get { return Names.__DxKeyActionCopyToLeftOneE; } set { Names.__DxKeyActionCopyToLeftOneE = value; } }
+        private string __DxKeyActionCopyToLeftOneE = "@arrowsmall|left|green";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public static string DxKeyActionClipPaste { get { return Names.__DxKeyActionClipPaste; } set { Names.__DxKeyActionClipPaste = value; } }
-        private string __DxKeyActionClipPaste = "devav/actions/paste.svg";
-
-        addOneButton(ControlKeyActionType.CopyToSourceAllE, requestedActions, "@arrow|left|green", MsgCode.DxKeyActionCopyToLeftAllTitle, MsgCode.DxKeyActionCopyToLeftAllText);
+        public static string DxKeyActionCopyToLeftAllC { get { return Names.__DxKeyActionCopyToLeftAllC; } set { Names.__DxKeyActionCopyToLeftAllC = value; } }
+        private string __DxKeyActionCopyToLeftAllC = "@arrow|left|blue";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public static string DxKeyActionClipPaste { get { return Names.__DxKeyActionClipPaste; } set { Names.__DxKeyActionClipPaste = value; } }
-        private string __DxKeyActionClipPaste = "devav/actions/paste.svg";
+        public static string DxKeyActionCopyToLeftAllE { get { return Names.__DxKeyActionCopyToLeftAllE; } set { Names.__DxKeyActionCopyToLeftAllE = value; } }
+        private string __DxKeyActionCopyToLeftAllE = "@arrow|left|blue";
 
-
-        addOneButton(ControlKeyActionType.Undo, requestedActions, "svgimages/dashboards/undo.svg", MsgCode.DxKeyActionUndoTitle, MsgCode.DxKeyActionUndoText);
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public static string DxKeyActionClipPaste { get { return Names.__DxKeyActionClipPaste; } set { Names.__DxKeyActionClipPaste = value; } }
-        private string __DxKeyActionClipPaste = "devav/actions/paste.svg";
-
-        addOneButton(ControlKeyActionType.Redo, requestedActions, "svgimages/dashboards/redo.svg", MsgCode.DxKeyActionRedoTitle, MsgCode.DxKeyActionRedoText);
+        public static string DxKeyActionUndo { get { return Names.__DxKeyActionUndo; } set { Names.__DxKeyActionUndo = value; } }
+        private string __DxKeyActionUndo = "svgimages/dashboards/undo.svg";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public static string DxKeyActionClipPaste { get { return Names.__DxKeyActionClipPaste; } set { Names.__DxKeyActionClipPaste = value; } }
-        private string __DxKeyActionClipPaste = "devav/actions/paste.svg";
-
-
-
+        public static string DxKeyActionRedo { get { return Names.__DxKeyActionRedo; } set { Names.__DxKeyActionRedo = value; } }
+        private string __DxKeyActionRedo = "svgimages/dashboards/redo.svg";
 
     }
     #endregion

@@ -2430,6 +2430,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.Padding = new Padding(12, 3, 3, 5);
             this.__TitleLineWidth = 2;
         }
+        /// <summary>
+        /// Paint labelu
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnPaint(PaintEventArgs e)
         {
             DrawTitleLine(e.Graphics, e.ClipRectangle, TitleLineWidth);

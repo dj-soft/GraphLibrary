@@ -14,6 +14,7 @@ using Noris.Clients.Win.Components.AsolDX.DxForm;
 using Noris.Clients.Win.Components.AsolDX.DataForm;
 using TestDevExpress.Components;
 using DevExpress.XtraRichEdit.Model.History;
+using DevExpress.XtraRichEdit.Model;
 
 namespace TestDevExpress.Forms
 {
@@ -91,6 +92,17 @@ namespace TestDevExpress.Forms
         {
             base.DxMainContentPrepare();
 
+            __MainSplit = new DxSplitContainerControl() { Dock = DockStyle.Fill };
+            __MainSplit.Panel1.MinSize = 180;
+            __MainSplit.Panel2.MinSize = 240;
+            __MainSplit.FixedPanel = DevExpress.XtraEditors.SplitFixedPanel.Panel1;
+            __MainSplit.SplitterPosition = DxComponent.ZoomToGui(240, this.DeviceDpi);
+            __MainSplit.Panel1.ClientSizeChanged += _SampleButtons_SizeChanged;
+            __MainSplit.Panel2.ClientSizeChanged += _SamplePanel_SizeChanged;
+            this.DxMainPanel.Controls.Add(__MainSplit);
+
+            __ResizedControls = new List<Control>();
+
             // Pro všechny metody, které jsou označené atributem 'InitializerAttribute' je vyvolám 
             //  a získám tak pole __Samples = jednotlivá tlačítka pro jednotlivé testy:
             __Samples = new List<SampleInfo>();
@@ -98,25 +110,24 @@ namespace TestDevExpress.Forms
             foreach (var method in methods )
                 method.Invoke(this, null);       // Volá metody označené atributem [Initializer()]
 
-            __ResizedControls = new List<Control>();
 
             // Na základě prvků v poli __Samples vytvořím sadu buttonů pro jednotlivé testy:
-            int y = 12;
-            int x = 12;
-            int w = 260;
-            int h = 32;
-            int n = 0;
-            __SampleBegin = new Point(x + w + 6, y);
+            _SampleButtons = new List<DxSimpleButton>();
             foreach (var sample in __Samples)
             {
-                if (n > 0 && sample.IsNewGroup) y += 6;
-                sample.Button = DxComponent.CreateDxSimpleButton(x, y, w, h, this._HostContainer, sample.ButtonText, _SampleButtonClick, tag: sample);
-                y += (h + 3);
-                n++;
+                var sampleButton = DxComponent.CreateDxSimpleButton(0,0,200,30, this.__MainSplit.Panel1, sample.ButtonText, _SampleButtonClick, tag: sample);
+                sample.Button = sampleButton;
+                _SampleButtons.Add(sampleButton);
             }
-
-            _HostContainer.ClientSizeChanged += _HostContainer_ClientSizeChanged;
+            _DoLayoutButtons();
         }
+
+        private DxSplitContainerControl __MainSplit;
+        /// <summary>
+        /// Buttony samplů
+        /// </summary>
+        private List<DxSimpleButton> _SampleButtons;
+
         /// <summary>
         /// Kliknutí na button se samplem = zahodí se dosavadní listy, a zavolá se sample pro tvorbu nové komponenty
         /// </summary>
@@ -133,6 +144,33 @@ namespace TestDevExpress.Forms
                 _ResizeChildControls();
             }
         }
+        private void _SampleButtons_SizeChanged(object sender, EventArgs e)
+        {
+            _DoLayoutButtons();
+        }
+        private void _DoLayoutButtons()
+        {
+            var clientSize = this.__MainSplit.Panel1.ClientSize;
+            int x = 12;
+            int w = clientSize.Width - 24;
+            int y = 12;
+            int h = 36;
+            int s = 6;
+            int g = 9;
+            int n = 0;
+            foreach (var sample in __Samples)
+            {
+                if (n > 0 && sample.IsNewGroup) y += g;
+                var button = sample.Button;
+                if (button != null)
+                {
+                    button.Bounds = new Rectangle(x, y, w, h);
+                    y += h + s;
+                    n++;
+                }
+            }
+        }
+
         /// <summary>
         /// Do daného List se navážou obecné eventhandlery, vedou na LogAddLine
         /// </summary>
@@ -194,31 +232,31 @@ namespace TestDevExpress.Forms
                 s.DisposeContent();
             });
         }
-        private Control _HostContainer { get { return this.DxMainPanel; } }
+        private Control _HostContainer { get { return this.__MainSplit.Panel2; } }
         private List<SampleInfo> __Samples;
         private SampleInfo __CurrentSample;
-        private Point __SampleBegin;
         private List<Control> __ResizedControls;
-        private Rectangle __SampleBounds;
+        /// <summary>
+        /// Souřadnice pro Sample
+        /// </summary>
+        private Rectangle _SampleBounds { get { return __MainSplit.Panel2.ClientRectangle; } }
 
-        private void _HostContainer_ClientSizeChanged(object sender, EventArgs e)
+        private void _SamplePanel_SizeChanged(object sender, EventArgs e)
         {
             _ResizeChildControls();
         }
+
+        private void _HostContainer_ClientSizeChanged(object sender, EventArgs e)
+        {
+        }
         private void _ResizeChildControls()
         { 
-            var clientSize = _HostContainer.ClientSize;
-            int top = __SampleBegin.Y;
-            int bottom = clientSize.Height - top;
-            int height = bottom - top;
-
+            var sampleBounds = _SampleBounds;
             foreach (var child in __ResizedControls)
             {
-                child.Top = top;
-                child.Height = height;
+                child.Height = sampleBounds.Bottom - child.Top;
             }
 
-            __SampleBounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, clientSize.Width - __SampleBegin.X - 3, clientSize.Height - __SampleBegin.Y - 3);
             __CurrentSample?.DoLayout?.Invoke();
         }
 
@@ -259,15 +297,16 @@ namespace TestDevExpress.Forms
         }
         private void _CreateSample1()
         {
+            var bounds = _SampleBounds;
             var position = (_Sample1SplitPosition > 0 ? _Sample1SplitPosition : 320);
-            _Sample1Split = new DxSplitContainerControl() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 800, 600), SplitterOrientation = Orientation.Horizontal, FixedPanel = DevExpress.XtraEditors.SplitFixedPanel.Panel1, SplitterPosition = position };
+            _Sample1Split = new DxSplitContainerControl() { Bounds = bounds, SplitterOrientation = Orientation.Horizontal, FixedPanel = DevExpress.XtraEditors.SplitFixedPanel.Panel1, SplitterPosition = position };
             _Sample1Split.SplitterMoved += _Sample1Split_SplitterMoved;
             this._HostContainer.Controls.Add(_Sample1Split);
             __ResizedControls.Add(_Sample1Split);                                                  // Pro _Sample1Split resizovat výšku
 
             var sampleList = new DxListBoxPanel() { Dock = DockStyle.Fill };                       // ListBox je Docked v Split.Panel1 a tak mu interaktivně měníme šířku
             sampleList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.None;
-            sampleList.DxProperties.TitleText = "ListBox s jedníém sloupcem";
+            sampleList.DxProperties.TitleText = "ListBox s jedním sloupcem";
             sampleList.DxProperties.MenuItems = Randomizer.GetMenuItems(24, 60, Randomizer.ImageResourceType.PngSmall);
             sampleList.DxProperties.MenuItemColumnWidths = new int[] { 400 };                      // Jediný sloupec, pro jediný text v řádku, ale umožní vodorovný Scroll
             _AddEventHandlers(sampleList, false);                                                  // ... , false)  =>  pro ListBox neresizovat výšku 
@@ -303,7 +342,8 @@ namespace TestDevExpress.Forms
         }
         private void _CreateSample2()
         {
-            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 450, 320) };
+            var bounds = _SampleBounds;
+            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(bounds.X, bounds.Y, 450, 320) };
             sampleList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client;
             sampleList.DxProperties.SelectionMode = SelectionMode.MultiExtended;
             sampleList.DxProperties.ButtonsPosition = ToolbarPosition.RightSideCenter;
@@ -335,7 +375,8 @@ namespace TestDevExpress.Forms
         }
         private void _CreateSample3()
         {
-            var sampleListA = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 400, 320) };
+            var bounds = _SampleBounds;
+            var sampleListA = new DxListBoxPanel() { Bounds = new Rectangle(bounds.X, bounds.Y, 400, 320) };
             sampleListA.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client;
             sampleListA.DxProperties.SelectionMode = SelectionMode.MultiExtended;
             sampleListA.DxProperties.ButtonsPosition = ToolbarPosition.BottomSideCenter;
@@ -347,7 +388,7 @@ namespace TestDevExpress.Forms
             _AddEventHandlers(sampleListA, true);
             this._HostContainer.Controls.Add(sampleListA);
 
-            var sampleListB = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X + 410, __SampleBegin.Y, 400, 320) };
+            var sampleListB = new DxListBoxPanel() { Bounds = new Rectangle(bounds.X + 410, bounds.Y, 400, 320) };
             sampleListB.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client;
             sampleListB.DxProperties.SelectionMode = SelectionMode.MultiExtended;
             sampleListB.DxProperties.ButtonsPosition = ToolbarPosition.BottomSideCenter;
@@ -420,9 +461,10 @@ namespace TestDevExpress.Forms
         }
         private void _CreateSample4()
         {
-            var bounds = __SampleBounds;
-            var dblListBounds = new Rectangle(bounds.X, bounds.Y + 62, bounds.Width, bounds.Height - 65);
+            var bounds = _SampleBounds;
+            var dblListBounds = new Rectangle(bounds.X, bounds.Y + 62, 800, 600);
             var sampleDblList = new DxDblListBoxPanel() { Bounds = dblListBounds };
+            __ResizedControls.Add(sampleDblList);                                                  // Pro sampleDblList resizovat výšku
 
             sampleDblList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client;
 
@@ -454,7 +496,7 @@ namespace TestDevExpress.Forms
         }
         private void _CreateLayout4()
         {
-            var bounds = __SampleBounds;
+            var bounds = _SampleBounds;
             _Sample4DblList.Bounds = new Rectangle(bounds.X, bounds.Y + 62, bounds.Width, bounds.Height - 65);
         }
         private void _DisposeSample4()
@@ -480,9 +522,9 @@ namespace TestDevExpress.Forms
         {
             __Sample4ParamsValid = false;
             var sampleDblList = _Sample4DblList;
-            int x = __SampleBounds.Left + 6;
-            int y1 = __SampleBounds.Top + 6;
-            int y2 = __SampleBounds.Top + 28;
+            int x = _SampleBounds.Left + 6;
+            int y1 = _SampleBounds.Top + 6;
+            int y2 = _SampleBounds.Top + 28;
 
             __Sample4ModeLabel = DxComponent.CreateDxLabel(x, y1 + 4, 100, this._HostContainer, "DblListMode:");
             __Sample4ModeCombo = DxComponent.CreateDxImageComboBox(x, y2, 185, this._HostContainer, _Sample4ParamsChanged, toolTipText: "Zvolte režim pro DblList");
@@ -532,6 +574,10 @@ namespace TestDevExpress.Forms
             __Sample4DoubleClickEnabledCheck.Checked = sampleDblList.DxProperties.DoubleClickEnabled;
             x += 165;
 
+            __Sample4DirectDrawCheck = DxComponent.CreateDxCheckEdit(x, y1, 160, this._HostContainer, "DrawImageDirectly", _Sample4ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, toolTipText: "Vykreslovat ikony v ListBoxu napřímo");
+            __Sample4DirectDrawCheck.Checked = sampleDblList.DxProperties.DrawImageDirectly;
+            x += 165;
+
             x += 35;
             __Sample4ShowContentButton = DxComponent.CreateDxSimpleButton(x, y1, 145, 40, this._HostContainer, "Zobrazit obsah", this._Sample4ShowClick);
 
@@ -566,6 +612,9 @@ namespace TestDevExpress.Forms
 
             __Sample4ShowContentButton.RemoveControlFromParent();
             __Sample4ShowContentButton = null;
+
+            __Sample4DirectDrawCheck.RemoveControlFromParent();
+            __Sample4DirectDrawCheck = null;
         }
         private void _Sample4ParamsChanged(object sender, EventArgs args)
         {
@@ -599,6 +648,10 @@ namespace TestDevExpress.Forms
 
             if (Object.ReferenceEquals(sender, __Sample4DoubleClickEnabledCheck))
                 sampleDblList.DxProperties.DoubleClickEnabled = __Sample4DoubleClickEnabledCheck.Checked;
+
+            if (Object.ReferenceEquals(sender, __Sample4DirectDrawCheck))
+                sampleDblList.DxProperties.DrawImageDirectly = __Sample4DirectDrawCheck.Checked;
+            
         }
         private void _Sample4ShowClick(object sender, EventArgs args)
         {
@@ -647,6 +700,7 @@ namespace TestDevExpress.Forms
         private DxCheckEdit __Sample4ClipActionsEnabledCheck;
         private DxCheckEdit __Sample4DragDropEnabledCheck;
         private DxCheckEdit __Sample4DoubleClickEnabledCheck;
+        private DxCheckEdit __Sample4DirectDrawCheck;
         private DxSimpleButton __Sample4ShowContentButton;
 
         private bool __Sample4ParamsValid;
@@ -663,15 +717,12 @@ namespace TestDevExpress.Forms
         }
         private void _CreateSample5()
         {
+            var bounds = _SampleBounds;
             var position = (_Sample5SplitPosition > 0 ? _Sample5SplitPosition : 320);
-            _Sample5Split = new DxSplitContainerControl() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 800, 600), SplitterOrientation = Orientation.Horizontal, FixedPanel = DevExpress.XtraEditors.SplitFixedPanel.Panel1, SplitterPosition = position };
+            _Sample5Split = new DxSplitContainerControl() { Bounds = new Rectangle(bounds.X, bounds.Y + 52, 800, 600), SplitterOrientation = Orientation.Horizontal, FixedPanel = DevExpress.XtraEditors.SplitFixedPanel.Panel1, SplitterPosition = position };
             _Sample5Split.SplitterMoved += _Sample5Split_SplitterMoved;
             this._HostContainer.Controls.Add(_Sample5Split);
             __ResizedControls.Add(_Sample5Split);                                                  // Pro _Sample1Split resizovat výšku
-
-            var menuItems = Randomizer.GetMenuItems(48, 72, Randomizer.ImageResourceType.PngSmall);
-            foreach (var menuItem in menuItems.OfType<DataMenuItem>())
-                createCells(menuItem);
 
             var sampleList = new DxListBoxPanel() { Dock = DockStyle.Fill };                       // ListBox je Docked v Split.Panel1 a tak mu interaktivně měníme šířku
             sampleList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client;
@@ -681,13 +732,43 @@ namespace TestDevExpress.Forms
             sampleList.DxProperties.EnabledKeyActions = ControlKeyActionType.Move_All;
             sampleList.DxProperties.DragDropActions = DxDragDropActionType.ReorderItems;
 
-            sampleList.DxProperties.MenuItems = menuItems;
             sampleList.DxProperties.MenuItemColumnWidths = new int[] { 240, 120, 120 };
             _AddEventHandlers(sampleList, false);                                                  // ... , false)  =>  pro ListBox neresizovat výšku 
 
             this._Sample5Split.Panel1.Controls.Add(sampleList);
 
             _Sample5List = sampleList;
+
+            int x = _SampleBounds.Left + 6;
+            int y1 = _SampleBounds.Top + 6;
+            int y2 = _SampleBounds.Top + 28;
+
+            _Sample5SvgImagesCheck = DxComponent.CreateDxCheckEdit(x, y1, 160, this._HostContainer, "Use SVG Images!", _Sample5ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, toolTipText: "Zaškrtnuto: používat SVG ikony / nezaškrtnuto: PNG ikony");
+            _Sample5SvgImagesCheck.Checked = sampleList.DxProperties.DrawImageDirectly;
+            x += 185;
+
+            _Sample5DirectDrawCheck = DxComponent.CreateDxCheckEdit(x, y1, 160, this._HostContainer, "DrawImageDirectly", _Sample5ParamsChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, toolTipText: "Vykreslovat ikony v ListBoxu napřímo");
+            _Sample5DirectDrawCheck.Checked = sampleList.DxProperties.DrawImageDirectly;
+
+
+            _Sample5Refill();
+
+
+            _Sample5ParamsValid = true;
+
+        }
+        private void _Sample5Refill()
+        {
+            var sampleList = _Sample5List;
+            if (sampleList is null) return;
+
+            var useSvg = _Sample5SvgImagesCheck?.Checked ?? false;
+            var iconType = (useSvg ? Randomizer.ImageResourceType.Svg : Randomizer.ImageResourceType.PngSmall);
+            var menuItems = Randomizer.GetMenuItems(48, 72, iconType);
+            foreach (var menuItem in menuItems.OfType<DataMenuItem>())
+                createCells(menuItem);
+
+            sampleList.DxProperties.MenuItems = menuItems;
 
             void createCells(DataMenuItem menuItem)
             {
@@ -704,16 +785,41 @@ namespace TestDevExpress.Forms
         {
             _Sample5SplitPosition = _Sample5Split.SplitterPosition;
         }
+        private void _Sample5ParamsChanged(object sender, EventArgs args)
+        {
+            if (!_Sample5ParamsValid) return;
+
+            var sampleList = _Sample5List;
+            if (sampleList is null) return;
+
+            if (Object.ReferenceEquals(sender, _Sample5DirectDrawCheck))
+                sampleList.DxProperties.DrawImageDirectly = _Sample5DirectDrawCheck.Checked;
+
+            if (Object.ReferenceEquals(sender, _Sample5SvgImagesCheck))
+                _Sample5Refill();
+
+        }
         private void _DisposeSample5()
         {
+            _Sample5ParamsValid = false;
+
+            _Sample5SvgImagesCheck.RemoveControlFromParent();
+            _Sample5SvgImagesCheck = null;
+
+            _Sample5DirectDrawCheck.RemoveControlFromParent();
+            _Sample5DirectDrawCheck = null;
+
             _Sample5List?.RemoveControlFromParent();
             _Sample5List = null;
 
             _Sample5Split?.RemoveControlFromParent();
             _Sample5Split = null;
         }
+        private bool _Sample5ParamsValid;
         private DxSplitContainerControl _Sample5Split;
         private DxListBoxPanel _Sample5List;
+        private DxCheckEdit _Sample5SvgImagesCheck;
+        private DxCheckEdit _Sample5DirectDrawCheck;
         private int _Sample5SplitPosition;
         #endregion
         #region Sample 11
@@ -727,7 +833,8 @@ namespace TestDevExpress.Forms
         }
         private void _CreateSample11()
         {
-            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 520, 320) };
+            var bounds = _SampleBounds;
+            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(bounds.X, bounds.Y, 520, 320) };
             sampleList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client;
             sampleList.DxProperties.DataTable = Randomizer.GetDataTable(48, 96, "id:int;name:idtext;surname:text;description:note;pocet:number;icon:imagenamepngfull;photo:thumb");
             sampleList.DxProperties.DxTemplate = _CreateTemplate11();
@@ -770,7 +877,8 @@ namespace TestDevExpress.Forms
         }
         private void _CreateSample12()
         {
-            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 675, 700) };
+            var bounds = _SampleBounds;
+            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(bounds.X, bounds.Y, 675, 700) };
             sampleList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client;
             sampleList.DxProperties.DataTable = Randomizer.GetDataTable(2300, 2500, "id:int;name:idtext;surname:text;description:note;pocet:number;icon:imagenamepngfull;photo:thumb");
             sampleList.DxProperties.DxTemplate = _CreateTemplate12();
@@ -812,7 +920,8 @@ namespace TestDevExpress.Forms
         }
         private void _CreateSample13()
         {
-            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 520, 320) };
+            var bounds = _SampleBounds;
+            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(bounds.X, bounds.Y, 520, 320) };
             sampleList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client;
             sampleList.DxProperties.DataTable = Randomizer.GetDataTable(48, 96, "id:int;name:idtext;surname:text;description:note;pocet:number;icon:imagenamepngfull;photo:thumb");
             sampleList.DxProperties.DxTemplate = sampleList.DxProperties.CreateSimpleDxTemplate("id", "icon", "name", "description", 16);
@@ -840,7 +949,8 @@ namespace TestDevExpress.Forms
         }
         private void _CreateSample14()
         {
-            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(__SampleBegin.X, __SampleBegin.Y, 675, 420) };
+            var bounds = _SampleBounds;
+            var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(bounds.X, bounds.Y, 675, 420) };
             sampleList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client;
 
             var table = Randomizer.GetDataTable(72, 96, "id:int; iconjedla:label; czname:label; latname:label; area:label; description:note; photo:photo");
