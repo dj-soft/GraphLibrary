@@ -4106,6 +4106,56 @@ namespace Noris.Clients.Win.Components.AsolDX
 
 
 
+
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxKeyActionCopyToRightOneC { get { return Names.__DxKeyActionCopyToRightOneC; } set { Names.__DxKeyActionCopyToRightOneC = value; } }
+        private string __DxKeyActionCopyToRightOneC = "@arrowsmall|right|blue";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxKeyActionCopyToRightOneE { get { return Names.__DxKeyActionCopyToRightOneE; } set { Names.__DxKeyActionCopyToRightOneE = value; } }
+        private string __DxKeyActionCopyToRightOneE = "@arrowsmall|right|green";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxKeyActionCopyToRightAllC { get { return Names.__DxKeyActionCopyToRightAllC; } set { Names.__DxKeyActionCopyToRightAllC = value; } }
+        private string __DxKeyActionCopyToRightAllC = "@arrow|right|blue";
+
+        addOneButton(ControlKeyActionType.CopyToTargetAllE, requestedActions, "@arrow|right|green", MsgCode.DxKeyActionCopyToRightAllTitle, MsgCode.DxKeyActionCopyToRightAllText);
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxKeyActionClipPaste { get { return Names.__DxKeyActionClipPaste; } set { Names.__DxKeyActionClipPaste = value; } }
+        private string __DxKeyActionClipPaste = "devav/actions/paste.svg";
+
+        addOneButton(ControlKeyActionType.CopyToSourceOneC, requestedActions, "@arrowsmall|left|blue", MsgCode.DxKeyActionCopyToLeftOneTitle, MsgCode.DxKeyActionCopyToLeftOneText);
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxKeyActionClipPaste { get { return Names.__DxKeyActionClipPaste; } set { Names.__DxKeyActionClipPaste = value; } }
+        private string __DxKeyActionClipPaste = "devav/actions/paste.svg";
+
+        addOneButton(ControlKeyActionType.CopyToSourceOneE, requestedActions, "@arrowsmall|left|green", MsgCode.DxKeyActionCopyToLeftOneTitle, MsgCode.DxKeyActionCopyToLeftOneText);
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxKeyActionClipPaste { get { return Names.__DxKeyActionClipPaste; } set { Names.__DxKeyActionClipPaste = value; } }
+        private string __DxKeyActionClipPaste = "devav/actions/paste.svg";
+
+        addOneButton(ControlKeyActionType.CopyToSourceAllC, requestedActions, "@arrow|left|blue", MsgCode.DxKeyActionCopyToLeftAllTitle, MsgCode.DxKeyActionCopyToLeftAllText);
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxKeyActionClipPaste { get { return Names.__DxKeyActionClipPaste; } set { Names.__DxKeyActionClipPaste = value; } }
+        private string __DxKeyActionClipPaste = "devav/actions/paste.svg";
+
+        addOneButton(ControlKeyActionType.CopyToSourceAllE, requestedActions, "@arrow|left|green", MsgCode.DxKeyActionCopyToLeftAllTitle, MsgCode.DxKeyActionCopyToLeftAllText);
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxKeyActionClipPaste { get { return Names.__DxKeyActionClipPaste; } set { Names.__DxKeyActionClipPaste = value; } }
+        private string __DxKeyActionClipPaste = "devav/actions/paste.svg";
+
+
+        addOneButton(ControlKeyActionType.Undo, requestedActions, "svgimages/dashboards/undo.svg", MsgCode.DxKeyActionUndoTitle, MsgCode.DxKeyActionUndoText);
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxKeyActionClipPaste { get { return Names.__DxKeyActionClipPaste; } set { Names.__DxKeyActionClipPaste = value; } }
+        private string __DxKeyActionClipPaste = "devav/actions/paste.svg";
+
+        addOneButton(ControlKeyActionType.Redo, requestedActions, "svgimages/dashboards/redo.svg", MsgCode.DxKeyActionRedoTitle, MsgCode.DxKeyActionRedoText);
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxKeyActionClipPaste { get { return Names.__DxKeyActionClipPaste; } set { Names.__DxKeyActionClipPaste = value; } }
+        private string __DxKeyActionClipPaste = "devav/actions/paste.svg";
+
+
+
+
     }
     #endregion
     #region class DxBmpImageList : Kolekce Images rozšířená o možnost reloadu při změně barevnosti
