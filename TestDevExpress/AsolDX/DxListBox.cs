@@ -335,8 +335,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                 buttonTypes.Add(ControlKeyActionType.Delimiter);
 
                 // Copy:
-                buttonTypes.Add(ControlKeyActionType.ClipCopy);
-                keyActions |= ControlKeyActionType.ClipCopy;
+                if (this._HasAnyMode(DblListModeType.SourceToTargetCopy))
+                {
+                    buttonTypes.Add(ControlKeyActionType.ClipCopy);
+                    keyActions |= ControlKeyActionType.ClipCopy;
+                }
 
                 // Cut:
                 if (this._HasAnyMode(DblListModeType.SourceToTargetMove))
@@ -454,18 +457,21 @@ namespace Noris.Clients.Win.Components.AsolDX
                 buttonTypes.Add(ControlKeyActionType.Delimiter);
 
                 // Copy:
-                buttonTypes.Add(ControlKeyActionType.ClipCopy);
-                keyActions |= ControlKeyActionType.ClipCopy;
+                if (this._HasAnyMode(DblListModeType.TargetToSourceCopy))
+                {
+                    buttonTypes.Add(ControlKeyActionType.ClipCopy);
+                    keyActions |= ControlKeyActionType.ClipCopy;
+                }
 
                 // Cut:
-                if (this._HasAnyMode(DblListModeType.SourceToTargetMove))
+                if (this._HasAnyMode(DblListModeType.TargetToSourceMove))
                 {
                     buttonTypes.Add(ControlKeyActionType.ClipCut);
                     keyActions |= ControlKeyActionType.ClipCut;
                 }
 
                 // Paste:
-                if (this._HasAnyMode(DblListModeType.TargetToSourceCopy, DblListModeType.TargetToSourceMove))
+                if (this._HasAnyMode(DblListModeType.SourceToTargetCopy, DblListModeType.SourceToTargetMove))
                 {
                     buttonTypes.Add(ControlKeyActionType.ClipPaste);
                     keyActions |= ControlKeyActionType.ClipPaste;
@@ -3391,9 +3397,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         private ITextItem[] _GetSortedItems(ITextItem[] items)
         {
             if (items is null || items.Length <= 1) return items;              // Není co třídit
-            var list = items.ToList();
-            list.Sort((a,b) => a.ItemOrder.CompareTo(b.ItemOrder));
-            return list.ToArray();
+
+            int n = 0;
+            var list = items.Select(t => new Tuple<int, int, ITextItem>(t.ItemOrder, n++, t)).ToList();
+            list.Sort((a, b) => comparer(a, b));
+            return list.Select(t => t.Item3).ToArray();
+
+
+            // Comparer podle (Item1 ASC, Item2 ASC)   ==>   ItemOrder, a v případě shodné hodnoty pak nativní pořadí prvku ve vstupním soupisu:
+            static int comparer(Tuple<int, int, ITextItem> a, Tuple<int, int, ITextItem> b)
+            {
+                int cmp = a.Item1.CompareTo(b.Item1);
+                if (cmp == 0) cmp = a.Item2.CompareTo(b.Item2);
+                return cmp;
+            }
         }
         /// <summary>
         /// Do this ListBoxu vloží dodané Items, pokud možno nenápadně

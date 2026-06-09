@@ -1005,5 +1005,91 @@ namespace TestDevExpress.Forms
         }
         private DxListBoxPanel _Sample14List;
         #endregion
+        #region Sample 21 TreeList + ListBox
+        /// <summary>
+        /// Metoda je volaná reflexí v <see cref="DxMainContentPrepare"/> na základě atributu [Initializer()] !!!
+        /// </summary>
+        [Initializer(21)]
+        private void _PrepareSample21()
+        {
+            __Samples.Add(new SampleInfo("Tree + List", _CreateSample21, _DisposeSample21));
+        }
+        private void _CreateSample21()
+        {
+            var bounds = _SampleBounds;
+            var sampleListA = new DxListBoxPanel() { Bounds = new Rectangle(bounds.X, bounds.Y, 400, 320) };
+            sampleListA.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client;
+            sampleListA.DxProperties.SelectionMode = SelectionMode.MultiExtended;
+            sampleListA.DxProperties.ButtonsPosition = ToolbarPosition.BottomSideCenter;
+            sampleListA.DxProperties.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.SelectAll, ControlKeyActionType.Delimiter, ControlKeyActionType.CopyToTargetOneE, ControlKeyActionType.CopyToTargetOneC, ControlKeyActionType.CopyToTargetAllE };
+            sampleListA.DxProperties.EnabledKeyActions = ControlKeyActionType.None;
+            sampleListA.DxProperties.DragDropActions = DxDragDropActionType.CopyItemsFrom;
+            sampleListA.DxProperties.MenuItems = Randomizer.GetMenuItems(36, 80, Randomizer.ImageResourceType.PngSmall, true);
+            sampleListA.DxProperties.ListActionAfter += _Sample21ListA_ListActionAfter;
+            _AddEventHandlers(sampleListA, true);
+            this._HostContainer.Controls.Add(sampleListA);
+
+            var sampleListB = new DxListBoxPanel() { Bounds = new Rectangle(bounds.X + 410, bounds.Y, 400, 320) };
+            sampleListB.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Client;
+            sampleListB.DxProperties.SelectionMode = SelectionMode.MultiExtended;
+            sampleListB.DxProperties.ButtonsPosition = ToolbarPosition.BottomSideCenter;
+            sampleListB.DxProperties.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.SelectAll, ControlKeyActionType.Delimiter, ControlKeyActionType.Delete, ControlKeyActionType.CopyToSourceOneE, ControlKeyActionType.CopyToSourceOneC, ControlKeyActionType.CopyToSourceAllE, ControlKeyActionType.Delimiter, ControlKeyActionType.Move_All };
+            sampleListB.DxProperties.EnabledKeyActions = ControlKeyActionType.None;
+            sampleListB.DxProperties.DragDropActions = DxDragDropActionType.ImportItemsInto | DxDragDropActionType.ReorderItems;
+            sampleListB.DxProperties.MenuItems = Randomizer.GetMenuItems(7, Randomizer.ImageResourceType.PngSmall, true);
+            sampleListB.DxProperties.ListActionAfter += _Sample21ListB_ListActionAfter;
+            _AddEventHandlers(sampleListB, true);
+            this._HostContainer.Controls.Add(sampleListB);
+
+            _Sample21ListA = sampleListA;
+            _Sample21ListB = sampleListB;
+        }
+        private void _DisposeSample21()
+        {
+            _Sample21ListA?.RemoveControlFromParent();
+            _Sample21ListA = null;
+
+            _Sample21ListB?.RemoveControlFromParent();
+            _Sample21ListB = null;
+        }
+        private void _Sample21ListA_ListActionAfter(object sender, DxListBoxActionEventArgs e)
+        {
+            switch (e.Action)
+            {
+                case ControlKeyActionType.CopyToTargetOneC:
+                    _Sample21ListB.DxProperties.InsertItems(_Sample21ListA.DxProperties.SelectedMenuItems, true, true, DxItemsChangeType.UserInteractive);
+                    break;
+                case ControlKeyActionType.CopyToTargetOneE:
+                    _Sample21ListB.DxProperties.InsertItems(_Sample21ListA.DxProperties.SelectedMenuItems, false, true, DxItemsChangeType.UserInteractive);
+                    break;
+                case ControlKeyActionType.CopyToTargetAllC:
+                    _Sample21ListB.DxProperties.InsertItems(_Sample21ListA.DxProperties.MenuItems, true, true, DxItemsChangeType.UserInteractive);
+                    break;
+                case ControlKeyActionType.CopyToTargetAllE:
+                    _Sample21ListB.DxProperties.InsertItems(_Sample21ListA.DxProperties.MenuItems, false, true, DxItemsChangeType.UserInteractive);
+                    break;
+            }
+        }
+        private void _Sample21ListB_ListActionAfter(object sender, DxListBoxActionEventArgs e)
+        {
+            switch (e.Action)
+            {
+                case ControlKeyActionType.CopyToSourceOneC:
+                    _Sample21ListA.DxProperties.InsertItems(_Sample21ListB.DxProperties.SelectedMenuItems, true, true, DxItemsChangeType.UserInteractive);
+                    break;
+                case ControlKeyActionType.CopyToSourceOneE:
+                    _Sample21ListA.DxProperties.InsertItems(_Sample21ListB.DxProperties.SelectedMenuItems, false, true, DxItemsChangeType.UserInteractive);
+                    break;
+                case ControlKeyActionType.CopyToSourceAllC:
+                    _Sample21ListA.DxProperties.InsertItems(_Sample21ListB.DxProperties.MenuItems, true, true, DxItemsChangeType.UserInteractive);
+                    break;
+                case ControlKeyActionType.CopyToSourceAllE:
+                    _Sample21ListA.DxProperties.InsertItems(_Sample21ListB.DxProperties.MenuItems, false, true, DxItemsChangeType.UserInteractive);
+                    break;
+            }
+        }
+        private DxListBoxPanel _Sample21ListA;
+        private DxListBoxPanel _Sample21ListB;
+        #endregion
     }
 }
