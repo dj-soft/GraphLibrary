@@ -1019,8 +1019,14 @@ namespace TestDevExpress.Forms
             var bounds = _SampleBounds;
             var sampleTree = new DxTreeList() { Bounds = new Rectangle(bounds.X, bounds.Y, 400, 320) };
             sampleTree.DxProperties.RowFilterMode = RowFilterBoxMode.Client;
+            sampleTree.DxProperties.LevelLineType = TreeLevelLineType.Percent50;
+            sampleTree.DxProperties.NodeImageSize = ResourceImageSizeType.Small;
+            sampleTree.DxProperties.ImagePositionType = TreeImagePositionType.MainIconOnly;
+            sampleTree.DxProperties.TreeNodeIndent = 40;
+
             sampleTree.DxProperties.AddNodes(_Sample21CreateTreeNodes());
             _Sample21Tree = sampleTree;
+            __ResizedControls.Add(_Sample21Tree);
             this._HostContainer.Controls.Add(sampleTree);
 
             var sampleList = new DxListBoxPanel() { Bounds = new Rectangle(bounds.X + 410, bounds.Y, 400, 320) };
@@ -1038,10 +1044,44 @@ namespace TestDevExpress.Forms
         }
         private ITreeListNode[] _Sample21CreateTreeNodes()
         {
+            var imageType = Randomizer.ImageResourceType.Svg;
             var nodes = new List<ITreeListNode>();
-
-
+            addNodes(nodes, 0, null);
             return nodes.ToArray();
+
+
+            void addNodes(List<ITreeListNode> nodes, int level, ITreeListNode parentItem)
+            {
+                var count = getCount(level);
+                for (int i = 0; i < count; i++)
+                {
+                    var node = Randomizer.GetTreeListNode(nodes.Count, imageType, true, true);
+                    node.ParentItem = parentItem;
+                    node.Text += $"  [{level}]";
+                    nodes.Add(node);
+                    if (needSubNodes(level))
+                        addNodes(nodes, level + 1, node);
+                }
+            }
+            int getCount(int level)
+            {
+                switch (level)
+                {
+                    case 0: return Randomizer.Rand.Next(20, 40);
+                    case 1: return Randomizer.Rand.Next(5, 8);
+                    case 2: return Randomizer.Rand.Next(3, 7);
+                }
+                return 0;
+            }
+            bool needSubNodes(int level)
+            {
+                switch (level)
+                {
+                    case 0: return Randomizer.IsTrue(40);
+                    case 1: return Randomizer.IsTrue(20);
+                }
+                return false;
+            }
         }
         private void _DisposeSample21()
         {

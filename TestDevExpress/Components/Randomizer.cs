@@ -150,6 +150,31 @@ namespace TestDevExpress
             }
         }
         /// <summary>
+        /// Vygeneruje a vrátí jeden node
+        /// </summary>
+        /// <param name="imageType"></param>
+        /// <param name="withNumberedItems"></param>
+        /// <param name="withToolTip"></param>
+        /// <returns></returns>
+        public static DataTreeListNode GetTreeListNode(int id, ImageResourceType imageType = ImageResourceType.PngFull, bool withNumberedItems = false, bool withToolTip = true)
+        {
+            var node = new DataTreeListNode()
+            {
+                ItemId = $"Node_{id}",
+                Text = GetSentence(1, 3, false)
+            };
+            node.ImageName = GetIconName(imageType);
+            node.SuffixImageName = GetIconName(imageType);
+            if (IsTrue(40)) node.IsExpanded = true;
+            if (withToolTip)
+            {
+                node.ToolTipTitle = node.Text;
+                node.ToolTipText = GetSentences(3, 8, 2, 10);
+            }
+            if (withNumberedItems) node.Text = (id + 1).ToString() + ". " + node.Text;
+            return node;
+        }
+        /// <summary>
         /// Vrátí datovou tabulku s danou strukturou<br/>
         /// Struktura se deklaruje jedním stringem ve formě: <c>"colname1:type; colname2:type; colname3:type..."</c> - kde <c>type</c> určuje jednak konkrétní datový typ (string, int, atd), a i vygenerovaný obsah sloupce.
         /// <list type="bullet">

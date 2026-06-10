@@ -6060,7 +6060,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             get
             {
                 ITreeListNode node = this as ITreeListNode;
-                string debugText = $"Id: {this._ItemId}; Text: {node.Text}; Parent: {node.ParentNodeFullId}";
+                string debugText = $"Id: {this._ItemId}; Text: {node.Text}; Parent: {node.ParentNodeFullId ?? node.ParentItem?.Text}";
                 return debugText;
             }
         }
