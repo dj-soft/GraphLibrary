@@ -4912,7 +4912,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _TreeList.DxProperties.LazyLoadNodeText = "Copak to tu asi bude?";
             _TreeList.DxProperties.LazyLoadNodeImageName = "hourglass_16";
             _TreeList.DxProperties.LazyLoadFocusNode = TreeListLazyLoadFocusNodeType.ParentNode;
-            _TreeList.DxProperties.FilterBoxMode = RowFilterBoxMode.Server;
+            _TreeList.DxProperties.RowFilterMode = RowFilterBoxMode.Server;
             _TreeList.DxProperties.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.MouseUp;
             _TreeList.DxProperties.IncrementalSearchMode = TreeListIncrementalSearchMode.InAllNodes;
             _TreeList.DxProperties.RowFilterServerOperators = DxFilterBox.CreateDefaultOperatorItems(FilterBoxOperatorItems.DefaultText);
@@ -5447,7 +5447,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _PanelDragDrop.Controls.Add(_DragDropBList);
 
             _DragDropCTree = new DxTreeList() { Name = "CTree" };
-            _DragDropCTree.DxProperties.FilterBoxMode = RowFilterBoxMode.Server;
+            _DragDropCTree.DxProperties.RowFilterMode = RowFilterBoxMode.Server;
             _DragDropCTree.DxProperties.DragDropActions = targetDDActions;
             _DragDropCTree.DxProperties.EnabledKeyActions = sourceKeyActions;
             _DragDropCTree.DxProperties.MultiSelectEnabled = true;

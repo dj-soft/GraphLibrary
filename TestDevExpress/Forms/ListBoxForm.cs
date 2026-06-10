@@ -1018,7 +1018,7 @@ namespace TestDevExpress.Forms
         {
             var bounds = _SampleBounds;
             var sampleTree = new DxTreeList() { Bounds = new Rectangle(bounds.X, bounds.Y, 400, 320) };
-            sampleTree.DxProperties.FilterBoxMode = RowFilterBoxMode.Client;
+            sampleTree.DxProperties.RowFilterMode = RowFilterBoxMode.Client;
             sampleTree.DxProperties.AddNodes(_Sample21CreateTreeNodes());
             _Sample21Tree = sampleTree;
             this._HostContainer.Controls.Add(sampleTree);

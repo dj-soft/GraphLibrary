@@ -41,9 +41,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             __TreeListNative = new DxTreeListNative() { Dock = DockStyle.Fill, TabIndex = 1, Name = "TreeListNative" };
             this.Controls.Add(__TitleLabel);
             this.Controls.Add(__TreeListNative);
-            _FilterBoxInitialize();
+            _RowFilterInitialize();
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
-            this.FilterBoxMode = RowFilterBoxMode.None;
+            this.RowFilterMode = RowFilterBoxMode.None;
             this.ClientSizeChanged += _ClientSizeChanged;
         }
         private DxTreeListNative __TreeListNative;
@@ -168,87 +168,287 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private bool __TitleTextVisibleCurrent;
         #endregion
-        #region FilterRow : serverový / klientský
+        #region Filtrování položek: klientské / serverové
         /// <summary>
-        /// Zobrazovat řádkový filtr?
-        /// <para/>
-        /// Default = <see cref="RowFilterBoxMode.None"/>
+        /// Varianta řádkového filtru. Default = None
         /// </summary>
-        protected RowFilterBoxMode FilterBoxMode { get { return _FilterBoxMode; } set { _FilterBoxMode = value; this.RunInGui(_FilterBoxModeChanged); } } private RowFilterBoxMode _FilterBoxMode = RowFilterBoxMode.None;
+        protected RowFilterBoxMode RowFilterMode { get { return __RowFilterMode; } set { _SetRowFilterMode(value); } }
         /// <summary>
-        /// Fyzický control <see cref="DxFilterBox"/>, umístěný v this panelu
+        /// Vyprázdní obsah řádkového filtru
         /// </summary>
-        protected DxFilterBox RowFilterServer { get { return __FilterBox; } }
+        protected void RowFilterClear() { this._RowFilterClear(); }
         /// <summary>
         /// Inicializace FilterBoxu, a jeho vložení do this.Controls
         /// </summary>
-        private void _FilterBoxInitialize()
+        private void _RowFilterInitialize()
         {
-            __FilterBox = new DxFilterBox() { Dock = DockStyle.Top, Visible = false, TabIndex = 0, Name = "FilterBox" };
-            __FilterBox.FilterOperators = DxFilterBox.CreateDefaultOperatorItems(FilterBoxOperatorItems.DefaultText);
-            _FilterBoxMode = RowFilterBoxMode.None;
-            _RegisterFilterRowEventHandlers();
-            this.Controls.Add(__FilterBox);
+            __RowFilterMode = RowFilterBoxMode.None;
+            this.DxProperties.ListActionBefore += _ListBox_ListActionBefore;
         }
         /// <summary>
-        /// Zaregistruje zdejší eventhandlery na události v nativním <see cref="__FilterBox"/>
+        /// Aktivuje daný režim řádkového filtru
         /// </summary>
-        private void _RegisterFilterRowEventHandlers()
+        /// <param name="newFilterMode"></param>
+        private void _SetRowFilterMode(RowFilterBoxMode newFilterMode)
         {
-            __FilterBox.FilterValueChangedSources = DxFilterBoxChangeEventSource.DefaultGreen;
-            __FilterBox.FilterValueChanged += FilterBox_Changed;      // Změna obsahu filtru a Enter
-            __FilterBox.KeyEnterPress += FilterBox_KeyEnter;
+            // Přestup do GUI threadu:
+            this.RunInGui(setRowFilterMode);
+
+            // Aktivuje řádkový filtr, v GUI threadu
+            void setRowFilterMode()
+            {
+                var oldFilterMode = __RowFilterMode;
+
+                if (newFilterMode != RowFilterBoxMode.Client && _RowFilterClientExists)
+                    _RowFilterClientRemove();
+                if (newFilterMode != RowFilterBoxMode.Server && _RowFilterServerExists)
+                    _RowFilterServerRemove();
+
+                if (newFilterMode == RowFilterBoxMode.Client && !_RowFilterClientExists)
+                    _RowFilterClientPrepare();
+                if (newFilterMode == RowFilterBoxMode.Server && !_RowFilterServerExists)
+                    _RowFilterServerPrepare();
+
+                switch (newFilterMode)
+                {
+                    case RowFilterBoxMode.Client:
+                        if (!_RowFilterClientVisible)
+                            _RowFilterClientVisible = true;
+                        break;
+                    case RowFilterBoxMode.Server:
+                        if (!__RowFilterServer.IsVisible)
+                            __RowFilterServer.IsVisible = true;
+                        break;
+                }
+
+                if (newFilterMode != oldFilterMode)
+                {
+                    __RowFilterMode = newFilterMode;
+                    DoLayout();
+                }
+            }
         }
         /// <summary>
-        /// Aktuální text v řádkovém filtru
+        /// Panel je zaháčkovaný na akce ListBoxu, kde panel ošetřuje akce <see cref="ControlKeyActionType.ActivateFilter"/> a <see cref="ControlKeyActionType.FillKeyToFilter"/>.
         /// </summary>
-        protected DxFilterBoxValue RowFilterServerText { get { return __FilterBox?.FilterValue; } set { __FilterBox.FilterValue = value; } }
-        /// <summary>
-        /// Pole operátorů nabízených pod tlačítkem vlevo.
-        /// Pokud bude vloženo null nebo prázdné pole, pak tlačítko vlevo nebude zobrazeno vůbec, a v hodnotě FilterValue bude Operator = null.
-        /// </summary>
-        protected List<IMenuItem> RowFilterServerOperators { get { return __FilterBox?.FilterOperators; } set { __FilterBox.FilterOperators = value; } }
-        /// <summary>
-        /// Za jakých událostí se volá event <see cref="RowFilterServerChanged"/>
-        /// </summary>
-        protected DxFilterBoxChangeEventSource? RowFilterServerChangedSources { get { return __FilterBox?.FilterValueChangedSources; } set { __FilterBox.FilterValueChangedSources = value ?? DxFilterBoxChangeEventSource.Default; } }
-        /// <summary>
-        /// Vyvolá událost <see cref="RowFilterServerChanged"/>
-        /// </summary>
-        /// <param name="eventSource">Jaký je důvod eventu? Default = null = <see cref="DxFilterBoxChangeEventSource.TextChange"/></param>
-        protected void RaiseFilterBoxChanged(DxFilterBoxChangeEventSource? eventSource = null) { __FilterBox.RaiseFilterBoxChanged(eventSource); }
-        /// <summary>
-        /// Událost volaná po hlídané změně obsahu filtru.
-        /// Argument obsahuje hodnotu filtru a druh události, která vyvolala event.
-        /// Druhy události, pro které se tento event volá, lze nastavit v <see cref="RowFilterServerChangedSources"/>.
-        /// </summary>
-        protected event EventHandler<DxFilterBoxChangeArgs> RowFilterServerChanged;
-        /// <summary>
-        /// Provede se po stisku Enter v řádkovém filtru (i bez změny textu), vhodné pro řízení Focusu
-        /// </summary>
-        protected event EventHandler RowFilterServerKeyEnter;
-        /// <summary>
-        /// Aplikuje viditelnost pro FilterRow
-        /// </summary>
-        private void _FilterBoxModeChanged()
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ListBox_ListActionBefore(object sender, DxListBoxActionCancelEventArgs e)
         {
-            var filterMoxMode = _FilterBoxMode;
+            // Jiné akce ignoruji:
+            bool isFilterAction = (e.Action == ControlKeyActionType.ActivateFilter || e.Action == ControlKeyActionType.FillKeyToFilter);
+            if (!isFilterAction) return;
 
-            bool isServerFilter = (filterMoxMode == RowFilterBoxMode.Server);
-            __FilterBox.Visible = isServerFilter;
+            // Pokud já nemám FilterRow, pak akci stornuji, tím si ListBox nebude nastavovat IsHandled = true, a případné klávesy pošle do nativního controlu:
+            var filterMode = this.RowFilterMode;
+            if (filterMode == RowFilterBoxMode.None) { e.Cancel = true; return; }
 
-            bool isClientFilter = (filterMoxMode == RowFilterBoxMode.Client);
-            if (isClientFilter)
-                this.__TreeListNative.DxProperties.PresetClientRowFilter();
+            string text = ((e.Action == ControlKeyActionType.FillKeyToFilter) ? DxComponent.KeyConvertToChar(e.Keys, true)?.ToString() : (string)null);
+            switch (filterMode)
+            {
+                case RowFilterBoxMode.Client:
+                    _RowFilterClientSetFocus(text);
+                    break;
+                case RowFilterBoxMode.Server:
+                    _RowFilterServerSetFocus(text);
+                    break;
+            }
+        }
+        /// <summary>
+        /// Umístí FilterBox (pokud je Visible) do daného prostoru, a ten zmenší o velikost FilterBoxu
+        /// </summary>
+        /// <param name="innerBounds"></param>
+        private void _RowFilterLayout(ref Rectangle innerBounds)
+        {
+            switch (__RowFilterMode)
+            {
+                case RowFilterBoxMode.Client:
+                    _RowFilterClientLayout(ref innerBounds);
+                    break;
+                case RowFilterBoxMode.Server:
+                    _RowFilterServerLayout(ref innerBounds);
+                    break;
+            }
+        }
+        /// <summary>
+        /// Vyprázdní obsah řádkového filtru
+        /// </summary>
+        private void _RowFilterClear()
+        {
+            this.RunInGui(rowFilterClear);
 
-            this.__TreeListNative.DxProperties.ClientRowFilterVisible = isClientFilter;
+            void rowFilterClear()
+            {
+                switch (__RowFilterMode)
+                {
+                    case RowFilterBoxMode.Client:
+                        _RowFilterClientClear();
+                        break;
+                    case RowFilterBoxMode.Server:
+                        _RowFilterServerClear();
+                        break;
+                }
+            }
+        }
+        /// <summary>
+        /// Dispose řádkového filtrování
+        /// </summary>
+        private void _RowFilterDispose()
+        {
+            _RowFilterClientRemove();
+            _RowFilterServerRemove();
+            __RowFilterMode = RowFilterBoxMode.None;
+        }
+        /// <summary>
+        /// Varianta řádkového filtru.
+        /// </summary>
+        private RowFilterBoxMode __RowFilterMode;
+        #region Klientský řádkový filtr = používá Searcher
+        /// <summary>
+        /// Aktuálně existuje řádkový filtr typu Client?
+        /// </summary>
+        private bool _RowFilterClientExists { get { return DxProperties.ClientRowFilterVisible; } }
+        /// <summary>
+        /// Aktuálně existuje řádkový filtr typu Client?
+        /// </summary>
+        private bool _RowFilterClientVisible { get { return DxProperties.ClientRowFilterVisible; } set { DxProperties.ClientRowFilterVisible = true; } }
+        /// <summary>
+        /// Inicializace klientského FilterBoxu, a jeho vložení do this.Controls
+        /// </summary>
+        private void _RowFilterClientPrepare()
+        {   // Je řešen jako interní vlastnost TreeListu, a zdejší metody / property pouze navazují tuto DevExpress komponentu:
+            this.__TreeListNative.DxProperties.PresetClientRowFilter();
+            this.__TreeListNative.DxProperties.ClientRowFilterVisible = true;
+        }
+        /// <summary>
+        /// Umístí FilterBox typu Klient (pokud je Visible) do daného prostoru, a ten zmenší o velikost FilterBoxu
+        /// </summary>
+        /// <param name="innerBounds"></param>
+        private void _RowFilterClientLayout(ref Rectangle innerBounds)
+        {   // Je řešen jako interní vlastnost TreeListu, a zdejší metody / property pouze navazují tuto DevExpress komponentu:
+            /*
+            Rectangle filterBounds = new Rectangle(innerBounds.X, innerBounds.Y, innerBounds.Width, __RowFilterClient.Height);
+            __RowFilterClient.Bounds = filterBounds;
+            int y = __RowFilterClient.Bottom + 1;
+            innerBounds = new Rectangle(innerBounds.X, y, innerBounds.Width, innerBounds.Bottom - y);
+            */
+        }
+        /// <summary>
+        /// Smaže obsah klientského řádkového filtru
+        /// </summary>
+        private void _RowFilterClientClear()
+        {
+//            TreeListNative.OptionsFilter.MRUFilterListCount
+  //          DxProperties.ClientRowFilterOptions.
+    //        __RowFilterClient.ClearFilter();
+
+        }
+        /// <summary>
+        /// Aktivuje klientský RowFilter, volitelně do něj vepíše daný text (pokud není null)
+        /// </summary>
+        private void _RowFilterClientSetFocus(string text)
+        {
+            DxProperties.ClientRowFilterVisible = false;
+        }
+        /// <summary>
+        /// Odebere klientský RowFilter
+        /// </summary>
+        private void _RowFilterClientRemove()
+        {
+            DxProperties.ClientRowFilterVisible = false;
+        }
+        #endregion
+        #region Serverový řádkový filtr = používá FilterBox
+        /// <summary>
+        /// Fyzický control <see cref="DxFilterBox"/>, umístěný v this panelu
+        /// </summary>
+        protected DxFilterBox RowFilterServer { get { return __RowFilterServer; } }
+        /// <summary>
+        /// Aktuálně existuje řádkový filtr typu Server?
+        /// </summary>
+        private bool _RowFilterServerExists { get { return (__RowFilterServer != null); } }
+        /// <summary>
+        /// Inicializace serverového FilterBoxu, a jeho vložení do this.Controls
+        /// </summary>
+        private void _RowFilterServerPrepare()
+        {
+            __RowFilterServer = new DxFilterBox() { Dock = DockStyle.None, Visible = false, TabIndex = 0, Name = "FilterBox" };
+            __RowFilterServer.FilterOperators = DxFilterBox.CreateDefaultOperatorItems(FilterBoxOperatorItems.DefaultText);
+            __RowFilterServer.FilterValueChangedSources = DxFilterBoxChangeEventSource.DefaultGreen;
+            _RowFilterServerRegisterEvents();
+            this.Controls.Add(__RowFilterServer);
+        }
+        /// <summary>
+        /// Umístí FilterBox typu Server (pokud je Visible) do daného prostoru, a ten zmenší o velikost FilterBoxu
+        /// </summary>
+        /// <param name="innerBounds"></param>
+        private void _RowFilterServerLayout(ref Rectangle innerBounds)
+        {
+            if (_RowFilterServerExists)
+            {
+                Rectangle filterBounds = new Rectangle(innerBounds.X, innerBounds.Y, innerBounds.Width, __RowFilterServer.Height);
+                __RowFilterServer.Bounds = filterBounds;
+                int y = __RowFilterServer.Bottom + 1;
+                innerBounds = new Rectangle(innerBounds.X, y, innerBounds.Width, innerBounds.Bottom - y);
+            }
+        }
+        /// <summary>
+        /// Smaže obsah serverového řádkového filtru
+        /// </summary>
+        private void _RowFilterServerClear()
+        {
+            if (__RowFilterServer != null)
+            {
+                __RowFilterServer.ClearFilter();
+            }
+        }
+        /// <summary>
+        /// Aktivuje serverový RowFilter, volitelně do něj vepíše daný text (pokud není null)
+        /// </summary>
+        private void _RowFilterServerSetFocus(string text)
+        {
+            if (__RowFilterServer != null)
+            {
+                __RowFilterServer.Focus();
+                if (text != null)
+                    __RowFilterServer.FilterText = text;
+            }
+        }
+        /// <summary>
+        /// Odebere serverový RowFilter
+        /// </summary>
+        private void _RowFilterServerRemove()
+        {
+            if (__RowFilterServer != null)
+            {
+                _RowFilterServerUnRegisterEvents();
+                __RowFilterServer.RemoveControlFromParent();
+                __RowFilterServer.Dispose();
+                __RowFilterServer = null;
+            }
+        }
+        /// <summary>
+        /// Zaregistruje zdejší eventhandlery na události v nativním <see cref="__RowFilterServer"/>
+        /// </summary>
+        private void _RowFilterServerRegisterEvents()
+        {
+            __RowFilterServer.FilterValueChanged += _RowFilterServer_Changed;      // Změna obsahu filtru a Enter
+            __RowFilterServer.KeyEnterPress += _RowFilterServer_KeyEnter;
+        }
+        /// <summary>
+        /// Odregistruje zdejší eventhandlery na události v nativním <see cref="__RowFilterServer"/>
+        /// </summary>
+        private void _RowFilterServerUnRegisterEvents()
+        {
+            __RowFilterServer.FilterValueChanged -= _RowFilterServer_Changed;      // Změna obsahu filtru a Enter
+            __RowFilterServer.KeyEnterPress -= _RowFilterServer_KeyEnter;
         }
         /// <summary>
         /// Po jakékoli změně v řádkovém filtru
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
-        private void FilterBox_Changed(object sender, DxFilterBoxChangeArgs args)
+        private void _RowFilterServer_Changed(object sender, DxFilterBoxChangeArgs args)
         {
             OnFilterBoxChanged(args);
             RowFilterServerChanged?.Invoke(this, args);
@@ -262,7 +462,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void FilterBox_KeyEnter(object sender, EventArgs e)
+        private void _RowFilterServer_KeyEnter(object sender, EventArgs e)
         {
             _MainControlFocus();
             OnFilterBoxKeyEnter();
@@ -273,9 +473,38 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected virtual void OnFilterBoxKeyEnter() { }
         /// <summary>
-        /// DxFilterBox
+        /// Aktuální text v řádkovém filtru
         /// </summary>
-        private DxFilterBox __FilterBox;
+        protected DxFilterBoxValue RowFilterServerText { get { return __RowFilterServer?.FilterValue; } set { if (_RowFilterServerExists) __RowFilterServer.FilterValue = value; } }
+        /// <summary>
+        /// Pole operátorů nabízených pod tlačítkem vlevo.
+        /// Pokud bude vloženo null nebo prázdné pole, pak tlačítko vlevo nebude zobrazeno vůbec, a v hodnotě FilterValue bude Operator = null.
+        /// </summary>
+        protected List<IMenuItem> RowFilterServerOperators { get { return __RowFilterServer?.FilterOperators; } set { if (_RowFilterServerExists) __RowFilterServer.FilterOperators = value; } }
+        /// <summary>
+        /// Za jakých událostí se volá event <see cref="RowFilterServerChanged"/>
+        /// </summary>
+        protected DxFilterBoxChangeEventSource? RowFilterServerChangedSources { get { return __RowFilterServer?.FilterValueChangedSources; } set { if (_RowFilterServerExists) __RowFilterServer.FilterValueChangedSources = value ?? DxFilterBoxChangeEventSource.DefaultGreen; } }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="eventSource"></param>
+        protected void RaiseFilterBoxChanged(DxFilterBoxChangeEventSource? eventSource = null) { }
+        /// <summary>
+        /// Událost volaná po hlídané změně obsahu filtru.
+        /// Argument obsahuje hodnotu filtru a druh události, která vyvolala event.
+        /// Druhy události, pro které se tento event volá, lze nastavit v <see cref="RowFilterServerChangedSources"/>.
+        /// </summary>
+        protected event EventHandler<DxFilterBoxChangeArgs> RowFilterServerChanged;
+        /// <summary>
+        /// Provede se po stisku Enter v řádkovém filtru (i bez změny textu), vhodné pro řízení Focusu
+        /// </summary>
+        protected event EventHandler RowFilterServerKeyEnter;
+        /// <summary>
+        /// Serverový DxFilterBox
+        /// </summary>
+        private DxFilterBox __RowFilterServer;
+        #endregion
         #endregion
         #region Tlačítka
         /// <summary>
@@ -562,6 +791,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Řádkový filtr je viditelný?
             /// </summary>
             public bool ClientRowFilterVisible { get { return DxTreeProperties.ClientRowFilterVisible; } set { DxTreeProperties.ClientRowFilterVisible = value; } }
+            /// <summary>
+            /// Vlastnosti klientského řádkového filtru
+            /// </summary>
+            public DevExpress.XtraTreeList.TreeListOptionsFilter ClientRowFilterOptions { get { return DxTreeProperties.ClientRowFilterOptions; } }
             /// <summary>
             /// Připraví nastavení pro klientský RowFilter v tomto TreeListu
             /// </summary>
@@ -864,7 +1097,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <para/>
             /// Default = <see cref="RowFilterBoxMode.None"/>
             /// </summary>
-            public RowFilterBoxMode FilterBoxMode { get { return __Owner.FilterBoxMode; } set { __Owner.FilterBoxMode = value; } }
+            public RowFilterBoxMode RowFilterMode { get { return __Owner.RowFilterMode; } set { __Owner.RowFilterMode = value; } }
             /// <summary>
             /// Instance serverového řádkového filtru
             /// </summary>
@@ -1175,6 +1408,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Řádkový filtr je viditelný?
         /// </summary>
         protected bool ClientRowFilterVisible { get { return this.OptionsView.ShowAutoFilterRow; } set { this.OptionsView.ShowAutoFilterRow = value; } }
+        /// <summary>
+        /// Vlastnosti klientského řádkového filtru
+        /// </summary>
+        protected DevExpress.XtraTreeList.TreeListOptionsFilter ClientRowFilterOptions { get { return this.OptionsFilter; } }
         /// <summary>
         /// Připraví nastavení pro klientský RowFilter v tomto TreeListu
         /// </summary>
@@ -4961,6 +5198,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Řádkový filtr je viditelný?
             /// </summary>
             public bool ClientRowFilterVisible { get { return __Owner.ClientRowFilterVisible; } set { __Owner.ClientRowFilterVisible = value; } }
+            /// <summary>
+            /// Vlastnosti klientského řádkového filtru
+            /// </summary>
+            public DevExpress.XtraTreeList.TreeListOptionsFilter ClientRowFilterOptions { get { return __Owner.ClientRowFilterOptions; } }
             /// <summary>
             /// Připraví nastavení pro klientský RowFilter v tomto TreeListu
             /// </summary>

@@ -202,6 +202,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         public List<IMenuItem> FilterOperators { get { return _FilterOperators; } set { _FilterOperators = value; this.RunInGui(AcceptOperators); } }
         private List<IMenuItem> _FilterOperators;
         /// <summary>
+        /// Control je nastaven jako Viditelný? Obsahuje true i tehdy, když jeho Parent exestuje a není viditelný.
+        /// </summary>
+        public bool IsVisible { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        /// <summary>
         /// Refreshuje operátory z pole <see cref="FilterOperators"/> do GUI
         /// </summary>
         public void FilterOperatorsRefresh() { this.RunInGui(AcceptOperators); }
@@ -295,6 +299,13 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 this.RunInGui(() => { ActivateCurrentFilterOperator(); FilterTextSetSilent(text); });
             }
+        }
+        /// <summary>
+        /// Smaže filtrační hodnotu <see cref="FilterText"/> = ""
+        /// </summary>
+        public void ClearFilter()
+        {
+            this.FilterText = "";
         }
         /// <summary>
         /// Aktuální textová hodnota filtru. Lze setovat. Setování ale nevyvolá událost <see cref="FilterValueChanged"/>. Při setování se nastaví operátor 'Obsahuje'.

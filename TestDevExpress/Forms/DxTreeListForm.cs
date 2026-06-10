@@ -133,7 +133,9 @@ namespace TestDevExpress.Forms
         protected override void OnSettingApplyTreeListProperties()
         {
             // Do TreeListu     z Properties
-            DxTreeList.MultiSelectEnabled = SetingsMultiSelect;
+            DxTreeList.DxProperties.MultiSelectEnabled = SetingsMultiSelect;
+            DxTreeList.DxProperties.RowFilterMode = SetingsRowFilterBoxMode;
+
             DxTreeList.TreeListNative.TreeLevelWidth = SettingsNodeIndent;
             DxTreeList.TreeListNative.OptionsView.ShowTreeLines = SetingsShowTreeLines;
             DxTreeList.TreeListNative.OptionsView.ShowFirstLines = SetingsShowFirstLines;
@@ -144,7 +146,6 @@ namespace TestDevExpress.Forms
             DxTreeList.TreeListNative.OptionsView.ShowHierarchyIndentationLines = SetingsShowHierarchyIndentationLines;
             DxTreeList.TreeListNative.OptionsView.ShowIndentAsRowStyle = SettingsShowIndentAsRowStyle;
             DxTreeList.TreeListNative.OptionsView.CheckBoxStyle = SetingsCheckBoxStyle;
-            DxTreeList.FilterBoxMode = SetingsRowFilterBoxMode;
             DxTreeList.TreeListNative.OptionsView.RootCheckBoxStyle = DevExpress.XtraTreeList.NodeCheckBoxStyle.Default;
             DxTreeList.TreeListNative.OptionsView.FocusRectStyle = SetingsFocusRectStyle;
             DxTreeList.TreeListNative.OptionsBehavior.Editable = SettingsEditable;
@@ -267,14 +268,14 @@ namespace TestDevExpress.Forms
         protected override void OnSettingApplyTreeListProperties()
         {
             // Do TreeListu     z Properties
-            DxTreeList.ColumnHeadersVisible = SetingsVisibleHeaders;
-            DxTreeList.FilterBoxMode = SetingsRowFilterBoxMode;
-            DxTreeList.MultiSelectEnabled = SetingsMultiSelect;
-            DxTreeList.TreeNodeIndent = SettingsNodeIndent;
-            DxTreeList.LevelLineType = SettingsLevelLineType;
-            DxTreeList.CellLinesType = SettingsCellLinesType;
-            DxTreeList.IsEditable = SettingsEditable;
-            DxTreeList.EditorStartMode = SettingsEditorStartMode;
+            DxTreeList.DxProperties.ColumnHeadersVisible = SetingsVisibleHeaders;
+            DxTreeList.DxProperties.RowFilterMode = SetingsRowFilterBoxMode;
+            DxTreeList.DxProperties.MultiSelectEnabled = SetingsMultiSelect;
+            DxTreeList.DxProperties.TreeNodeIndent = SettingsNodeIndent;
+            DxTreeList.DxProperties.LevelLineType = SettingsLevelLineType;
+            DxTreeList.DxProperties.CellLinesType = SettingsCellLinesType;
+            DxTreeList.DxProperties.IsEditable = SettingsEditable;
+            DxTreeList.DxProperties.EditorStartMode = SettingsEditorStartMode;
         }
 
         protected DxCheckEdit CheckVisibleHeaders;
@@ -423,44 +424,44 @@ namespace TestDevExpress.Forms
         #region TreeList setting a events
         protected void TreeListInit()
         {
-            DxTreeList.CheckBoxMode = TreeListCheckBoxMode.SpecifyByNode;
-            DxTreeList.LazyLoadNodeText = "Copak to tu asi bude?";
-            DxTreeList.LazyLoadNodeImageName = "hourglass_16";
-            DxTreeList.LazyLoadFocusNode = TreeListLazyLoadFocusNodeType.ParentNode;
-            DxTreeList.FilterBoxMode = RowFilterBoxMode.Server;
-            DxTreeList.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.MouseUp;
-            DxTreeList.IncrementalSearchMode = TreeListIncrementalSearchMode.InAllNodes;
-            DxTreeList.RowFilterServerOperators = DxFilterBox.CreateDefaultOperatorItems(FilterBoxOperatorItems.DefaultText);
-            DxTreeList.RowFilterServerChangedSources = DxFilterBoxChangeEventSource.Default;
-            DxTreeList.MultiSelectEnabled = true;
-            DxTreeList.MainClickMode = NodeMainClickMode.AcceptNodeSetting;
+            DxTreeList.DxProperties.CheckBoxMode = TreeListCheckBoxMode.SpecifyByNode;
+            DxTreeList.DxProperties.LazyLoadNodeText = "Copak to tu asi bude?";
+            DxTreeList.DxProperties.LazyLoadNodeImageName = "hourglass_16";
+            DxTreeList.DxProperties.LazyLoadFocusNode = TreeListLazyLoadFocusNodeType.ParentNode;
+            DxTreeList.DxProperties.RowFilterMode = RowFilterBoxMode.Server;
+            DxTreeList.DxProperties.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.MouseUp;
+            DxTreeList.DxProperties.IncrementalSearchMode = TreeListIncrementalSearchMode.InAllNodes;
+            DxTreeList.DxProperties.RowFilterServerOperators = DxFilterBox.CreateDefaultOperatorItems(FilterBoxOperatorItems.DefaultText);
+            DxTreeList.DxProperties.RowFilterServerChangedSources = DxFilterBoxChangeEventSource.Default;
+            DxTreeList.DxProperties.MultiSelectEnabled = true;
+            DxTreeList.DxProperties.MainClickMode = NodeMainClickMode.AcceptNodeSetting;
 
-            DxTreeList.NodeImageSize = ResourceImageSizeType.Large;        // Zkus různé...
-            DxTreeList.NodeImageSize = ResourceImageSizeType.Medium;
-            DxTreeList.NodeImageSize = ResourceImageSizeType.Small;
+            DxTreeList.DxProperties.NodeImageSize = ResourceImageSizeType.Large;        // Zkus různé...
+            DxTreeList.DxProperties.NodeImageSize = ResourceImageSizeType.Medium;
+            DxTreeList.DxProperties.NodeImageSize = ResourceImageSizeType.Small;
 
-            DxTreeList.NodeAllowHtmlText = true;
+            DxTreeList.DxProperties.NodeAllowHtmlText = true;
 
-            DxTreeList.HotKeys = CreateHotKeys();
+            DxTreeList.DxProperties.HotKeys = CreateHotKeys();
 
-            DxTreeList.RowFilterServerChanged += TreeList_FilterBoxChanged;
-            DxTreeList.RowFilterServerKeyEnter += TreeList_FilterBoxKeyEnter;
-            DxTreeList.NodeKeyDown += TreeList_NodeKeyDown;
-            DxTreeList.NodeFocusedChanged += TreeList_AnyAction;
-            DxTreeList.SelectedNodesChanged += TreeList_SelectedNodesChanged;
-            DxTreeList.ShowContextMenu += TreeList_ShowContextMenu;
-            DxTreeList.NodeIconClick += TreeList_IconClick;
-            DxTreeList.NodeItemClick += TreeList_ItemClick;
-            DxTreeList.NodeDoubleClick += _TreeList_DoubleClick;
-            DxTreeList.NodeExpanded += TreeList_AnyAction;
-            DxTreeList.NodeCollapsed += TreeList_AnyAction;
-            DxTreeList.ActivatedEditor += TreeList_AnyAction;
-            DxTreeList.EditorDoubleClick += _TreeList_DoubleClick;
-            DxTreeList.NodeEdited += _TreeList_NodeEdited;
-            DxTreeList.NodeCheckedChange += TreeList_AnyAction;
-            DxTreeList.NodesDelete += _TreeList_NodesDelete;
-            DxTreeList.LazyLoadChilds += _TreeList_LazyLoadChilds;
-            DxTreeList.ToolTipChanged += _TreeList_ToolTipChanged;
+            DxTreeList.DxProperties.RowFilterServerChanged += TreeList_FilterBoxChanged;
+            DxTreeList.DxProperties.RowFilterServerKeyEnter += TreeList_FilterBoxKeyEnter;
+            DxTreeList.DxProperties.NodeKeyDown += TreeList_NodeKeyDown;
+            DxTreeList.DxProperties.NodeFocusedChanged += TreeList_AnyAction;
+            DxTreeList.DxProperties.SelectedNodesChanged += TreeList_SelectedNodesChanged;
+            DxTreeList.DxProperties.ShowContextMenu += TreeList_ShowContextMenu;
+            DxTreeList.DxProperties.NodeIconClick += TreeList_IconClick;
+            DxTreeList.DxProperties.NodeItemClick += TreeList_ItemClick;
+            DxTreeList.DxProperties.NodeDoubleClick += _TreeList_DoubleClick;
+            DxTreeList.DxProperties.NodeExpanded += TreeList_AnyAction;
+            DxTreeList.DxProperties.NodeCollapsed += TreeList_AnyAction;
+            DxTreeList.DxProperties.ActivatedEditor += TreeList_AnyAction;
+            DxTreeList.DxProperties.EditorDoubleClick += _TreeList_DoubleClick;
+            DxTreeList.DxProperties.NodeEdited += _TreeList_NodeEdited;
+            DxTreeList.DxProperties.NodeCheckedChange += TreeList_AnyAction;
+            DxTreeList.DxProperties.NodesDelete += _TreeList_NodesDelete;
+            DxTreeList.DxProperties.LazyLoadChilds += _TreeList_LazyLoadChilds;
+            DxTreeList.DxProperties.ToolTipChanged += _TreeList_ToolTipChanged;
             DxTreeList.MouseLeave += _TreeList_MouseLeave;
         }
         protected void TreeList_AnyAction(object sender, DxTreeListNodesArgs args)
@@ -473,7 +474,7 @@ namespace TestDevExpress.Forms
         }
         protected void TreeList_FilterBoxChanged(object sender, DxFilterBoxChangeArgs args)
         {
-            var filter = this.DxTreeList.RowFilterServerText;
+            var filter = this.DxTreeList.DxProperties.RowFilterServerText;
             AddToLog($"RowFilter: Change: {args.EventSource}; Operator: {args.FilterValue.FilterOperator?.ItemId}, Text: \"{args.FilterValue.FilterText}\"");
         }
         protected void TreeList_FilterBoxKeyEnter(object sender, EventArgs e)
@@ -488,7 +489,7 @@ namespace TestDevExpress.Forms
         {
             int count = 0;
             string selectedNodes = "";
-            DxTreeList.SelectedNodes.ForEachExec(n => { count++; selectedNodes += "; '" + n.ToString() + "'"; });
+            DxTreeList.DxProperties.SelectedNodes.ForEachExec(n => { count++; selectedNodes += "; '" + n.ToString() + "'"; });
             if (selectedNodes.Length > 0) selectedNodes = selectedNodes.Substring(2);
             AddToLog($"SelectedNodesChanged: Selected {count} Nodes: {selectedNodes}");
         }
@@ -554,16 +555,16 @@ namespace TestDevExpress.Forms
 
             if (args.Node.NodeType == NodeItemType.OnDoubleClickLoadNext)
             {
-                DxTreeList.RunInLock(new Action<DataTreeListNode>(node =>
+                DxTreeList.DxProperties.RunInLock(new Action<DataTreeListNode>(node =>
                 {   // V jednom vizuálním zámku:
-                    DxTreeList.RemoveNode(node.ItemId);            // Odeberu OnDoubleClickLoadNext node, to kvůli pořadí: nový OnDoubleClickLoadNext přidám (možná) nakonec
+                    DxTreeList.DxProperties.RemoveNode(node.ItemId);            // Odeberu OnDoubleClickLoadNext node, to kvůli pořadí: nový OnDoubleClickLoadNext přidám (možná) nakonec
 
                     var newNodes = CreateNodes(node, false, true);
-                    DxTreeList.AddNodes(newNodes);
+                    DxTreeList.DxProperties.AddNodes(newNodes);
 
                     // Aktivuji první přidaný node:
                     if (newNodes.Length > 0)
-                        DxTreeList.SetFocusToNode(newNodes[0]);
+                        DxTreeList.DxProperties.SetFocusToNode(newNodes[0]);
                 }
                ), args.Node);
             }
@@ -663,7 +664,7 @@ namespace TestDevExpress.Forms
 
             System.Threading.Thread.Sleep(720);                      // Něco jako uděláme...
 
-            DxTreeList.RemoveNodes(removeNodeKeys);
+            DxTreeList.DxProperties.RemoveNodes(removeNodeKeys);
         }
         protected void LoadChildNodesFromServerBgr(DxTreeListNodeArgs args)
         {
@@ -689,7 +690,7 @@ namespace TestDevExpress.Forms
             bool empty = (Randomizer.Rand.Next(10) > 7);
             var nodes = CreateNodes(parentNode);                          // A pak vyrobíme Child nody
             AddToLog($"Načtena data: {nodes.Length} prvků.");
-            DxTreeList.AddLazyLoadNodes(parentNodeId, nodes);            //  a pošleme je do TreeView.
+            DxTreeList.DxProperties.AddLazyLoadNodes(parentNodeId, nodes);            //  a pošleme je do TreeView.
         }
         #endregion
         #region Vytváření sloupců a nodů, smazání a plnění dat do TreeListu
@@ -733,7 +734,7 @@ namespace TestDevExpress.Forms
             if (sampleCountBase == 0)
             {
                 var time0 = DxComponent.LogTimeCurrent;
-                DxTreeList.ClearNodes();
+                DxTreeList.DxProperties.ClearNodes();
                 var time1 = DxComponent.LogTimeCurrent;
                 this.AddToLog($"Smazání nodů z TreeListu; čas: {DxComponent.LogGetTimeElapsed(time0, time1, DxComponent.LogTokenTimeMilisec)} ms");
             }
@@ -742,7 +743,7 @@ namespace TestDevExpress.Forms
                 var time0 = DxComponent.LogTimeCurrent;
                 var nodes = CreateNodes(null);
                 var time1 = DxComponent.LogTimeCurrent;
-                DxTreeList.AddNodes(nodes, true, PreservePropertiesMode.None);
+                DxTreeList.DxProperties.AddNodes(nodes, true, PreservePropertiesMode.None);
                 var time2 = DxComponent.LogTimeCurrent;
 
                 this.AddToLog($"Tvorba nodů; počet: {nodes.Length}; čas: {DxComponent.LogGetTimeElapsed(time0, time1, DxComponent.LogTokenTimeMilisec)} ms");
@@ -759,7 +760,7 @@ namespace TestDevExpress.Forms
         protected void CheckColumns(bool force = false)
         {
             bool useMultiColumns = SettingsUseMultiColumns;
-            var dxColumns = DxTreeList.TreeListNative.DxColumns;
+            var dxColumns = DxTreeList.DxProperties.DxColumns;
             bool isHtmlFormatted = SettingsUseHtmlFormat;
             bool isChangeHtmlColumns = (CurrentColumnHtmlFormat != isHtmlFormatted);
             if (useMultiColumns && (force || isChangeHtmlColumns || (dxColumns is null || dxColumns.Length < 3)))
@@ -777,7 +778,7 @@ namespace TestDevExpress.Forms
             dxColumns.Add(new DataTreeListColumn() { Caption = "Text", Width = 220, MinWidth = 150, IsEditable = true });
             dxColumns.Add(new DataTreeListColumn() { Caption = "Informace", Width = 120, MinWidth = 80, HeaderContentAlignment = DevExpress.Utils.HorzAlignment.Center, CellContentAlignment = DevExpress.Utils.HorzAlignment.Far, IsEditable = false });
             dxColumns.Add(new DataTreeListColumn() { Caption = "Popisek", Width = 160, MinWidth = 100, IsEditable = true, IsHtmlFormatted = isHtmlFormatted });
-            DxTreeList.DxColumns = dxColumns.ToArray();
+            DxTreeList.DxProperties.DxColumns = dxColumns.ToArray();
         }
         /// <summary>
         /// Metoda zajistí, že TreeList bude mít připravené správné Single sloupce
@@ -786,10 +787,10 @@ namespace TestDevExpress.Forms
         {
             if (isHtmlFormatted)
                 // SingleColumn, používající HTML => musím jej explicitně vytvořit, abych do něj mohl vepsat EnableHtmlFormat = true :
-                DxTreeList.DxColumns = new DataTreeListColumn[] { new DataTreeListColumn() { Caption = "   ", Width = 4000, IsEditable = false, IsHtmlFormatted = isHtmlFormatted } };
+                DxTreeList.DxProperties.DxColumns = new DataTreeListColumn[] { new DataTreeListColumn() { Caption = "   ", Width = 4000, IsEditable = false, IsHtmlFormatted = isHtmlFormatted } };
             else
                 // Default nám vyhovuje null, komponenta se vygeneruje prázdný sloupec:
-                DxTreeList.DxColumns = null;
+                DxTreeList.DxProperties.DxColumns = null;
         }
         /// <summary>
         /// Vytvoří nody
@@ -1950,8 +1951,8 @@ namespace TestDevExpress.Forms
         }
         protected virtual void OnSettingApplyNodeProperties()
         {
-            this.DxTreeList.ImagePositionType = SettingsImagePosition;
-            this.DxTreeList.WordWrap = SettingsUseWordWrap;
+            this.DxTreeList.DxProperties.ImagePositionType = SettingsImagePosition;
+            this.DxTreeList.DxProperties.WordWrap = SettingsUseWordWrap;
         }
         protected virtual void OnSettingApplyLog()
         {

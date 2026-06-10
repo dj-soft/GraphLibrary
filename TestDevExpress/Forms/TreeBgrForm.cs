@@ -52,15 +52,15 @@ namespace TestDevExpress.Forms
         {
             _TreeList = new DxTreeList()
             {
-                Dock = System.Windows.Forms.DockStyle.Fill,
-                ImagePositionType = TreeImagePositionType.MainIconOnly,
-                NodeImageSize = ResourceImageSizeType.Small,
-                RootNodeVisible = true
+                Dock = System.Windows.Forms.DockStyle.Fill
             };
 
-            _TreeList.AnimationType = TreeListAnimationType.NeverAnimate;
-            _TreeList.AllowOptionExpandAnimation = DevExpress.Utils.DefaultBoolean.False;
-            _TreeList.FocusRectStyle = DrawFocusRectStyle.RowFullFocus;
+            _TreeList.DxProperties.ImagePositionType = TreeImagePositionType.MainIconOnly;
+            _TreeList.DxProperties.NodeImageSize = ResourceImageSizeType.Small;
+            _TreeList.DxProperties.RootNodeVisible = true;
+            _TreeList.DxProperties.AnimationType = TreeListAnimationType.NeverAnimate;
+            _TreeList.DxProperties.AllowOptionExpandAnimation = DevExpress.Utils.DefaultBoolean.False;
+            _TreeList.DxProperties.FocusRectStyle = DrawFocusRectStyle.RowFullFocus;
 
             _SplitContainer.Panel1.Controls.Add(_TreeList);
         }
@@ -77,7 +77,7 @@ namespace TestDevExpress.Forms
 
             var extensions = treeNodes.Select(t => System.IO.Path.GetExtension(t.ImageName)).Distinct().ToArray();
             if (extensions.Length > 1) throw new InvalidOperationException("Pole TreeNodes obsahuje více přípon než jednu.");
-            string expectedExtension = (_TreeList.NodeImageType == ResourceContentType.Vector ? ".svg" : ".png");
+            string expectedExtension = (_TreeList.DxProperties.NodeImageType == ResourceContentType.Vector ? ".svg" : ".png");
             if (!String.Equals(expectedExtension, extensions[0])) throw new InvalidOperationException($"Pole TreeNodes images s jinou příponou '{expectedExtension}' než tou očekávanou '{extensions[0]}'.");
 
             _TreeNodes = treeNodes;
@@ -118,7 +118,7 @@ namespace TestDevExpress.Forms
         {
             try
             {
-                _TreeList.RunInLock(new Action<bool, bool>(FillTreeNodes), clear, preservePosition);
+                _TreeList.DxProperties.RunInLock(new Action<bool, bool>(FillTreeNodes), clear, preservePosition);
             }
             catch (Exception exc)
             {
@@ -129,7 +129,7 @@ namespace TestDevExpress.Forms
         {
             var nodes = _TreeNodes;
             PreservePropertiesMode preserveProperties = (preservePosition ? (PreservePropertiesMode.SelectedItems | PreservePropertiesMode.FirstVisibleItem | PreservePropertiesMode.FirstVisiblePixel) : PreservePropertiesMode.None);
-            _TreeList.AddNodes(nodes, clear, preserveProperties);
+            _TreeList.DxProperties.AddNodes(nodes, clear, preserveProperties);
         }
         /// <summary>
         /// Připraví pole 200 náhodných názvů obrázků jednoho typu (náhodná volba SVG nebo PNG) do <see cref="_Images"/>.
@@ -139,7 +139,7 @@ namespace TestDevExpress.Forms
             bool isSvg = Randomizer.IsTrue(40);
             var names = DxComponent.GetResourceNames(isSvg ? ".svg" : ".png", true, false);
             _Images = Randomizer.GetItems(200, names);
-            _TreeList.NodeImageType = (isSvg ? ResourceContentType.Vector : ResourceContentType.Bitmap);
+            _TreeList.DxProperties.NodeImageType = (isSvg ? ResourceContentType.Vector : ResourceContentType.Bitmap);
         }
         private List<ITreeListNode> _TreeNodes;
         private string[] _Images;
@@ -150,8 +150,8 @@ namespace TestDevExpress.Forms
         /// </summary>
         private void InitEvents()
         {
-            _TreeList.NodeExpanded += _TreeList_NodeExpanded;
-            _TreeList.NodeCollapsed += _TreeList_NodeCollapsed;
+            _TreeList.DxProperties.NodeExpanded += _TreeList_NodeExpanded;
+            _TreeList.DxProperties.NodeCollapsed += _TreeList_NodeCollapsed;
         }
         /// <summary>
         /// Uživatel provedl Expand
