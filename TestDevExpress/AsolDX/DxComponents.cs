@@ -2722,7 +2722,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="tabStop"></param>
         /// <returns></returns>
         public static DxListBoxPanel CreateDxListBoxPanel(DockStyle? dock = null, int? width = null, int? height = null, Control parent = null, EventHandler selectedIndexChanged = null,
-            bool? multiColumn = null, DxListBoxPanel.FilterRowMode? filterRowMode = null, SelectionMode? selectionMode = null, int? itemHeight = null, int? itemHeightPadding = null,
+            bool? multiColumn = null, RowFilterBoxMode? filterRowMode = null, SelectionMode? selectionMode = null, int? itemHeight = null, int? itemHeightPadding = null,
             ControlKeyActionType? enabledKeyActions = null, DxDragDropActionType? dragDropActions = null,
             string toolTipTitle = null, string toolTipText = null,
             bool? visible = null, bool? tabStop = null)

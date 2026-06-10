@@ -75,7 +75,7 @@ namespace TestDevExpress.Forms
             _ProcessListBox.DxProperties.ButtonsPosition = ToolbarPosition.BottomSideRight;
             _ProcessListBox.DxProperties.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.Refresh };
             _ProcessListBox.DxProperties.ButtonsSize = ResourceImageSizeType.Medium;
-            _ProcessListBox.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Server;
+            _ProcessListBox.DxProperties.RowFilterMode = RowFilterBoxMode.Server;
 
             _ProcessListBox.DxProperties.ListActionAfter += _ProcessListBox_ActionAfter;
             _ProcessListBox.DxProperties.RowFilterServerKeyEnter += _ProcessListBox_FilterBoxKeyEnter;

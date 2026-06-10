@@ -4907,48 +4907,48 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _TreeMultiCheckBox.Checked = true;
 
             _TreeList = new DxTreeList() { Dock = DockStyle.Fill };
-            _TreeList.CheckBoxMode = TreeListCheckBoxMode.SpecifyByNode;
-            _TreeList.ImagePositionType = TreeImagePositionType.MainIconOnly;
-            _TreeList.LazyLoadNodeText = "Copak to tu asi bude?";
-            _TreeList.LazyLoadNodeImageName = "hourglass_16";
-            _TreeList.LazyLoadFocusNode = TreeListLazyLoadFocusNodeType.ParentNode;
-            _TreeList.FilterBoxMode = RowFilterBoxMode.Server;
-            _TreeList.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.MouseUp;
-            _TreeList.IncrementalSearchMode = TreeListIncrementalSearchMode.InAllNodes;
-            _TreeList.FilterBoxOperators = DxFilterBox.CreateDefaultOperatorItems(FilterBoxOperatorItems.DefaultText);
-            _TreeList.FilterBoxChangedSources = DxFilterBoxChangeEventSource.Default;
-            _TreeList.MultiSelectEnabled = true;
-            _TreeList.MainClickMode = NodeMainClickMode.AcceptNodeSetting;
-            _TreeList.NodeImageSize = ResourceImageSizeType.Large;        // Zkus různé...
-            _TreeList.NodeImageSize = ResourceImageSizeType.Medium;
-            _TreeList.NodeAllowHtmlText = true;
+            _TreeList.DxProperties.CheckBoxMode = TreeListCheckBoxMode.SpecifyByNode;
+            _TreeList.DxProperties.ImagePositionType = TreeImagePositionType.MainIconOnly;
+            _TreeList.DxProperties.LazyLoadNodeText = "Copak to tu asi bude?";
+            _TreeList.DxProperties.LazyLoadNodeImageName = "hourglass_16";
+            _TreeList.DxProperties.LazyLoadFocusNode = TreeListLazyLoadFocusNodeType.ParentNode;
+            _TreeList.DxProperties.FilterBoxMode = RowFilterBoxMode.Server;
+            _TreeList.DxProperties.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.MouseUp;
+            _TreeList.DxProperties.IncrementalSearchMode = TreeListIncrementalSearchMode.InAllNodes;
+            _TreeList.DxProperties.RowFilterServerOperators = DxFilterBox.CreateDefaultOperatorItems(FilterBoxOperatorItems.DefaultText);
+            _TreeList.DxProperties.RowFilterServerChangedSources = DxFilterBoxChangeEventSource.Default;
+            _TreeList.DxProperties.MultiSelectEnabled = true;
+            _TreeList.DxProperties.MainClickMode = NodeMainClickMode.AcceptNodeSetting;
+            _TreeList.DxProperties.NodeImageSize = ResourceImageSizeType.Large;        // Zkus různé...
+            _TreeList.DxProperties.NodeImageSize = ResourceImageSizeType.Medium;
+            _TreeList.DxProperties.NodeAllowHtmlText = true;
             _TreeList.Parent = this;
             _SplitContainer.Panel1.Controls.Add(_TreeList);               // Musí být dřív než se začne pracovat s daty!!!
             _SplitContainer.Panel1.Controls.Add(_TreeMultiCheckBox);      // 
 
             var nodes = _TreeListGetPreparedNodeData();                   // Nody by měly být připraveny na pozadí, viz metoda _TreeListCreateNodesData() => _TreeListCreateNodesDataBgr()
             DateTime t1 = DateTime.Now;
-            _TreeList.AddNodes(nodes);
+            _TreeList.DxProperties.AddNodes(nodes);
             DateTime t2 = DateTime.Now;
 
-            _TreeList.FilterBoxChanged += _TreeList_FilterBoxChanged;
-            _TreeList.FilterBoxKeyEnter += _TreeList_FilterBoxKeyEnter;
-            _TreeList.HotKeys = _CreateHotKeys();
-            _TreeList.NodeKeyDown += _TreeList_NodeKeyDown;
-            _TreeList.NodeFocusedChanged += _TreeList_AnyAction;
-            _TreeList.SelectedNodesChanged += _TreeList_SelectedNodesChanged;
-            _TreeList.ShowContextMenu += _TreeList_ShowContextMenu;
-            _TreeList.NodeIconClick += _TreeList_IconClick;
-            _TreeList.NodeDoubleClick += _TreeList_DoubleClick;
-            _TreeList.NodeExpanded += _TreeList_AnyAction;
-            _TreeList.NodeCollapsed += _TreeList_AnyAction;
-            _TreeList.ActivatedEditor += _TreeList_AnyAction;
-            _TreeList.EditorDoubleClick += _TreeList_DoubleClick;
-            _TreeList.NodeEdited += _TreeList_NodeEdited;
-            _TreeList.NodeCheckedChange += _TreeList_AnyAction;
-            _TreeList.NodesDelete += _TreeList_NodesDelete;
-            _TreeList.LazyLoadChilds += _TreeList_LazyLoadChilds;
-            _TreeList.ToolTipChanged += _TreeList_ToolTipChanged;
+            _TreeList.DxProperties.RowFilterServerChanged += _TreeList_FilterBoxChanged;
+            _TreeList.DxProperties.RowFilterServerKeyEnter += _TreeList_FilterBoxKeyEnter;
+            _TreeList.DxProperties.HotKeys = _CreateHotKeys();
+            _TreeList.DxProperties.NodeKeyDown += _TreeList_NodeKeyDown;
+            _TreeList.DxProperties.NodeFocusedChanged += _TreeList_AnyAction;
+            _TreeList.DxProperties.SelectedNodesChanged += _TreeList_SelectedNodesChanged;
+            _TreeList.DxProperties.ShowContextMenu += _TreeList_ShowContextMenu;
+            _TreeList.DxProperties.NodeIconClick += _TreeList_IconClick;
+            _TreeList.DxProperties.NodeDoubleClick += _TreeList_DoubleClick;
+            _TreeList.DxProperties.NodeExpanded += _TreeList_AnyAction;
+            _TreeList.DxProperties.NodeCollapsed += _TreeList_AnyAction;
+            _TreeList.DxProperties.ActivatedEditor += _TreeList_AnyAction;
+            _TreeList.DxProperties.EditorDoubleClick += _TreeList_DoubleClick;
+            _TreeList.DxProperties.NodeEdited += _TreeList_NodeEdited;
+            _TreeList.DxProperties.NodeCheckedChange += _TreeList_AnyAction;
+            _TreeList.DxProperties.NodesDelete += _TreeList_NodesDelete;
+            _TreeList.DxProperties.LazyLoadChilds += _TreeList_LazyLoadChilds;
+            _TreeList.DxProperties.ToolTipChanged += _TreeList_ToolTipChanged;
             _TreeList.MouseLeave += _TreeList_MouseLeave;
 
             int y = 0;
@@ -4992,14 +4992,14 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         }
         private void _TreeList_FilterBoxChanged(object sender, DxFilterBoxChangeArgs args)
         {
-            var filter = this._TreeList.FilterBoxValue;
+            var filter = this._TreeList.DxProperties.RowFilterServerText;
             _TreeListAddLogLine($"RowFilter: Change: {args.EventSource}; Operator: {args.FilterValue.FilterOperator?.ItemId}, Text: \"{args.FilterValue.FilterText}\"");
         }
         private void _TreeMultiCheckBoxChanged(object sender, EventArgs e)
         {
             if (_TreeList == null) return;
             bool multiSelectEnabled = _TreeMultiCheckBox.Checked;
-            _TreeList.MultiSelectEnabled = multiSelectEnabled;
+            _TreeList.DxProperties.MultiSelectEnabled = multiSelectEnabled;
             _TreeListAddLogLine($"MultiSelectEnabled: {multiSelectEnabled}");
         }
         private void _TreeList_NodeKeyDown(object sender, DxTreeListNodeKeyArgs args)
@@ -5018,7 +5018,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         {
             int count = 0;
             string selectedNodes = "";
-            _TreeList.SelectedNodes.ForEachExec(n => { count++; selectedNodes += "; '" + n.ToString() + "'"; });
+            _TreeList.DxProperties.SelectedNodes.ForEachExec(n => { count++; selectedNodes += "; '" + n.ToString() + "'"; });
             if (selectedNodes.Length > 0) selectedNodes = selectedNodes.Substring(2);
             _TreeListAddLogLine($"SelectedNodesChanged: Selected {count} Nodes: {selectedNodes}");
         }
@@ -5057,7 +5057,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             int totalCount = 0;
             var nodes = _CreateSampleChilds(parentNodeId, ref totalCount, 99, ItemCountType.Standard);       // A pak vyrobíme Child nody
             _TreeListAddLogLine($"Načtena data: {nodes.Count} prvků.");
-            _TreeList.AddLazyLoadNodes(parentNodeId, nodes);            //  a pošleme je do TreeView.
+            _TreeList.DxProperties.AddLazyLoadNodes(parentNodeId, nodes);            //  a pošleme je do TreeView.
         }
         private void _TreeList_NodeEdited(object sender, DxTreeListNodeArgs args)
         {
@@ -5081,11 +5081,11 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             if (String.IsNullOrEmpty(newValue))
             {   // Delete node:
                 if (nodeInfo.CanDelete)
-                    _TreeList.RemoveNode(nodeId);
+                    _TreeList.DxProperties.RemoveNode(nodeId);
             }
             else if (nodeInfo.NodeType == NodeItemType.BlankAtFirstPosition) // isBlankNode && newPosition == NewNodePositionType.First)
             {   // Insert new node, a NewPosition je First = je první (jako Green):
-                _TreeList.RunInLock(new Action<DataTreeListNode>(node =>
+                _TreeList.DxProperties.RunInLock(new Action<DataTreeListNode>(node =>
                 {   // V jednom vizuálním zámku:
                     node.Text = "";                                 // Z prvního node odeberu jeho text, aby zase vypadal jako nový node
                     node.Refresh();
@@ -5093,27 +5093,27 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
                     // Přidám nový node pro konkrétní text = jakoby záznam:
                     DataTreeListNode newNode = _CreateChildNode(node.ParentNodeFullId, NodeItemType.DefaultText, ref totalCount);
                     newNode.Text = newValue;
-                    _TreeList.AddNode(newNode, 1);
+                    _TreeList.DxProperties.AddNode(newNode, 1);
                 }
                 ), nodeInfo);
             }
             else if (isBlankNode && newPosition == NewNodePositionType.Last)
             {   // Insert new node, a NewPosition je Last = na konci:
-                _TreeList.RunInLock(new Action<DataTreeListNode>(node =>
+                _TreeList.DxProperties.RunInLock(new Action<DataTreeListNode>(node =>
                 {   // V jednom vizuálním zámku:
-                    _TreeList.RemoveNode(node.ItemId);              // Odeberu blank node, to kvůli pořadí: nový blank přidám nakonec
+                    _TreeList.DxProperties.RemoveNode(node.ItemId);              // Odeberu blank node, to kvůli pořadí: nový blank přidám nakonec
 
                     // Přidám nový node pro konkrétní text = jakoby záznam:
                     DataTreeListNode newNode = _CreateChildNode(node.ParentNodeFullId, NodeItemType.DefaultText, ref totalCount);
                     newNode.Text = newValue;
-                    _TreeList.AddNode(newNode);
+                    _TreeList.DxProperties.AddNode(newNode);
 
                     // Přidám Blank node, ten bude opět na konci Childs:
                     DataTreeListNode blankNode = _CreateChildNode(node.ParentNodeFullId, NodeItemType.BlankAtLastPosition, ref totalCount);
-                    _TreeList.AddNode(blankNode);
+                    _TreeList.DxProperties.AddNode(blankNode);
 
                     // Aktivuji editovaný node:
-                    _TreeList.SetFocusToNode(newNode);
+                    _TreeList.DxProperties.SetFocusToNode(newNode);
                 }
                 ), nodeInfo);
             }
@@ -5141,17 +5141,17 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
 
             if (args.Node.NodeType == NodeItemType.OnDoubleClickLoadNext)
             {
-                _TreeList.RunInLock(new Action<DataTreeListNode>(node =>
+                _TreeList.DxProperties.RunInLock(new Action<DataTreeListNode>(node =>
                 {   // V jednom vizuálním zámku:
-                    _TreeList.RemoveNode(node.ItemId);              // Odeberu OnDoubleClickLoadNext node, to kvůli pořadí: nový OnDoubleClickLoadNext přidám (možná) nakonec
+                    _TreeList.DxProperties.RemoveNode(node.ItemId);              // Odeberu OnDoubleClickLoadNext node, to kvůli pořadí: nový OnDoubleClickLoadNext přidám (možná) nakonec
 
                     int totalCount = 0;
                     var newNodes = _CreateSampleChilds(node.ParentNodeFullId, ref totalCount, 99, ItemCountType.Standard, false, true);
-                    _TreeList.AddNodes(newNodes);
+                    _TreeList.DxProperties.AddNodes(newNodes);
 
                     // Aktivuji první přidaný node:
                     if (newNodes.Count > 0)
-                        _TreeList.SetFocusToNode(newNodes[0]);
+                        _TreeList.DxProperties.SetFocusToNode(newNodes[0]);
                 }
                ), args.Node);
             }
@@ -5167,7 +5167,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
 
             System.Threading.Thread.Sleep(720);                      // Něco jako uděláme...
 
-            _TreeList.RemoveNodes(removeNodeKeys);
+            _TreeList.DxProperties.RemoveNodes(removeNodeKeys);
         }
         private void _TreeList_MouseLeave(object sender, EventArgs e)
         {
@@ -5427,7 +5427,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _DragDropAList.DxProperties.EnabledKeyActions = sourceKeyActions;
             _DragDropAList.DxProperties.MenuItems = _CreateSampleListItems(100, false, true);
             _DragDropAList.DxProperties.DataExchangeCrossType = DataExchangeCrossType.None;
-            _DragDropAList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Server;
+            _DragDropAList.DxProperties.RowFilterMode = RowFilterBoxMode.Server;
             _DragDropAList.MouseDown += _DragDrop_MouseDown;
             _PanelDragDrop.Controls.Add(_DragDropAList);
 
@@ -5440,24 +5440,26 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _DragDropBList.DxProperties.DuplicityEnabled = false;
             _DragDropBList.DxProperties.MenuItems = _CreateSampleListItems(18, true, false);
             _DragDropBList.DxProperties.DataExchangeCrossType = DataExchangeCrossType.AllControlsInCurrentApplication | DataExchangeCrossType.AnyOtherApplications;
-            _DragDropBList.DxProperties.RowFilterMode = DxListBoxPanel.FilterRowMode.Server;
+            _DragDropBList.DxProperties.RowFilterMode = RowFilterBoxMode.Server;
             _DragDropBList.DxProperties.ButtonsPosition = ToolbarPosition.BottomSideCenter;
             _DragDropBList.DxProperties.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.Move_All };
             _DragDropBList.MouseDown += _DragDrop_MouseDown;
             _PanelDragDrop.Controls.Add(_DragDropBList);
 
-            _DragDropCTree = new DxTreeList() { FilterBoxMode = RowFilterBoxMode.Server, DragDropActions = targetDDActions, EnabledKeyActions = sourceKeyActions };
-            _DragDropCTree.Name = "CTree";
-            _DragDropCTree.MultiSelectEnabled = true;
-            _DragDropCTree.SelectNodeBeforeShowContextMenu = false;
-            _DragDropCTree.TransparentBackground = true;
+            _DragDropCTree = new DxTreeList() { Name = "CTree" };
+            _DragDropCTree.DxProperties.FilterBoxMode = RowFilterBoxMode.Server;
+            _DragDropCTree.DxProperties.DragDropActions = targetDDActions;
+            _DragDropCTree.DxProperties.EnabledKeyActions = sourceKeyActions;
+            _DragDropCTree.DxProperties.MultiSelectEnabled = true;
+            _DragDropCTree.DxProperties.SelectNodeBeforeShowContextMenu = false;
+            _DragDropCTree.DxProperties.TransparentBackground = true;
 
             int totalCount;
             var nodes = _CreateSampleTreeNodes(ItemCountType.Standard, out totalCount);
             nodes.ForEachExec(n => { if (Randomizer.IsTrue(5)) n.Selected = true; });
-            _DragDropCTree.AddNodes(nodes);
+            _DragDropCTree.DxProperties.AddNodes(nodes);
             
-            _DragDropCTree.ShowContextMenu += _DragDropATree_ShowContextMenu;
+            _DragDropCTree.DxProperties.ShowContextMenu += _DragDropATree_ShowContextMenu;
             _DragDropCTree.MouseDown += _DragDrop_MouseDown;
             _PanelDragDrop.Controls.Add(_DragDropCTree);
 
@@ -5470,7 +5472,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         private void _DragDropATree_ShowContextMenu(object sender, DxTreeListNodeContextMenuArgs args)
         {
             DxTreeList dxTreeList = sender as DxTreeList;
-            var nodes = new List<IMenuItem>(dxTreeList.SelectedNodes);
+            var nodes = new List<IMenuItem>(dxTreeList.DxProperties.SelectedNodes);
             var clickNode = args.Node;
             if (clickNode != null && !nodes.Any(n => Object.ReferenceEquals(n, clickNode)))
                 nodes.Add(DataMenuItem.CreateClone(clickNode, c => { c.ItemIsFirstInGroup = true; c.Checked = true; }));

@@ -430,8 +430,8 @@ namespace TestDevExpress.Forms
             DxTreeList.FilterBoxMode = RowFilterBoxMode.Server;
             DxTreeList.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.MouseUp;
             DxTreeList.IncrementalSearchMode = TreeListIncrementalSearchMode.InAllNodes;
-            DxTreeList.FilterBoxOperators = DxFilterBox.CreateDefaultOperatorItems(FilterBoxOperatorItems.DefaultText);
-            DxTreeList.FilterBoxChangedSources = DxFilterBoxChangeEventSource.Default;
+            DxTreeList.RowFilterServerOperators = DxFilterBox.CreateDefaultOperatorItems(FilterBoxOperatorItems.DefaultText);
+            DxTreeList.RowFilterServerChangedSources = DxFilterBoxChangeEventSource.Default;
             DxTreeList.MultiSelectEnabled = true;
             DxTreeList.MainClickMode = NodeMainClickMode.AcceptNodeSetting;
 
@@ -443,8 +443,8 @@ namespace TestDevExpress.Forms
 
             DxTreeList.HotKeys = CreateHotKeys();
 
-            DxTreeList.FilterBoxChanged += TreeList_FilterBoxChanged;
-            DxTreeList.FilterBoxKeyEnter += TreeList_FilterBoxKeyEnter;
+            DxTreeList.RowFilterServerChanged += TreeList_FilterBoxChanged;
+            DxTreeList.RowFilterServerKeyEnter += TreeList_FilterBoxKeyEnter;
             DxTreeList.NodeKeyDown += TreeList_NodeKeyDown;
             DxTreeList.NodeFocusedChanged += TreeList_AnyAction;
             DxTreeList.SelectedNodesChanged += TreeList_SelectedNodesChanged;
@@ -473,7 +473,7 @@ namespace TestDevExpress.Forms
         }
         protected void TreeList_FilterBoxChanged(object sender, DxFilterBoxChangeArgs args)
         {
-            var filter = this.DxTreeList.FilterBoxValue;
+            var filter = this.DxTreeList.RowFilterServerText;
             AddToLog($"RowFilter: Change: {args.EventSource}; Operator: {args.FilterValue.FilterOperator?.ItemId}, Text: \"{args.FilterValue.FilterText}\"");
         }
         protected void TreeList_FilterBoxKeyEnter(object sender, EventArgs e)
