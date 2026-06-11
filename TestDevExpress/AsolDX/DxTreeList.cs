@@ -6079,12 +6079,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <para/>
         /// Pokud je text v nodu editován, a TreeList obsahuje MultiColumns a zobrazuje data ze zdejšího <see cref="Cells"/>, pak je editovaný text ukládán právě sem do odpovídajícího prvku.
         /// </summary>
-        public virtual string[] Cells { get; set; }
+        public override string[] Cells { get; set; }
         /// <summary>
         /// Klíč parent uzlu.
         /// Po vytvoření nelze změnit.
         /// </summary>
-        public virtual string ParentNodeFullId { get; private set; }
+        public virtual string ParentNodeFullId { get; set; }
         /// <summary>
         /// Text v rámci editace (je sem setován při DoubleClicku a po ukončení editace).
         /// <para/>
@@ -6113,7 +6113,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual bool NodeChecked { get { return this.Checked ?? false; } set { this.Checked = value; } }
         /// <summary>
-        /// Doplňková ikona. Její zobrazení se řídí hodnotou <see cref="DxTreeList.ImagePositionType"/>
+        /// Doplňková ikona. Její zobrazení se řídí hodnotou <see cref="DxTreeList.DxPropertiesInfo.ImagePositionType"/>
         /// </summary>
         public virtual string SuffixImageName { get; set; }
         /// <summary>
@@ -6127,7 +6127,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public virtual bool CanDelete { get; set; }
         /// <summary>
         /// Co provede DoubleClick na textu anebo Click na ikoně?
-        /// Pro akceptování této hodnoty musí <see cref="DxTreeList"/> mít nastaveno <see cref="DxTreeList.MainClickMode"/> == <see cref="NodeMainClickMode.AcceptNodeSetting"/>.
+        /// Pro akceptování této hodnoty musí <see cref="DxTreeList"/> mít nastaveno <see cref="DxTreeList.DxPropertiesInfo.MainClickMode"/> == <see cref="NodeMainClickMode.AcceptNodeSetting"/>.
         /// </summary>
         public virtual NodeMainClickActionType MainClickAction { get; set; }
         /// <summary>
@@ -6211,7 +6211,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Data o jednom Node.
     /// Pokud aplikace změní data nodu, měla by ve vhodný okamžik vyvolat <see cref="Refresh"/> tohoto uzlu.
-    /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeListNative.RefreshNodes(IEnumerable{ITreeListNode})"/>.
+    /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeListNative.DxPropertiesInfo.RefreshNodes(IEnumerable{ITreeListNode})"/>.
     /// </summary>
     public interface ITreeListNode : IMenuItem
     {
@@ -6247,21 +6247,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Node zobrazuje zaškrtávátko.
         /// Pokud je změněn po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
-        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeListNative.RefreshNodes(IEnumerable{ITreeListNode})"/>.
+        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeListNative.DxPropertiesInfo.RefreshNodes(IEnumerable{ITreeListNode})"/>.
         /// </summary>
         bool CanCheck { get; }
         /// <summary>
-        /// Uživatel může editovat text tohoto node, po ukončení editace je vyvolána událost <see cref="DxTreeListNative.NodeEdited"/>.
+        /// Uživatel může editovat text tohoto node, po ukončení editace je vyvolána událost <see cref="DxTreeListNative.DxPropertiesInfo.NodeEdited"/>.
         /// Změnu této hodnoty není nutno refreshovat, načítá se po výběru konkrétního Node v TreeList a aplikuje se na něj.
         /// </summary>
         bool IsEditable { get; }
         /// <summary>
-        /// Uživatel může stisknout Delete nad uzlem, bude vyvolána událost <see cref="DxTreeListNative.NodesDelete"/>
+        /// Uživatel může stisknout Delete nad uzlem, bude vyvolána událost <see cref="DxTreeListNative.DxPropertiesInfo.NodesDelete"/>
         /// </summary>
         bool CanDelete { get; }
         /// <summary>
         /// Co provede DoubleClick na textu anebo Click na ikoně?
-        /// Pro akceptování této hodnoty musí <see cref="DxTreeList"/> mít nastaveno <see cref="DxTreeList.MainClickMode"/> == <see cref="NodeMainClickMode.AcceptNodeSetting"/>.
+        /// Pro akceptování této hodnoty musí <see cref="DxTreeList"/> mít nastaveno <see cref="DxTreeList.DxPropertiesInfo.MainClickMode"/> == <see cref="NodeMainClickMode.AcceptNodeSetting"/>.
         /// </summary>
         NodeMainClickActionType MainClickAction { get; }
         /// <summary>
@@ -6286,7 +6286,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         bool IsExpanded { get; set; }
         /// <summary>
-        /// Doplňková ikona. Její zobrazení se řídí hodnotou <see cref="DxTreeList.ImagePositionType"/>
+        /// Doplňková ikona. Její zobrazení se řídí hodnotou <see cref="DxTreeList.DxPropertiesInfo.ImagePositionType"/>
         /// </summary>
         string SuffixImageName { get; }
         /// <summary>
@@ -6421,7 +6421,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// TreeList zobrazí pouze jednu ikonu, pochází z <see cref="ITextItem.ImageName"/>.
         /// <para/>
-        /// Velikost ikon je řízena property <see cref="DxTreeList.NodeImageSize"/>.
+        /// Velikost ikon je řízena property <see cref="DxTreeList.DxPropertiesInfo.NodeImageSize"/>.
         /// </summary>
         MainIconOnly,
         /// <summary>
@@ -6431,7 +6431,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <para/>
         /// Toto je běžný default v Nephrite pro dynamické vztahy.
         /// <para/>
-        /// Velikost ikon je řízena property <see cref="DxTreeList.NodeImageSize"/>.
+        /// Velikost ikon je řízena property <see cref="DxTreeList.DxPropertiesInfo.NodeImageSize"/>.
         /// </summary>
         SuffixAndMainIcon,
         /// <summary>
@@ -6439,7 +6439,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// První ikona vlevo je "Main" = pochází z <see cref="ITextItem.ImageName"/>;<br/>
         /// Druhá ikona vpravo je "Suffix" = je definovaná v <see cref="ITreeListNode.SuffixImageName"/>.
         /// <para/>
-        /// Velikost ikon je řízena property <see cref="DxTreeList.NodeImageSize"/>.
+        /// Velikost ikon je řízena property <see cref="DxTreeList.DxPropertiesInfo.NodeImageSize"/>.
         /// </summary>
         MainAndSuffixIcon
     }
@@ -6553,13 +6553,13 @@ namespace Noris.Clients.Win.Components.AsolDX
     }
     /// <summary>
     /// Druh akce na Click na ikonu anebo text.
-    /// Akceptuje se pouze tehdy, když (<see cref="DxTreeList.MainClickMode"/> == <see cref="NodeMainClickMode.AcceptNodeSetting"/>);
+    /// Akceptuje se pouze tehdy, když (<see cref="DxTreeList.DxPropertiesInfo.MainClickMode"/> == <see cref="NodeMainClickMode.AcceptNodeSetting"/>);
     /// </summary>
     [Flags]
     public enum NodeMainClickActionType
     {
         /// <summary>
-        /// Neprovádí se nic, typicky je aktivita řízena pro všechny nody společně pomocí <see cref="DxTreeList.MainClickMode"/>
+        /// Neprovádí se nic, typicky je aktivita řízena pro všechny nody společně pomocí <see cref="DxTreeList.DxPropertiesInfo.MainClickMode"/>
         /// </summary>
         None = 0,
         /// <summary>
@@ -6567,7 +6567,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         IconClickExpandCollapse = 0x01,
         /// <summary>
-        /// Jedno kliknutí na ikonu vyvolá event <see cref="DxTreeList.NodeIconClick"/>
+        /// Jedno kliknutí na ikonu vyvolá event <see cref="DxTreeList.DxPropertiesInfo.NodeIconClick"/>
         /// </summary>
         IconClickRunEvent = 0x02,
         /// <summary>
@@ -6575,7 +6575,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         TextDoubleClickExpandCollapse = 0x110,
         /// <summary>
-        /// Dvojklik na text vyvolá event <see cref="DxTreeList.NodeDoubleClick"/>
+        /// Dvojklik na text vyvolá event <see cref="DxTreeList.DxPropertiesInfo.NodeDoubleClick"/>
         /// </summary>
         TextDoubleClickRunEvent = 0x20,
 

@@ -11437,7 +11437,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Obsah jednotlivých buněk (sloupce atd)
         /// </summary>
-        public string[] Cells { get; set; }
+        public virtual string[] Cells { get; set; }
     }
     /// <summary>
     /// Definice prvku, který obsahuje stringové pole <see cref="Cells"/>

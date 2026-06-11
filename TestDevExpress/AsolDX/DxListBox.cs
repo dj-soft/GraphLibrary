@@ -1967,6 +1967,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public bool DrawImageDirectly { get { return DxListProperties.DrawImageDirectly; } set { DxListProperties.DrawImageDirectly = value; } }
             /// <summary>
+            /// Pokud bude true, pak zjistí největší fyzické šířky potřebné pro sloupce (včetně jejich počtu), a nastaví je do <see cref="MenuItemColumnWidths"/>. 
+            /// Zajistí tedy zobrazování dolního Scrollbaru v případě ptořeby.
+            /// Pozor: zruší se tím zvýrazňování částí textu dohledaného pomocí klientského řádkového filtru (žlutá písmenka).
+            /// </summary>
+            public bool AutoColumnWidths { get { return DxListProperties.AutoColumnWidths; } set { DxListProperties.AutoColumnWidths = value; } }
+            /// <summary>
+            /// Obsahuje true, pokud aktuální ListBox je v režimu <see cref="ListBoxItemsMode.MenuItems"/> a má zadané šířky sloupců do <see cref="MenuItemColumnWidths"/>, pak tedy pracuje v režimu více buněk
+            /// </summary>
+            public bool MenuItemDrawColumns { get { return DxListProperties.MenuItemDrawColumns; } }
+            /// <summary>
             /// Šířky sloupců zobrazených v režimu <see cref="ItemsMode"/>: <see cref="ListBoxItemsMode.MenuItems"/>
             /// </summary>
             public int[] MenuItemColumnWidths { get { return DxListProperties.MenuItemColumnWidths; } set { DxListProperties.MenuItemColumnWidths = value; } }
@@ -2231,6 +2241,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public event DxListBoxMenuItemsChangedDelegate MenuItemsChanged { add { DxListProperties.MenuItemsChanged += value; } remove { DxListProperties.MenuItemsChanged -= value; } }
             /// <summary>
+            /// Událost volaná po změně <see cref="DxListBoxControl.DxPropertiesInfo.MenuItemDrawColumns"/> = na událost může reagovat Panel tím, že zobrazí / skryje ScrollBar
+            /// </summary>
+            public event EventHandler MenuItemDrawColumnsChanged { add { DxListProperties.MenuItemDrawColumnsChanged += value; } remove { DxListProperties.MenuItemDrawColumnsChanged -= value; } }
+            /// <summary>
             /// Po změně stavu Undo/Redo
             /// </summary>
             public event EventHandler UndoRedoEnabledChanged { add { DxListProperties.UndoRedoEnabledChanged += value; } remove { DxListProperties.UndoRedoEnabledChanged -= value; } }
@@ -2302,6 +2316,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _DoLayout(null);
 
             this.ClientSizeChanged += _ClientSizeChanged;
+            this.DxProperties.MenuItemDrawColumnsChanged += _MenuItemDrawColumnsChanged;
         }
         protected override void OnGotFocus(EventArgs e)
         {
@@ -2329,6 +2344,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Aktuální hodnota nastavená na dolním ScrollBaru
         /// </summary>
         internal int HScrollBarValue { get { return __HScrollBar?.Value ?? 0; } }
+        /// <summary>
+        /// V Controlu ListBox se změnila hodnota <see cref="DxListBoxNative.DxPropertiesInfo.MenuItemDrawColumns"/>. My jako hostitel bychom měli znovu vyhodnotit zobrazování ScrollBaru.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _MenuItemDrawColumnsChanged(object sender, EventArgs e)
+        {
+            _CheckHScrollBar();
+        }
         /// <summary>
         /// Zajistí layout ListBoxu + ScrollBaru včetně všech 
         /// </summary>
@@ -2717,6 +2741,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public bool MenuItemDrawColumns { get { return DxListProperties.MenuItemDrawColumns; } }
             /// <summary>
+            /// Pokud bude true, pak zjistí největší fyzické šířky potřebné pro sloupce (včetně jejich počtu), a nastaví je do <see cref="MenuItemColumnWidths"/>. 
+            /// Zajistí tedy zobrazování dolního Scrollbaru v případě ptořeby.
+            /// Pozor: zruší se tím zvýrazňování částí textu dohledaného pomocí klientského řádkového filtru (žlutá písmenka).
+            /// </summary>
+            public bool AutoColumnWidths { get { return DxListProperties.AutoColumnWidths; } set { DxListProperties.AutoColumnWidths = value; } }
+            /// <summary>
             /// Šířky sloupců zobrazených v režimu <see cref="ItemsMode"/>: <see cref="ListBoxItemsMode.MenuItems"/>
             /// </summary>
             public int[] MenuItemColumnWidths { get { return DxListProperties.MenuItemColumnWidths; } set { DxListProperties.MenuItemColumnWidths = value; __Owner._CheckHScrollBar(); } }
@@ -2903,6 +2933,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public event DxListBoxMenuItemsChangedDelegate MenuItemsChanged { add { DxListProperties.MenuItemsChanged += value; } remove { DxListProperties.MenuItemsChanged -= value; } }
             /// <summary>
+            /// Událost volaná po změně <see cref="MenuItemDrawColumns"/> = na událost může reagovat Panel tím, že zobrazí / skryje ScrollBar
+            /// </summary>
+            public event EventHandler MenuItemDrawColumnsChanged { add { DxListProperties.MenuItemDrawColumnsChanged += value; } remove { DxListProperties.MenuItemDrawColumnsChanged -= value; } }
+            /// <summary>
             /// Po změně stavu Undo/Redo
             /// </summary>
             public event EventHandler UndoRedoEnabledChanged { add { DxListProperties.UndoRedoEnabledChanged += value; } remove { DxListProperties.UndoRedoEnabledChanged -= value; } }
@@ -3037,6 +3071,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected virtual void OnDpiZoomChanged()
         {
             ImageSizeCacheReset();
+            _InvalidateAutoColumnWidths();
             _ApplyDesignHeight();
         }
         #endregion
@@ -3191,6 +3226,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.Items.Clear();
                 this.Items.AddRange(CreateListBoxItems(items));
                 if (hasRowFilter) RowFilterCondition = rowFilter;
+                this._InvalidateAutoColumnWidths();
 
                 this.ViewInfo.ScrollInfo.HScroll.Value = hscv;
             }
@@ -4154,7 +4190,7 @@ SetSelected() - vstup           Absolutní
         private void _SetItemsMode(ListBoxItemsMode itemsMode)
         {
             __ItemsMode = itemsMode;
-            _RefreshMenuItemDrawColumns();
+            _RefreshMenuItemDrawColumns(false);
         }
         #endregion
         #region Rozšířené property
@@ -4277,9 +4313,15 @@ SetSelected() - vstup           Absolutní
         #endregion
         #region MenuItemColumnWidths : ListBox s více sloupci vedle sebe z jednoho ITextItem, support pro dolní Scrollbar
         /// <summary>
+        /// Pokud bude true, pak zjistí největší fyzické šířky potřebné pro sloupce (včetně jejich počtu), a nastaví je do <see cref="MenuItemColumnWidths"/>. 
+        /// Zajistí tedy zobrazování dolního Scrollbaru v případě ptořeby.
+        /// Pozor: zruší se tím zvýrazňování částí textu dohledaného pomocí klientského řádkového filtru (žlutá písmenka).
+        /// </summary>
+        public bool AutoColumnWidths { get { return __AutoColumnWidths; } set { _SetAutoColumnWidths(value); } } private bool __AutoColumnWidths;
+        /// <summary>
         /// Šířky sloupců zobrazených v režimu <see cref="ItemsMode"/>: <see cref="ListBoxItemsMode.MenuItems"/>
         /// </summary>
-        protected int[] MenuItemColumnWidths { get { return __MenuItemColumnWidths; } set { _SetMenuItemColumnWidths(value); } } private int[] __MenuItemColumnWidths;
+        protected int[] MenuItemColumnWidths { get { return __MenuItemColumnWidths; } set { _SetMenuItemColumnWidths(value, true, true); } } private int[] __MenuItemColumnWidths;
         /// <summary>
         /// Šířky sloupců zobrazených v režimu <see cref="ItemsMode"/>: <see cref="ListBoxItemsMode.MenuItems"/>, validované, aktuální platné dle Zoomu a DPI, namísto případných záporných hodnot obsahuje 0.
         /// </summary>
@@ -4287,11 +4329,30 @@ SetSelected() - vstup           Absolutní
         {
             get
             {
-                var columnWidths = MenuItemColumnWidths;
-                if (columnWidths is null) return null;
-                var deviceDpi = this.DeviceDpi;
-                return columnWidths.Select(w => (w > 0 ? DxComponent.ZoomToGui(w, deviceDpi) : 0)).ToArray();
+                return GetZoomToGuiColumnWidths(MenuItemColumnWidths);
             }
+        }
+        /// <summary>
+        /// Vrátí pole šířek sloupců v GUI pixelech, z dodaných Design pixelů
+        /// </summary>
+        /// <param name="designWidths"></param>
+        /// <returns></returns>
+        protected int[] GetZoomToGuiColumnWidths(int[] designWidths)
+        {
+            if (designWidths is null) return null;
+            var deviceDpi = this.DeviceDpi;
+            return designWidths.Select(w => (w > 0 ? DxComponent.ZoomToGui(w, deviceDpi) : 0)).ToArray();
+        }
+        /// <summary>
+        /// Vrátí pole šířek sloupců v Design pixelech, z dodaných GUI pixelů
+        /// </summary>
+        /// <param name="guiWidths"></param>
+        /// <returns></returns>
+        protected int[] GetZoomToDesignColumnWidths(int[] guiWidths)
+        {
+            if (guiWidths is null) return null;
+            var deviceDpi = this.DeviceDpi;
+            return guiWidths.Select(w => (w > 0 ? DxComponent.ZoomToDesign(w, deviceDpi) : 0)).ToArray();
         }
         /// <summary>
         /// Obsahuje true, pokud aktuální ListBox je v režimu <see cref="ListBoxItemsMode.MenuItems"/> a má zadané šířky sloupců do <see cref="MenuItemColumnWidths"/>, pak tedy pracuje v režimu více buněk
@@ -4300,21 +4361,135 @@ SetSelected() - vstup           Absolutní
         /// <summary>
         /// Podle hodnot <see cref="ItemsMode"/> a <see cref="MenuItemColumnWidths"/> určí hodnotu pro <see cref="MenuItemDrawColumns"/>
         /// </summary>
-        private void _RefreshMenuItemDrawColumns()
+        /// <param name="forceMenuItemDrawColumnsChanged">Povinně vyvolat event <see cref="MenuItemDrawColumnsChanged"/></param>
+        private void _RefreshMenuItemDrawColumns(bool forceMenuItemDrawColumnsChanged)
         {
             var itemsMode = this._ItemsMode;
             var columnWidths = this.__MenuItemColumnWidths;
-            __MenuItemDrawColumns = (itemsMode == ListBoxItemsMode.MenuItems && columnWidths != null && ((columnWidths.Length == 1 && columnWidths[0] > 0) || columnWidths.Length > 1));
+            var menuItemDrawColumns = (itemsMode == ListBoxItemsMode.MenuItems && columnWidths != null && ((columnWidths.Length == 1 && columnWidths[0] > 0) || columnWidths.Length > 1));      // true = budeme kreslit sloupce
+
+            bool isChanged = (menuItemDrawColumns != __MenuItemDrawColumns);
+            __MenuItemDrawColumns = menuItemDrawColumns;
+            if (isChanged || forceMenuItemDrawColumnsChanged)
+                _RunMenuItemDrawColumnsChanged();
         }
         private bool __MenuItemDrawColumns;
+        /// <summary>
+        /// Setuje hodnotu do <see cref="__AutoColumnWidths"/> a reaguje na ni
+        /// </summary>
+        /// <param name="autoColumnWidths"></param>
+        private void _SetAutoColumnWidths(bool autoColumnWidths)
+        {
+            bool isChange = (autoColumnWidths != __AutoColumnWidths);
+            __AutoColumnWidths = autoColumnWidths;
+            if (autoColumnWidths)
+                _InvalidateAutoColumnWidths();                       // Vždy, když někdo nasetuje true, tak zajistím přepočet šířek sloupců
+            else if (isChange)                                       // Setováno je false; a pokud je to změna proti dosavadnímu true:
+                _SetMenuItemColumnWidths(null, false, false);        //   tak nuluji dosud napočtené sloupce, protože byly vypočteny pro AutoWidth!
+        }
+        /// <summary>
+        /// Invaliduje příznak, že máme správně spočítané šířky sloupců pro režim <see cref="AutoColumnWidths"/>.
+        /// Volá se po změnách MenuItems.
+        /// </summary>
+        private void _InvalidateAutoColumnWidths()
+        {
+            this.__AutoColumnWidthsValid = false;
+        }
+        /// <summary>
+        /// Pokud jsme v režimu <see cref="AutoColumnWidths"/> a nemáme validní šířky sloupců, pak je změří nyní.
+        /// Vypočte potřebné šířky sloupců, a vytvoří správné hodnoty do <see cref="MenuItemColumnWidths"/>.
+        /// Volá se před vykreslováním.
+        /// </summary>
+        /// <param name="e">Grafika pro výpočet</param>
+        private void _CheckAutoColumnWidths(PaintEventArgs e)
+        {
+            // Pokud nejsme v režimu MenuItems, anebo nemáme this.AutoColumnWidths, anebo
+            if (this.ItemsMode != ListBoxItemsMode.MenuItems || !this.AutoColumnWidths || this.__AutoColumnWidthsValid) return;
+
+            if (e is null) return;
+
+            var menuItems = this.MenuItems;
+            if (menuItems is null) return;
+
+            var maxWidths = new List<int>();
+            var fontInfo = getFont();
+            var proposedSize = new Size(2048, 50);
+            var textFlags = TextFormatFlags.Left;
+
+            foreach (var menuItem in menuItems)
+                processWidths(menuItem);
+
+            if (fontInfo.doDispose)
+                fontInfo.font?.Dispose();
+
+            // Mám změřené docela přesné šířky textu. Přidám 12px (pro jistotu na kraji) a poté z fyzických pixelů přepočtu designové.
+            // Proč? Protože v this.MenuItemColumnWidths udržujeme designové pixely. Z nich potom provádíme přepočet na this.MenuItemColumnWidthsCurrent přes aktuální Zoom a DeviceDPI:
+            var columnWidths = GetZoomToDesignColumnWidths(maxWidths.Select(w => getColumnWidth(w, 12)).ToArray());
+
+            this._SetMenuItemColumnWidths(columnWidths, false, true);          // Akceptujeme šířky, false: jako interní hodnotu,   true: povinně vyvolat event 
+            this.__AutoColumnWidthsValid = true;                               // A nyní máme validní šířky, dokud nám je nikdo zase neinvaliduje
+
+
+            // Zpracuje obsah jednoho řádku = jeho Text nebo jeho Cells:
+            void processWidths(ITextItem textItem)
+            {
+                string[] cells;
+                if (textItem is ICellsItem cellsItem && cellsItem.Cells != null)
+                    // Pokud dodaný objekt implementuje ICellsItem, a jeho Cells jsou zadané, pak je akceptujeme jako buňky:
+                    cells = cellsItem.Cells;
+                else
+                    // Jinak budeme kreslit jednu buňku do prvního Columnu, a její obsah = ITextItem.Text:
+                    //   Tímto způsobem dovolujeme "posouvat" = scrollovat obsah jedné textové buňky:
+                    cells = new string[] { textItem.Text };
+
+                // Jednotlivé vedle sebe zobrazené texty:
+                for (int i = 0; i < cells.Length; i++) 
+                {
+                    string text = cells[i];
+                    if (String.IsNullOrEmpty(text)) continue;                  // Neřešíme...
+                    var size = TextRenderer.MeasureText(text, fontInfo.font, proposedSize, textFlags);
+                    var width = size.Width;
+                    if (maxWidths.Count <= i) maxWidths.Add(width);            // První výskyt sloupce [i]
+                    else if (maxWidths[i] < width) maxWidths[i] = width;       // Další text v témže sloupci: je širší než dosavadní?
+                }
+            }
+            // Vrátí font pro měření písma
+            (Font font, bool doDispose) getFont()
+            {
+                var fnt = this.Appearance.GetFont();
+                var doDisp = false;
+
+                bool isScale = (e.Graphics.DpiX > 0 && e.Graphics.DpiX != this.CurrentDeviceDpi);
+                if (isScale)
+                {
+                    float scale = ((float)this.CurrentDeviceDpi / (float)e.Graphics.DpiX);
+                    fnt = new Font(fnt.FontFamily, fnt.Size * scale, fnt.Style);
+                    doDisp = true;
+                }
+
+                return new(fnt, doDisp);
+            }
+            // Vráí šířku sloupce pro danou max šířku textu v něm
+            int getColumnWidth(int textWidth, int addPixel)
+            {
+                return (textWidth < 20 ? 20 : (textWidth > 2000 ? 2000 : (textWidth + addPixel)));
+            }
+        }
+        /// <summary>
+        /// Obsahuje true, pokud máme validně spočítané šířky sloupců.
+        /// </summary>
+        private bool __AutoColumnWidthsValid;
         /// <summary>
         /// Setuje šířky sloupců a refreshuje <see cref="MenuItemDrawColumns"/>
         /// </summary>
         /// <param name="columnWidths"></param>
-        private void _SetMenuItemColumnWidths(int[] columnWidths)
+        /// <param name="isExternal">Pokud je true, jde o setování zvenku a v tom případě shazujeme požadavek <see cref="AutoColumnWidths"/> na false</param>
+        /// <param name="forceMenuItemDrawColumnsChanged">Povinně vyvolat event <see cref="MenuItemDrawColumnsChanged"/></param>
+        private void _SetMenuItemColumnWidths(int[] columnWidths, bool isExternal, bool forceMenuItemDrawColumnsChanged)
         {
+            if (isExternal) __AutoColumnWidths = false;              // Pokud je hodnota dodaná externě = z aplikace, pak nastavujeme AutoColumnWidths = false, nebudeme řešit AutoWidth
             __MenuItemColumnWidths = columnWidths;
-            _RefreshMenuItemDrawColumns();
+            _RefreshMenuItemDrawColumns(forceMenuItemDrawColumnsChanged);
         }
         /// <summary>
         /// Offset vodorovný = posun obsahu textu v režimu MutliColumn.
@@ -4354,7 +4529,7 @@ SetSelected() - vstup           Absolutní
         /// <param name="e"></param>
         protected override void OnPaint(PaintEventArgs e)
         {
-            _PreparePaintMode();
+            _PreparePaintMode(e);
 
             base.OnPaint(e);
             this._RunPaintList(e);
@@ -4457,6 +4632,11 @@ SetSelected() - vstup           Absolutní
         {
             return _ItemImageSize;
         }
+        /// <summary>
+        /// Vrátí Image pro item na indexu
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
         public override Image GetItemImage(int index)
         {
             return base.GetItemImage(index);
@@ -4464,12 +4644,14 @@ SetSelected() - vstup           Absolutní
         /// <summary>
         /// Podle aktuálních proměnných určí režim kreslení do <see cref="CurrentPaintMode"/>.
         /// </summary>
-        void _PreparePaintMode()
+        void _PreparePaintMode(PaintEventArgs e)
         {
+            __CurrentDeviceDpi = this.DeviceDpi;
             var mode = PaintModeType.None;
             switch (__ItemsMode)
             {
                 case ListBoxItemsMode.MenuItems:
+                    this._CheckAutoColumnWidths(e);
                     mode = PaintModeType.TextItems;
                     if (this.MenuItemDrawColumns)
                         mode |= PaintModeType.Columns;
@@ -4481,7 +4663,6 @@ SetSelected() - vstup           Absolutní
                     break;
             }
             __CurrentPaintMode = mode;
-            __CurrentDeviceDpi = this.DeviceDpi;
         }
         /// <summary>
         /// Aktuální režim kreslení
@@ -4587,20 +4768,6 @@ SetSelected() - vstup           Absolutní
                 {   // Bez nejmenších specialit:
                     base.DrawItemCore(info, itemInfo, e);
                 }
-
-                /*
-
-                                if (__Owner.MenuItemDrawColumns && e.Item is ITextItem textItem)
-                                {   // Prvek s vykreslením Columns
-                                    itemInfo.Text = "";
-                                    base.DrawItemCore(info, itemInfo, e);
-                                    this.DrawItemCells(info, itemInfo, e, textItem);
-                                }
-                                else
-                                {   // Prvek standardní:
-                                    base.DrawItemCore(info, itemInfo, e);
-                                }
-                */
             }
             /// <summary>
             /// Vykreslí základní textový ListItem, s Background, bez ikony
@@ -4652,11 +4819,13 @@ SetSelected() - vstup           Absolutní
                 var clipState = info.Cache.SaveClip();
 
                 var font = e.Appearance.Font;
+                var doDispose = false;
                 bool isScale = (e.Cache.Graphics.DpiX > 0 && e.Cache.Graphics.DpiX != __Owner.CurrentDeviceDpi);
                 if (isScale)
                 {
                     float scale = ((float)__Owner.CurrentDeviceDpi / (float)e.Cache.Graphics.DpiX);
                     font = new Font(e.Appearance.Font.FontFamily, e.Appearance.Font.Size * scale, e.Appearance.Font.Style);
+                    doDispose = true;
                 }
 
                 try
@@ -4687,6 +4856,8 @@ SetSelected() - vstup           Absolutní
                 finally
                 {
                     info.Cache.RestoreClipRelease(clipState);
+                    if (doDispose)
+                        font?.Dispose();
                 }
 
                 // Vykreslí text jedné buňky
@@ -5674,6 +5845,7 @@ SetSelected() - vstup           Absolutní
                 this.Items.AddRange(CreateListBoxItems(validItems));
             }
 
+            this._InvalidateAutoColumnWidths();
             this._InvalidateFilteredItems();
 
             if (selectNewItems)
@@ -5751,6 +5923,7 @@ SetSelected() - vstup           Absolutní
             removeList.ForEachExec(i => this.Items.RemoveAt(i));     // A v sestupném pořadí indexů odeberu odpovídající prvky
 
             this._InvalidateFilteredItems();
+            this._InvalidateAutoColumnWidths();
         }
         /// <summary>
         /// Z this Listu odebere všechny dané prvky
@@ -5773,6 +5946,7 @@ SetSelected() - vstup           Absolutní
             }
 
             this._InvalidateFilteredItems();
+            this._InvalidateAutoColumnWidths();
         }
         /// <summary>
         /// Aktualizuje ViewInfo
@@ -6365,6 +6539,23 @@ SetSelected() - vstup           Absolutní
         protected event DxListBoxMenuItemsChangedDelegate MenuItemsChanged;
 
         /// <summary>
+        /// Vyvolá háček <see cref="OnMenuItemDrawColumnsChanged"/> a událost <see cref="MenuItemDrawColumnsChanged"/>.
+        /// </summary>
+        private void _RunMenuItemDrawColumnsChanged()
+        {
+            OnMenuItemDrawColumnsChanged();
+            MenuItemDrawColumnsChanged?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
+        /// Po změně hodnoty <see cref="MenuItemDrawColumns"/>
+        /// </summary>
+        protected virtual void OnMenuItemDrawColumnsChanged() { }
+        /// <summary>
+        /// Událost volaná po změně <see cref="MenuItemDrawColumns"/> = na událost může reagovat Panel tím, že zobrazí / skryje ScrollBar
+        /// </summary>
+        protected event EventHandler MenuItemDrawColumnsChanged;
+
+        /// <summary>
         /// Vyvolá háček <see cref="OnUndoRedoEnabledChanged"/> a událost <see cref="UndoRedoEnabledChanged"/>.
         /// </summary>
         private void _RunUndoRedoEnabledChanged()
@@ -6445,6 +6636,12 @@ SetSelected() - vstup           Absolutní
             /// Obsahuje true, pokud aktuální ListBox je v režimu <see cref="ListBoxItemsMode.MenuItems"/> a má zadané šířky sloupců do <see cref="MenuItemColumnWidths"/>, pak tedy pracuje v režimu více buněk
             /// </summary>
             public bool MenuItemDrawColumns { get { return __Owner.MenuItemDrawColumns; } }
+            /// <summary>
+            /// Pokud bude true, pak zjistí největší fyzické šířky potřebné pro sloupce (včetně jejich počtu), a nastaví je do <see cref="MenuItemColumnWidths"/>. 
+            /// Zajistí tedy zobrazování dolního Scrollbaru v případě ptořeby.
+            /// Pozor: zruší se tím zvýrazňování částí textu dohledaného pomocí klientského řádkového filtru (žlutá písmenka).
+            /// </summary>
+            public bool AutoColumnWidths { get { return __Owner.AutoColumnWidths; } set { __Owner.AutoColumnWidths = value; } }
             /// <summary>
             /// Šířky sloupců zobrazených v režimu <see cref="ItemsMode"/>: <see cref="ListBoxItemsMode.MenuItems"/>
             /// </summary>
@@ -6697,6 +6894,10 @@ SetSelected() - vstup           Absolutní
             /// Událost volaná po změně prvků Listu typu MenuItems.<br/>
             /// </summary>
             public event DxListBoxMenuItemsChangedDelegate MenuItemsChanged { add { __Owner.MenuItemsChanged += value; } remove { __Owner.MenuItemsChanged -= value; } }
+            /// <summary>
+            /// Událost volaná po změně <see cref="MenuItemDrawColumns"/> = na událost může reagovat Panel tím, že zobrazí / skryje ScrollBar
+            /// </summary>
+            public event EventHandler MenuItemDrawColumnsChanged { add { __Owner.MenuItemDrawColumnsChanged += value; } remove { __Owner.MenuItemDrawColumnsChanged -= value; } }
             /// <summary>
             /// Po změně stavu Undo/Redo
             /// </summary>

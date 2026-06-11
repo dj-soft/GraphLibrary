@@ -1023,7 +1023,8 @@ namespace TestDevExpress.Forms
             sampleTree.DxProperties.NodeImageSize = ResourceImageSizeType.Small;
             sampleTree.DxProperties.ImagePositionType = TreeImagePositionType.MainIconOnly;
             sampleTree.DxProperties.TreeNodeIndent = 40;
-
+            sampleTree.DxProperties.ButtonsPosition = ToolbarPosition.RightSideCenter;
+            sampleTree.DxProperties.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.CopyToTargetOneC };
             sampleTree.DxProperties.AddNodes(_Sample21CreateTreeNodes());
             _Sample21Tree = sampleTree;
             __ResizedControls.Add(_Sample21Tree);
@@ -1033,10 +1034,11 @@ namespace TestDevExpress.Forms
             sampleList.DxProperties.RowFilterMode = RowFilterBoxMode.Client;
             sampleList.DxProperties.SelectionMode = SelectionMode.MultiExtended;
             sampleList.DxProperties.ButtonsPosition = ToolbarPosition.BottomSideCenter;
-            sampleList.DxProperties.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.SelectAll, ControlKeyActionType.Delimiter, ControlKeyActionType.Delete, ControlKeyActionType.CopyToSourceOneE, ControlKeyActionType.CopyToSourceOneC, ControlKeyActionType.CopyToSourceAllE, ControlKeyActionType.Delimiter, ControlKeyActionType.Move_All };
+            sampleList.DxProperties.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.SelectAll, ControlKeyActionType.Delete, ControlKeyActionType.Move_All };
             sampleList.DxProperties.EnabledKeyActions = ControlKeyActionType.None;
             sampleList.DxProperties.DragDropActions = DxDragDropActionType.ImportItemsInto | DxDragDropActionType.ReorderItems;
-            sampleList.DxProperties.MenuItems = Randomizer.GetMenuItems(7, Randomizer.ImageResourceType.PngSmall, true);
+            sampleList.DxProperties.MenuItems = Randomizer.GetMenuItems(7, Randomizer.ImageResourceType.PngSmall, true, true, 4, 12);
+            sampleList.DxProperties.AutoColumnWidths = true;
             sampleList.DxProperties.ListActionAfter += _Sample21ListB_ListActionAfter;
             _Sample21List = sampleList;
             _AddEventHandlers(sampleList, true);

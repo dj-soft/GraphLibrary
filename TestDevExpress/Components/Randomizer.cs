@@ -122,10 +122,13 @@ namespace TestDevExpress
         /// <param name="imageType"></param>
         /// <param name="withNumberedItems"></param>
         /// <param name="withToolTip"></param>
+        /// <param name="minSentenceLength"></param>
+        /// <param name="maxSentenceLength"></param>
         /// <returns></returns>
-        public static IMenuItem[] GetMenuItems(int count, ImageResourceType imageType = ImageResourceType.PngFull, bool withNumberedItems = false, bool withToolTip = true)
+        public static IMenuItem[] GetMenuItems(int count, ImageResourceType imageType = ImageResourceType.PngFull, bool withNumberedItems = false, bool withToolTip = true, int? minSentenceLength = null, int? maxSentenceLength = null)
         {
-            
+            var minWords = minSentenceLength ?? 1;
+            var maxWords = maxSentenceLength ?? 6;
             List<IMenuItem> items = new List<IMenuItem>();
             for (int i = 0; i < count; i++)
                 items.Add(createItem(i));
@@ -136,7 +139,7 @@ namespace TestDevExpress
                 DataMenuItem item = new DataMenuItem()
                 {
                     ItemId = "Item" + index.ToString(),
-                    Text = GetSentence(1, 6, false),
+                    Text = GetSentence(minWords, maxWords, false),
                     ItemOrder = index
                 };
                 item.ImageName = GetIconName(imageType);
