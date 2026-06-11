@@ -1057,6 +1057,7 @@ namespace TestDevExpress.Forms
                 {
                     var node = Randomizer.GetTreeListNode(nodes.Count, imageType, true, true);
                     node.ParentItem = parentItem;
+                    node.ParentNodeFullId = parentItem?.ItemId;
                     node.Text += $"  [{level}]";
                     nodes.Add(node);
                     if (needSubNodes(level))
