@@ -1514,6 +1514,10 @@ public partial class MainForm : Form
         /// </summary>
         public object TargetTag { get; set; }
         /// <summary>
+        /// Zde může eventhandler zrušit tuto akci
+        /// </summary>
+        public bool Cancel { get; set; }
+        /// <summary>
         /// Obsahuje true, pokud je možno povolit Drag and Drop akci (existuje cíl <see cref="TargetControl"/>, 
         /// je povolen Drag ze zdroje <see cref="SourceDragEnabled"/> a je povolen Drop v cíli <see cref="TargetDropEnabled"/>).
         /// </summary>
@@ -1577,6 +1581,12 @@ public partial class MainForm : Form
         void IDxDragDropArgs.TargetReset() { this.TargetReset(); }
         #endregion
     }
+    /// <summary>
+    /// Předpis pro eventhandlery událostí DragAndDrop
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="args"></param>
+    public delegate void DxDragDropEventHandler(object sender, DxDragDropArgs args);
     /// <summary>
     /// Interface pro interní setování hodnot do <see cref="DxDragDropArgs"/>
     /// </summary>

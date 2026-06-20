@@ -1884,7 +1884,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private List<DxSimpleButton> __Buttons;
         #endregion
-        
         #region DxProperties : property + třída, která do sebe shrnuje čistě jen Nephrite vlastnosti
         /// <summary>
         /// Souhrn vlastností (data a eventy), které tato třída poskytuje systému Nephrite
@@ -2244,6 +2243,36 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Událost volaná po změně <see cref="DxListBoxControl.DxPropertiesInfo.MenuItemDrawColumns"/> = na událost může reagovat Panel tím, že zobrazí / skryje ScrollBar
             /// </summary>
             public event EventHandler MenuItemDrawColumnsChanged { add { DxListProperties.MenuItemDrawColumnsChanged += value; } remove { DxListProperties.MenuItemDrawColumnsChanged -= value; } }
+            /// <summary>
+            /// Proběhne při zahájení akce DragAndDrop na controlu Source = odkud jsou prvky přetahovány.<br/>
+            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit text <see cref="DxDragDropArgs.SourceText"/> zobrazovaný v Drag miniokně,
+            /// může nastavit povolení akce do <see cref="DxDragDropArgs.SourceDragEnabled"/>.
+            /// </summary>
+            public event DxDragDropEventHandler DragSourceStartBefore { add { DxListProperties.DragSourceStartBefore += value; } remove { DxListProperties.DragSourceStartBefore -= value; } }
+            /// <summary>
+            /// Proběhne při ukončení akce DragAndDrop na controlu Source = odkud jsou prvky přetahovány.<br/>
+            /// Proběhne před provedením akce Drop.<br/>
+            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole. Může nastavit <see cref="DxDragDropArgs.Cancel"/> = true a zrušt tak proces.
+            /// </summary>
+            public event DxDragDropEventHandler DragSourceDropBefore { add { DxListProperties.DragSourceDropBefore += value; } remove { DxListProperties.DragSourceDropBefore -= value; } }
+            /// <summary>
+            /// Proběhne při ukončení akce DragAndDrop na controlu Source = odkud jsou prvky přetahovány<br/>
+            /// Proběhne před provedením akce Drop.<br/>
+            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole.
+            /// </summary>
+            public event DxDragDropEventHandler DragSourceDropAfter { add { DxListProperties.DragSourceDropAfter += value; } remove { DxListProperties.DragSourceDropAfter -= value; } }
+            /// <summary>
+            /// Proběhne při ukončení akce DragAndDrop na controlu Target = kam jsou prvky přetahovány<br/>
+            /// Proběhne před provedením akce Drop.<br/>
+            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole. Může nastavit <see cref="DxDragDropArgs.Cancel"/> = true a zrušt tak proces.
+            /// </summary>
+            public event DxDragDropEventHandler DragTargetDropBefore { add { DxListProperties.DragTargetDropBefore += value; } remove { DxListProperties.DragTargetDropBefore -= value; } }
+            /// <summary>
+            /// Proběhne při ukončení akce DragAndDrop na controlu Target = kam jsou prvky přetahovány<br/>
+            /// Proběhne po provedení akce Drop.<br/>
+            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole.
+            /// </summary>
+            public event DxDragDropEventHandler DragTargetDropAfter { add { DxListProperties.DragTargetDropAfter += value; } remove { DxListProperties.DragTargetDropAfter -= value; } }
             /// <summary>
             /// Po změně stavu Undo/Redo
             /// </summary>
@@ -2936,6 +2965,36 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Událost volaná po změně <see cref="MenuItemDrawColumns"/> = na událost může reagovat Panel tím, že zobrazí / skryje ScrollBar
             /// </summary>
             public event EventHandler MenuItemDrawColumnsChanged { add { DxListProperties.MenuItemDrawColumnsChanged += value; } remove { DxListProperties.MenuItemDrawColumnsChanged -= value; } }
+            /// <summary>
+            /// Proběhne při zahájení akce DragAndDrop na controlu Source = odkud jsou prvky přetahovány.<br/>
+            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit text <see cref="DxDragDropArgs.SourceText"/> zobrazovaný v Drag miniokně,
+            /// může nastavit povolení akce do <see cref="DxDragDropArgs.SourceDragEnabled"/>.
+            /// </summary>
+            public event DxDragDropEventHandler DragSourceStartBefore { add { DxListProperties.DragSourceStartBefore += value; } remove { DxListProperties.DragSourceStartBefore -= value; } }
+            /// <summary>
+            /// Proběhne při ukončení akce DragAndDrop na controlu Source = odkud jsou prvky přetahovány.<br/>
+            /// Proběhne před provedením akce Drop.<br/>
+            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole. Může nastavit <see cref="DxDragDropArgs.Cancel"/> = true a zrušt tak proces.
+            /// </summary>
+            public event DxDragDropEventHandler DragSourceDropBefore { add { DxListProperties.DragSourceDropBefore += value; } remove { DxListProperties.DragSourceDropBefore -= value; } }
+            /// <summary>
+            /// Proběhne při ukončení akce DragAndDrop na controlu Source = odkud jsou prvky přetahovány<br/>
+            /// Proběhne před provedením akce Drop.<br/>
+            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole.
+            /// </summary>
+            public event DxDragDropEventHandler DragSourceDropAfter { add { DxListProperties.DragSourceDropAfter += value; } remove { DxListProperties.DragSourceDropAfter -= value; } }
+            /// <summary>
+            /// Proběhne při ukončení akce DragAndDrop na controlu Target = kam jsou prvky přetahovány<br/>
+            /// Proběhne před provedením akce Drop.<br/>
+            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole. Může nastavit <see cref="DxDragDropArgs.Cancel"/> = true a zrušt tak proces.
+            /// </summary>
+            public event DxDragDropEventHandler DragTargetDropBefore { add { DxListProperties.DragTargetDropBefore += value; } remove { DxListProperties.DragTargetDropBefore -= value; } }
+            /// <summary>
+            /// Proběhne při ukončení akce DragAndDrop na controlu Target = kam jsou prvky přetahovány<br/>
+            /// Proběhne po provedení akce Drop.<br/>
+            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole.
+            /// </summary>
+            public event DxDragDropEventHandler DragTargetDropAfter { add { DxListProperties.DragTargetDropAfter += value; } remove { DxListProperties.DragTargetDropAfter -= value; } }
             /// <summary>
             /// Po změně stavu Undo/Redo
             /// </summary>
@@ -6132,6 +6191,8 @@ SetSelected() - vstup           Absolutní
                 args.SourceText = selectedItems.ToOneString(convertor: i => i.MenuItem?.ToString());
                 args.SourceObject = selectedItems;
                 args.SourceDragEnabled = true;
+                _RunDragSourceStartBefore(args);
+                if (args.Cancel) args.SourceDragEnabled = false;
             }
         }
         /// <summary>
@@ -6160,6 +6221,11 @@ SetSelected() - vstup           Absolutní
         {
             args.TargetIndex = null;
             args.InsertIndex = null;
+
+            // DragAndDrop event:
+            _RunDragSourceDropBefore(args);
+            if (args.Cancel) return;
+
             if ((args.TargetIsSource || args.CurrentEffect == DragDropEffects.Move) && DxDragTargetTryGetMenuInfos(args, out var selectedItemsInfo))
             {   // Pokud (Cíl == Zdroj (provádíme přesun v rámci jednoho Listu) anebo efekt DragAndDrop je Move) pak musíme zdrojové prvky odstranit:
                 var changeType = DxItemsChangeType.DragAndDrop;
@@ -6176,6 +6242,9 @@ SetSelected() - vstup           Absolutní
                 }
                 // Odebereme zdrojové prvky:
                 this._RemoveIndexes(selectedItemsInfo.Select(t => t.AbsoluteIndex), changeType);
+                // DragAndDrop event:
+                _RunDragSourceDropAfter(args);
+
                 // Vyvoláme event, changeType je buď DragAndDrop (když Source <> Target) anebo None (když TargetIsSource), pak se fyzicky event nevyvolá:
                 _RunMenuItemsChanged(changeType);
             }
@@ -6198,6 +6267,8 @@ SetSelected() - vstup           Absolutní
         /// <param name="args"></param>
         private void DoDragTargetDrop(DxDragDropArgs args)
         {
+            if (args.Cancel) return;
+
             if (args.TargetIndex == null)
             {
                 Point targetPoint = this.PointToClient(args.ScreenMouseLocation);
@@ -6207,11 +6278,20 @@ SetSelected() - vstup           Absolutní
             if (!args.InsertIndex.HasValue)
                 args.InsertIndex = args.TargetIndex.GetInsertIndex();
 
+            // DragAndDrop event:
+            _RunDragTargetDropBefore(args);
+            if (args.Cancel) return;
+
             // Vložit prvky do this Listu, na daný index, a selectovat je:
             if (DxDragTargetTryGetItems(args, out var sourceItems))
             {
                 var insertAbsoluteIndex = (args.InsertIndex.HasValue ? GetAbsoluteIndexFromFiltered(args.InsertIndex.Value) : null);
                 _InsertItems(sourceItems, insertAbsoluteIndex, true, DxItemsChangeType.DragAndDrop);
+
+                // DragAndDrop event:
+                _RunDragTargetDropAfter(args);
+
+                // MenuItemsChanged event:
                 _RunMenuItemsChanged(DxItemsChangeType.DragAndDrop);
             }
 
@@ -6556,6 +6636,111 @@ SetSelected() - vstup           Absolutní
         protected event EventHandler MenuItemDrawColumnsChanged;
 
         /// <summary>
+        /// Vyvolá metodu <see cref="OnDragSourceStartBefore(DxDragDropArgs)"/> a event <see cref="DragSourceStartBefore"/>
+        /// </summary>
+        /// <param name="args"></param>
+        private void _RunDragSourceStartBefore(DxDragDropArgs args)
+        {
+            OnDragSourceStartBefore(args);
+            DragSourceStartBefore?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Proběhne při zahájení akce DragAndDrop
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnDragSourceStartBefore(DxDragDropArgs args) { }
+        /// <summary>
+        /// Proběhne při zahájení akce DragAndDrop na controlu Source = odkud jsou prvky přetahovány.<br/>
+        /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit text <see cref="DxDragDropArgs.SourceText"/> zobrazovaný v Drag miniokně,
+        /// může nastavit povolení akce do <see cref="DxDragDropArgs.SourceDragEnabled"/>.
+        /// </summary>
+        protected event DxDragDropEventHandler DragSourceStartBefore;
+
+        /// <summary>
+        /// Vyvolá metodu <see cref="OnDragSourceDropBefore(DxDragDropArgs)"/> a event <see cref="DragSourceDropBefore"/>
+        /// </summary>
+        /// <param name="args"></param>
+        private void _RunDragSourceDropBefore(DxDragDropArgs args)
+        {
+            OnDragSourceDropBefore(args);
+            DragSourceDropBefore?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Proběhne při ukončení akce DragAndDrop
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnDragSourceDropBefore(DxDragDropArgs args) { }
+        /// <summary>
+        /// Proběhne při ukončení akce DragAndDrop na controlu Source = odkud jsou prvky přetahovány.<br/>
+        /// Proběhne před provedením akce Drop.<br/>
+        /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole. Může nastavit <see cref="DxDragDropArgs.Cancel"/> = true a zrušt tak proces.
+        /// </summary>
+        protected event DxDragDropEventHandler DragSourceDropBefore;
+
+        /// <summary>
+        /// Vyvolá metodu <see cref="OnDragSourceDropAfter(DxDragDropArgs)"/> a event <see cref="DragSourceDropAfter"/>
+        /// </summary>
+        /// <param name="args"></param>
+        private void _RunDragSourceDropAfter(DxDragDropArgs args)
+        {
+            OnDragSourceDropAfter(args);
+            DragSourceDropAfter?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Proběhne při ukončení akce DragAndDrop
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnDragSourceDropAfter(DxDragDropArgs args) { }
+        /// <summary>
+        /// Proběhne při ukončení akce DragAndDrop na controlu Source = odkud jsou prvky přetahovány<br/>
+        /// Proběhne před provedením akce Drop.<br/>
+        /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole.
+        /// </summary>
+        protected event DxDragDropEventHandler DragSourceDropAfter;
+
+        /// <summary>
+        /// Vyvolá metodu <see cref="OnDragTargetDropBefore(DxDragDropArgs)"/> a event <see cref="DragTargetDropBefore"/>
+        /// </summary>
+        /// <param name="args"></param>
+        private void _RunDragTargetDropBefore(DxDragDropArgs args)
+        {
+            OnDragTargetDropBefore(args);
+            DragTargetDropBefore?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Proběhne při ukončení akce DragAndDrop
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnDragTargetDropBefore(DxDragDropArgs args) { }
+        /// <summary>
+        /// Proběhne při ukončení akce DragAndDrop na controlu Target = kam jsou prvky přetahovány<br/>
+        /// Proběhne před provedením akce Drop.<br/>
+        /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole. Může nastavit <see cref="DxDragDropArgs.Cancel"/> = true a zrušt tak proces.
+        /// </summary>
+        protected event DxDragDropEventHandler DragTargetDropBefore;
+
+        /// <summary>
+        /// Vyvolá metodu <see cref="OnDragTargetDropAfter(DxDragDropArgs)"/> a event <see cref="DragTargetDropAfter"/>
+        /// </summary>
+        /// <param name="args"></param>
+        private void _RunDragTargetDropAfter(DxDragDropArgs args)
+        {
+            OnDragTargetDropAfter(args);
+            DragTargetDropAfter?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Proběhne při ukončení akce DragAndDrop
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnDragTargetDropAfter(DxDragDropArgs args) { }
+        /// <summary>
+        /// Proběhne při ukončení akce DragAndDrop na controlu Target = kam jsou prvky přetahovány<br/>
+        /// Proběhne po provedení akce Drop.<br/>
+        /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole.
+        /// </summary>
+        protected event DxDragDropEventHandler DragTargetDropAfter;
+
+        /// <summary>
         /// Vyvolá háček <see cref="OnUndoRedoEnabledChanged"/> a událost <see cref="UndoRedoEnabledChanged"/>.
         /// </summary>
         private void _RunUndoRedoEnabledChanged()
@@ -6898,6 +7083,36 @@ SetSelected() - vstup           Absolutní
             /// Událost volaná po změně <see cref="MenuItemDrawColumns"/> = na událost může reagovat Panel tím, že zobrazí / skryje ScrollBar
             /// </summary>
             public event EventHandler MenuItemDrawColumnsChanged { add { __Owner.MenuItemDrawColumnsChanged += value; } remove { __Owner.MenuItemDrawColumnsChanged -= value; } }
+            /// <summary>
+            /// Proběhne při zahájení akce DragAndDrop na controlu Source = odkud jsou prvky přetahovány.<br/>
+            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit text <see cref="DxDragDropArgs.SourceText"/> zobrazovaný v Drag miniokně,
+            /// může nastavit povolení akce do <see cref="DxDragDropArgs.SourceDragEnabled"/>.
+            /// </summary>
+            public event DxDragDropEventHandler DragSourceStartBefore { add { __Owner.DragSourceStartBefore += value; } remove { __Owner.DragSourceStartBefore -= value; } }
+            /// <summary>
+            /// Proběhne při ukončení akce DragAndDrop na controlu Source = odkud jsou prvky přetahovány.<br/>
+            /// Proběhne před provedením akce Drop.<br/>
+            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole. Může nastavit <see cref="DxDragDropArgs.Cancel"/> = true a zrušt tak proces.
+            /// </summary>
+            public event DxDragDropEventHandler DragSourceDropBefore { add { __Owner.DragSourceDropBefore += value; } remove { __Owner.DragSourceDropBefore -= value; } }
+            /// <summary>
+            /// Proběhne při ukončení akce DragAndDrop na controlu Source = odkud jsou prvky přetahovány<br/>
+            /// Proběhne před provedením akce Drop.<br/>
+            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole.
+            /// </summary>
+            public event DxDragDropEventHandler DragSourceDropAfter { add { __Owner.DragSourceDropAfter += value; } remove { __Owner.DragSourceDropAfter -= value; } }
+            /// <summary>
+            /// Proběhne při ukončení akce DragAndDrop na controlu Target = kam jsou prvky přetahovány<br/>
+            /// Proběhne před provedením akce Drop.<br/>
+            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole. Může nastavit <see cref="DxDragDropArgs.Cancel"/> = true a zrušt tak proces.
+            /// </summary>
+            public event DxDragDropEventHandler DragTargetDropBefore { add { __Owner.DragTargetDropBefore += value; } remove { __Owner.DragTargetDropBefore -= value; } }
+            /// <summary>
+            /// Proběhne při ukončení akce DragAndDrop na controlu Target = kam jsou prvky přetahovány<br/>
+            /// Proběhne po provedení akce Drop.<br/>
+            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole.
+            /// </summary>
+            public event DxDragDropEventHandler DragTargetDropAfter { add { __Owner.DragTargetDropAfter += value; } remove { __Owner.DragTargetDropAfter -= value; } }
             /// <summary>
             /// Po změně stavu Undo/Redo
             /// </summary>

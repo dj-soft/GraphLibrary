@@ -1068,6 +1068,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public event DxTreeListNodeHandler LazyLoadChilds { add { DxTreeProperties.LazyLoadChilds += value; } remove { DxTreeProperties.LazyLoadChilds -= value; } }
             /// <summary>
+            /// Proběhne při zahájení akce DragAndDrop na controlu Source = odkud jsou prvky přetahovány.<br/>
+            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit text <see cref="DxDragDropArgs.SourceText"/> zobrazovaný v Drag miniokně,
+            /// může nastavit povolení akce do <see cref="DxDragDropArgs.SourceDragEnabled"/>.
+            /// </summary>
+            public event DxDragDropEventHandler DragSourceStartBefore { add { DxTreeProperties.DragSourceStartBefore += value; } remove { DxTreeProperties.DragSourceStartBefore -= value; } }
+            /// <summary>
             /// ToolTip v TreeListu má událost
             /// </summary>
             public event DxToolTipHandler ToolTipChanged { add { DxTreeProperties.ToolTipChanged += value; } remove { DxTreeProperties.ToolTipChanged -= value; } }
@@ -3725,6 +3731,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 args.SourceText = selectedItems.ToOneString(convertor: i => i.Text);
                 args.SourceObject = selectedItems;
                 args.SourceDragEnabled = true;
+                // DragAndDrop event:
+                _RunDragSourceStartBefore(args);
+                if (args.Cancel) args.SourceDragEnabled = false;
             }
         }
         /// <summary>
@@ -5013,6 +5022,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected event DxTreeListNodeHandler LazyLoadChilds;
 
         /// <summary>
+        /// Vyvolá metodu <see cref="OnDragSourceStartBefore(DxDragDropArgs)"/> a event <see cref="DragSourceStartBefore"/>
+        /// </summary>
+        /// <param name="args"></param>
+        private void _RunDragSourceStartBefore(DxDragDropArgs args)
+        {
+            OnDragSourceStartBefore(args);
+            DragSourceStartBefore?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Proběhne při zahájení akce DragAndDrop
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnDragSourceStartBefore(DxDragDropArgs args) { }
+        /// <summary>
+        /// Proběhne při zahájení akce DragAndDrop na controlu Source = odkud jsou prvky přetahovány
+        /// </summary>
+        protected event DxDragDropEventHandler DragSourceStartBefore;
+
+        /// <summary>
         /// Vyvolá metodu <see cref="OnToolTipEvent(DxToolTipArgs)"/> a event <see cref="ToolTipChanged"/>
         /// </summary>
         /// <param name="eventName"></param>
@@ -5479,6 +5507,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// TreeList rozbaluje node, který má nastaveno načítání ze serveru : <see cref="ITreeListNode.LazyExpandable"/> je true.
             /// </summary>
             public event DxTreeListNodeHandler LazyLoadChilds { add { __Owner.LazyLoadChilds += value; } remove { __Owner.LazyLoadChilds -= value; } }
+            /// <summary>
+            /// Proběhne při zahájení akce DragAndDrop na controlu Source = odkud jsou prvky přetahovány.<br/>
+            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit text <see cref="DxDragDropArgs.SourceText"/> zobrazovaný v Drag miniokně,
+            /// může nastavit povolení akce do <see cref="DxDragDropArgs.SourceDragEnabled"/>.
+            /// </summary>
+            public event DxDragDropEventHandler DragSourceStartBefore { add { __Owner.DragSourceStartBefore += value; } remove { __Owner.DragSourceStartBefore -= value; } }
             /// <summary>
             /// ToolTip v TreeListu má událost
             /// </summary>

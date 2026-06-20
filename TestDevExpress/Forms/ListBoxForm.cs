@@ -1025,7 +1025,10 @@ namespace TestDevExpress.Forms
             sampleTree.DxProperties.TreeNodeIndent = 40;
             sampleTree.DxProperties.ButtonsPosition = ToolbarPosition.RightSideCenter;
             sampleTree.DxProperties.ButtonsTypes = new ControlKeyActionType[] { ControlKeyActionType.CopyToTargetOneC };
+
             sampleTree.DxProperties.DragDropActions = DxDragDropActionType.CopyItemsFrom;
+            sampleTree.DxProperties.MultiSelectEnabled = true;
+
             sampleTree.DxProperties.AddNodes(_Sample21CreateTreeNodes());
             _Sample21Tree = sampleTree;
             __ResizedControls.Add(_Sample21Tree);
