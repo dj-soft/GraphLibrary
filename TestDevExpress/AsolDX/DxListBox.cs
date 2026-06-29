@@ -5583,8 +5583,8 @@ SetSelected() - vstup           Absolutní
             doSingleAction(ControlKeyActionType.MoveDown, _DoKeyActionMoveDown);
             doSingleAction(ControlKeyActionType.MoveBottom, _DoKeyActionMoveBottom);
             doSingleAction(ControlKeyActionType.Delete, _DoKeyActionDelete);
-            doSingleAction(ControlKeyActionType.CopyToTargetOneC, null);                   // Pozn. pokud není dodaná metoda pro akci (=null), pak tuto akci má řešit pouze nadřazený container
-            doSingleAction(ControlKeyActionType.CopyToTargetOneE, null);                //  - pomocí eventhandlerů ListActionBefore a ListActionAfter
+            doSingleAction(ControlKeyActionType.CopyToTargetOneC, null);                 // Pozn. pokud není dodaná metoda pro akci (=null), pak tuto akci má řešit pouze nadřazený container
+            doSingleAction(ControlKeyActionType.CopyToTargetOneE, null);                 //  - pomocí eventhandlerů ListActionBefore a ListActionAfter
             doSingleAction(ControlKeyActionType.CopyToTargetAllC, null);
             doSingleAction(ControlKeyActionType.CopyToTargetAllE, null);
             doSingleAction(ControlKeyActionType.CopyToSourceOneC, null);
@@ -5633,6 +5633,11 @@ SetSelected() - vstup           Absolutní
         /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
         private void _DoKeyActionCtrlA(DxItemsChangeType changeType)
         {
+            var menuItems = this.FilteredMenuItems.ToArray();
+            
+            var argsBefore = new DxListBoxMenuItemsActionCancelEventArgs(menuItems, ControlKeyActionType.SelectAll, changeType);
+
+                actions, changeType, e);
             this.SelectedAbsoluteIndexes = this.FilteredMenuItems.Select(t => t.AbsoluteIndex).ToArray();          // Ctrl+A = SelectAll označí všechny viditelné prvky
         }
         /// <summary>
@@ -5872,6 +5877,8 @@ SetSelected() - vstup           Absolutní
 
             var validItems = _GetOnlyValidItems(sourceItems, true);            // Vyberu prvky, které vyhovují NonDuplicitě ItemId (vstupující + stávající dohromady)
             if (validItems.Length == 0) return;
+
+            _RunListActionBefore
 
             int totalCount = this.Items.Count;
             var selectedIndexes = new List<int>();                             // Tyto absolutní indexy budou selected = nově vložené prvky
@@ -6571,7 +6578,8 @@ SetSelected() - vstup           Absolutní
         protected event EventHandler SelectedItemsChanged;
 
         /// <summary>
-        /// Zavolá akce po změně v poli <see cref="MenuItems"/>
+        /// Zavolá akce po změně v poli <see cref="MenuItems"/>.
+        /// Jde o nativní event, nemá mnoho společného s <see cref="DxListBoxNative"/>.
         /// </summary>
         /// <param name="e"></param>
         private void _RunItemsListChanged(System.ComponentModel.ListChangedEventArgs e)
@@ -6580,12 +6588,14 @@ SetSelected() - vstup           Absolutní
             ListItemsChanged?.Invoke(this, e);
         }
         /// <summary>
-        /// Proběhne po změně v poli <see cref="MenuItems"/>
+        /// Proběhne po změně v poli <see cref="MenuItems"/>.
+        /// Jde o nativní event, nemá mnoho společného s <see cref="DxListBoxNative"/>.
         /// </summary>
         /// <param name="e"></param>
         protected virtual void OnListItemsChanged(System.ComponentModel.ListChangedEventArgs e) { }
         /// <summary>
-        /// Proběhne po změně v poli <see cref="MenuItems"/>
+        /// Proběhne po změně v poli <see cref="MenuItems"/>.
+        /// Jde o nativní event, nemá mnoho společného s <see cref="DxListBoxNative"/>.
         /// </summary>
         protected event System.ComponentModel.ListChangedEventHandler ListItemsChanged;
 
@@ -8284,6 +8294,23 @@ SetSelected() - vstup           Absolutní
         /// </summary>
         DragAndDrop
     }
+
+    /// <summary>
+    /// Delegát pro událost Změna prvků na <see cref="DxListBoxControl"/>
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    public delegate void DxListBoxMenuItemsActionAfterDelegate(object sender, DxListBoxMenuItemsActionEventArgs args);
+    public class DxListBoxMenuItemsActionEventArgs : EventArgs
+    {
+        public DxListBoxMenuItemsActionEventArgs()
+        { }
+    }
+    public class DxListBoxMenuItemsActionCancelEventArgs : DxListBoxMenuItemsActionEventArgs
+    { }
+
+
+
     /// <summary>
     /// Argumenty pro akci na <see cref="DxListBoxControl"/>
     /// </summary>
