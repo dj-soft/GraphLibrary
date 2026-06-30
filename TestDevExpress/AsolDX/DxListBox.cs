@@ -5687,6 +5687,17 @@ SetSelected() - vstup           Absolutní
         /// <param name="keyArgs">Data o klávese, pokud je k dispozici</param>
         private DxListBoxMenuItemsBeforeActionArgs _DoKeyActionCtrlX(ControlKeyActionType actionType, DxItemsChangeType changeType, KeyEventArgs keyArgs)
         {
+            var beforeArgs = new DxListBoxMenuItemsBeforeActionArgs(actionType, changeType, this.SelectedMenuInfos, keyArgs);
+            _RunListActionBefore(beforeArgs);
+            if (!beforeArgs.Cancel)
+            {
+                var selectedItems = beforeArgs.ProcessItems.Select(t => t.MenuItem).ToArray();
+                string textTxt = selectedItems.ToOneString();
+                DataExchangeClipboardPublish(selectedItems, textTxt);
+
+            }
+            return beforeArgs;
+
             _DoKeyActionCtrlC(changeType);
             _DoKeyActionDelete(changeType);
         }
