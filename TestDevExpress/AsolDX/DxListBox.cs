@@ -915,9 +915,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _ListActionAfter(object sender, DxListBoxActionEventArgs e)
+        private void _ListActionAfter(object sender, DxListBoxMenuItemsAfterActionArgs e)
         {
-            switch (e.Action)
+            switch (e.ActionType)
             {
                 case ControlKeyActionType.CopyToTargetOneE:
                 case ControlKeyActionType.CopyToTargetOneC:
@@ -927,7 +927,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case ControlKeyActionType.CopyToSourceOneC:
                 case ControlKeyActionType.CopyToSourceAllE:
                 case ControlKeyActionType.CopyToSourceAllC:
-                    DoCommonButtonClick(e.Action, e.ChangeType);
+                    DoCommonButtonClick(e.ActionType, e.ChangeSourceType);
                     break;
             }
         }
@@ -1433,18 +1433,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Panel je zaháčkovaný na akce ListBoxu, kde panel ošetřuje akce <see cref="ControlKeyActionType.ActivateFilter"/> a <see cref="ControlKeyActionType.FillKeyToFilter"/>.
         /// </summary>
         /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ListBox_ListActionBefore(object sender, DxListBoxActionCancelEventArgs e)
+        /// <param name="args"></param>
+        private void _ListBox_ListActionBefore(object sender, DxListBoxMenuItemsBeforeActionArgs args)
         {
             // Jiné akce ignoruji:
-            bool isFilterAction = (e.Action == ControlKeyActionType.ActivateFilter || e.Action == ControlKeyActionType.FillKeyToFilter);
+            bool isFilterAction = (args.ActionType == ControlKeyActionType.ActivateFilter || args.ActionType == ControlKeyActionType.FillKeyToFilter);
             if (!isFilterAction) return;
 
             // Pokud já nemám FilterRow, pak akci stornuji, tím si ListBox nebude nastavovat IsHandled = true, a případné klávesy pošle do nativního controlu:
             var filterMode = this.RowFilterMode;
-            if (filterMode == RowFilterBoxMode.None) { e.Cancel = true; return; }
+            if (filterMode == RowFilterBoxMode.None) { args.Cancel = true; return; }
 
-            string text = ((e.Action == ControlKeyActionType.FillKeyToFilter) ? DxComponent.KeyConvertToChar(e.Keys, true)?.ToString() : (string)null);
+            string text = ((args.ActionType == ControlKeyActionType.FillKeyToFilter) ? DxComponent.KeyConvertToChar(args.Keys, true)?.ToString() : (string)null);
             switch (filterMode)
             {
                 case RowFilterBoxMode.Client:
@@ -2220,11 +2220,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Událost vyvolaná před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
             /// </summary>
-            public event DxListBoxActionCancelDelegate ListActionBefore { add { DxListProperties.ListActionBefore += value; } remove { DxListProperties.ListActionBefore -= value; } }
+            public event DxListBoxMenuItemsActionBeforeDelegate ListActionBefore { add { DxListProperties.ListActionBefore += value; } remove { DxListProperties.ListActionBefore -= value; } }
             /// <summary>
             /// Událost vyvolaná po provedení kteréhokoli požadavku
             /// </summary>
-            public event DxListBoxActionDelegate ListActionAfter { add { DxListProperties.ListActionAfter += value; } remove { DxListProperties.ListActionAfter -= value; } }
+            public event DxListBoxMenuItemsActionAfterDelegate ListActionAfter { add { DxListProperties.ListActionAfter += value; } remove { DxListProperties.ListActionAfter -= value; } }
             /// <summary>
             /// Událost volaná po změně selected prvků.<br/>
             /// Aktuální vybrané prvky jsou k dispozici v <see cref="SelectedItems"/>, jejich ID v <see cref="SelectedItemsId"/>.
@@ -2942,11 +2942,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Událost vyvolaná před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
             /// </summary>
-            public event DxListBoxActionCancelDelegate ListActionBefore { add { DxListProperties.ListActionBefore += value; } remove { DxListProperties.ListActionBefore -= value; } }
+            public event DxListBoxMenuItemsActionBeforeDelegate ListActionBefore { add { DxListProperties.ListActionBefore += value; } remove { DxListProperties.ListActionBefore -= value; } }
             /// <summary>
             /// Událost vyvolaná po provedení kteréhokoli požadavku
             /// </summary>
-            public event DxListBoxActionDelegate ListActionAfter { add { DxListProperties.ListActionAfter += value; } remove { DxListProperties.ListActionAfter -= value; } }
+            public event DxListBoxMenuItemsActionAfterDelegate ListActionAfter { add { DxListProperties.ListActionAfter += value; } remove { DxListProperties.ListActionAfter -= value; } }
             /// <summary>
             /// Událost volaná po změně selected prvků.<br/>
             /// Aktuální vybrané prvky jsou k dispozici v <see cref="SelectedItems"/>, jejich ID v <see cref="SelectedItemsId"/>.
@@ -5575,6 +5575,7 @@ SetSelected() - vstup           Absolutní
 
             doSingleAction(ControlKeyActionType.Refresh, null);
             doSingleAction(ControlKeyActionType.SelectAll, _DoKeyActionCtrlA);
+            doSingleAction(ControlKeyActionType.SelectAllNone, _DoKeyActionCtrlA);
             doSingleAction(ControlKeyActionType.ClipCopy, _DoKeyActionCtrlC);
             doSingleAction(ControlKeyActionType.ClipCut, _DoKeyActionCtrlX);
             doSingleAction(ControlKeyActionType.ClipPaste, _DoKeyActionCtrlV);
@@ -5607,8 +5608,12 @@ SetSelected() - vstup           Absolutní
                 _RunListActionBefore(argsBefore);
                 if (!argsBefore.Cancel)
                 {
-                    if (internalActionMethod != null) internalActionMethod(changeType);  // Provedu konkrétní akci, pokud je dodána; viz dole napž. _DoKeyActionCtrlA()
+                    if (internalActionMethod != null)
+                        internalActionMethod(changeType);  // Provedu konkrétní akci, pokud je dodána; viz dole např. _DoKeyActionCtrlA()
+                    else
+                    { }
                     var argsAfter = new DxListBoxActionEventArgs(actions, changeType, e);
+
                     _RunListActionAfter(argsAfter);
                     isHandled = true;
                 }
@@ -5633,9 +5638,13 @@ SetSelected() - vstup           Absolutní
         /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
         private void _DoKeyActionCtrlA(DxItemsChangeType changeType)
         {
-            var menuItems = this.FilteredMenuItems.ToArray();
-            
-            var argsBefore = new DxListBoxMenuItemsActionCancelEventArgs(menuItems, ControlKeyActionType.SelectAll, changeType);
+            var selectedItems = this.FilteredMenuItems.ToArray();
+            var argsBefore = new DxListBoxMenuItemsBeforeActionArgs(ControlKeyActionType.SelectAll, changeType, selectedItems);
+            _RunMenuItemsBeforeAction(argsBefore);
+            if (!argsBefore.Cancel)
+            {
+                var absoluteIndexes = argsBefore.SelectedItems
+            }
 
                 actions, changeType, e);
             this.SelectedAbsoluteIndexes = this.FilteredMenuItems.Select(t => t.AbsoluteIndex).ToArray();          // Ctrl+A = SelectAll označí všechny viditelné prvky
@@ -5646,6 +5655,7 @@ SetSelected() - vstup           Absolutní
         /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
         private void _DoKeyActionCtrlC(DxItemsChangeType changeType)
         {
+            this.SelectedMenuInfos
             var selectedItems = this.SelectedMenuItems;
             string textTxt = selectedItems.ToOneString();
             DataExchangeClipboardPublish(selectedItems, textTxt);
@@ -6522,7 +6532,7 @@ SetSelected() - vstup           Absolutní
         /// Volá se před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
         /// </summary>
         /// <param name="args"></param>
-        private void _RunListActionBefore(DxListBoxActionCancelEventArgs args)
+        private void _RunListActionBefore(DxListBoxMenuItemsBeforeActionArgs args)
         {
             OnListActionBefore(args);
             ListActionBefore?.Invoke(this, args);
@@ -6530,18 +6540,18 @@ SetSelected() - vstup           Absolutní
         /// <summary>
         /// Proběhne před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
         /// </summary>
-        /// <param name="e"></param>
-        protected virtual void OnListActionBefore(DxListBoxActionCancelEventArgs e) { }
+        /// <param name="args"></param>
+        protected virtual void OnListActionBefore(DxListBoxMenuItemsBeforeActionArgs args) { }
         /// <summary>
         /// Událost vyvolaná před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
         /// </summary>
-        protected event DxListBoxActionCancelDelegate ListActionBefore;
+        protected event DxListBoxMenuItemsActionBeforeDelegate ListActionBefore;
 
         /// <summary>
         /// Volá se po provedení kteréhokoli požadavku
         /// </summary>
         /// <param name="args"></param>
-        private void _RunListActionAfter(DxListBoxActionEventArgs args)
+        private void _RunListActionAfter(DxListBoxMenuItemsAfterActionArgs args)
         {
             OnListActionAfter(args);
             ListActionAfter?.Invoke(this, args);
@@ -6549,12 +6559,12 @@ SetSelected() - vstup           Absolutní
         /// <summary>
         /// Proběhne po provedení kteréhokoli požadavku
         /// </summary>
-        /// <param name="e"></param>
-        protected virtual void OnListActionAfter(DxListBoxActionEventArgs e) { }
+        /// <param name="args"></param>
+        protected virtual void OnListActionAfter(DxListBoxMenuItemsAfterActionArgs args) { }
         /// <summary>
         /// Událost vyvolaná po provedení kteréhokoli požadavku
         /// </summary>
-        protected event DxListBoxActionDelegate ListActionAfter;
+        protected event DxListBoxMenuItemsActionAfterDelegate ListActionAfter;
 
         /// <summary>
         /// Volá se po změně selected prvků
@@ -7070,11 +7080,11 @@ SetSelected() - vstup           Absolutní
             /// <summary>
             /// Událost vyvolaná před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
             /// </summary>
-            public event DxListBoxActionCancelDelegate ListActionBefore { add { __Owner.ListActionBefore += value; } remove { __Owner.ListActionBefore -= value; } }
+            public event DxListBoxMenuItemsActionBeforeDelegate ListActionBefore { add { __Owner.ListActionBefore += value; } remove { __Owner.ListActionBefore -= value; } }
             /// <summary>
             /// Událost vyvolaná po provedení kteréhokoli požadavku
             /// </summary>
-            public event DxListBoxActionDelegate ListActionAfter { add { __Owner.ListActionAfter += value; } remove { __Owner.ListActionAfter -= value; } }
+            public event DxListBoxMenuItemsActionAfterDelegate ListActionAfter { add { __Owner.ListActionAfter += value; } remove { __Owner.ListActionAfter -= value; } }
             /// <summary>
             /// Událost volaná po změně selected prvků.<br/>
             /// Aktuální vybrané prvky jsou k dispozici v <see cref="SelectedItems"/>, jejich ID v <see cref="SelectedItemsId"/>.
@@ -8020,6 +8030,7 @@ SetSelected() - vstup           Absolutní
                     addOneButton(ControlKeyActionType.MoveBottom, requestedActions, ImageName.DxKeyActionMoveBottom, MsgCode.DxKeyActionMoveBottomTitle, MsgCode.DxKeyActionMoveBottomText);
                     addOneButton(ControlKeyActionType.Refresh, requestedActions, ImageName.DxKeyActionRefresh, MsgCode.DxKeyActionRefreshTitle, MsgCode.DxKeyActionRefreshText);
                     addOneButton(ControlKeyActionType.SelectAll, requestedActions, ImageName.DxKeyActionSelectAll, MsgCode.DxKeyActionSelectAllTitle, MsgCode.DxKeyActionSelectAllText);
+                    addOneButton(ControlKeyActionType.SelectAllNone, requestedActions, ImageName.DxKeyActionSelectAllNone, MsgCode.DxKeyActionSelectAllTitle, MsgCode.DxKeyActionSelectAllText);
                     addOneButton(ControlKeyActionType.Delete, requestedActions, ImageName.DxKeyActionDelete, MsgCode.DxKeyActionDeleteTitle, MsgCode.DxKeyActionDeleteText);
                     addOneButton(ControlKeyActionType.ClipCopy, requestedActions, ImageName.DxKeyActionClipCopy, MsgCode.DxKeyActionClipCopyTitle, MsgCode.DxKeyActionClipCopyText);
                     addOneButton(ControlKeyActionType.ClipCut, requestedActions, ImageName.DxKeyActionClipCut, MsgCode.DxKeyActionClipCutTitle, MsgCode.DxKeyActionClipCutText);
@@ -8125,20 +8136,22 @@ SetSelected() - vstup           Absolutní
             {
                 switch (actionType)
                 {
+                    case ControlKeyActionType.Refresh: return true;
                     case ControlKeyActionType.ClipCopy: return clipEnabled;
                     case ControlKeyActionType.ClipCut: return clipEnabled && isEditable;
                     case ControlKeyActionType.ClipPaste: return clipEnabled && isEditable;
-                    case ControlKeyActionType.Delete: return selectedLeftCount > 0 && isEditable;
-                    case ControlKeyActionType.Refresh: return true;
                     case ControlKeyActionType.SelectAll: return totalLeftCount > 0 && selectedLeftCount < totalLeftCount;
-                    case ControlKeyActionType.GoBegin: return totalLeftCount > 0;
-                    case ControlKeyActionType.GoEnd: return totalLeftCount > 0;
+                    case ControlKeyActionType.SelectAllNone: return totalLeftCount > 0;
+                    case ControlKeyActionType.Insert: return isEditable;
+                    case ControlKeyActionType.Delete: return selectedLeftCount > 0 && isEditable;
                     case ControlKeyActionType.MoveTop: return isEditable && totalLeftCount > 0 && selectedLeftCount > 0;
                     case ControlKeyActionType.MoveUp: return isEditable && totalLeftCount > 0 && selectedLeftCount > 0;
                     case ControlKeyActionType.MoveDown: return isEditable && totalLeftCount > 0 && selectedLeftCount > 0;
                     case ControlKeyActionType.MoveBottom: return isEditable && totalLeftCount > 0 && selectedLeftCount > 0;
                     case ControlKeyActionType.Undo: return isEditable && undoRedoEnabled;
                     case ControlKeyActionType.Redo: return isEditable && undoRedoEnabled;
+                    case ControlKeyActionType.GoBegin: return totalLeftCount > 0;
+                    case ControlKeyActionType.GoEnd: return totalLeftCount > 0;
                     case ControlKeyActionType.ActivateFilter: return true;
                     case ControlKeyActionType.FillKeyToFilter: return true;
                     case ControlKeyActionType.CopyToTargetOneC: return selectedLeftCount > 0;
@@ -8295,20 +8308,123 @@ SetSelected() - vstup           Absolutní
         DragAndDrop
     }
 
+
     /// <summary>
-    /// Delegát pro událost Změna prvků na <see cref="DxListBoxControl"/>
+    /// Delegát pro událost Změna prvků na <see cref="DxListBoxControl"/>, Before
     /// </summary>
     /// <param name="sender"></param>
-    /// <param name="e"></param>
-    public delegate void DxListBoxMenuItemsActionAfterDelegate(object sender, DxListBoxMenuItemsActionEventArgs args);
-    public class DxListBoxMenuItemsActionEventArgs : EventArgs
+    /// <param name="args"></param>
+    public delegate void DxListBoxMenuItemsActionBeforeDelegate(object sender, DxListBoxMenuItemsBeforeActionArgs args);
+    /// <summary>
+    /// Data pro událost Změna prvků na <see cref="DxListBoxControl"/>, Before
+    /// </summary>
+    public class DxListBoxMenuItemsBeforeActionArgs : DxListBoxMenuItemsAfterActionArgs
     {
-        public DxListBoxMenuItemsActionEventArgs()
-        { }
-    }
-    public class DxListBoxMenuItemsActionCancelEventArgs : DxListBoxMenuItemsActionEventArgs
-    { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="actionType"></param>
+        /// <param name="changeSourceType"></param>
+        /// <param name="selectedItems"></param>
+        /// <param name="keys"></param>
+        public DxListBoxMenuItemsBeforeActionArgs(ControlKeyActionType actionType, DxItemsChangeType changeSourceType, DxListBoxNative.ListMenuItemInfo[] selectedItems, KeyEventArgs keys)
+            : base(actionType, changeSourceType, selectedItems, null, keys)
+        {
+            Cancel = false;
+        }
+        /// <summary>
+        /// Sem může eventhandler vložit pole prvků, s nimiž se má skutečně manipulovat = podmnožina prvků z <see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>.
+        /// Výchozí je null = akce se provede nad výchozími prvky <see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>.
+        /// <para/>
+        /// Lze setovat pole obsahující pouze ty prvky, které pocházejí z <see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>.
+        /// Pokud bude vložen prvek, který není přítomen v <see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>, pak do pole v <see cref="RequestedItems"/> tento prvek nebude vložen.
+        /// <para/>
+        /// Typicky tedy handler provádí: <c>args.ProcessedItems = args.SelectedItems.Where(i => filtr(i)).ToArray();</c>
+        /// </summary>
+        public new DxListBoxNative.ListMenuItemInfo[] RequestedItems { get { return _RequestedItems; } set { _RequestedItems = _GetApprovedItems(value); } }
+        /// <summary>
+        /// Sem může eventhandler nastavit <see cref="Cancel"/> = true : akce se neprovede, a neproběhne ani event After.
+        /// </summary>
+        public bool Cancel { get; set; }
+        /// <summary>
+        /// Vrátí pole prvků, které jsou schválené k vložení do <see cref="RequestedItems"/>.<br/>
+        /// Schválený prvek: není null, nachází se v poli <see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>, a není duplicitní.
+        /// </summary>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        private DxListBoxNative.ListMenuItemInfo[] _GetApprovedItems(DxListBoxNative.ListMenuItemInfo[] items)
+        {
+            if (items is null) return null;
 
+            var selectedItems = this.SelectedItems;
+            if (selectedItems is null) return null;
+
+            var approvedKeys = new Dictionary<int, DxListBoxNative.ListMenuItemInfo>();
+            var approvedItems = new List<DxListBoxNative.ListMenuItemInfo>();
+            foreach (var item in items)
+            {   // Setujeme pole, a to obsahuje prvek 'item':
+                // Pokud tento (NotNull) prvek 'item' najdeme v poli SelectedItems (pomocí ReferenceEquals), a prvek na tomto indexu jsme dosud do schváleného výstupu nedávali, pak to přidáme nyní:
+                if (item != null && selectedItems.TryFindFirstIndex(i => Object.ReferenceEquals(i, item), out var selectedIndex) && !approvedKeys.ContainsKey(selectedIndex))
+                {
+                    approvedKeys.Add(selectedIndex, item);
+                    approvedItems.Add(item);
+                }
+            }
+
+            return approvedItems.ToArray();
+        }
+    }
+
+    /// <summary>
+    /// Delegát pro událost Změna prvků na <see cref="DxListBoxControl"/>, After
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="args"></param>
+    public delegate void DxListBoxMenuItemsActionAfterDelegate(object sender, DxListBoxMenuItemsAfterActionArgs args);
+    /// <summary>
+    /// Data pro událost Změna prvků na <see cref="DxListBoxControl"/>, After
+    /// </summary>
+    public class DxListBoxMenuItemsAfterActionArgs : EventArgs
+    {
+        public DxListBoxMenuItemsAfterActionArgs(DxListBoxMenuItemsBeforeActionArgs beforeArgs)
+        {
+            ActionType = beforeArgs.ActionType;
+            ChangeSourceType = beforeArgs.ChangeSourceType;
+            SelectedItems = beforeArgs.SelectedItems;
+            _RequestedItems = beforeArgs.RequestedItems;
+            Keys = beforeArgs.Keys;
+        }
+        public DxListBoxMenuItemsAfterActionArgs(ControlKeyActionType actionType, DxItemsChangeType changeSourceType, DxListBoxNative.ListMenuItemInfo[] selectedItems, DxListBoxNative.ListMenuItemInfo[] requestedItems, KeyEventArgs keys)
+        {
+            ActionType = actionType;
+            ChangeSourceType = changeSourceType;
+            SelectedItems = selectedItems;
+            _RequestedItems = requestedItems;
+            Keys = keys;
+        }
+        protected DxListBoxNative.ListMenuItemInfo[] _RequestedItems;
+        /// <summary>
+        /// Typ probíhající akce
+        /// </summary>
+        public ControlKeyActionType ActionType { get; private set; }
+        /// <summary>
+        /// Zdroj akce
+        /// </summary>
+        public DxItemsChangeType ChangeSourceType { get; private set; }
+        public DxListBoxNative.ListMenuItemInfo[] SelectedItems { get; private set; }
+        /// <summary>
+        /// Klávesové argumenty
+        /// </summary>
+        public KeyEventArgs Keys { get; private set; }
+        public DxListBoxNative.ListMenuItemInfo[] RequestedItems { get { return _RequestedItems; } }
+        /// <summary>
+        /// Pole prvků, které se mají zpracovat.
+        /// <para/>
+        /// Pokud je zadáno not null pole do <see cref="RequestedItems"/>, pak je zde toto pole.<br/>
+        /// Pokud <see cref="RequestedItems"/> není zadáno (je null), pak zde je <see cref="SelectedItems"/>.
+        /// </summary>
+        public DxListBoxNative.ListMenuItemInfo[] ProcessItems { get { return _RequestedItems != null ? _RequestedItems : SelectedItems; } }
+    }
 
 
     /// <summary>
@@ -8335,6 +8451,9 @@ SetSelected() - vstup           Absolutní
     /// <param name="sender"></param>
     /// <param name="e"></param>
     public delegate void DxListBoxMenuItemsChangedDelegate(object sender, DxListBoxMenuItemsChangedEventArgs e);
+
+    :::SMAZAT:::
+    /*
 
     /// <summary>
     /// Argumenty pro akci na <see cref="DxListBoxControl"/>
@@ -8400,6 +8519,8 @@ SetSelected() - vstup           Absolutní
     /// <param name="sender"></param>
     /// <param name="e"></param>
     public delegate void DxListBoxActionCancelDelegate(object sender, DxListBoxActionCancelEventArgs e);
+
+    */
 
     /// <summary>
     /// Argumenty pro akci ItemMouseClick a ItemMouseDoubleClick

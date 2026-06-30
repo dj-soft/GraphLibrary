@@ -12554,39 +12554,39 @@ namespace Noris.Clients.Win.Components.AsolDX
         None = 0,
 
         /// <summary>
+        /// Klávesa CtrlR: Refresh
+        /// </summary>
+        Refresh = 0x0001,
+
+        /// <summary>
         /// Klávesa CtrlC: zkopírovat
         /// </summary>
-        ClipCopy = 0x0001,
+        ClipCopy = 0x0002,
         /// <summary>
         /// Klávesa CtrlX: vyjmout
         /// </summary>
-        ClipCut = 0x0002,
+        ClipCut = 0x0004,
         /// <summary>
         /// Klávesa CtrlV: vložit
         /// </summary>
-        ClipPaste = 0x0004,
+        ClipPaste = 0x0008,
 
-        /// <summary>
-        /// Klávesa Delete: Smazat vybrané
-        /// </summary>
-        Delete = 0x0008,
-        /// <summary>
-        /// Klávesa CtrlR: Refresh
-        /// </summary>
-        Refresh = 0x0010,
         /// <summary>
         /// Klávesa CtrlA: vybrat vše
         /// </summary>
-        SelectAll = 0x0020,
-
+        SelectAll = 0x0010,
         /// <summary>
-        /// Klávesa Ctrl Home: přejdi na začátek
+        /// Klávesa CtrlA: vybrat vše, ale pokud nyní je vybráno vše pak vyber None
         /// </summary>
-        GoBegin = 0x0040,
+        SelectAllNone = 0x0020,
         /// <summary>
-        /// Klávesa Ctrl End: přejdi na konec
+        /// Akce Insert (odněkud): vložit dodané prvky (obdobně jako Ctrl+V, ale z nějakého aplikačního zdroje)
         /// </summary>
-        GoEnd = 0x0080,
+        Insert = 0x0040,
+        /// <summary>
+        /// Klávesa Delete: Smazat vybrané
+        /// </summary>
+        Delete = 0x0080,
 
         /// <summary>
         /// Klávesa CtrlAltUp (kurzor): přemístit na první pozici
@@ -12615,61 +12615,69 @@ namespace Noris.Clients.Win.Components.AsolDX
         Redo = 0x2000,
 
         /// <summary>
+        /// Klávesa Ctrl Home: přejdi na začátek
+        /// </summary>
+        GoBegin = 0x00010000,
+        /// <summary>
+        /// Klávesa Ctrl End: přejdi na konec
+        /// </summary>
+        GoEnd = 0x00020000,
+        /// <summary>
         /// Klávesa Šipka nahoru nebo PageUp na první pozici Listu: aktivuj řádkový filtr
         /// </summary>
-        ActivateFilter = 0x4000,
+        ActivateFilter = 0x00040000,
         /// <summary>
         /// Jiné klávesy (znaky): aktivuj řádkový filtr a vlož do něj dodaný znak
         /// </summary>
-        FillKeyToFilter = 0x8000,
+        FillKeyToFilter = 0x00080000,
 
         /// <summary>
         /// Kopírovat prvek / vybrané prvky zleva doprava, přidat na konec seznamu vpravo dolů
         /// </summary>
-        CopyToTargetOneE = 0x00010000,
+        CopyToTargetOneE = 0x00100000,
         /// <summary>
         /// Kopírovat prvek / vybrané prvky zleva doprava, vložit za CurrentIndex seznamu vpravo
         /// </summary>
-        CopyToTargetOneC = 0x00020000,
+        CopyToTargetOneC = 0x00200000,
         /// <summary>
         /// Kopírovat všechny prvky zleva doprava, přidat na konec seznamu vpravo dolů
         /// </summary>
-        CopyToTargetAllE = 0x00040000,
+        CopyToTargetAllE = 0x00400000,
         /// <summary>
         /// Kopírovat všechny prvky zleva doprava, vložit za CurrentIndex seznamu vpravo
         /// </summary>
-        CopyToTargetAllC = 0x00080000,
+        CopyToTargetAllC = 0x00800000,
 
         /// <summary>
         /// Kopírovat prvek / vybrané prvky zprava doleva, přidat na konec seznamu vlevo dolů
         /// </summary>
-        CopyToSourceOneE = 0x00100000,
+        CopyToSourceOneE = 0x01000000,
         /// <summary>
         /// Kopírovat prvek / vybrané prvky zprava doleva, vložit za CurrentIndex seznamu vlevo
         /// </summary>
-        CopyToSourceOneC = 0x00200000,
+        CopyToSourceOneC = 0x02000000,
         /// <summary>
         /// Kopírovat všechny prvky zprava doleva, přidat na konec seznamu vlevo dolů
         /// </summary>
-        CopyToSourceAllE = 0x00400000,
+        CopyToSourceAllE = 0x04000000,
         /// <summary>
         /// Kopírovat všechny prvky zprava doleva, vložit za CurrentIndex seznamu vlevo
         /// </summary>
-        CopyToSourceAllC = 0x00800000,
+        CopyToSourceAllC = 0x08000000,
 
         /// <summary>
         /// Oddělovač = prostor velikosti 1/4 buttonu na šířku/výšku
         /// </summary>
-        Delimiter = 0x10000000,
+        Delimiter = 0x40000000,
 
         /// <summary>
         /// Všechny práce s clipboardem
         /// </summary>
         Clipboard_All = ClipCopy | ClipCut | ClipPaste,
         /// <summary>
-        /// Ostatní vše: <see cref="Delete"/> + <see cref="Refresh"/> + <see cref="SelectAll"/>
+        /// Ostatní vše: <see cref="Refresh"/> + <see cref="SelectAll"/> + <see cref="SelectAllNone"/> + <see cref="Insert"/> + <see cref="Delete"/>
         /// </summary>
-        Others_All = Delete | Refresh | SelectAll,
+        Others_All = Refresh | SelectAll | SelectAllNone | Insert | Delete,
         /// <summary>
         /// Všechny pohyby kurzoru
         /// </summary>

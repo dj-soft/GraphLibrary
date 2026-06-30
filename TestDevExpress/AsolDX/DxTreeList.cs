@@ -233,17 +233,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _ListBox_ListActionBefore(object sender, DxListBoxActionCancelEventArgs e)
+        private void _ListBox_ListActionBefore(object sender, DxListBoxMenuItemsBeforeActionArgs e)
         {
             // Jiné akce ignoruji:
-            bool isFilterAction = (e.Action == ControlKeyActionType.ActivateFilter || e.Action == ControlKeyActionType.FillKeyToFilter);
+            bool isFilterAction = (e.ActionType == ControlKeyActionType.ActivateFilter || e.ActionType == ControlKeyActionType.FillKeyToFilter);
             if (!isFilterAction) return;
 
             // Pokud já nemám FilterRow, pak akci stornuji, tím si ListBox nebude nastavovat IsHandled = true, a případné klávesy pošle do nativního controlu:
             var filterMode = this.RowFilterMode;
             if (filterMode == RowFilterBoxMode.None) { e.Cancel = true; return; }
 
-            string text = ((e.Action == ControlKeyActionType.FillKeyToFilter) ? DxComponent.KeyConvertToChar(e.Keys, true)?.ToString() : (string)null);
+            string text = ((e.ActionType == ControlKeyActionType.FillKeyToFilter) ? DxComponent.KeyConvertToChar(e.Keys, true)?.ToString() : (string)null);
             switch (filterMode)
             {
                 case RowFilterBoxMode.Client:
@@ -1009,11 +1009,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Událost vyvolaná před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
             /// </summary>
-            public event DxListBoxActionCancelDelegate ListActionBefore { add { DxTreeProperties.ListActionBefore += value; } remove { DxTreeProperties.ListActionBefore -= value; } }
+            public event DxListBoxMenuItemsActionBeforeDelegate ListActionBefore { add { DxTreeProperties.ListActionBefore += value; } remove { DxTreeProperties.ListActionBefore -= value; } }
             /// <summary>
             /// Událost vyvolaná po provedení kteréhokoli požadavku
             /// </summary>
-            public event DxListBoxActionDelegate ListActionAfter { add { DxTreeProperties.ListActionAfter += value; } remove { DxTreeProperties.ListActionAfter -= value; } }
+            public event DxListBoxMenuItemsActionAfterDelegate ListActionAfter { add { DxTreeProperties.ListActionAfter += value; } remove { DxTreeProperties.ListActionAfter -= value; } }
             /// <summary>
             /// Uživatel chce zobrazit kontextové menu
             /// </summary>
@@ -4296,32 +4296,16 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (!actions.HasFlag(action)) return;                                    // Tato akce není požadována
                 if (!force && !enabledActions.HasFlag(action)) return;                   // Tato akce sice je požadována, ale není povolena
 
-                var argsBefore = new DxListBoxActionCancelEventArgs(actions, changeType, e);
+                var argsBefore = new DxListBoxMenuItemsBeforeActionArgs(actions, changeType, null, e);
                 _RunListActionBefore(argsBefore);
                 if (!argsBefore.Cancel)
                 {
                     if (internalActionMethod != null) internalActionMethod(changeType);  // Provedu konkrétní akci, pokud je dodána; viz dole napž. _DoKeyActionCtrlA()
-                    var argsAfter = new DxListBoxActionEventArgs(actions, changeType, e);
+                    var argsAfter = new DxListBoxMenuItemsAfterActionArgs(argsBefore);
                     _RunListActionAfter(argsAfter);
                     isHandled = true;
                 }
             }
-        }
-        /// <summary>
-        /// Pokud v soupisu akcí <paramref name="action"/> je příznak akce <paramref name="flag"/>, pak provede danou akci <paramref name="runMethod"/>, 
-        /// s testem povolení dle <see cref="EnabledKeyActions"/> nebo povinně (<paramref name="force"/>)
-        /// </summary>
-        /// <param name="action"></param>
-        /// <param name="flag"></param>
-        /// <param name="force"></param>
-        /// <param name="runMethod"></param>
-        /// <param name="handled">Nastaví na true, pokud byla provedena požadovaná akce</param>
-        private void _DoKeyAction(ControlKeyActionType action, ControlKeyActionType flag, bool force, Action runMethod, ref bool handled)
-        {
-            if (!action.HasFlag(flag)) return;
-            if (!force && !EnabledKeyActions.HasFlag(flag)) return;
-            runMethod();
-            handled = true;
         }
         /// <summary>
         /// Provedení klávesové akce: CtrlA
@@ -4682,7 +4666,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Volá se před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
         /// </summary>
         /// <param name="args"></param>
-        private void _RunListActionBefore(DxListBoxActionCancelEventArgs args)
+        private void _RunListActionBefore(DxListBoxMenuItemsBeforeActionArgs args)
         {
             OnListActionBefore(args);
             ListActionBefore?.Invoke(this, args);
@@ -4691,17 +4675,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Proběhne před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
         /// </summary>
         /// <param name="e"></param>
-        protected virtual void OnListActionBefore(DxListBoxActionCancelEventArgs e) { }
+        protected virtual void OnListActionBefore(DxListBoxMenuItemsBeforeActionArgs e) { }
         /// <summary>
         /// Událost vyvolaná před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
         /// </summary>
-        protected event DxListBoxActionCancelDelegate ListActionBefore;
+        protected event DxListBoxMenuItemsActionBeforeDelegate ListActionBefore;
 
         /// <summary>
         /// Volá se po provedení kteréhokoli požadavku
         /// </summary>
         /// <param name="args"></param>
-        private void _RunListActionAfter(DxListBoxActionEventArgs args)
+        private void _RunListActionAfter(DxListBoxMenuItemsAfterActionArgs args)
         {
             OnListActionAfter(args);
             ListActionAfter?.Invoke(this, args);
@@ -4710,11 +4694,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Proběhne po provedení kteréhokoli požadavku
         /// </summary>
         /// <param name="e"></param>
-        protected virtual void OnListActionAfter(DxListBoxActionEventArgs e) { }
+        protected virtual void OnListActionAfter(DxListBoxMenuItemsAfterActionArgs e) { }
         /// <summary>
         /// Událost vyvolaná po provedení kteréhokoli požadavku
         /// </summary>
-        protected event DxListBoxActionDelegate ListActionAfter;
+        protected event DxListBoxMenuItemsActionAfterDelegate ListActionAfter;
 
         /// <summary>
         /// Vyvolá metodu <see cref="OnShowContextMenu(DxTreeListNodeContextMenuArgs)"/> a event <see cref="ShowContextMenu"/>
@@ -5449,11 +5433,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Událost vyvolaná před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
             /// </summary>
-            public event DxListBoxActionCancelDelegate ListActionBefore { add { __Owner.ListActionBefore += value; } remove { __Owner.ListActionBefore -= value; } }
+            public event DxListBoxMenuItemsActionBeforeDelegate ListActionBefore { add { __Owner.ListActionBefore += value; } remove { __Owner.ListActionBefore -= value; } }
             /// <summary>
             /// Událost vyvolaná po provedení kteréhokoli požadavku
             /// </summary>
-            public event DxListBoxActionDelegate ListActionAfter { add { __Owner.ListActionAfter += value; } remove { __Owner.ListActionAfter -= value; } }
+            public event DxListBoxMenuItemsActionAfterDelegate ListActionAfter { add { __Owner.ListActionAfter += value; } remove { __Owner.ListActionAfter -= value; } }
             /// <summary>
             /// Uživatel chce zobrazit kontextové menu
             /// </summary>
