@@ -3947,6 +3947,19 @@ SetSelected() - vstup           Absolutní
                 Bounds = bounds;
             }
             /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="menuItem"></param>
+            public ListMenuItemInfo(ITextItem menuItem)
+            {
+                AbsoluteIndex = -1;
+                ListBoxItem = null;
+                MenuItem = menuItem;
+                FilteredIndex = null;
+                DisplayedIndex = null;
+                Bounds = null;
+            }
+            /// <summary>
             /// Stringová reprezentace
             /// </summary>
             /// <returns></returns>
@@ -5654,12 +5667,17 @@ SetSelected() - vstup           Absolutní
             _RunListActionBefore(beforeArgs);
             if (!beforeArgs.Cancel)
             {
-                if (actionType == ControlKeyActionType.SelectAllNone)
-                    this.SelectedAbsoluteIndexes = null;                       // Select None: null je přípustná hodnota
-                else
-                    this.SelectedAbsoluteIndexes = beforeArgs.ProcessItems.Select(t => t.AbsoluteIndex).ToArray();
+                _RunActionCtrlA(beforeArgs.ProcessItems, actionType);
             }
             return beforeArgs;
+        }
+
+        private void _RunActionCtrlA(DxListBoxNative.ListMenuItemInfo[] processItems, ControlKeyActionType actionType)
+        {
+            if (actionType == ControlKeyActionType.SelectAllNone)
+                this.SelectedAbsoluteIndexes = null;                       // Select None: null je přípustná hodnota
+            else
+                this.SelectedAbsoluteIndexes = processItems.Select(t => t.AbsoluteIndex).ToArray();
         }
         /// <summary>
         /// Provedení klávesové akce: CtrlC
@@ -5673,11 +5691,15 @@ SetSelected() - vstup           Absolutní
             _RunListActionBefore(beforeArgs);
             if (!beforeArgs.Cancel)
             {
-                var selectedItems = beforeArgs.ProcessItems.Select(t => t.MenuItem).ToArray();
-                string textTxt = selectedItems.ToOneString();
-                DataExchangeClipboardPublish(selectedItems, textTxt);
+                _RunActionCtrlC(beforeArgs.ProcessItems);
             }
             return beforeArgs;
+        }
+        private void _RunActionCtrlC(DxListBoxNative.ListMenuItemInfo[] processItems)
+        {
+            var selectedItems = processItems.Select(t => t.MenuItem).ToArray();
+            string textTxt = selectedItems.ToOneString();
+            DataExchangeClipboardPublish(selectedItems, textTxt);
         }
         /// <summary>
         /// Provedení klávesové akce: CtrlX
@@ -5691,15 +5713,10 @@ SetSelected() - vstup           Absolutní
             _RunListActionBefore(beforeArgs);
             if (!beforeArgs.Cancel)
             {
-                var selectedItems = beforeArgs.ProcessItems.Select(t => t.MenuItem).ToArray();
-                string textTxt = selectedItems.ToOneString();
-                DataExchangeClipboardPublish(selectedItems, textTxt);
-
+                _RunActionCtrlC(beforeArgs.ProcessItems);
+                _RunActionDelete(beforeArgs.ProcessItems);
             }
             return beforeArgs;
-
-            _DoKeyActionCtrlC(changeType);
-            _DoKeyActionDelete(changeType);
         }
         /// <summary>
         /// Provedení klávesové akce: CtrlV
@@ -5709,8 +5726,17 @@ SetSelected() - vstup           Absolutní
         /// <param name="keyArgs">Data o klávese, pokud je k dispozici</param>
         private DxListBoxMenuItemsBeforeActionArgs _DoKeyActionCtrlV(ControlKeyActionType actionType, DxItemsChangeType changeType, KeyEventArgs keyArgs)
         {
-            if (!DataExchangeClipboardAcquire(out var data)) return;
-            if (data is IEnumerable<ITextItem> items) InsertItems(items, true, true, DxItemsChangeType.Clipboard);
+            if (!DataExchangeClipboardAcquire(out var data)) return null;
+            if (data is not IEnumerable<ITextItem> items) return null;
+
+            var insertItems = items.Select(i => new ListMenuItemInfo(i)).ToArray();                // CtrlV: clipboard obsahuje pole ITextItem, z nichž vytvoříme pole ListMenuItemInfo, které se použije v eventu BeforeAction
+            var beforeArgs = new DxListBoxMenuItemsBeforeActionArgs(actionType, changeType, insertItems, keyArgs);
+            _RunListActionBefore(beforeArgs);
+            if (!beforeArgs.Cancel)
+            {
+                InsertItems(beforeArgs.ProcessItems?.Select(t => t.MenuItem), true, true, DxItemsChangeType.Clipboard);
+            }
+            return beforeArgs;
         }
         /// <summary>
         /// Provedení klávesové akce: Delete
@@ -5720,7 +5746,17 @@ SetSelected() - vstup           Absolutní
         /// <param name="keyArgs">Data o klávese, pokud je k dispozici</param>
         private DxListBoxMenuItemsBeforeActionArgs _DoKeyActionDelete(ControlKeyActionType actionType, DxItemsChangeType changeType, KeyEventArgs keyArgs)
         {
-            RemoveIndexes(this.SelectedAbsoluteIndexes);                               // Odebrat prvky, které jsou Selected, definované absolutním indexem
+            var beforeArgs = new DxListBoxMenuItemsBeforeActionArgs(actionType, changeType, this.SelectedMenuInfos, keyArgs);
+            _RunListActionBefore(beforeArgs);
+            if (!beforeArgs.Cancel)
+            {
+                _RunActionDelete(beforeArgs.ProcessItems);
+            }
+            return beforeArgs;
+        }
+        private void _RunActionDelete(DxListBoxNative.ListMenuItemInfo[] processItems)
+        {
+            RemoveIndexes(processItems.Select(t => t.AbsoluteIndex));                               // Odebrat prvky, které jsou Selected, definované absolutním indexem
         }
         /// <summary>
         /// Provedení klávesové akce: MoveTop

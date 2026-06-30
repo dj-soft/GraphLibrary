@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Asseco solutions")]
 [assembly: AssemblyProduct("TestDevExpress")]
-[assembly: AssemblyCopyright("Copyright Asseco solutions© 2019-2025")]
+[assembly: AssemblyCopyright("Copyright Asseco solutions© 2019-2026")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
