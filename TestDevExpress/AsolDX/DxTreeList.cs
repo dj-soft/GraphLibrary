@@ -183,7 +183,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _RowFilterInitialize()
         {
             __RowFilterMode = RowFilterBoxMode.None;
-            this.DxProperties.ListActionBefore += _ListBox_ListActionBefore;
+            this.DxProperties.TreeListActionBefore += _ListBox_ListActionBefore;
         }
         /// <summary>
         /// Aktivuje daný režim řádkového filtru
@@ -233,7 +233,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _ListBox_ListActionBefore(object sender, DxListBoxMenuItemsBeforeActionArgs e)
+        private void _ListBox_ListActionBefore(object sender, DxTreeListItemsBeforeActionArgs e)
         {
             // Jiné akce ignoruji:
             bool isFilterAction = (e.ActionType == ControlKeyActionType.ActivateFilter || e.ActionType == ControlKeyActionType.FillKeyToFilter);
@@ -800,7 +800,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public void PresetClientRowFilter() { DxTreeProperties.PresetClientRowFilter(); }
             #endregion
-            #region Nody: sopis, počet, Selected, metody Add, TryGet, Refresh, Remove, Clear. Lock pro výměnu nodů
+            #region Nody: soupis, počet, Selected, metody Add, TryGet, Refresh, Remove, Clear. Lock pro výměnu nodů
             /// <summary>
             /// Pole všech nodů = třída <see cref="ITreeListNode"/> = data o nodech
             /// </summary>
@@ -1009,11 +1009,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Událost vyvolaná před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
             /// </summary>
-            public event DxListBoxMenuItemsActionBeforeDelegate ListActionBefore { add { DxTreeProperties.ListActionBefore += value; } remove { DxTreeProperties.ListActionBefore -= value; } }
+            public event DxTreeListItemsActionBeforeDelegate TreeListActionBefore { add { DxTreeProperties.TreeListActionBefore += value; } remove { DxTreeProperties.TreeListActionBefore -= value; } }
             /// <summary>
             /// Událost vyvolaná po provedení kteréhokoli požadavku
             /// </summary>
-            public event DxListBoxMenuItemsActionAfterDelegate ListActionAfter { add { DxTreeProperties.ListActionAfter += value; } remove { DxTreeProperties.ListActionAfter -= value; } }
+            public event DxTreeListItemsActionAfterDelegate TreeListActionAfter { add { DxTreeProperties.TreeListActionAfter += value; } remove { DxTreeProperties.TreeListActionAfter -= value; } }
             /// <summary>
             /// Uživatel chce zobrazit kontextové menu
             /// </summary>
@@ -4296,13 +4296,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (!actions.HasFlag(action)) return;                                    // Tato akce není požadována
                 if (!force && !enabledActions.HasFlag(action)) return;                   // Tato akce sice je požadována, ale není povolena
 
-                var argsBefore = new DxListBoxMenuItemsBeforeActionArgs(actions, changeType, null, e);
-                _RunListActionBefore(argsBefore);
+                var argsBefore = new DxTreeListItemsBeforeActionArgs(actions, changeType, null, e);
+                _RunTreeListActionBefore(argsBefore);
                 if (!argsBefore.Cancel)
                 {
                     if (internalActionMethod != null) internalActionMethod(changeType);  // Provedu konkrétní akci, pokud je dodána; viz dole napž. _DoKeyActionCtrlA()
-                    var argsAfter = new DxListBoxMenuItemsAfterActionArgs(argsBefore);
-                    _RunListActionAfter(argsAfter);
+                    var argsAfter = new DxTreeListItemsAfterActionArgs(argsBefore);
+                    _RunTreeListActionAfter(argsAfter);
                     isHandled = true;
                 }
             }
@@ -4666,39 +4666,39 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Volá se před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
         /// </summary>
         /// <param name="args"></param>
-        private void _RunListActionBefore(DxListBoxMenuItemsBeforeActionArgs args)
+        private void _RunTreeListActionBefore(DxTreeListItemsBeforeActionArgs args)
         {
-            OnListActionBefore(args);
-            ListActionBefore?.Invoke(this, args);
+            OnTreeListActionBefore(args);
+            TreeListActionBefore?.Invoke(this, args);
         }
         /// <summary>
         /// Proběhne před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
         /// </summary>
         /// <param name="e"></param>
-        protected virtual void OnListActionBefore(DxListBoxMenuItemsBeforeActionArgs e) { }
+        protected virtual void OnTreeListActionBefore(DxTreeListItemsBeforeActionArgs e) { }
         /// <summary>
         /// Událost vyvolaná před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
         /// </summary>
-        protected event DxListBoxMenuItemsActionBeforeDelegate ListActionBefore;
+        protected event DxTreeListItemsActionBeforeDelegate TreeListActionBefore;
 
         /// <summary>
         /// Volá se po provedení kteréhokoli požadavku
         /// </summary>
         /// <param name="args"></param>
-        private void _RunListActionAfter(DxListBoxMenuItemsAfterActionArgs args)
+        private void _RunTreeListActionAfter(DxTreeListItemsAfterActionArgs args)
         {
-            OnListActionAfter(args);
-            ListActionAfter?.Invoke(this, args);
+            OnTreeListActionAfter(args);
+            TreeListActionAfter?.Invoke(this, args);
         }
         /// <summary>
         /// Proběhne po provedení kteréhokoli požadavku
         /// </summary>
         /// <param name="e"></param>
-        protected virtual void OnListActionAfter(DxListBoxMenuItemsAfterActionArgs e) { }
+        protected virtual void OnTreeListActionAfter(DxTreeListItemsAfterActionArgs e) { }
         /// <summary>
         /// Událost vyvolaná po provedení kteréhokoli požadavku
         /// </summary>
-        protected event DxListBoxMenuItemsActionAfterDelegate ListActionAfter;
+        protected event DxTreeListItemsActionAfterDelegate TreeListActionAfter;
 
         /// <summary>
         /// Vyvolá metodu <see cref="OnShowContextMenu(DxTreeListNodeContextMenuArgs)"/> a event <see cref="ShowContextMenu"/>
@@ -5433,11 +5433,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Událost vyvolaná před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
             /// </summary>
-            public event DxListBoxMenuItemsActionBeforeDelegate ListActionBefore { add { __Owner.ListActionBefore += value; } remove { __Owner.ListActionBefore -= value; } }
+            public event DxTreeListItemsActionBeforeDelegate TreeListActionBefore { add { __Owner.TreeListActionBefore += value; } remove { __Owner.TreeListActionBefore -= value; } }
             /// <summary>
             /// Událost vyvolaná po provedení kteréhokoli požadavku
             /// </summary>
-            public event DxListBoxMenuItemsActionAfterDelegate ListActionAfter { add { __Owner.ListActionAfter += value; } remove { __Owner.ListActionAfter -= value; } }
+            public event DxTreeListItemsActionAfterDelegate TreeListActionAfter { add { __Owner.TreeListActionAfter += value; } remove { __Owner.TreeListActionAfter -= value; } }
             /// <summary>
             /// Uživatel chce zobrazit kontextové menu
             /// </summary>
@@ -6606,5 +6606,124 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         RunEvent = IconClickRunEvent | TextDoubleClickRunEvent
     }
+    #endregion
+    #region Delegáti pro eventy a jejich argumenty
+    /// <summary>
+    /// Delegát pro událost Změna prvků na <see cref="DxListBoxControl"/>, Before
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="args"></param>
+    public delegate void DxTreeListItemsActionBeforeDelegate(object sender, DxTreeListItemsBeforeActionArgs args);
+    /// <summary>
+    /// Data pro událost Změna prvků na <see cref="DxListBoxControl"/>, Before
+    /// </summary>
+    public class DxTreeListItemsBeforeActionArgs : DxTreeListItemsAfterActionArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="actionType"></param>
+        /// <param name="changeSourceType"></param>
+        /// <param name="selectedItems"></param>
+        /// <param name="keys"></param>
+        public DxTreeListItemsBeforeActionArgs(ControlKeyActionType actionType, DxItemsChangeType changeSourceType, DxListBoxNative.ListMenuItemInfo[] selectedItems, KeyEventArgs keys)
+            : base(actionType, changeSourceType, selectedItems, null, keys)
+        {
+            Cancel = false;
+        }
+        /// <summary>
+        /// Sem může eventhandler vložit pole prvků, s nimiž se má skutečně manipulovat = podmnožina prvků z <see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>.
+        /// Výchozí je null = akce se provede nad výchozími prvky <see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>.
+        /// <para/>
+        /// Lze setovat pole obsahující pouze ty prvky, které pocházejí z <see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>.
+        /// Pokud bude vložen prvek, který není přítomen v <see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>, pak do pole v <see cref="RequestedItems"/> tento prvek nebude vložen.
+        /// <para/>
+        /// Typicky tedy handler provádí: <c>args.ProcessedItems = args.SelectedItems.Where(i => filtr(i)).ToArray();</c>
+        /// </summary>
+        public new DxListBoxNative.ListMenuItemInfo[] RequestedItems { get { return _RequestedItems; } set { _RequestedItems = _GetApprovedItems(value); } }
+        /// <summary>
+        /// Sem může eventhandler nastavit <see cref="Cancel"/> = true : akce se neprovede, a neproběhne ani event After.
+        /// </summary>
+        public bool Cancel { get; set; }
+        /// <summary>
+        /// Vrátí pole prvků, které jsou schválené k vložení do <see cref="RequestedItems"/>.<br/>
+        /// Schválený prvek: není null, nachází se v poli <see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>, a není duplicitní.
+        /// </summary>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        private DxListBoxNative.ListMenuItemInfo[] _GetApprovedItems(DxListBoxNative.ListMenuItemInfo[] items)
+        {
+            if (items is null) return null;
+
+            var selectedItems = this.SelectedItems;
+            if (selectedItems is null) return null;
+
+            var approvedKeys = new Dictionary<int, DxListBoxNative.ListMenuItemInfo>();
+            var approvedItems = new List<DxListBoxNative.ListMenuItemInfo>();
+            foreach (var item in items)
+            {   // Setujeme pole, a to obsahuje prvek 'item':
+                // Pokud tento (NotNull) prvek 'item' najdeme v poli SelectedItems (pomocí ReferenceEquals), a prvek na tomto indexu jsme dosud do schváleného výstupu nedávali, pak to přidáme nyní:
+                if (item != null && selectedItems.TryFindFirstIndex(i => Object.ReferenceEquals(i, item), out var selectedIndex) && !approvedKeys.ContainsKey(selectedIndex))
+                {
+                    approvedKeys.Add(selectedIndex, item);
+                    approvedItems.Add(item);
+                }
+            }
+
+            return approvedItems.ToArray();
+        }
+    }
+
+    /// <summary>
+    /// Delegát pro událost Změna prvků na <see cref="DxListBoxControl"/>, After
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="args"></param>
+    public delegate void DxTreeListItemsActionAfterDelegate(object sender, DxTreeListItemsAfterActionArgs args);
+    /// <summary>
+    /// Data pro událost Změna prvků na <see cref="DxListBoxControl"/>, After
+    /// </summary>
+    public class DxTreeListItemsAfterActionArgs : EventArgs
+    {
+        public DxTreeListItemsAfterActionArgs(DxTreeListItemsBeforeActionArgs beforeArgs)
+        {
+            ActionType = beforeArgs.ActionType;
+            ChangeSourceType = beforeArgs.ChangeSourceType;
+            SelectedItems = beforeArgs.SelectedItems;
+            _RequestedItems = beforeArgs.RequestedItems;
+            Keys = beforeArgs.Keys;
+        }
+        public DxTreeListItemsAfterActionArgs(ControlKeyActionType actionType, DxItemsChangeType changeSourceType, DxListBoxNative.ListMenuItemInfo[] selectedItems, DxListBoxNative.ListMenuItemInfo[] requestedItems, KeyEventArgs keys)
+        {
+            ActionType = actionType;
+            ChangeSourceType = changeSourceType;
+            SelectedItems = selectedItems;
+            _RequestedItems = requestedItems;
+            Keys = keys;
+        }
+        protected DxListBoxNative.ListMenuItemInfo[] _RequestedItems;
+        /// <summary>
+        /// Typ probíhající akce
+        /// </summary>
+        public ControlKeyActionType ActionType { get; private set; }
+        /// <summary>
+        /// Zdroj akce
+        /// </summary>
+        public DxItemsChangeType ChangeSourceType { get; private set; }
+        public DxListBoxNative.ListMenuItemInfo[] SelectedItems { get; private set; }
+        /// <summary>
+        /// Klávesové argumenty
+        /// </summary>
+        public KeyEventArgs Keys { get; private set; }
+        public DxListBoxNative.ListMenuItemInfo[] RequestedItems { get { return _RequestedItems; } }
+        /// <summary>
+        /// Pole prvků, které se mají zpracovat.
+        /// <para/>
+        /// Pokud je zadáno not null pole do <see cref="RequestedItems"/>, pak je zde toto pole.<br/>
+        /// Pokud <see cref="RequestedItems"/> není zadáno (je null), pak zde je <see cref="SelectedItems"/>.
+        /// </summary>
+        public DxListBoxNative.ListMenuItemInfo[] ProcessItems { get { return _RequestedItems != null ? _RequestedItems : SelectedItems; } }
+    }
+
     #endregion
 }

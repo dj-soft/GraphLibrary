@@ -411,9 +411,9 @@ namespace TestDevExpress.Forms
             _Sample3ListB?.RemoveControlFromParent();
             _Sample3ListB = null;
         }
-        private void _Sample3ListA_ListActionAfter(object sender, DxListBoxActionEventArgs e)
+        private void _Sample3ListA_ListActionAfter(object sender, DxListBoxMenuItemsAfterActionArgs e)
         {
-            switch (e.Action)
+            switch (e.ActionType)
             {
                 case ControlKeyActionType.CopyToTargetOneC:
                     _Sample3ListB.DxProperties.InsertItems(_Sample3ListA.DxProperties.SelectedMenuItems, true, true, DxItemsChangeType.UserInteractive);
@@ -429,9 +429,9 @@ namespace TestDevExpress.Forms
                     break;
             }
         }
-        private void _Sample3ListB_ListActionAfter(object sender, DxListBoxActionEventArgs e)
+        private void _Sample3ListB_ListActionAfter(object sender, DxListBoxMenuItemsAfterActionArgs e)
         {
-            switch (e.Action)
+            switch (e.ActionType)
             {
                 case ControlKeyActionType.CopyToSourceOneC:
                     _Sample3ListA.DxProperties.InsertItems(_Sample3ListB.DxProperties.SelectedMenuItems, true, true, DxItemsChangeType.UserInteractive);
@@ -1098,9 +1098,9 @@ namespace TestDevExpress.Forms
             _Sample21List?.RemoveControlFromParent();
             _Sample21List = null;
         }
-        private void _Sample21ListA_ListActionAfter(object sender, DxListBoxActionEventArgs e)
+        private void _Sample21ListA_ListActionAfter(object sender, DxListBoxMenuItemsAfterActionArgs e)
         {
-            switch (e.Action)
+            switch (e.ActionType)
             {
                 case ControlKeyActionType.CopyToTargetOneC:
                     _Sample21List.DxProperties.InsertItems(_Sample21ListA.DxProperties.SelectedMenuItems, true, true, DxItemsChangeType.UserInteractive);
@@ -1116,9 +1116,9 @@ namespace TestDevExpress.Forms
                     break;
             }
         }
-        private void _Sample21ListB_ListActionAfter(object sender, DxListBoxActionEventArgs e)
+        private void _Sample21ListB_ListActionAfter(object sender, DxListBoxMenuItemsAfterActionArgs e)
         {
-            switch (e.Action)
+            switch (e.ActionType)
             {
                 case ControlKeyActionType.CopyToSourceOneC:
                     _Sample21ListA.DxProperties.InsertItems(_Sample21List.DxProperties.SelectedMenuItems, true, true, DxItemsChangeType.UserInteractive);
