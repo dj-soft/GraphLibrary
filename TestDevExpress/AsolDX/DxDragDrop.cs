@@ -1392,7 +1392,7 @@ public partial class MainForm : Form
         /// </summary>
         private void Reset()
         {
-            this.Event = DxDragDropEventType.None;
+            this.ActionType = DxDragDropEventType.None;
             this.SourceDragEnabled = true;
             this.SourceMouseLocation = null;
             this.SourceObject = null;
@@ -1420,7 +1420,7 @@ public partial class MainForm : Form
         /// <summary>
         /// Stav procesu Drag and Drop = aktuální událost
         /// </summary>
-        public DxDragDropEventType Event { get; private set; }
+        public DxDragDropEventType ActionType { get; private set; }
         /// <summary>
         /// Aktuální souřadnice v absolutních hodnotách (vzhledem ke Screen)
         /// </summary>
@@ -1466,7 +1466,7 @@ public partial class MainForm : Form
         /// </summary>
         public bool DragUseDefaultCursors { get; set; }
         /// <summary>
-        /// Jakýkoli objekt ze zdrojového controlu. Typicky to může být prvek ListBoxu nebo uzel TreeView, nebo ColumnHeader nebo cokoli jiného.
+        /// Jakýkoli objekt ze zdrojového controlu. Typicky to může být pole prvků ListBoxu nebo uzel TreeView, nebo ColumnHeader nebo cokoli jiného.
         /// </summary>
         public object SourceObject { get; set; }
         /// <summary>
@@ -1570,7 +1570,7 @@ public partial class MainForm : Form
         }
         #endregion
         #region Interní přístup k datům
-        DxDragDropEventType IDxDragDropArgs.State { get { return this.Event; } set { this.Event = value; } }
+        DxDragDropEventType IDxDragDropArgs.State { get { return this.ActionType; } set { this.ActionType = value; } }
         Point IDxDragDropArgs.ScreenMouseLocation { get { return this.ScreenMouseLocation; } set { this.ScreenMouseLocation = value; } }
         Point? IDxDragDropArgs.SourceMouseLocation { get { return this.SourceMouseLocation; } set { this.SourceMouseLocation = value; } }
         Keys IDxDragDropArgs.ModifierKeys { get { return this.ModifierKeys; } set { this.ModifierKeys = value; } }

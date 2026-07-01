@@ -4101,8 +4101,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static string DxKeyActionSelectAll { get { return Names.__DxKeyActionSelectAll; } set { Names.__DxKeyActionSelectAll = value; } }
         private string __DxKeyActionSelectAll = "@editsmall|all|blue";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public static string DxKeyActionSelectAllNone { get { return Names.__DxKeyActionSelectAllNone; } set { Names.__DxKeyActionSelectAllNone = value; } }
-        private string __DxKeyActionSelectAllNone = "@editsmall|all|blue";
+        public static string DxKeyActionDeselectAll { get { return Names.__DxKeyActionSelectAllNone; } set { Names.__DxKeyActionSelectAllNone = value; } }
+        private string __DxKeyActionSelectAllNone = "@editsmall|all|gray";
         /// <summary>Standardní ikona pro danou příležitost</summary>
         public static string DxKeyActionDelete { get { return Names.__DxKeyActionDelete; } set { Names.__DxKeyActionDelete = value; } }
         private string __DxKeyActionDelete = "@editsmall|del|red";

@@ -1,20 +1,12 @@
-﻿using System;
+﻿using Noris.Clients.Win.Components.AsolDX;
+using Noris.WS.DataContracts.Desktop.Data;
+using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using Noris.Clients.Win.Components.AsolDX;
-using WinDraw = System.Drawing;
-using DxDForm = Noris.Clients.Win.Components.AsolDX.DataForm;
-using DxDData = Noris.Clients.Win.Components.AsolDX.DataForm.Data;
-using DxLData = Noris.Clients.Win.Components.AsolDX.DataForm.Layout;
-using System.Drawing;
-using Noris.Clients.Win.Components.AsolDX.DxForm;
-using Noris.Clients.Win.Components.AsolDX.DataForm;
 using TestDevExpress.Components;
-using DevExpress.XtraRichEdit.Model.History;
-using DevExpress.XtraRichEdit.Model;
 
 namespace TestDevExpress.Forms
 {
@@ -479,8 +471,10 @@ namespace TestDevExpress.Forms
             sampleDblList.DxProperties.DragAndDropEnabled = true;
             */
             sampleDblList.DxProperties.SourceMenuItems = Randomizer.GetMenuItems(48, 80, Randomizer.ImageResourceType.PngSmall, true, true);
-            sampleDblList.DxProperties.TargetMenuItems = Randomizer.GetMenuItems(3, 8, Randomizer.ImageResourceType.PngSmall, true, true);
+            sampleDblList.DxProperties.TargetMenuItems = getTargetItems();
+            
             sampleDblList.DxProperties.TargetMenuItemsChanged += _Sample4_TargetMenuItemsChanged;
+            sampleDblList.DxProperties.TargetListActionBefore += _Sample4_TargetListActionBefore;
 
             sampleDblList.SplitterPositionChanged += Sample4DblList_SplitterPositionChanged;
             this._HostContainer.Controls.Add(sampleDblList);
@@ -489,6 +483,48 @@ namespace TestDevExpress.Forms
 
             _CreateSample4Params();                        // Params = prvky pro nastavování vlastností pro testy různého nastavení
             _Sample4SetTitles();
+
+            ITextItem[] getTargetItems()
+            {
+                var readOnlyItems = Randomizer.GetMenuItems(1, 4, Randomizer.ImageResourceType.Svg, true, true);
+                foreach (var readOnlyItem in readOnlyItems)
+                    prepareReadOnlyItem(readOnlyItem);
+
+                var editableItems = Randomizer.GetMenuItems(4, 7, Randomizer.ImageResourceType.Svg, true, true);
+
+                return readOnlyItems.Union(editableItems).ToArray();
+            }
+            void prepareReadOnlyItem(ITextItem textItem)
+            {
+                if (textItem is DataTextItem dTextItem)
+                {
+                    dTextItem.Enabled = false;
+
+                    var imageName = dTextItem.ImageName;
+                    if (!String.IsNullOrEmpty(imageName) && imageName.EndsWith(".svg", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        var svgImg = new SvgImageArrayInfo(imageName);
+                        svgImg.Add("svgimages/dashboards/unpinbutton.svg", ContentAlignment.BottomRight, 75);
+                        dTextItem.ImageName = svgImg.Key;
+                    }
+                }
+            }
+        }
+        /// <summary>
+        /// Proběhne před provedením každé akce v TargetList, lze zrušit akci nastavením args.Cancel = true anebo upravit pole prvků
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _Sample4_TargetListActionBefore(object sender, DxListBoxMenuItemsBeforeActionArgs args)
+        {
+            switch (args.ActionType)
+            {
+                case ControlKeyActionType.Delete:
+                    // Smazat mohu jen ty prvky, které 
+                    args.RequestedItems = args.SelectedItems.Where(i => i.MenuItem.Enabled).ToArray();
+                    break;
+
+            }
         }
         private void Sample4DblList_SplitterPositionChanged(object sender, EventArgs e)
         {
@@ -702,7 +738,6 @@ namespace TestDevExpress.Forms
         private DxCheckEdit __Sample4DoubleClickEnabledCheck;
         private DxCheckEdit __Sample4DirectDrawCheck;
         private DxSimpleButton __Sample4ShowContentButton;
-
         private bool __Sample4ParamsValid;
         #endregion
         #endregion

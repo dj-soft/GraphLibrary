@@ -12576,9 +12576,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         SelectAll = 0x0010,
         /// <summary>
-        /// Klávesa CtrlA: vybrat vše, ale pokud nyní je vybráno vše pak vyber None
+        /// Klávesa CtrlA: Pokud je vybráno vše, pak tato akce vše odznačí. Tedy nejde o SelectNone (to by odznačilo poloky bez ohledu na stav SelectAll).
         /// </summary>
-        SelectAllNone = 0x0020,
+        DeselectAll = 0x0020,
         /// <summary>
         /// Akce Insert (odněkud): vložit dodané prvky (obdobně jako Ctrl+V, ale z nějakého aplikačního zdroje)
         /// </summary>
@@ -12675,9 +12675,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         Clipboard_All = ClipCopy | ClipCut | ClipPaste,
         /// <summary>
-        /// Ostatní vše: <see cref="Refresh"/> + <see cref="SelectAll"/> + <see cref="SelectAllNone"/> + <see cref="Insert"/> + <see cref="Delete"/>
+        /// Ostatní vše: <see cref="Refresh"/> + <see cref="SelectAll"/> + <see cref="DeselectAll"/> + <see cref="Insert"/> + <see cref="Delete"/>
         /// </summary>
-        Others_All = Refresh | SelectAll | SelectAllNone | Insert | Delete,
+        Others_All = Refresh | SelectAll | DeselectAll | Insert | Delete,
         /// <summary>
         /// Všechny pohyby kurzoru
         /// </summary>

@@ -88,9 +88,9 @@ namespace TestDevExpress.Forms
             RunMemoryScanAsync();
         }
 
-        private void _ProcessListBox_ActionAfter(object sender, DxListBoxActionEventArgs args)
+        private void _ProcessListBox_ActionAfter(object sender, DxListBoxMenuItemsAfterActionArgs args)
         {
-            if (args.Action == ControlKeyActionType.Refresh)
+            if (args.ActionType == ControlKeyActionType.Refresh)
                 _RunProcessRefresh();
         }
 

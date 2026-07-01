@@ -405,7 +405,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 _ApplicationDoRestart = false;
 
-                _SplashShow("Testovací aplikace Helios Nephrite", "DJ soft & ASOL", "Copyright © 1995 - 2021 DJ soft" + Environment.NewLine + "All Rights reserved.", "Začínáme...",
+                string copyright = $"Copyright © 1995 - {DateTime.Now.Year} DJ soft{Environment.NewLine}All Rights reserved.";
+                _SplashShow("Testovací aplikace Helios Nephrite", "DJ soft & ASOL", copyright, "Začínáme...",
                     null, splashImage, null,
                     DevExpress.XtraSplashScreen.FluentLoadingIndicatorType.Dots, null, null, true, true);
 
@@ -10037,6 +10038,12 @@ White
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Označit vše")]
         DxKeyActionSelectAllText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Ctrl+A")]
+        DxKeyActionDeselectAllTitle,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Odznačit vše")]
+        DxKeyActionDeselectAllText,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Ctrl+C")]
         DxKeyActionClipCopyTitle,

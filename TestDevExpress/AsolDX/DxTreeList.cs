@@ -3681,7 +3681,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="args">Veškerá data o procesu Drag and Drop, permanentní po dobu výskytu myši nad Source objektem</param>
         void IDxDragDropControl.DoDragSource(DxDragDropArgs args)
         {
-            switch (args.Event)
+            switch (args.ActionType)
             {
                 case DxDragDropEventType.DragStart:
                     DoDragSourceStart(args);
@@ -3699,7 +3699,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="args">Veškerá data o procesu Drag and Drop, permanentní po dobu výskytu myši nad Source objektem</param>
         void IDxDragDropControl.DoDragTarget(DxDragDropArgs args)
         {
-            switch (args.Event)
+            switch (args.ActionType)
             {
                 case DxDragDropEventType.DragMove:
                     DoDragTargetMove(args);

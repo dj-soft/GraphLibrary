@@ -3,24 +3,21 @@
 // Redistribution and use in source and binary forms, with or without modification, 
 // is not permitted without valid contract with Asseco Solutions, a. s.
 
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 using DevExpress.Data.Filtering;
-using DevExpress.PivotGrid.OLAP;
 using DevExpress.Utils;
-using DevExpress.XtraCharts.Native;
+using DevExpress.XtraBars.Docking.Helpers;
 using DevExpress.XtraEditors;
 using DevExpress.XtraEditors.Controls;
 using DevExpress.XtraEditors.Drawing;
 using DevExpress.XtraEditors.TableLayout;
 using DevExpress.XtraEditors.ViewInfo;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Windows.Forms;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -328,6 +325,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             // SelectAll je povolen vždy:
             buttonTypes.Add(ControlKeyActionType.SelectAll);
             keyActions |= ControlKeyActionType.SelectAll;
+            // DeselectAll zatím povolíme vždy:
+            buttonTypes.Add(ControlKeyActionType.DeselectAll);
+            keyActions |= ControlKeyActionType.DeselectAll;
 
             // Pokud je povolen Clipboard, pak přidáme Delimiter a ClipCopy [a možná podle editovatelnosti i Cut a Paste]:
             if (clipboardActionsEnabled)
@@ -450,6 +450,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             // SelectAll je povolen vždy:
             buttonTypes.Add(ControlKeyActionType.SelectAll);
             keyActions |= ControlKeyActionType.SelectAll;
+            // DeselectAll zatím povolíme vždy:
+            buttonTypes.Add(ControlKeyActionType.DeselectAll);
+            keyActions |= ControlKeyActionType.DeselectAll;
 
             // Pokud je povolen ClipBoard, pak přidáme Delimiter a ClipCopy a Cut a Paste:
             if (clipboardActionsEnabled)
@@ -1101,6 +1104,24 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Událost volaná po změně prvků Target Listu typu MenuItems.<br/>
             /// </summary>
             public event DxListBoxMenuItemsChangedDelegate TargetMenuItemsChanged { add { __Owner.DxTargetProperties.MenuItemsChanged += value; } remove { __Owner.DxTargetProperties.MenuItemsChanged -= value; } }
+            /// <summary>
+            /// Událost vyvolaná před provedením kteréhokoli požadavku v ListBoxu Source.
+            /// <para/>
+            /// Eventhandler může detekovat druh akce i původ jejího spuštění.<br/>
+            /// Může získat seznam prvků, které mají být ovlivněny (<see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>), <br/>
+            /// a může je upravit = do property <see cref="DxListBoxMenuItemsBeforeActionArgs.RequestedItems"/> vloží pole prvků, které vybere (vyfiltruje) z prvků <see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>.<br/>
+            /// Může cancellovat celou akci (nastaví <see cref="DxListBoxMenuItemsBeforeActionArgs.Cancel"/> = true);
+            /// </summary>
+            public event DxListBoxMenuItemsActionBeforeDelegate SourceListActionBefore { add { __Owner.DxSourceProperties.ListActionBefore += value; } remove { __Owner.DxSourceProperties.ListActionBefore -= value; } }
+            /// <summary>
+            /// Událost vyvolaná před provedením kteréhokoli požadavku v ListBoxu Target.
+            /// <para/>
+            /// Eventhandler může detekovat druh akce i původ jejího spuštění.<br/>
+            /// Může získat seznam prvků, které mají být ovlivněny (<see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>), <br/>
+            /// a může je upravit = do property <see cref="DxListBoxMenuItemsBeforeActionArgs.RequestedItems"/> vloží pole prvků, které vybere (vyfiltruje) z prvků <see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>.<br/>
+            /// Může cancellovat celou akci (nastaví <see cref="DxListBoxMenuItemsBeforeActionArgs.Cancel"/> = true);
+            /// </summary>
+            public event DxListBoxMenuItemsActionBeforeDelegate TargetListActionBefore { add { __Owner.DxTargetProperties.ListActionBefore += value; } remove { __Owner.DxTargetProperties.ListActionBefore -= value; } }
             #endregion
             #region Akce, metody
             /// <summary>
@@ -1816,6 +1837,22 @@ namespace Noris.Clients.Win.Components.AsolDX
             _SetButtonsEnabled();
         }
         /// <summary>
+        /// Umístí tlačítka podle potřeby do aktuálního vnitřního prostoru
+        /// </summary>
+        private void _ButtonsLayout()
+        {
+            this.RunInGui(doLayout);
+
+            void doLayout()
+            {
+                Rectangle innerBounds = this.GetInnerBounds();
+                if (innerBounds.Width >= 30 && innerBounds.Height >= 30)
+                {
+                    _ButtonsLayout(ref innerBounds);
+                }
+            }
+        }
+        /// <summary>
         /// Umístí tlačítka podle potřeby do daného vnitřního prostoru, ten zmenší o prostor zabraný tlačítky
         /// </summary>
         /// <param name="innerBounds"></param>
@@ -1848,7 +1885,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             int totalCount = this.__ListBox.DxProperties.VisibleItemsCount;
             int selectedCount = this.__ListBox.DxProperties.SelectedItemsCount;
             bool undoRedoEnabled = this.DxProperties.UndoRedoEnabled;
-            ActionButtonsHelper.EnableButtons(__Buttons, totalCount, selectedCount, true, true, undoRedoEnabled);
+            var isChangedVisibility = ActionButtonsHelper.EnableButtons(__Buttons, totalCount, selectedCount, true, true, undoRedoEnabled);
+            if (isChangedVisibility) _ButtonsLayout();                         // Pokud některé tlačítko změnilo hodnotu Visible, pak musím přepočítat jejich layout
         }
         /// <summary>
         /// Provede akci danou buttonem <paramref name="sender"/>
@@ -2218,7 +2256,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public event PaintEventHandler PaintList { add { DxListProperties.PaintList += value; } remove { DxListProperties.PaintList -= value; } }
             /// <summary>
-            /// Událost vyvolaná před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
+            /// Událost vyvolaná před provedením kteréhokoli požadavku.
+            /// <para/>
+            /// Eventhandler může detekovat druh akce i původ jejího spuštění.<br/>
+            /// Může získat seznam prvků, které mají být ovlivněny (<see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>), <br/>
+            /// a může je upravit = do property <see cref="DxListBoxMenuItemsBeforeActionArgs.RequestedItems"/> vloží pole prvků, které vybere (vyfiltruje) z prvků <see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>.<br/>
+            /// Může cancellovat celou akci (nastaví <see cref="DxListBoxMenuItemsBeforeActionArgs.Cancel"/> = true);
             /// </summary>
             public event DxListBoxMenuItemsActionBeforeDelegate ListActionBefore { add { DxListProperties.ListActionBefore += value; } remove { DxListProperties.ListActionBefore -= value; } }
             /// <summary>
@@ -2244,40 +2287,21 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public event EventHandler MenuItemDrawColumnsChanged { add { DxListProperties.MenuItemDrawColumnsChanged += value; } remove { DxListProperties.MenuItemDrawColumnsChanged -= value; } }
             /// <summary>
-            /// Proběhne při zahájení akce DragAndDrop na controlu Source = odkud jsou prvky přetahovány.<br/>
+            /// Proběhne před zahájením jakékoli akce DragAndDrop, druh akce = viz <see cref="DxDragDropArgs.ActionType"/>.<br/>
             /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit text <see cref="DxDragDropArgs.SourceText"/> zobrazovaný v Drag miniokně,
             /// může nastavit povolení akce do <see cref="DxDragDropArgs.SourceDragEnabled"/>.
             /// </summary>
-            public event DxDragDropEventHandler DragSourceStartBefore { add { DxListProperties.DragSourceStartBefore += value; } remove { DxListProperties.DragSourceStartBefore -= value; } }
+            public event DxDragDropEventHandler DragDropActionBefore { add { DxListProperties.DragDropActionBefore += value; } remove { DxListProperties.DragDropActionBefore -= value; } }
             /// <summary>
-            /// Proběhne při ukončení akce DragAndDrop na controlu Source = odkud jsou prvky přetahovány.<br/>
-            /// Proběhne před provedením akce Drop.<br/>
-            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole. Může nastavit <see cref="DxDragDropArgs.Cancel"/> = true a zrušt tak proces.
+            /// Proběhne po provedení jakékoli akce DragAndDrop, druh akce = viz <see cref="DxDragDropArgs.ActionType"/>.<br/>
+            /// Eventhandler nyní nemůže akci Cancelovat, a nemá měnit dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, nemá význam upravit text <see cref="DxDragDropArgs.SourceText"/> zobrazovaný v Drag miniokně,
+            /// může nastavit povolení akce do <see cref="DxDragDropArgs.SourceDragEnabled"/>.
             /// </summary>
-            public event DxDragDropEventHandler DragSourceDropBefore { add { DxListProperties.DragSourceDropBefore += value; } remove { DxListProperties.DragSourceDropBefore -= value; } }
-            /// <summary>
-            /// Proběhne při ukončení akce DragAndDrop na controlu Source = odkud jsou prvky přetahovány<br/>
-            /// Proběhne před provedením akce Drop.<br/>
-            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole.
-            /// </summary>
-            public event DxDragDropEventHandler DragSourceDropAfter { add { DxListProperties.DragSourceDropAfter += value; } remove { DxListProperties.DragSourceDropAfter -= value; } }
-            /// <summary>
-            /// Proběhne při ukončení akce DragAndDrop na controlu Target = kam jsou prvky přetahovány<br/>
-            /// Proběhne před provedením akce Drop.<br/>
-            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole. Může nastavit <see cref="DxDragDropArgs.Cancel"/> = true a zrušt tak proces.
-            /// </summary>
-            public event DxDragDropEventHandler DragTargetDropBefore { add { DxListProperties.DragTargetDropBefore += value; } remove { DxListProperties.DragTargetDropBefore -= value; } }
-            /// <summary>
-            /// Proběhne při ukončení akce DragAndDrop na controlu Target = kam jsou prvky přetahovány<br/>
-            /// Proběhne po provedení akce Drop.<br/>
-            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole.
-            /// </summary>
-            public event DxDragDropEventHandler DragTargetDropAfter { add { DxListProperties.DragTargetDropAfter += value; } remove { DxListProperties.DragTargetDropAfter -= value; } }
+            public event DxDragDropEventHandler DragDropActionAfter { add { DxListProperties.DragDropActionAfter += value; } remove { DxListProperties.DragDropActionAfter -= value; } }
             /// <summary>
             /// Po změně stavu Undo/Redo
             /// </summary>
             public event EventHandler UndoRedoEnabledChanged { add { DxListProperties.UndoRedoEnabledChanged += value; } remove { DxListProperties.UndoRedoEnabledChanged -= value; } }
-
             #endregion
             #region Řádkový filtr typu server
             /// <summary>
@@ -2940,7 +2964,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public event PaintEventHandler PaintList { add { DxListProperties.PaintList += value; } remove { DxListProperties.PaintList -= value; } }
             /// <summary>
-            /// Událost vyvolaná před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
+            /// Událost vyvolaná před provedením kteréhokoli požadavku.
+            /// <para/>
+            /// Eventhandler může detekovat druh akce i původ jejího spuštění.<br/>
+            /// Může získat seznam prvků, které mají být ovlivněny (<see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>), <br/>
+            /// a může je upravit = do property <see cref="DxListBoxMenuItemsBeforeActionArgs.RequestedItems"/> vloží pole prvků, které vybere (vyfiltruje) z prvků <see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>.<br/>
+            /// Může cancellovat celou akci (nastaví <see cref="DxListBoxMenuItemsBeforeActionArgs.Cancel"/> = true);
             /// </summary>
             public event DxListBoxMenuItemsActionBeforeDelegate ListActionBefore { add { DxListProperties.ListActionBefore += value; } remove { DxListProperties.ListActionBefore -= value; } }
             /// <summary>
@@ -2966,35 +2995,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public event EventHandler MenuItemDrawColumnsChanged { add { DxListProperties.MenuItemDrawColumnsChanged += value; } remove { DxListProperties.MenuItemDrawColumnsChanged -= value; } }
             /// <summary>
-            /// Proběhne při zahájení akce DragAndDrop na controlu Source = odkud jsou prvky přetahovány.<br/>
+            /// Proběhne před zahájením jakékoli akce DragAndDrop, druh akce = viz <see cref="DxDragDropArgs.ActionType"/>.<br/>
             /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit text <see cref="DxDragDropArgs.SourceText"/> zobrazovaný v Drag miniokně,
             /// může nastavit povolení akce do <see cref="DxDragDropArgs.SourceDragEnabled"/>.
             /// </summary>
-            public event DxDragDropEventHandler DragSourceStartBefore { add { DxListProperties.DragSourceStartBefore += value; } remove { DxListProperties.DragSourceStartBefore -= value; } }
+            public event DxDragDropEventHandler DragDropActionBefore { add { DxListProperties.DragDropActionBefore += value; } remove { DxListProperties.DragDropActionBefore -= value; } }
             /// <summary>
-            /// Proběhne při ukončení akce DragAndDrop na controlu Source = odkud jsou prvky přetahovány.<br/>
-            /// Proběhne před provedením akce Drop.<br/>
-            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole. Může nastavit <see cref="DxDragDropArgs.Cancel"/> = true a zrušt tak proces.
+            /// Proběhne po provedení jakékoli akce DragAndDrop, druh akce = viz <see cref="DxDragDropArgs.ActionType"/>.<br/>
+            /// Eventhandler nyní nemůže akci Cancelovat, a nemá měnit dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, nemá význam upravit text <see cref="DxDragDropArgs.SourceText"/> zobrazovaný v Drag miniokně,
+            /// může nastavit povolení akce do <see cref="DxDragDropArgs.SourceDragEnabled"/>.
             /// </summary>
-            public event DxDragDropEventHandler DragSourceDropBefore { add { DxListProperties.DragSourceDropBefore += value; } remove { DxListProperties.DragSourceDropBefore -= value; } }
-            /// <summary>
-            /// Proběhne při ukončení akce DragAndDrop na controlu Source = odkud jsou prvky přetahovány<br/>
-            /// Proběhne před provedením akce Drop.<br/>
-            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole.
-            /// </summary>
-            public event DxDragDropEventHandler DragSourceDropAfter { add { DxListProperties.DragSourceDropAfter += value; } remove { DxListProperties.DragSourceDropAfter -= value; } }
-            /// <summary>
-            /// Proběhne při ukončení akce DragAndDrop na controlu Target = kam jsou prvky přetahovány<br/>
-            /// Proběhne před provedením akce Drop.<br/>
-            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole. Může nastavit <see cref="DxDragDropArgs.Cancel"/> = true a zrušt tak proces.
-            /// </summary>
-            public event DxDragDropEventHandler DragTargetDropBefore { add { DxListProperties.DragTargetDropBefore += value; } remove { DxListProperties.DragTargetDropBefore -= value; } }
-            /// <summary>
-            /// Proběhne při ukončení akce DragAndDrop na controlu Target = kam jsou prvky přetahovány<br/>
-            /// Proběhne po provedení akce Drop.<br/>
-            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole.
-            /// </summary>
-            public event DxDragDropEventHandler DragTargetDropAfter { add { DxListProperties.DragTargetDropAfter += value; } remove { DxListProperties.DragTargetDropAfter -= value; } }
+            public event DxDragDropEventHandler DragDropActionAfter { add { DxListProperties.DragDropActionAfter += value; } remove { DxListProperties.DragDropActionAfter -= value; } }
             /// <summary>
             /// Po změně stavu Undo/Redo
             /// </summary>
@@ -3358,7 +3369,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (__DataTable != null) __DataTable = null;
                 _InvalidateFilteredItems();
             }
-            _RunItemsListChanged(e);
+            _CallItemsListChanged(e);
         }
         /// <summary>
         /// Metoda zkusí najít prvek <see cref="ITextItem"/> pro zadaný absolutní index.<br/>
@@ -3746,7 +3757,7 @@ SetSelected() - vstup           Absolutní
         protected int[] SelectedFilteredIndexes
         {
             // AI píše, že SelectedIndices i SetSelected() pracují s absolutním indexem...
-            // Pravdou ale je, že SelectedIndices a SetSelected() pracují s vizuáoním indexem. Ono to dává víc smyslu...
+            // Pravdou ale je, že SelectedIndices a SetSelected() pracují s vizuálním indexem. Ono to dává víc smyslu...
             get
             {   // Vracíme Filtered = přímo SelectedIndices:
                 return this.SelectedIndices.ToArray();
@@ -3755,10 +3766,26 @@ SetSelected() - vstup           Absolutní
             {   // Procházíme Filtered items, a nastavujeme SetSelected pro vizuální Item podle jeh opřítomnosti v filteredKeys = value.
                 var filteredKeys = value?.CreateDictionary(i => i, true) ?? new Dictionary<int, int>();
                 var count = this.ItemCount;
-                for (int i = 0; i < count; i++)
-                    this.SetSelected(i, filteredKeys.ContainsKey(i));
+                if (count > 0)
+                {
+                    try
+                    {
+                        _ProcessSelectionChanges = true;
+                        for (int i = 0; i < count; i++)
+                            this.SetSelected(i, filteredKeys.ContainsKey(i));
+                    }
+                    finally
+                    {
+                        _ProcessSelectionChanges = false;
+                        this.OnSelectionChanged();
+                    }
+                }
             }
         }
+        /// <summary>
+        /// Metoda obsahuje true v době, kdy programově nastavujeme this.SetSelected pro celou sadu prvků, a nechceme provádět veškerou návaznou logiku
+        /// </summary>
+        private bool _ProcessSelectionChanges;
         /// <summary>
         /// Absolutní index aktivního prvku
         /// </summary>
@@ -4344,11 +4371,16 @@ SetSelected() - vstup           Absolutní
         protected override void OnSelectionChanged()
         {
             base.OnSelectionChanged();
-            CheckFocused();
-            if (this.IsRealSelectionChanged(true))
+
+            // Pokud změnu Selection provádí uživatel interaktivně (=neprobíhá aktuálně pomocí kódu), pak provedeme návazné operace:
+            if (!this._ProcessSelectionChanges)
             {
-                this._ToolTipHide();
-                this._RunSelectionChanged();
+                CheckFocused();
+                if (this.IsRealSelectionChanged(true))
+                {
+                    this._ToolTipHide();
+                    this._CallSelectionChanged();
+                }
             }
         }
         /// <summary>
@@ -4443,7 +4475,7 @@ SetSelected() - vstup           Absolutní
             bool isChanged = (menuItemDrawColumns != __MenuItemDrawColumns);
             __MenuItemDrawColumns = menuItemDrawColumns;
             if (isChanged || forceMenuItemDrawColumnsChanged)
-                _RunMenuItemDrawColumnsChanged();
+                _CallMenuItemDrawColumnsChanged();
         }
         private bool __MenuItemDrawColumns;
         /// <summary>
@@ -4604,7 +4636,7 @@ SetSelected() - vstup           Absolutní
             _PreparePaintMode(e);
 
             base.OnPaint(e);
-            this._RunPaintList(e);
+            this._CallPaintList(e);
             this.MouseDragPaint(e);
         }
         /// <summary>
@@ -5472,7 +5504,7 @@ SetSelected() - vstup           Absolutní
         {
             foreach (ControlKeyActionType action in actions)
                 _DoKeyAction(action, changeType, null, true);
-            _RunMenuItemsChanged(changeType);                        // Event o změně prvků volá "public" metoda DoKeyActions
+            _CallMenuItemsChanged(changeType);                        // Event o změně prvků volá "public" metoda DoKeyActions
         }
         /// <summary>
         /// Inicializace eventhandlerů a hodnot pro KeyActions
@@ -5567,7 +5599,7 @@ SetSelected() - vstup           Absolutní
                     break;
             }
             if (isChanged)
-                _RunMenuItemsChanged(DxItemsChangeType.UserInteractive);                        // Event o změně prvků volá "výchozí event" _KeyDown
+                _CallMenuItemsChanged(DxItemsChangeType.UserInteractive);                        // Event o změně prvků volá "výchozí event" _KeyDown
 
             if (isHandled)
                 e.Handled = true;
@@ -5587,8 +5619,8 @@ SetSelected() - vstup           Absolutní
             var enabledActions = EnabledActions | ControlKeyActionType.ActivateFilter | ControlKeyActionType.FillKeyToFilter;
 
             doSingleAction(ControlKeyActionType.Refresh, null);                          // Neposílám interní akci: ListBox si sám nedokáže provést Refresh, zajišťuje se tedy prostřednictvím eventu
-            doSingleAction(ControlKeyActionType.SelectAll, _DoKeyActionCtrlA);           // Posílám interní akci _DoKeyActionCtrlA
-            doSingleAction(ControlKeyActionType.SelectAllNone, _DoKeyActionCtrlA);
+            doSingleAction(ControlKeyActionType.SelectAll, _DoKeyActionSelectAll);       // Posílám interní akci _DoKeyActionSelectAll
+            doSingleAction(ControlKeyActionType.DeselectAll, _DoKeyActionDeselectAll);
             doSingleAction(ControlKeyActionType.ClipCopy, _DoKeyActionCtrlC);
             doSingleAction(ControlKeyActionType.ClipCut, _DoKeyActionCtrlX);
             doSingleAction(ControlKeyActionType.ClipPaste, _DoKeyActionCtrlV);
@@ -5626,14 +5658,14 @@ SetSelected() - vstup           Absolutní
                 else
                 {   // Daná akce není proveditelná interně: pak vytvoříme argument zde a zavoláme handler:
                     beforeArgs = new DxListBoxMenuItemsBeforeActionArgs(action, changeType, this.SelectedMenuInfos, keyArgs);
-                    _RunListActionBefore(beforeArgs);
+                    _CallListActionBefore(beforeArgs);
                 }
 
                 // Event after:
                 if (beforeArgs != null && !beforeArgs.Cancel)
                 {
                     DxListBoxMenuItemsAfterActionArgs afterArgs = new DxListBoxMenuItemsAfterActionArgs(beforeArgs);
-                    _RunListActionAfter(afterArgs);
+                    _CallListActionAfter(afterArgs);
                     isHandled = true;
                 }
             }
@@ -5657,27 +5689,40 @@ SetSelected() - vstup           Absolutní
         /// <param name="actionType">Typ akce, odpovídá zdejší metodě</param>
         /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
         /// <param name="keyArgs">Data o klávese, pokud je k dispozici</param>
-        private DxListBoxMenuItemsBeforeActionArgs _DoKeyActionCtrlA(ControlKeyActionType actionType, DxItemsChangeType changeType, KeyEventArgs keyArgs)
+        private DxListBoxMenuItemsBeforeActionArgs _DoKeyActionSelectAll(ControlKeyActionType actionType, DxItemsChangeType changeType, KeyEventArgs keyArgs)
         {
-            // Ctrl+A = SelectAll označí všechny viditelné prvky
-            int totalCount = this.DxProperties.VisibleItemsCount;
-            int selectedCount = this.DxProperties.SelectedItemsCount;
-            actionType = (selectedCount < totalCount ? ControlKeyActionType.SelectAll : ControlKeyActionType.SelectAllNone);
-            var beforeArgs = new DxListBoxMenuItemsBeforeActionArgs(ControlKeyActionType.SelectAll, changeType, this.FilteredMenuInfos, keyArgs);
-            _RunListActionBefore(beforeArgs);
+            var beforeArgs = new DxListBoxMenuItemsBeforeActionArgs(actionType, changeType, this.FilteredMenuInfos, keyArgs);
+            _CallListActionBefore(beforeArgs);
             if (!beforeArgs.Cancel)
             {
-                _RunActionCtrlA(beforeArgs.ProcessItems, actionType);
+                _RunActionSelectAll(beforeArgs.ProcessItems);
+            }
+            return beforeArgs;
+        }
+        private void _RunActionSelectAll(DxListBoxNative.ListMenuItemInfo[] processItems)
+        {
+            this.SelectedAbsoluteIndexes = processItems.Select(t => t.AbsoluteIndex).ToArray();
+        }
+        /// <summary>
+        /// Provedení klávesové akce: CtrlA
+        /// </summary>
+        /// <param name="actionType">Typ akce, odpovídá zdejší metodě</param>
+        /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
+        /// <param name="keyArgs">Data o klávese, pokud je k dispozici</param>
+        private DxListBoxMenuItemsBeforeActionArgs _DoKeyActionDeselectAll(ControlKeyActionType actionType, DxItemsChangeType changeType, KeyEventArgs keyArgs)
+        {
+            var beforeArgs = new DxListBoxMenuItemsBeforeActionArgs(actionType, changeType, this.FilteredMenuInfos, keyArgs);
+            _CallListActionBefore(beforeArgs);
+            if (!beforeArgs.Cancel)
+            {
+                _RunActionDeselectAll(beforeArgs.ProcessItems);
             }
             return beforeArgs;
         }
 
-        private void _RunActionCtrlA(DxListBoxNative.ListMenuItemInfo[] processItems, ControlKeyActionType actionType)
+        private void _RunActionDeselectAll(DxListBoxNative.ListMenuItemInfo[] processItems)
         {
-            if (actionType == ControlKeyActionType.SelectAllNone)
-                this.SelectedAbsoluteIndexes = null;                       // Select None: null je přípustná hodnota
-            else
-                this.SelectedAbsoluteIndexes = processItems.Select(t => t.AbsoluteIndex).ToArray();
+            this.SelectedAbsoluteIndexes = null;
         }
         /// <summary>
         /// Provedení klávesové akce: CtrlC
@@ -5688,7 +5733,7 @@ SetSelected() - vstup           Absolutní
         private DxListBoxMenuItemsBeforeActionArgs _DoKeyActionCtrlC(ControlKeyActionType actionType, DxItemsChangeType changeType, KeyEventArgs keyArgs)
         {
             var beforeArgs = new DxListBoxMenuItemsBeforeActionArgs(actionType, changeType, this.SelectedMenuInfos, keyArgs);
-            _RunListActionBefore(beforeArgs);
+            _CallListActionBefore(beforeArgs);
             if (!beforeArgs.Cancel)
             {
                 _RunActionCtrlC(beforeArgs.ProcessItems);
@@ -5710,7 +5755,7 @@ SetSelected() - vstup           Absolutní
         private DxListBoxMenuItemsBeforeActionArgs _DoKeyActionCtrlX(ControlKeyActionType actionType, DxItemsChangeType changeType, KeyEventArgs keyArgs)
         {
             var beforeArgs = new DxListBoxMenuItemsBeforeActionArgs(actionType, changeType, this.SelectedMenuInfos, keyArgs);
-            _RunListActionBefore(beforeArgs);
+            _CallListActionBefore(beforeArgs);
             if (!beforeArgs.Cancel)
             {
                 _RunActionCtrlC(beforeArgs.ProcessItems);
@@ -5731,7 +5776,7 @@ SetSelected() - vstup           Absolutní
 
             var insertItems = items.Select(i => new ListMenuItemInfo(i)).ToArray();                // CtrlV: clipboard obsahuje pole ITextItem, z nichž vytvoříme pole ListMenuItemInfo, které se použije v eventu BeforeAction
             var beforeArgs = new DxListBoxMenuItemsBeforeActionArgs(actionType, changeType, insertItems, keyArgs);
-            _RunListActionBefore(beforeArgs);
+            _CallListActionBefore(beforeArgs);
             if (!beforeArgs.Cancel)
             {
                 InsertItems(beforeArgs.ProcessItems?.Select(t => t.MenuItem), true, true, DxItemsChangeType.Clipboard);
@@ -5747,7 +5792,7 @@ SetSelected() - vstup           Absolutní
         private DxListBoxMenuItemsBeforeActionArgs _DoKeyActionDelete(ControlKeyActionType actionType, DxItemsChangeType changeType, KeyEventArgs keyArgs)
         {
             var beforeArgs = new DxListBoxMenuItemsBeforeActionArgs(actionType, changeType, this.SelectedMenuInfos, keyArgs);
-            _RunListActionBefore(beforeArgs);
+            _CallListActionBefore(beforeArgs);
             if (!beforeArgs.Cancel)
             {
                 _RunActionDelete(beforeArgs.ProcessItems);
@@ -5756,7 +5801,7 @@ SetSelected() - vstup           Absolutní
         }
         private void _RunActionDelete(DxListBoxNative.ListMenuItemInfo[] processItems)
         {
-            RemoveIndexes(processItems.Select(t => t.AbsoluteIndex));                               // Odebrat prvky, které jsou Selected, definované absolutním indexem
+            _RunRemoveIndexes(processItems.Select(t => t.AbsoluteIndex));
         }
         /// <summary>
         /// Provedení klávesové akce: MoveTop
@@ -5766,7 +5811,14 @@ SetSelected() - vstup           Absolutní
         /// <param name="keyArgs">Data o klávese, pokud je k dispozici</param>
         private DxListBoxMenuItemsBeforeActionArgs _DoKeyActionMoveTop(ControlKeyActionType actionType, DxItemsChangeType changeType, KeyEventArgs keyArgs)
         {
-            _MoveSelectedItems(items => 0, changeType);
+            var beforeArgs = new DxListBoxMenuItemsBeforeActionArgs(actionType, changeType, this.SelectedMenuInfos, keyArgs);
+            _CallListActionBefore(beforeArgs);
+            if (!beforeArgs.Cancel)
+            {
+                int? insertAbsoluteIndex = 0;
+                _RunMoveItems(beforeArgs.ProcessItems, insertAbsoluteIndex);
+            }
+            return beforeArgs;
         }
         /// <summary>
         /// Provedení klávesové akce: MoveUp
@@ -5776,7 +5828,14 @@ SetSelected() - vstup           Absolutní
         /// <param name="keyArgs">Data o klávese, pokud je k dispozici</param>
         private DxListBoxMenuItemsBeforeActionArgs _DoKeyActionMoveUp(ControlKeyActionType actionType, DxItemsChangeType changeType, KeyEventArgs keyArgs)
         {
-            _MoveSelectedItems(getIndexUp, changeType);
+            var beforeArgs = new DxListBoxMenuItemsBeforeActionArgs(actionType, changeType, this.SelectedMenuInfos, keyArgs);
+            _CallListActionBefore(beforeArgs);
+            if (!beforeArgs.Cancel)
+            {
+                int? insertAbsoluteIndex = getIndexUp(beforeArgs.ProcessItems);
+                _RunMoveItems(beforeArgs.ProcessItems, insertAbsoluteIndex);
+            }
+            return beforeArgs;
 
             // Metoda vrátí Target AbsoluteIndex pro přesun daných Selected prvků ve směru "O jednu pozici nahoru (k nižšímu indexu)":
             int? getIndexUp(ListMenuItemInfo[] selectedItems)
@@ -5816,7 +5875,14 @@ SetSelected() - vstup           Absolutní
         /// <param name="keyArgs">Data o klávese, pokud je k dispozici</param>
         private DxListBoxMenuItemsBeforeActionArgs _DoKeyActionMoveDown(ControlKeyActionType actionType, DxItemsChangeType changeType, KeyEventArgs keyArgs)
         {
-            _MoveSelectedItems(getIndexDown, changeType);
+            var beforeArgs = new DxListBoxMenuItemsBeforeActionArgs(actionType, changeType, this.SelectedMenuInfos, keyArgs);
+            _CallListActionBefore(beforeArgs);
+            if (!beforeArgs.Cancel)
+            {
+                int? insertAbsoluteIndex = getIndexDown(beforeArgs.ProcessItems);
+                _RunMoveItems(beforeArgs.ProcessItems, insertAbsoluteIndex);
+            }
+            return beforeArgs;
 
             // Metoda vrátí Target AbsoluteIndex pro přesun daných Selected prvků ve směru "O jednu pozici dolů (k vyššímu indexu)":
             int? getIndexDown(ListMenuItemInfo[] selectedItems)
@@ -5857,7 +5923,14 @@ SetSelected() - vstup           Absolutní
         /// <param name="keyArgs">Data o klávese, pokud je k dispozici</param>
         private DxListBoxMenuItemsBeforeActionArgs _DoKeyActionMoveBottom(ControlKeyActionType actionType, DxItemsChangeType changeType, KeyEventArgs keyArgs)
         {
-            _MoveSelectedItems(items => null, changeType);
+            var beforeArgs = new DxListBoxMenuItemsBeforeActionArgs(actionType, changeType, this.SelectedMenuInfos, keyArgs);
+            _CallListActionBefore(beforeArgs);
+            if (!beforeArgs.Cancel)
+            {
+                int? insertAbsoluteIndex = null;
+                _RunMoveItems(beforeArgs.ProcessItems, insertAbsoluteIndex);
+            }
+            return beforeArgs;
         }
         /// <summary>
         /// Provedení klávesové akce: Undo
@@ -5867,7 +5940,15 @@ SetSelected() - vstup           Absolutní
         /// <param name="keyArgs">Data o klávese, pokud je k dispozici</param>
         private DxListBoxMenuItemsBeforeActionArgs _DoKeyActionUndo(ControlKeyActionType actionType, DxItemsChangeType changeType, KeyEventArgs keyArgs)
         {
-            if (this.UndoRedoEnabled) this.UndoRedoController.DoUndo();
+            if (!this.UndoRedoEnabled) return null;
+
+            var beforeArgs = new DxListBoxMenuItemsBeforeActionArgs(actionType, changeType, null, keyArgs);
+            _CallListActionBefore(beforeArgs);
+            if (!beforeArgs.Cancel)
+            {
+                this.UndoRedoController.DoUndo();
+            }
+            return beforeArgs;
         }
         /// <summary>
         /// Provedení klávesové akce: Redo
@@ -5877,7 +5958,15 @@ SetSelected() - vstup           Absolutní
         /// <param name="keyArgs">Data o klávese, pokud je k dispozici</param>
         private DxListBoxMenuItemsBeforeActionArgs _DoKeyActionRedo(ControlKeyActionType actionType, DxItemsChangeType changeType, KeyEventArgs keyArgs)
         {
-            if (this.UndoRedoEnabled) this.UndoRedoController.DoRedo();
+            if (!this.UndoRedoEnabled) return null;
+
+            var beforeArgs = new DxListBoxMenuItemsBeforeActionArgs(actionType, changeType, null, keyArgs);
+            _CallListActionBefore(beforeArgs);
+            if (!beforeArgs.Cancel)
+            {
+                this.UndoRedoController.DoRedo();
+            }
+            return beforeArgs;
         }
         /// <summary>
         /// Metoda zajistí přesunutí označených prvků na danou pozici.
@@ -5889,8 +5978,8 @@ SetSelected() - vstup           Absolutní
         /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
         protected void MoveSelectedItems(int? targetIndex, DxItemsChangeType changeType = DxItemsChangeType.Code)
         {
-            _MoveItems(this.SelectedMenuInfos, targetIndex, changeType);
-            _RunMenuItemsChanged(changeType);
+            _RunMoveItems(this.SelectedMenuInfos, targetIndex);
+            _CallMenuItemsChanged(changeType);
         }
         /// <summary>
         /// Do this listu vloží další prvky <paramref name="sourceItems"/>, počínaje aktuální pozicí vybraného prvku.
@@ -5910,8 +5999,8 @@ SetSelected() - vstup           Absolutní
                 insertAbsoluteIndex = this.GetAbsoluteIndexFromFiltered(filteredIndex);  // Tady získám Absolute index prvku, na kterém je kurzor
                 insertAbsoluteIndex++;                                                   // Ale InsertAtIndex bude až za tento prvek !!!  Bez tohoto incrementu by byl 'před aktuální prvek' !
             }
-            _InsertItems(sourceItems, insertAbsoluteIndex, true, changeType);
-            _RunMenuItemsChanged(changeType);
+            _RunInsertItems(sourceItems, insertAbsoluteIndex, true);
+            _CallMenuItemsChanged(changeType);
         }
         /// <summary>
         /// Do this listu vloží další prvky <paramref name="sourceItems"/>, počínaje danou pozicí <paramref name="insertAbsoluteIndex"/>.<br/>
@@ -5927,8 +6016,8 @@ SetSelected() - vstup           Absolutní
         /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
         protected void InsertItems(IEnumerable<ITextItem> sourceItems, int? insertAbsoluteIndex, bool selectNewItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
         {
-            _InsertItems(sourceItems, insertAbsoluteIndex, selectNewItems, changeType);
-            _RunMenuItemsChanged(changeType);
+            _RunInsertItems(sourceItems, insertAbsoluteIndex, selectNewItems);
+            _CallMenuItemsChanged(changeType);
         }
         /// <summary>
         /// Z this Listu odebere prvky na daných indexech. Index jsou absolutní, nikoli v rámci Visible (filtrovaných) prvků.
@@ -5937,8 +6026,8 @@ SetSelected() - vstup           Absolutní
         /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
         protected void RemoveIndexes(IEnumerable<int> removeAbsoluteIndexes, DxItemsChangeType changeType = DxItemsChangeType.Code)
         {
-            this._RemoveIndexes(removeAbsoluteIndexes, changeType);
-            _RunMenuItemsChanged(changeType);
+            this._RunRemoveIndexes(removeAbsoluteIndexes);
+            _CallMenuItemsChanged(changeType);
         }
         /// <summary>
         /// Z this Listu odebere všechny dané prvky
@@ -5948,7 +6037,7 @@ SetSelected() - vstup           Absolutní
         protected void RemoveItems(IEnumerable<ITextItem> removeItems, DxItemsChangeType changeType = DxItemsChangeType.Code)
         {
             this._RemoveItems(removeItems, changeType);
-            _RunMenuItemsChanged(changeType);
+            _CallMenuItemsChanged(changeType);
         }
         #endregion
         #region Fyzické metody pro provedení změny obsahu Listu
@@ -5965,14 +6054,12 @@ SetSelected() - vstup           Absolutní
         /// <param name="insertAbsoluteIndex">Absolutní index, kam do Items insertujeme první dodanou položku: 0=bude první na začátku, 1=bude za první existující, (Items.Count -1) = bude před poslední, Items.Count nebo null = ude Add na konec.</param>
         /// <param name="selectNewItems">Nově vložené prvky mají být po vložení vybrané (Selected)?</param>
         /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
-        private void _InsertItems(IEnumerable<ITextItem> sourceItems, int? insertAbsoluteIndex, bool selectNewItems, DxItemsChangeType changeType)
+        private void _RunInsertItems(IEnumerable<ITextItem> sourceItems, int? insertAbsoluteIndex, bool selectNewItems)
         {
             if (sourceItems is null || !sourceItems.Any()) return;
 
             var validItems = _GetOnlyValidItems(sourceItems, true);            // Vyberu prvky, které vyhovují NonDuplicitě ItemId (vstupující + stávající dohromady)
             if (validItems.Length == 0) return;
-
-            _RunListActionBefore
 
             int totalCount = this.Items.Count;
             var selectedIndexes = new List<int>();                             // Tyto absolutní indexy budou selected = nově vložené prvky
@@ -6031,15 +6118,14 @@ SetSelected() - vstup           Absolutní
             if (selectedItemsInfo.Length == 0) return;
 
             var insertAbsoluteIndex = targetIndexLocator(selectedItemsInfo);
-            _MoveItems(selectedItemsInfo, insertAbsoluteIndex, changeType);
+            _RunMoveItems(selectedItemsInfo, insertAbsoluteIndex);
         }
         /// <summary>
         /// Provedení akce: přesuň zdejší dodané prvky na cílovou pozici.
         /// </summary>
         /// <param name="selectedItemsInfo"></param>
         /// <param name="insertAbsoluteIndex"></param>
-        /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
-        private void _MoveItems(ListMenuItemInfo[] selectedItemsInfo, int? insertAbsoluteIndex, DxItemsChangeType changeType)
+        private void _RunMoveItems(ListMenuItemInfo[] selectedItemsInfo, int? insertAbsoluteIndex)
         {
             if (selectedItemsInfo is null || selectedItemsInfo.Length == 0) return;
 
@@ -6051,7 +6137,7 @@ SetSelected() - vstup           Absolutní
             _TryGetListItemAtAbsoluteIndex(insertAbsoluteIndex, out var insertTargetItem);
 
             // Odebereme zdrojové prvky:
-            _RemoveIndexes(selectedItemsInfo.Select(t => t.AbsoluteIndex), DxItemsChangeType.None);
+            _RunRemoveIndexes(selectedItemsInfo.Select(t => t.AbsoluteIndex));
 
             // Po odebrání prvků (selectedItemsInfo) se změnily indexy zbývajících prvků v poli, nyní tedy najdu aktuální absolutní index právě toho prvku (ListItem prvek), za který máme insertovat dodané prvky:
             _TryGetAbsoluteIndexOfListItem(insertTargetItem, out var targetAbsoluteIndex);
@@ -6064,14 +6150,14 @@ SetSelected() - vstup           Absolutní
             if (insertAbsoluteIndex.HasValue && insertTargetItem != null && !targetAbsoluteIndex.HasValue) targetAbsoluteIndex = insertAbsoluteIndex;
 
             // A vložíme je na aktuálně platný absolutní target index:
-            _InsertItems(selectedItemsInfo.Select(i => i.MenuItem), targetAbsoluteIndex, true, changeType);
+            _RunInsertItems(selectedItemsInfo.Select(i => i.MenuItem), targetAbsoluteIndex, true);
         }
         /// <summary>
         /// Z this Listu odebere prvky na daných indexech.
         /// </summary>
         /// <param name="removeAbsoluteIndexes"></param>
         /// <param name="changeType">Důvod změny, bude uveden v argumentech události </param>
-        private void _RemoveIndexes(IEnumerable<int> removeAbsoluteIndexes, DxItemsChangeType changeType)
+        private void _RunRemoveIndexes(IEnumerable<int> removeAbsoluteIndexes)
         {
             if (removeAbsoluteIndexes == null) return;
             int totalCount = this.Items.Count;                       // _RemoveIndexes pracuje se všemi prvky bez ohledu na filtr
@@ -6241,13 +6327,13 @@ SetSelected() - vstup           Absolutní
         /// <param name="args">Veškerá data o procesu Drag and Drop, permanentní po dobu výskytu myši nad Source objektem</param>
         void IDxDragDropControl.DoDragSource(DxDragDropArgs args)
         {
-            switch (args.Event)
+            switch (args.ActionType)
             {
                 case DxDragDropEventType.DragStart:
-                    DoDragSourceStart(args);
+                    _DoDragSourceStart(args);
                     break;
                 case DxDragDropEventType.DragDropAccept:
-                    DoDragSourceDrop(args);
+                    _DoDragSourceDrop(args);
                     break;
             }
             return;
@@ -6259,19 +6345,19 @@ SetSelected() - vstup           Absolutní
         /// <param name="args">Veškerá data o procesu Drag and Drop, permanentní po dobu výskytu myši nad Source objektem</param>
         void IDxDragDropControl.DoDragTarget(DxDragDropArgs args)
         {
-            switch (args.Event)
+            switch (args.ActionType)
             {
                 case DxDragDropEventType.DragMove:
-                    DoDragTargetMove(args);
+                    _DoDragTargetMove(args);
                     break;
                 case DxDragDropEventType.DragLeaveOfTarget:
-                    DoDragTargetLeave(args);
+                    _DoDragTargetLeave(args);
                     break;
                 case DxDragDropEventType.DragDropAccept:
-                    DoDragTargetDrop(args);
+                    _DoDragTargetDrop(args);
                     break;
                 case DxDragDropEventType.DragEnd:
-                    DoDragTargetEnd(args);
+                    _DoDragTargetEnd(args);
                     break;
             }
         }
@@ -6279,7 +6365,7 @@ SetSelected() - vstup           Absolutní
         /// Když začíná proces Drag, a this objekt je zdrojem
         /// </summary>
         /// <param name="args"></param>
-        private void DoDragSourceStart(DxDragDropArgs args)
+        private void _DoDragSourceStart(DxDragDropArgs args)
         {
             var selectedItems = this.SelectedMenuInfos;
             if (selectedItems.Length == 0)
@@ -6292,8 +6378,11 @@ SetSelected() - vstup           Absolutní
                 args.SourceText = selectedItems.ToOneString(convertor: i => i.MenuItem?.ToString());
                 args.SourceObject = selectedItems;
                 args.SourceDragEnabled = true;
-                _RunDragSourceStartBefore(args);
-                if (args.Cancel) args.SourceDragEnabled = false;
+                _CallDragDropActionBefore(args);
+                if (args.Cancel || !args.SourceDragEnabled)
+                    args.SourceDragEnabled = false;
+                else
+                    _CallDragDropActionAfter(args);
             }
         }
         /// <summary>
@@ -6301,8 +6390,9 @@ SetSelected() - vstup           Absolutní
         /// Objekt this může být současně i zdrojem akce (pokud probíhá Drag and Drop nad týmž objektem), pak jde o Reorder.
         /// </summary>
         /// <param name="args"></param>
-        private void DoDragTargetMove(DxDragDropArgs args)
+        private void _DoDragTargetMove(DxDragDropArgs args)
         {
+            _CallDragDropActionAfter(args);
             Point targetPoint = this.PointToClient(args.ScreenMouseLocation);
             IndexRatio index = DoDragSearchIndexRatio(targetPoint);
             if (!IndexRatio.IsEqual(index, MouseDragTargetIndex))
@@ -6318,16 +6408,16 @@ SetSelected() - vstup           Absolutní
         /// pak musíme prvky z this listu (Source) odebrat, a pokud this je i cílem, pak před tím musíme podle pozice myši určit cílový index pro přemístění prvků.
         /// </summary>
         /// <param name="args"></param>
-        private void DoDragSourceDrop(DxDragDropArgs args)
+        private void _DoDragSourceDrop(DxDragDropArgs args)
         {
             args.TargetIndex = null;
             args.InsertIndex = null;
 
             // DragAndDrop event:
-            _RunDragSourceDropBefore(args);
+            _CallDragDropActionBefore(args);
             if (args.Cancel) return;
 
-            if ((args.TargetIsSource || args.CurrentEffect == DragDropEffects.Move) && DxDragTargetTryGetMenuInfos(args, out var selectedItemsInfo))
+            if ((args.TargetIsSource || args.CurrentEffect == DragDropEffects.Move) && _DxDragTargetTryGetMenuInfos(args, out var selectedItemsInfo))
             {   // Pokud (Cíl == Zdroj (provádíme přesun v rámci jednoho Listu) anebo efekt DragAndDrop je Move) pak musíme zdrojové prvky odstranit:
                 var changeType = DxItemsChangeType.DragAndDrop;
                 if (args.TargetIsSource)
@@ -6342,12 +6432,12 @@ SetSelected() - vstup           Absolutní
                     changeType = DxItemsChangeType.None;
                 }
                 // Odebereme zdrojové prvky:
-                this._RemoveIndexes(selectedItemsInfo.Select(t => t.AbsoluteIndex), changeType);
+                this._RunRemoveIndexes(selectedItemsInfo.Select(t => t.AbsoluteIndex));
                 // DragAndDrop event:
-                _RunDragSourceDropAfter(args);
+                _CallDragDropActionAfter(args);
 
                 // Vyvoláme event, changeType je buď DragAndDrop (když Source <> Target) anebo None (když TargetIsSource), pak se fyzicky event nevyvolá:
-                _RunMenuItemsChanged(changeType);
+                _CallMenuItemsChanged(changeType);
             }
         }
         /// <summary>
@@ -6356,7 +6446,7 @@ SetSelected() - vstup           Absolutní
         /// <param name="args"></param>
         /// <param name="items"></param>
         /// <returns></returns>
-        private bool DxDragTargetTryGetMenuInfos(DxDragDropArgs args, out ListMenuItemInfo[] items)
+        private bool _DxDragTargetTryGetMenuInfos(DxDragDropArgs args, out ListMenuItemInfo[] items)
         {
             items = null;
             if (args.SourceObject is IEnumerable<ListMenuItemInfo> listItemsInfo) { items = listItemsInfo.ToArray(); return true; }
@@ -6366,7 +6456,7 @@ SetSelected() - vstup           Absolutní
         /// Když úspěšně končí proces Drag, a this objekt je možným cílem
         /// </summary>
         /// <param name="args"></param>
-        private void DoDragTargetDrop(DxDragDropArgs args)
+        private void _DoDragTargetDrop(DxDragDropArgs args)
         {
             if (args.Cancel) return;
 
@@ -6380,20 +6470,20 @@ SetSelected() - vstup           Absolutní
                 args.InsertIndex = args.TargetIndex.GetInsertIndex();
 
             // DragAndDrop event:
-            _RunDragTargetDropBefore(args);
+            _CallDragDropActionBefore(args);
             if (args.Cancel) return;
 
             // Vložit prvky do this Listu, na daný index, a selectovat je:
-            if (DxDragTargetTryGetItems(args, out var sourceItems))
+            if (_DxDragTargetTryGetItems(args, out var sourceItems))
             {
                 var insertAbsoluteIndex = (args.InsertIndex.HasValue ? GetAbsoluteIndexFromFiltered(args.InsertIndex.Value) : null);
-                _InsertItems(sourceItems, insertAbsoluteIndex, true, DxItemsChangeType.DragAndDrop);
+                _RunInsertItems(sourceItems, insertAbsoluteIndex, true);
 
                 // DragAndDrop event:
-                _RunDragTargetDropAfter(args);
+                _CallDragDropActionAfter(args);
 
                 // MenuItemsChanged event:
-                _RunMenuItemsChanged(DxItemsChangeType.DragAndDrop);
+                _CallMenuItemsChanged(DxItemsChangeType.DragAndDrop);
             }
 
             MouseDragTargetIndex = null;
@@ -6405,7 +6495,7 @@ SetSelected() - vstup           Absolutní
         /// <param name="args"></param>
         /// <param name="items"></param>
         /// <returns></returns>
-        private bool DxDragTargetTryGetItems(DxDragDropArgs args, out ITextItem[] items)
+        private bool _DxDragTargetTryGetItems(DxDragDropArgs args, out ITextItem[] items)
         {
             items = null;
             if (args.SourceObject is IEnumerable<ITextItem> menuItems) { items = menuItems.ToArray(); return true; }
@@ -6413,10 +6503,10 @@ SetSelected() - vstup           Absolutní
             return false;
         }
         /// <summary>
-        /// Když probíhá proces Drag, ale opouští this objekt, který dosud byl možným cílem (probíhala pro něj metoda <see cref="DoDragTargetMove(DxDragDropArgs)"/>)
+        /// Když probíhá proces Drag, ale opouští this objekt, který dosud byl možným cílem (probíhala pro něj metoda <see cref="_DoDragTargetMove(DxDragDropArgs)"/>)
         /// </summary>
         /// <param name="args"></param>
-        private void DoDragTargetLeave(DxDragDropArgs args)
+        private void _DoDragTargetLeave(DxDragDropArgs args)
         {
             MouseDragTargetIndex = null;
             this.Invalidate();
@@ -6425,7 +6515,7 @@ SetSelected() - vstup           Absolutní
         /// Po skončení procesu Drag
         /// </summary>
         /// <param name="args"></param>
-        private void DoDragTargetEnd(DxDragDropArgs args)
+        private void _DoDragTargetEnd(DxDragDropArgs args)
         {
             MouseDragTargetIndex = null;
             this.Invalidate();
@@ -6536,7 +6626,7 @@ SetSelected() - vstup           Absolutní
             set
             {
                 __UndoRedoEnabled = value;
-                _RunUndoRedoEnabledChanged();
+                _CallUndoRedoEnabledChanged();
             }
         }
         private bool __UndoRedoEnabled;
@@ -6563,7 +6653,7 @@ SetSelected() - vstup           Absolutní
         private UndoRedoController _UndoRedoController;
         /// <summary>
         /// Vloží do this instance dodaný controller <see cref="UndoRedoController"/>.
-        /// Řeší odvázání eventhandleru od dosavadního controlleru, pak i navázání eventhandleru do nového controlleru, a ihned provede <see cref="_RunUndoRedoEnabledChanged"/>.
+        /// Řeší odvázání eventhandleru od dosavadního controlleru, pak i navázání eventhandleru do nového controlleru, a ihned provede <see cref="_CallUndoRedoEnabledChanged"/>.
         /// </summary>
         /// <param name="controller"></param>
         private void _UndoRedoControllerSet(UndoRedoController controller)
@@ -6575,7 +6665,7 @@ SetSelected() - vstup           Absolutní
                 _UndoRedoController.UndoRedoEnabledChanged -= _UndoRedoEnabledChanged;
                 _UndoRedoController.UndoRedoEnabledChanged += _UndoRedoEnabledChanged;
             }
-            _RunUndoRedoEnabledChanged();
+            _CallUndoRedoEnabledChanged();
         }
         /// <summary>
         /// Eventhandler události, kdy controller <see cref="UndoRedoController"/> 
@@ -6585,7 +6675,7 @@ SetSelected() - vstup           Absolutní
         /// <param name="args"></param>
         private void _UndoRedoEnabledChanged(object sender, EventArgs args)
         {
-            _RunUndoRedoEnabledChanged();
+            _CallUndoRedoEnabledChanged();
         }
         void IUndoRedoControl.DoUndoStep(object state)
         { }
@@ -6597,7 +6687,7 @@ SetSelected() - vstup           Absolutní
         /// Volá se po vykreslení základu Listu, před vykreslením Reorder ikony
         /// </summary>
         /// <param name="e"></param>
-        private void _RunPaintList(PaintEventArgs e)
+        private void _CallPaintList(PaintEventArgs e)
         {
             OnPaintList(e);
             PaintList?.Invoke(this, e);
@@ -6616,7 +6706,7 @@ SetSelected() - vstup           Absolutní
         /// Volá se před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
         /// </summary>
         /// <param name="args"></param>
-        private void _RunListActionBefore(DxListBoxMenuItemsBeforeActionArgs args)
+        private void _CallListActionBefore(DxListBoxMenuItemsBeforeActionArgs args)
         {
             OnListActionBefore(args);
             ListActionBefore?.Invoke(this, args);
@@ -6627,7 +6717,12 @@ SetSelected() - vstup           Absolutní
         /// <param name="args"></param>
         protected virtual void OnListActionBefore(DxListBoxMenuItemsBeforeActionArgs args) { }
         /// <summary>
-        /// Událost vyvolaná před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
+        /// Událost vyvolaná před provedením kteréhokoli požadavku.
+        /// <para/>
+        /// Eventhandler může detekovat druh akce i původ jejího spuštění.<br/>
+        /// Může získat seznam prvků, které mají být ovlivněny (<see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>), <br/>
+        /// a může je upravit = do property <see cref="DxListBoxMenuItemsBeforeActionArgs.RequestedItems"/> vloží pole prvků, které vybere (vyfiltruje) z prvků <see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>.<br/>
+        /// Může cancellovat celou akci (nastaví <see cref="DxListBoxMenuItemsBeforeActionArgs.Cancel"/> = true);
         /// </summary>
         protected event DxListBoxMenuItemsActionBeforeDelegate ListActionBefore;
 
@@ -6635,7 +6730,7 @@ SetSelected() - vstup           Absolutní
         /// Volá se po provedení kteréhokoli požadavku
         /// </summary>
         /// <param name="args"></param>
-        private void _RunListActionAfter(DxListBoxMenuItemsAfterActionArgs args)
+        private void _CallListActionAfter(DxListBoxMenuItemsAfterActionArgs args)
         {
             OnListActionAfter(args);
             ListActionAfter?.Invoke(this, args);
@@ -6653,7 +6748,7 @@ SetSelected() - vstup           Absolutní
         /// <summary>
         /// Volá se po změně selected prvků
         /// </summary>
-        private void _RunSelectionChanged()
+        private void _CallSelectionChanged()
         {
             OnSelectedItemsChanged();
             SelectedItemsChanged?.Invoke(this, EventArgs.Empty);
@@ -6676,7 +6771,7 @@ SetSelected() - vstup           Absolutní
         /// Jde o nativní event, nemá mnoho společného s <see cref="DxListBoxNative"/>.
         /// </summary>
         /// <param name="e"></param>
-        private void _RunItemsListChanged(System.ComponentModel.ListChangedEventArgs e)
+        private void _CallItemsListChanged(System.ComponentModel.ListChangedEventArgs e)
         {
             OnListItemsChanged(e);
             ListItemsChanged?.Invoke(this, e);
@@ -6698,7 +6793,7 @@ SetSelected() - vstup           Absolutní
         /// </summary>
         /// <param name="changeType">Důvod změny</param>
         /// <param name="force">Vyvolat i v situaci, kdy nejsou detekovány změny v Items</param>
-        private void _RunMenuItemsChanged(DxItemsChangeType changeType, bool force = false)
+        private void _CallMenuItemsChanged(DxItemsChangeType changeType, bool force = false)
         {
             if (changeType != DxItemsChangeType.None)
             {
@@ -6725,7 +6820,7 @@ SetSelected() - vstup           Absolutní
         /// <summary>
         /// Vyvolá háček <see cref="OnMenuItemDrawColumnsChanged"/> a událost <see cref="MenuItemDrawColumnsChanged"/>.
         /// </summary>
-        private void _RunMenuItemDrawColumnsChanged()
+        private void _CallMenuItemDrawColumnsChanged()
         {
             OnMenuItemDrawColumnsChanged();
             MenuItemDrawColumnsChanged?.Invoke(this, EventArgs.Empty);
@@ -6740,10 +6835,55 @@ SetSelected() - vstup           Absolutní
         protected event EventHandler MenuItemDrawColumnsChanged;
 
         /// <summary>
+        /// Vyvolá metodu <see cref="OnDragDropActionBefore(DxDragDropArgs)"/> a event <see cref="DragDropActionBefore"/>
+        /// </summary>
+        /// <param name="args"></param>
+        private void _CallDragDropActionBefore(DxDragDropArgs args)
+        {
+            OnDragDropActionBefore(args);
+            DragDropActionBefore?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Proběhne před zahájením jakékoli akce DragAndDrop, druh akce = viz <see cref="DxDragDropArgs.ActionType"/>
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnDragDropActionBefore(DxDragDropArgs args) { }
+        /// <summary>
+        /// Proběhne před zahájením jakékoli akce DragAndDrop, druh akce = viz <see cref="DxDragDropArgs.ActionType"/>.<br/>
+        /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit text <see cref="DxDragDropArgs.SourceText"/> zobrazovaný v Drag miniokně,
+        /// může nastavit povolení akce do <see cref="DxDragDropArgs.SourceDragEnabled"/>.
+        /// </summary>
+        protected event DxDragDropEventHandler DragDropActionBefore;
+
+        /// <summary>
+        /// Vyvolá metodu <see cref="OnDragDropActionAfter(DxDragDropArgs)"/> a event <see cref="DragDropActionAfter"/>
+        /// </summary>
+        /// <param name="args"></param>
+        private void _CallDragDropActionAfter(DxDragDropArgs args)
+        {
+            OnDragDropActionAfter(args);
+            DragDropActionAfter?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Proběhne po provedení jakékoli akce DragAndDrop, druh akce = viz <see cref="DxDragDropArgs.ActionType"/>
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnDragDropActionAfter(DxDragDropArgs args) { }
+        /// <summary>
+        /// Proběhne po provedení jakékoli akce DragAndDrop, druh akce = viz <see cref="DxDragDropArgs.ActionType"/>.<br/>
+        /// Eventhandler nyní nemůže akci Cancelovat, a nemá měnit dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, nemá význam upravit text <see cref="DxDragDropArgs.SourceText"/> zobrazovaný v Drag miniokně,
+        /// může nastavit povolení akce do <see cref="DxDragDropArgs.SourceDragEnabled"/>.
+        /// </summary>
+        protected event DxDragDropEventHandler DragDropActionAfter;
+
+
+        /*
+
+        /// <summary>
         /// Vyvolá metodu <see cref="OnDragSourceStartBefore(DxDragDropArgs)"/> a event <see cref="DragSourceStartBefore"/>
         /// </summary>
         /// <param name="args"></param>
-        private void _RunDragSourceStartBefore(DxDragDropArgs args)
+        private void _CallDragSourceStartBefore(DxDragDropArgs args)
         {
             OnDragSourceStartBefore(args);
             DragSourceStartBefore?.Invoke(this, args);
@@ -6764,7 +6904,7 @@ SetSelected() - vstup           Absolutní
         /// Vyvolá metodu <see cref="OnDragSourceDropBefore(DxDragDropArgs)"/> a event <see cref="DragSourceDropBefore"/>
         /// </summary>
         /// <param name="args"></param>
-        private void _RunDragSourceDropBefore(DxDragDropArgs args)
+        private void _CallDragSourceDropBefore(DxDragDropArgs args)
         {
             OnDragSourceDropBefore(args);
             DragSourceDropBefore?.Invoke(this, args);
@@ -6785,7 +6925,7 @@ SetSelected() - vstup           Absolutní
         /// Vyvolá metodu <see cref="OnDragSourceDropAfter(DxDragDropArgs)"/> a event <see cref="DragSourceDropAfter"/>
         /// </summary>
         /// <param name="args"></param>
-        private void _RunDragSourceDropAfter(DxDragDropArgs args)
+        private void _CallDragSourceDropAfter(DxDragDropArgs args)
         {
             OnDragSourceDropAfter(args);
             DragSourceDropAfter?.Invoke(this, args);
@@ -6806,7 +6946,7 @@ SetSelected() - vstup           Absolutní
         /// Vyvolá metodu <see cref="OnDragTargetDropBefore(DxDragDropArgs)"/> a event <see cref="DragTargetDropBefore"/>
         /// </summary>
         /// <param name="args"></param>
-        private void _RunDragTargetDropBefore(DxDragDropArgs args)
+        private void _CallDragTargetDropBefore(DxDragDropArgs args)
         {
             OnDragTargetDropBefore(args);
             DragTargetDropBefore?.Invoke(this, args);
@@ -6827,7 +6967,7 @@ SetSelected() - vstup           Absolutní
         /// Vyvolá metodu <see cref="OnDragTargetDropAfter(DxDragDropArgs)"/> a event <see cref="DragTargetDropAfter"/>
         /// </summary>
         /// <param name="args"></param>
-        private void _RunDragTargetDropAfter(DxDragDropArgs args)
+        private void _CallDragTargetDropAfter(DxDragDropArgs args)
         {
             OnDragTargetDropAfter(args);
             DragTargetDropAfter?.Invoke(this, args);
@@ -6844,10 +6984,12 @@ SetSelected() - vstup           Absolutní
         /// </summary>
         protected event DxDragDropEventHandler DragTargetDropAfter;
 
+        */
+
         /// <summary>
         /// Vyvolá háček <see cref="OnUndoRedoEnabledChanged"/> a událost <see cref="UndoRedoEnabledChanged"/>.
         /// </summary>
-        private void _RunUndoRedoEnabledChanged()
+        private void _CallUndoRedoEnabledChanged()
         {
             OnUndoRedoEnabledChanged();
             UndoRedoEnabledChanged?.Invoke(this, EventArgs.Empty);
@@ -6860,7 +7002,6 @@ SetSelected() - vstup           Absolutní
         /// Po změně stavu Undo/Redo
         /// </summary>
         protected event EventHandler UndoRedoEnabledChanged;
-
         #endregion
         #region DxProperties : property + třída, která do sebe shrnuje čistě jen Nephrite vlastnosti
         /// <summary>
@@ -7171,7 +7312,12 @@ SetSelected() - vstup           Absolutní
             /// </summary>
             public event PaintEventHandler PaintList { add { __Owner.PaintList += value; } remove { __Owner.PaintList -= value; } }
             /// <summary>
-            /// Událost vyvolaná před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
+            /// Událost vyvolaná před provedením kteréhokoli požadavku.
+            /// <para/>
+            /// Eventhandler může detekovat druh akce i původ jejího spuštění.<br/>
+            /// Může získat seznam prvků, které mají být ovlivněny (<see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>), <br/>
+            /// a může je upravit = do property <see cref="DxListBoxMenuItemsBeforeActionArgs.RequestedItems"/> vloží pole prvků, které vybere (vyfiltruje) z prvků <see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>.<br/>
+            /// Může cancellovat celou akci (nastaví <see cref="DxListBoxMenuItemsBeforeActionArgs.Cancel"/> = true);
             /// </summary>
             public event DxListBoxMenuItemsActionBeforeDelegate ListActionBefore { add { __Owner.ListActionBefore += value; } remove { __Owner.ListActionBefore -= value; } }
             /// <summary>
@@ -7197,35 +7343,17 @@ SetSelected() - vstup           Absolutní
             /// </summary>
             public event EventHandler MenuItemDrawColumnsChanged { add { __Owner.MenuItemDrawColumnsChanged += value; } remove { __Owner.MenuItemDrawColumnsChanged -= value; } }
             /// <summary>
-            /// Proběhne při zahájení akce DragAndDrop na controlu Source = odkud jsou prvky přetahovány.<br/>
+            /// Proběhne před zahájením jakékoli akce DragAndDrop, druh akce = viz <see cref="DxDragDropArgs.ActionType"/>.<br/>
             /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit text <see cref="DxDragDropArgs.SourceText"/> zobrazovaný v Drag miniokně,
             /// může nastavit povolení akce do <see cref="DxDragDropArgs.SourceDragEnabled"/>.
             /// </summary>
-            public event DxDragDropEventHandler DragSourceStartBefore { add { __Owner.DragSourceStartBefore += value; } remove { __Owner.DragSourceStartBefore -= value; } }
+            public event DxDragDropEventHandler DragDropActionBefore { add { __Owner.DragDropActionBefore += value; } remove { __Owner.DragDropActionBefore -= value; } }
             /// <summary>
-            /// Proběhne při ukončení akce DragAndDrop na controlu Source = odkud jsou prvky přetahovány.<br/>
-            /// Proběhne před provedením akce Drop.<br/>
-            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole. Může nastavit <see cref="DxDragDropArgs.Cancel"/> = true a zrušt tak proces.
+            /// Proběhne po provedení jakékoli akce DragAndDrop, druh akce = viz <see cref="DxDragDropArgs.ActionType"/>.<br/>
+            /// Eventhandler nyní nemůže akci Cancelovat, a nemá měnit dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, nemá význam upravit text <see cref="DxDragDropArgs.SourceText"/> zobrazovaný v Drag miniokně,
+            /// může nastavit povolení akce do <see cref="DxDragDropArgs.SourceDragEnabled"/>.
             /// </summary>
-            public event DxDragDropEventHandler DragSourceDropBefore { add { __Owner.DragSourceDropBefore += value; } remove { __Owner.DragSourceDropBefore -= value; } }
-            /// <summary>
-            /// Proběhne při ukončení akce DragAndDrop na controlu Source = odkud jsou prvky přetahovány<br/>
-            /// Proběhne před provedením akce Drop.<br/>
-            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole.
-            /// </summary>
-            public event DxDragDropEventHandler DragSourceDropAfter { add { __Owner.DragSourceDropAfter += value; } remove { __Owner.DragSourceDropAfter -= value; } }
-            /// <summary>
-            /// Proběhne při ukončení akce DragAndDrop na controlu Target = kam jsou prvky přetahovány<br/>
-            /// Proběhne před provedením akce Drop.<br/>
-            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole. Může nastavit <see cref="DxDragDropArgs.Cancel"/> = true a zrušt tak proces.
-            /// </summary>
-            public event DxDragDropEventHandler DragTargetDropBefore { add { __Owner.DragTargetDropBefore += value; } remove { __Owner.DragTargetDropBefore -= value; } }
-            /// <summary>
-            /// Proběhne při ukončení akce DragAndDrop na controlu Target = kam jsou prvky přetahovány<br/>
-            /// Proběhne po provedení akce Drop.<br/>
-            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole.
-            /// </summary>
-            public event DxDragDropEventHandler DragTargetDropAfter { add { __Owner.DragTargetDropAfter += value; } remove { __Owner.DragTargetDropAfter -= value; } }
+            public event DxDragDropEventHandler DragDropActionAfter { add { __Owner.DragDropActionAfter += value; } remove { __Owner.DragDropActionAfter -= value; } }
             /// <summary>
             /// Po změně stavu Undo/Redo
             /// </summary>
@@ -8123,7 +8251,7 @@ SetSelected() - vstup           Absolutní
                     addOneButton(ControlKeyActionType.MoveBottom, requestedActions, ImageName.DxKeyActionMoveBottom, MsgCode.DxKeyActionMoveBottomTitle, MsgCode.DxKeyActionMoveBottomText);
                     addOneButton(ControlKeyActionType.Refresh, requestedActions, ImageName.DxKeyActionRefresh, MsgCode.DxKeyActionRefreshTitle, MsgCode.DxKeyActionRefreshText);
                     addOneButton(ControlKeyActionType.SelectAll, requestedActions, ImageName.DxKeyActionSelectAll, MsgCode.DxKeyActionSelectAllTitle, MsgCode.DxKeyActionSelectAllText);
-                    addOneButton(ControlKeyActionType.SelectAllNone, requestedActions, ImageName.DxKeyActionSelectAllNone, MsgCode.DxKeyActionSelectAllTitle, MsgCode.DxKeyActionSelectAllText);
+                    addOneButton(ControlKeyActionType.DeselectAll, requestedActions, ImageName.DxKeyActionDeselectAll, MsgCode.DxKeyActionDeselectAllTitle, MsgCode.DxKeyActionDeselectAllText);
                     addOneButton(ControlKeyActionType.Delete, requestedActions, ImageName.DxKeyActionDelete, MsgCode.DxKeyActionDeleteTitle, MsgCode.DxKeyActionDeleteText);
                     addOneButton(ControlKeyActionType.ClipCopy, requestedActions, ImageName.DxKeyActionClipCopy, MsgCode.DxKeyActionClipCopyTitle, MsgCode.DxKeyActionClipCopyText);
                     addOneButton(ControlKeyActionType.ClipCut, requestedActions, ImageName.DxKeyActionClipCut, MsgCode.DxKeyActionClipCutTitle, MsgCode.DxKeyActionClipCutText);
@@ -8201,9 +8329,9 @@ SetSelected() - vstup           Absolutní
         /// <param name="isEditable"></param>
         /// <param name="clipEnabled"></param>
         /// <param name="undoRedoEnabled"></param>
-        internal static void EnableButtons(List<DxSimpleButton> buttons, int totalCount, int selectedCount, bool isEditable, bool clipEnabled, bool undoRedoEnabled)
+        internal static bool EnableButtons(List<DxSimpleButton> buttons, int totalCount, int selectedCount, bool isEditable, bool clipEnabled, bool undoRedoEnabled)
         {
-            EnableButtons(buttons, totalCount, selectedCount, totalCount, selectedCount, isEditable, clipEnabled, undoRedoEnabled);
+            return EnableButtons(buttons, totalCount, selectedCount, totalCount, selectedCount, isEditable, clipEnabled, undoRedoEnabled);
         }
         /// <summary>
         /// Nastaví Enabled na všechny buttony v dodaném poli, podle stavu objektu
@@ -8216,15 +8344,55 @@ SetSelected() - vstup           Absolutní
         /// <param name="isEditable"></param>
         /// <param name="clipEnabled"></param>
         /// <param name="undoRedoEnabled"></param>
-        internal static void EnableButtons(List<DxSimpleButton> buttons, int totalLeftCount, int selectedLeftCount, int totalRightCount, int selectedRightCount, bool isEditable, bool clipEnabled, bool undoRedoEnabled)
+        internal static bool EnableButtons(List<DxSimpleButton> buttons, int totalLeftCount, int selectedLeftCount, int totalRightCount, int selectedRightCount, bool isEditable, bool clipEnabled, bool undoRedoEnabled)
         {
-            if (buttons is null || buttons.Count == 0) return;
+            bool isChangedVisibility = false;
+            if (buttons is null || buttons.Count == 0) return isChangedVisibility;
+
+            bool existsSelectAll = buttons.Any(b => b != null && b.Tag is ControlKeyActionType actionType && actionType == ControlKeyActionType.SelectAll);
+            bool existsDeselectAll = buttons.Any(b => b != null && b.Tag is ControlKeyActionType actionType && actionType == ControlKeyActionType.DeselectAll);
+
             foreach (var button in buttons)
             {
                 if (button != null && button.Tag is ControlKeyActionType actionType)
-                    button.Enabled = isEnabled(actionType);
-            }
+                {
+                    var visible = isVisible(actionType);
+                    if (button.VisibleInternal != visible)
+                    {
+                        button.VisibleInternal = visible;
+                        isChangedVisibility = true;
+                    }
 
+                    if (visible)
+                    {
+                        var enabled = isEnabled(actionType);
+                        if (button.Enabled != enabled)
+                            button.Enabled = enabled;
+                    }
+                }
+            }
+            return isChangedVisibility;
+
+
+            bool isVisible(ControlKeyActionType actionType)
+            {
+                // Většina buttonů je viditelná, jen SelectAll a DeselectAll se mohou zobrazovat ExclusiveMutual:
+                bool testVisible = (actionType == ControlKeyActionType.SelectAll || actionType == ControlKeyActionType.DeselectAll);
+                if (!testVisible) return true;
+
+                // A to pouze tehdy, když jsou v seznamu buttonů přítomny oba dva:
+                if (!existsSelectAll || !existsDeselectAll) return true;
+
+                // Pokud mám tedy k dispozici oba buttony a řeším právě jejich Visible, pak viditelný bude jen ten z nich, který je relevantní za aktuálního stavu (totalLeftCount a selectedLeftCount):
+                switch (actionType)
+                {
+                    // SelectAll je viditelný i pro (totalLeftCount == 0), pak je Disabled:
+                    case ControlKeyActionType.SelectAll: return (totalLeftCount == 0 || (totalLeftCount > 0 && selectedLeftCount < totalLeftCount));
+                    // DeselectAll je viditelný jen tehdy, když existují prvky a jsou označeny všechny:
+                    case ControlKeyActionType.DeselectAll: return (totalLeftCount > 0 && selectedLeftCount == totalLeftCount);
+                }
+                return true;
+            }
             bool isEnabled(ControlKeyActionType actionType)
             {
                 switch (actionType)
@@ -8234,7 +8402,7 @@ SetSelected() - vstup           Absolutní
                     case ControlKeyActionType.ClipCut: return clipEnabled && isEditable;
                     case ControlKeyActionType.ClipPaste: return clipEnabled && isEditable;
                     case ControlKeyActionType.SelectAll: return totalLeftCount > 0 && selectedLeftCount < totalLeftCount;
-                    case ControlKeyActionType.SelectAllNone: return totalLeftCount > 0;
+                    case ControlKeyActionType.DeselectAll: return totalLeftCount > 0 && selectedLeftCount == totalLeftCount;
                     case ControlKeyActionType.Insert: return isEditable;
                     case ControlKeyActionType.Delete: return selectedLeftCount > 0 && isEditable;
                     case ControlKeyActionType.MoveTop: return isEditable && totalLeftCount > 0 && selectedLeftCount > 0;
@@ -8304,6 +8472,8 @@ SetSelected() - vstup           Absolutní
                 for (int b = 0; b < buttons.Count; b++)
                 {
                     var button = buttons[b];
+                    if (button != null && !button.VisibleInternal) continue;             // Pokud na buttonu mám Visible = false, pak mu nechci definovat pozici a rezervovat mu prostor!!! Vznikla by díra.
+
                     var isDelimiter = (button is null);
                     var buttonType = (isDelimiter ? ControlKeyActionType.Delimiter : (button != null && button.Tag is ControlKeyActionType bt) ? bt : ControlKeyActionType.None);
                     if (buttonType == ControlKeyActionType.Delimiter) isDelimiter = true;
@@ -8623,76 +8793,5 @@ SetSelected() - vstup           Absolutní
         /// </summary>
         public object ItemId { get; }
     }
-
-    --SMAZAT--;
-    /*
-
-    /// <summary>
-    /// Argumenty pro akci na <see cref="DxListBoxControl"/>
-    /// </summary>
-    public class DxListBoxActionEventArgs : EventArgs
-    {
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="action">Probíhající akce</param>
-        /// <param name="changeType">Důvod změny</param>
-        /// <param name="keys">Stisknutá klávesa, může být null</param>
-        public DxListBoxActionEventArgs(ControlKeyActionType action, DxItemsChangeType changeType, KeyEventArgs keys)
-        {
-            this.Action = action;
-            this.ChangeType = changeType;
-            this.Keys = keys;
-        }
-        /// <summary>
-        /// Probíhající akce
-        /// </summary>
-        public ControlKeyActionType Action { get; }
-        /// <summary>
-        /// Důvod změny
-        /// </summary>
-        public DxItemsChangeType ChangeType { get; }
-        /// <summary>
-        /// Stisknutá klávesa, může být null
-        /// </summary>
-        public KeyEventArgs Keys { get; }
-    }
-    /// <summary>
-    /// Delegát pro událost Akce na <see cref="DxListBoxControl"/>
-    /// </summary>
-    /// <param name="sender"></param>
-    /// <param name="e"></param>
-    public delegate void DxListBoxActionDelegate(object sender, DxListBoxActionEventArgs e);
-
-    /// <summary>
-    /// Argumenty pro akci Before na <see cref="DxListBoxControl"/>, kdy je možnost dát <see cref="Cancel"/> = true;
-    /// </summary>
-    public class DxListBoxActionCancelEventArgs : DxListBoxActionEventArgs
-    {
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="action">Probíhající akce</param>
-        /// <param name="changeType">Důvod změny</param>
-        /// <param name="keys">Stisknutá klávesa, může být null</param>
-        public DxListBoxActionCancelEventArgs(ControlKeyActionType action, DxItemsChangeType changeType, KeyEventArgs keys)
-            : base(action, changeType, keys)
-        {
-            Cancel = false;
-        }
-        /// <summary>
-        /// Nastavením na true bude akce stornována
-        /// </summary>
-        public bool Cancel { get; set; }
-    }
-    /// <summary>
-    /// Delegát pro událost Akce Before na <see cref="DxListBoxControl"/>
-    /// </summary>
-    /// <param name="sender"></param>
-    /// <param name="e"></param>
-    public delegate void DxListBoxActionCancelDelegate(object sender, DxListBoxActionCancelEventArgs e);
-
-    */
-
     #endregion
 }
