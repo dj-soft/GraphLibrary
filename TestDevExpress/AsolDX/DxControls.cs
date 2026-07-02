@@ -3,24 +3,24 @@
 // Redistribution and use in source and binary forms, with or without modification, 
 // is not permitted without valid contract with Asseco Solutions, a. s.
 
+using DevExpress.Dialogs.Core.Filtering;
+using DevExpress.Utils;
+using DevExpress.Utils.Drawing;
+using DevExpress.Utils.Extensions;
+using DevExpress.Utils.Text;
+using DevExpress.XtraBars.Controls;
+using DevExpress.XtraEditors.Controls;
+using DevExpress.XtraTab;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
-using System.Drawing;
-using System.Diagnostics;
-
-using DevExpress.Utils;
-using DevExpress.Utils.Extensions;
-
+using static Noris.Clients.Win.Components.AsolDX.DxDblListBoxPanel;
 using XS = Noris.WS.Parser.XmlSerializer;
-using System.ComponentModel;
-using DevExpress.XtraBars.Controls;
-using DevExpress.Utils.Drawing;
-using DevExpress.Utils.Text;
-using DevExpress.XtraTab;
-using DevExpress.XtraEditors.Controls;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -2321,6 +2321,293 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var thick = (this.Horizontal ? (this.Panel2.Left - this.Panel1.Right) : (this.Panel2.Top - this.Panel1.Bottom));
                 return (thick < 2 ? 2 : (thick > 20 ? 20 : thick));            // Pro jistotu zarovnávám do rozsahu 2 - 20
             }
+        }
+        #endregion
+        #region SplitterFixedSide, SplitterFixedPosition, SplitterPercentagePosition, SplitterPositionInfo
+        /// <summary>
+        /// Režim pozice Splitteru při změně velikosti containeru
+        /// </summary>
+        public FixedSideType SplitterFixedSide
+        {
+            get 
+            {
+                switch (this.FixedPanel)
+                {
+                    case DevExpress.XtraEditors.SplitFixedPanel.Panel1: return FixedSideType.Panel1;
+                    case DevExpress.XtraEditors.SplitFixedPanel.Panel2: return FixedSideType.Panel2;
+                    case DevExpress.XtraEditors.SplitFixedPanel.None: return FixedSideType.Percentage;
+                }
+                return FixedSideType.Panel1;
+            }
+            set 
+            {
+                switch (value)
+                {
+                    case FixedSideType.Panel1:
+                        this.FixedPanel = DevExpress.XtraEditors.SplitFixedPanel.Panel1;
+                        break;
+                    case FixedSideType.Panel2:
+                        this.FixedPanel = DevExpress.XtraEditors.SplitFixedPanel.Panel2;
+                        break;
+                    case FixedSideType.Percentage:
+                        this.FixedPanel = DevExpress.XtraEditors.SplitFixedPanel.None;
+                        if (!this.__SplitterPercentagePosition.HasValue)
+                            this.SplitterPercentagePosition = 50;
+                        break;
+                }
+            }
+        }
+        /// <summary>
+        /// Obsahuje true, pokud pozice splitteru je daná fixními pixely (pokud je <see cref="SplitterFixedSide"/> = <see cref="FixedSideType.Panel1"/> nebo <see cref="FixedSideType.Panel2"/>).
+        /// </summary>
+        private bool _SplitterFixedSideIsPixel { get { var side = SplitterFixedSide; return (side == FixedSideType.Panel1 || side == FixedSideType.Panel2); } }
+        /// <summary>
+        /// Obsahuje true, pokud pozice splitteru je daná poěrnou hodnotou (pokud je <see cref="SplitterFixedSide"/> = <see cref="FixedSideType.Percentage"/>).
+        /// </summary>
+        private bool _SplitterFixedSideIsPercentage { get { var side = SplitterFixedSide; return (side == FixedSideType.Percentage); } }
+
+        /// <summary>
+        /// Pozice splitteru z pohledu fixního panelu, pokud je <see cref="SplitterFixedSide"/> = <see cref="FixedSideType.Panel1"/> nebo <see cref="FixedSideType.Panel2"/>.
+        /// Pokud ale <see cref="SplitterFixedSide"/> = <see cref="FixedSideType.Percentage"/>, pak je zde null.
+        /// <para/>
+        /// Udává počet pixelů velikosti fixního panelu, pokud tedy fixní je panel 2, pak jde o jeho velikost (šířku panelu vpravo, nebo výšku panelu dole).
+        /// </summary>
+        public int? SplitterFixedPosition
+        {
+            get 
+            {
+                return (_SplitterFixedSideIsPixel ? (int?)this.SplitterPosition : null);
+            }
+            set
+            {
+                __SplitterFixedPosition = value;
+                if (_SplitterFixedSideIsPixel && value.HasValue)
+                    this.SplitterPosition = value.Value;
+            }
+        }
+        private int? __SplitterFixedPosition;
+        /// <summary>
+        /// Pozice splitteru relativní v režimu <see cref="SplitterFixedSide"/> = <see cref="FixedSideType.Percentage"/>.
+        /// Pokud ale <see cref="SplitterFixedSide"/> = <see cref="FixedSideType.Panel1"/> nebo <see cref="FixedSideType.Panel2"/>, pak je zde null.
+        /// <para/>
+        /// Validní hodnota je v rozsahu 0 - 100 (Procenta!), kde 0 = splitter je na začátku (panel1 má nulovou velikost), 100 = splitter je na konci (panel2 má nulovou velikost).
+        /// </summary>
+        public float? SplitterPercentagePosition
+        {
+            get
+            {
+                return _SplitterPercentagePositionCurrent;
+            }
+            set
+            {
+                __SplitterPercentagePosition = value;
+                _SplitterPercentagePositionCurrent = value;
+            }
+        }
+        /// <summary>
+        /// Hodnota, která byla naposledy nastavena do <see cref="SplitterPercentagePosition"/>. Bez nejmenších úprav.
+        /// </summary>
+        private float? __SplitterPercentagePosition;
+        /// <summary>
+        /// Aktuální procentní pozice splitteru, pokud je <see cref="SplitterFixedSide"/> = <see cref="FixedSideType.Percentage"/>.
+        /// Je odvozena z aktuální pozice splitteru a velikosti containeru.
+        /// </summary>
+        private float? _SplitterPercentagePositionCurrent
+        {
+            get
+            {
+                if (!_SplitterFixedSideIsPercentage) return null;
+
+                float currentPosition = this.SplitterPosition;
+                float currentSize = _SplitterAreaCurrentSize;
+                float percentage = 100f * (currentSize > 0 ? currentPosition / currentSize : 0f);
+                return (percentage < 0f ? 0f : (percentage > 100f ? 100f : percentage));
+            }
+            set
+            {
+                if (!_SplitterFixedSideIsPercentage || !value.HasValue) return;
+
+                float percentage = value.Value;
+                percentage = (percentage < 0f ? 0f : (percentage > 100f ? 100f : percentage));
+                float currentSize = _SplitterAreaCurrentSize;
+                float currentPosition = currentSize * percentage / 100f;
+                this.SplitterPosition = (int)currentPosition;
+            }
+        }
+        /// <summary>
+        /// Aktuální rozsah pohybu splitteru: pro svislé dělítko (doleva/doprava): šířka, pro vodorovné dělítko (nahoru/dolů): výška.
+        /// </summary>
+        private int _SplitterAreaCurrentSize { get { return (this.Horizontal ? this.ClientSize.Width : this.ClientSize.Height); } }
+        /// <summary>
+        /// Souhrnná informace o pozici Splitteru, která obsahuje jak typ fixní strany, tak i hodnotu pozice (buď fixní pixelovou, nebo procentní).
+        /// </summary>
+        public PositionInfo SplitterPositionInfo
+        {
+            get
+            {
+                return new PositionInfo(this.SplitterFixedSide, this.SplitterFixedPosition, this.SplitterPercentagePosition);
+            }
+            set
+            {
+                if (value == null) return;
+                this.SplitterFixedSide = value.FixedSide;
+                if (_SplitterFixedSideIsPixel && value.FixedPosition.HasValue) this.SplitterFixedPosition = value.FixedPosition;
+                if (_SplitterFixedSideIsPercentage && value.PercentagePosition.HasValue) this.SplitterPercentagePosition = value.PercentagePosition;
+            }
+        }
+        protected override void OnClientSizeChanged(EventArgs e)
+        {
+            base.OnClientSizeChanged(e);
+        }
+
+        /// <summary>
+        /// Souhrnná pozice splitteru, která obsahuje jak typ fixní strany, tak i hodnotu pozice (buď fixní pixelovou, nebo procentní).
+        /// </summary>
+        public class PositionInfo
+        {
+            private PositionInfo() { }
+            /// <summary>
+            /// Konstruktor s daty
+            /// </summary>
+            /// <param name="fixedSide"></param>
+            /// <param name="fixedPosition"></param>
+            /// <param name="percentagePosition"></param>
+            public PositionInfo(FixedSideType fixedSide, int? fixedPosition, float? percentagePosition)
+            {
+                this.FixedSide = fixedSide;
+                this.FixedPosition = fixedPosition;
+                this.PercentagePosition = percentagePosition;
+            }
+            /// <summary>
+            /// Fixní strana
+            /// </summary>
+            public FixedSideType FixedSide { get; private set; }
+            /// <summary>
+            /// Pixelová velikost fixní strany
+            /// </summary>
+            public int? FixedPosition { get; private set; }
+            /// <summary>
+            /// Procentuální pozice splitteru, pokud je <see cref="FixedSide"/> = <see cref="FixedSideType.Percentage"/>.
+            /// </summary>
+            public float? PercentagePosition { get; private set; }
+            #region Konverze do/na string
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return Text;
+            }
+            /// <summary>
+            /// Textové vyjádření obsahu, serializovatelné, setovatelné
+            /// </summary>
+            public string Text
+            {
+                get
+                {
+                    switch (this.FixedSide)
+                    {
+                        case FixedSideType.Panel1: return $"{PANEL1_PREFIX}:{FixedPosition}";
+                        case FixedSideType.Panel2: return $"{PANEL2_PREFIX}:{FixedPosition}";
+                        case FixedSideType.Percentage: return $"{PERCENT_PREFIX}:{PercentagePosition}";
+                    }
+                    return "";
+                }
+                set
+                {
+                    _TryParse(value, out FixedSideType fixedSide, out int? fixedPosition, out float? percentagePosition);
+                    this.FixedSide = fixedSide;
+                    this.FixedPosition = fixedPosition;
+                    this.PercentagePosition = percentagePosition;
+                }
+            }
+            /// <summary>
+            /// Zkusí parsovat dodaný text do out hodnot.
+            /// </summary>
+            /// <param name="text"></param>
+            /// <param name="fixedSide"></param>
+            /// <param name="fixedPosition"></param>
+            /// <param name="percentagePosition"></param>
+            /// <returns></returns>
+            private static bool _TryParse(string text, out FixedSideType fixedSide, out int? fixedPosition, out float? percentagePosition)
+            {
+                fixedSide = FixedSideType.Panel1;
+                fixedPosition = null;
+                percentagePosition = null;
+
+                if (String.IsNullOrEmpty(text)) return false;
+                var parts = text.Split(':');
+                if (parts.Length != 2) return false;
+
+                switch (parts[0])
+                {
+                    case PANEL1_PREFIX:
+                        fixedSide = FixedSideType.Panel1;
+                        if (!Int32.TryParse(parts[1], out int fixedPos1)) return false;
+                        fixedPosition = fixedPos1;
+                        return true;
+                    case PANEL2_PREFIX:
+                        fixedSide = FixedSideType.Panel2;
+                        if (!Int32.TryParse(parts[1], out int fixedPos2)) return false;
+                        fixedPosition = fixedPos2;
+                        return true;
+                    case PERCENT_PREFIX:
+                        fixedSide = FixedSideType.Percentage;
+                        if (!Single.TryParse(parts[1], out var percentPos)) return false;
+                        percentagePosition = percentPos;
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+            private const string PANEL1_PREFIX = "Panel1";
+            private const string PANEL2_PREFIX = "Panel2";
+            private const string PERCENT_PREFIX = "Percent";
+            /// <summary>
+            /// Implicitní konverze z <see cref="PositionInfo"/> to String. Pokud je na vstupu null, vrací null.
+            /// </summary>
+            /// <param name="p"></param>
+            public static implicit operator string(PositionInfo p)
+            {
+                return p?.Text;
+            }
+            /// <summary>
+            /// Implicitní konverze z String to <see cref="PositionInfo"/>. Pokud se nepodaří text rozparsovat, vrací null.
+            /// </summary>
+            /// <param name="text"></param>
+            public static implicit operator PositionInfo(string text)
+            {
+                if (_TryParse(text, out FixedSideType fixedSide, out int? fixedPosition, out float? percentagePosition))
+                {
+                    return new PositionInfo()
+                    {
+                        FixedSide = fixedSide,
+                        FixedPosition = fixedPosition,
+                        PercentagePosition = percentagePosition
+                    };
+                }
+                return null;
+            }
+            #endregion
+        }
+        /// <summary>
+        /// Která strana SplitterPanelu je pevně daná, anebo zda je pozice oddělovače dána relativně = při resizování SplitterPanelu se pozice Splitteru posouvá úměrně velikosti celého containeru nastaven na procenta.
+        /// </summary>
+        public enum FixedSideType
+        {
+            /// <summary>
+            /// Při změně velikosti containeru bude první panel (vlevo / nahoře) mít stejnou velikost a změní se velikost druhého panelu (vpravo / dole)
+            /// </summary>
+            Panel1,
+            /// <summary>
+            /// Při změně velikosti containeru bude druhý panel (vpravo / dole) mít stejnou velikost a změní se velikost prvního panelu (vlevo / nahoře) 
+            /// </summary>
+            Panel2,
+            /// <summary>
+            /// Při změně velikosti containeru bude pozice splitteru regovat poměrně na velikost celého containeru
+            /// </summary>
+            Percentage
         }
         #endregion
         #region Style & Zoom Changed

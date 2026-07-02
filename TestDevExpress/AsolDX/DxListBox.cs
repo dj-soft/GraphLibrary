@@ -18,6 +18,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using static Noris.Clients.Win.Components.AsolDX.DxSplitContainerControl;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -1034,10 +1035,30 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Vykreslit ikonu položek v základním režimu fyzicky = přímo, možná lepší vzhled
             /// </summary>
             public bool DrawImageDirectly { get { return __Owner.DrawImageDirectly; } set { __Owner.DrawImageDirectly = value; } }
+
             /// <summary>
-            /// Pozice splitteru
+            /// Režim pozice Splitteru při změně velikosti containeru
             /// </summary>
-            public int SplitterPosition { get { return __Owner.SplitterPosition; } set { __Owner.SplitterPosition = value; } }
+            public FixedSideType SplitterFixedSide { get { return __Owner.SplitterFixedSide; } set { __Owner.SplitterFixedSide = value; } }
+            /// <summary>
+            /// Pozice splitteru z pohledu fixního panelu, pokud je <see cref="SplitterFixedSide"/> = <see cref="FixedSideType.Panel1"/> nebo <see cref="FixedSideType.Panel2"/>.
+            /// Pokud ale <see cref="SplitterFixedSide"/> = <see cref="FixedSideType.Percentage"/>, pak je zde null.
+            /// <para/>
+            /// Udává počet pixelů velikosti fixního panelu, pokud tedy fixní je panel 2, pak jde o jeho velikost (šířku panelu vpravo, nebo výšku panelu dole).
+            /// </summary>
+            public int? SplitterFixedPosition { get { return __Owner.SplitterFixedPosition; } set { __Owner.SplitterFixedPosition = value; } }
+            /// <summary>
+            /// Pozice splitteru relativní v režimu <see cref="SplitterFixedSide"/> = <see cref="FixedSideType.Percentage"/>.
+            /// Pokud ale <see cref="SplitterFixedSide"/> = <see cref="FixedSideType.Panel1"/> nebo <see cref="FixedSideType.Panel2"/>, pak je zde null.
+            /// <para/>
+            /// Validní hodnota je v rozsahu 0 - 100 (Procenta!), kde 0 = splitter je na začátku (panel1 má nulovou velikost), 100 = splitter je na konci (panel2 má nulovou velikost).
+            /// </summary>
+            public float? SplitterPercentagePosition { get { return __Owner.SplitterPercentagePosition; } set { __Owner.SplitterPercentagePosition = value; } }
+            /// <summary>
+            /// Souhrnná informace o pozici Splitteru, která obsahuje jak typ fixní strany, tak i hodnotu pozice (buď fixní pixelovou, nebo procentní).
+            /// </summary>
+            public PositionInfo SplitterPositionInfo { get { return __Owner.SplitterPositionInfo; } set { __Owner.SplitterPositionInfo = value; } }
+
             /// <summary>
             /// Umístění buttonů v rámci <see cref="DxDblListBoxPanel"/>.
             /// <para/>
@@ -1122,6 +1143,22 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Může cancellovat celou akci (nastaví <see cref="DxListBoxMenuItemsBeforeActionArgs.Cancel"/> = true);
             /// </summary>
             public event DxListBoxMenuItemsActionBeforeDelegate TargetListActionBefore { add { __Owner.DxTargetProperties.ListActionBefore += value; } remove { __Owner.DxTargetProperties.ListActionBefore -= value; } }
+            /// <summary>
+            /// Proběhne před zahájením jakékoli akce DragAndDrop, v Source ListBoxu; druh akce = viz <see cref="DxDragDropArgs.ActionType"/>.<br/>
+            /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit text <see cref="DxDragDropArgs.SourceText"/> zobrazovaný v Drag miniokně,
+            /// může nastavit povolení akce do <see cref="DxDragDropArgs.SourceDragEnabled"/>.
+            /// </summary>
+            public event DxDragDropEventHandler SourceDragDropActionBefore { add { __Owner.DxSourceProperties.DragDropActionBefore += value; } remove { __Owner.DxSourceProperties.DragDropActionBefore -= value; } }
+            /// <summary>
+            /// Proběhne po provedení jakékoli akce DragAndDrop, v Target ListBoxu; druh akce = viz <see cref="DxDragDropArgs.ActionType"/>.<br/>
+            /// Eventhandler nyní nemůže akci Cancelovat, a nemá měnit dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, nemá význam upravit text <see cref="DxDragDropArgs.SourceText"/> zobrazovaný v Drag miniokně,
+            /// může nastavit povolení akce do <see cref="DxDragDropArgs.SourceDragEnabled"/>.
+            /// </summary>
+            public event DxDragDropEventHandler TargetDragDropActionBefore { add { __Owner.DxSourceProperties.DragDropActionAfter += value; } remove { __Owner.DxSourceProperties.DragDropActionAfter -= value; } }
+            /// <summary>
+            /// Proběhne po změně pozice splitteru mezi dvěma panely. Událost je vyvolána po dokončení přesunu splitteru, a to i při změně velikosti celého panelu.
+            /// </summary>
+            public event EventHandler SplitterPositionChanged { add { __Owner.SplitterPositionChanged += value; } remove { __Owner.SplitterPositionChanged -= value; } }
             #endregion
             #region Akce, metody
             /// <summary>

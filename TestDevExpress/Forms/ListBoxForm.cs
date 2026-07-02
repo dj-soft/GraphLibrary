@@ -456,12 +456,17 @@ namespace TestDevExpress.Forms
             var bounds = _SampleBounds;
             var dblListBounds = new Rectangle(bounds.X, bounds.Y + 62, 800, 600);
             var sampleDblList = new DxDblListBoxPanel() { Bounds = dblListBounds };
+            if (_Sample4SplitPosition != null)
+                sampleDblList.DxProperties.SplitterPositionInfo = _Sample4SplitPosition;
+            else
+            {
+                sampleDblList.DxProperties.SplitterFixedSide = DxSplitContainerControl.FixedSideType.Percentage;
+                sampleDblList.DxProperties.SplitterPercentagePosition = 40;
+            }
+
             __ResizedControls.Add(sampleDblList);                                                  // Pro sampleDblList resizovat výšku
 
             sampleDblList.DxProperties.RowFilterMode = RowFilterBoxMode.Client;
-
-            var position = (_Sample4SplitPosition > 0 ? _Sample4SplitPosition : 360);
-            sampleDblList.DxProperties.SplitterPosition = position;
 
             /* Ostatní property nechám default:
             sampleDblList.DxProperties.ButtonsPosition = DxDblListBoxPanel.DblButtonsPositionType.Bottom;
@@ -501,11 +506,17 @@ namespace TestDevExpress.Forms
                     dTextItem.Enabled = false;
 
                     var imageName = dTextItem.ImageName;
+                    var imageLock1 = "devav/people/customerquicklocations.svg";
+                    var imageLock2 = "svgimages/icon%20builder/security_lock.svg";
+
                     if (!String.IsNullOrEmpty(imageName) && imageName.EndsWith(".svg", StringComparison.InvariantCultureIgnoreCase))
                     {
+                        /*
                         var svgImg = new SvgImageArrayInfo(imageName);
-                        svgImg.Add("svgimages/dashboards/unpinbutton.svg", ContentAlignment.BottomRight, 75);
+                        svgImg.Add(imageLock, ContentAlignment.BottomRight, 75);
                         dTextItem.ImageName = svgImg.Key;
+                        */
+                        dTextItem.ImageName = imageLock2;
                     }
                 }
             }
@@ -528,7 +539,7 @@ namespace TestDevExpress.Forms
         }
         private void Sample4DblList_SplitterPositionChanged(object sender, EventArgs e)
         {
-            _Sample4SplitPosition = _Sample4DblList.SplitterPosition;
+            _Sample4SplitPosition = _Sample4DblList.DxProperties.SplitterPositionInfo;
         }
         private void _CreateLayout4()
         {
@@ -552,7 +563,7 @@ namespace TestDevExpress.Forms
         }
         private int _Sample4_TargetMenuItemsChangeCounter;
         private DxDblListBoxPanel _Sample4DblList;
-        private int _Sample4SplitPosition;
+        private string _Sample4SplitPosition;
         #region Nastavování vlastností
         private void _CreateSample4Params()
         {
@@ -756,6 +767,7 @@ namespace TestDevExpress.Forms
             var position = (_Sample5SplitPosition > 0 ? _Sample5SplitPosition : 320);
             _Sample5Split = new DxSplitContainerControl() { Bounds = new Rectangle(bounds.X, bounds.Y + 52, 800, 600), SplitterOrientation = Orientation.Horizontal, FixedPanel = DevExpress.XtraEditors.SplitFixedPanel.Panel1, SplitterPosition = position };
             _Sample5Split.SplitterMoved += _Sample5Split_SplitterMoved;
+            _Sample5Split.SplitterFixedSide = DxSplitContainerControl.FixedSideType.Percentage;
             this._HostContainer.Controls.Add(_Sample5Split);
             __ResizedControls.Add(_Sample5Split);                                                  // Pro _Sample1Split resizovat výšku
 
