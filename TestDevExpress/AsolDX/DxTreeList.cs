@@ -338,10 +338,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _RowFilterClientClear()
         {
-//            TreeListNative.OptionsFilter.MRUFilterListCount
-  //          DxProperties.ClientRowFilterOptions.
-    //        __RowFilterClient.ClearFilter();
-
         }
         /// <summary>
         /// Aktivuje klientský RowFilter, volitelně do něj vepíše daný text (pokud není null)

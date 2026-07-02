@@ -47,7 +47,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.SplitterPosition = 300;
 
             var listPanelSource = new DxListBoxPanel();
-            listPanelSource.DxProperties.ItemMouseDoubleClick += _SourceList_MouseDoubleClick;
             listPanelSource.Dock = DockStyle.Fill;
             this.Panel1.Controls.Add(listPanelSource);
             this.Panel1.MinSize = 120;
@@ -55,7 +54,6 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             var listPanelTarget = new DxListBoxPanel();
             listPanelTarget.Dock = DockStyle.Fill;
-            listPanelTarget.DxProperties.ItemMouseDoubleClick += _TargetList_MouseDoubleClick;
             this.Panel2.Controls.Add(listPanelTarget);
             this.Panel2.MinSize = 120;
             __TargetListPanel = listPanelTarget;
@@ -109,14 +107,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _InitProperties()
         {
-            // Základní vlastnosti:
-            DxSourceProperties.DuplicityEnabled = true;
-            DxSourceProperties.SelectionMode = SelectionMode.MultiExtended;
-            DxSourceProperties.RowFilterMode = RowFilterBoxMode.None;
+            var sourceProperties = DxSourceProperties;
+            var targetProperties = DxTargetProperties;
 
-            DxTargetProperties.DuplicityEnabled = true;
-            DxTargetProperties.SelectionMode = SelectionMode.MultiExtended;
-            DxTargetProperties.RowFilterMode = RowFilterBoxMode.None;
+            // Základní vlastnosti:
+            sourceProperties.DuplicityEnabled = true;
+            sourceProperties.SelectionMode = SelectionMode.MultiExtended;
+            sourceProperties.RowFilterMode = RowFilterBoxMode.None;
+
+            targetProperties.DuplicityEnabled = true;
+            targetProperties.SelectionMode = SelectionMode.MultiExtended;
+            targetProperties.RowFilterMode = RowFilterBoxMode.None;
 
             // DoubleListBox vlastnosti:
             __DblListMode = DblListModeType.Mode_FixedSourceToFreeTarget;
@@ -130,10 +131,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             _AcceptListStyles();
 
             // Eventy:
-            DxSourceProperties.SelectedItemsChanged += _SourceSelectedItemsChanged;
-            DxTargetProperties.SelectedItemsChanged += _TargetSelectedItemsChanged;
-            DxSourceProperties.ListActionAfter += _ListActionAfter;
-            DxTargetProperties.ListActionAfter += _ListActionAfter;
+            sourceProperties.SelectedItemsChanged += _SourceSelectedItemsChanged;
+            sourceProperties.ItemMouseDoubleClick += _SourceList_MouseDoubleClick;
+            sourceProperties.ListActionAfter += _ListActionAfter;
+            sourceProperties.MenuItemsChanged += _SourceList_MenuItemsChanged;
+
+            targetProperties.SelectedItemsChanged += _TargetSelectedItemsChanged;
+            targetProperties.ItemMouseDoubleClick += _TargetList_MouseDoubleClick;
+            targetProperties.ListActionAfter += _ListActionAfter;
+            targetProperties.MenuItemsChanged += _TargetList_MenuItemsChanged;
         }
         /// <summary>
         /// Po změně Selected v Listu Source = vlevo
@@ -142,7 +148,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _SourceSelectedItemsChanged(object sender, EventArgs e)
         {
-            this._SetButtonsEnabled();
+            this._SetButtonsEnabled(false);
         }
         /// <summary>
         /// Po změně Selected v Listu Target = vpravo
@@ -151,7 +157,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _TargetSelectedItemsChanged(object sender, EventArgs e)
         {
-            this._SetButtonsEnabled();
+            this._SetButtonsEnabled(false);
         }
         /// <summary>
         /// Instance ListBoxPanelu pro levý = Source panel
@@ -727,34 +733,33 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _DoLayoutButtons()
         {
             this.RunInGui(_DoLayoutButtonsGui);
-        }
-        /// <summary>
-        /// Umístí středové buttony, je voláno v GUI threadu
-        /// </summary>
-        private void _DoLayoutButtonsGui()
-        {
-            // Viditelnost:
-            bool currentPanelVisible = this.__ButtonsPanel.IsSetVisible();
-            bool requestPanelVisible = this._ButtonsRequired && (__Buttons != null && __Buttons.Count > 0);
-
-            // Panel nemá být viditelný:
-            if (!requestPanelVisible)
+            
+            // Umístí středové buttony, je voláno v GUI threadu
+            void _DoLayoutButtonsGui()
             {
-                if (currentPanelVisible)
-                    this.__ButtonsPanel.Visible = false;
-            }
-            else
-            {
-                // Panel má být viditelný:
-                var splitterThick = this.CurrentSplitterThick;
-                Size buttonSize = ActionButtonsHelper.GetCurrentButtonSize(this.DxSourceProperties.ButtonsSize, this.__ButtonsPanel.CurrentDpi);
-                this.__ButtonsPanel.Width = splitterThick + buttonSize.Width;
+                // Viditelnost:
+                bool currentPanelVisible = this.__ButtonsPanel.IsSetVisible();
+                bool requestPanelVisible = this._ButtonsRequired && (__Buttons != null && __Buttons.Count > 0);
 
-                Rectangle innerBounds = this.__ButtonsPanel.GetInnerBounds();
-                ActionButtonsHelper.DoButtonsLayout(__Buttons, ref innerBounds, this.__CommonButtonsPosition, this.DxSourceProperties.ButtonsSize, this.__ButtonsPanel.CurrentDpi);
+                // Panel nemá být viditelný:
+                if (!requestPanelVisible)
+                {
+                    if (currentPanelVisible)
+                        this.__ButtonsPanel.Visible = false;
+                }
+                else
+                {
+                    // Panel má být viditelný:
+                    var splitterThick = this.CurrentSplitterThick;
+                    Size buttonSize = ActionButtonsHelper.GetCurrentButtonSize(this.DxSourceProperties.ButtonsSize, this.__ButtonsPanel.CurrentDpi);
+                    this.__ButtonsPanel.Width = splitterThick + buttonSize.Width;
 
-                if (!currentPanelVisible)
-                    this.__ButtonsPanel.Visible = true;
+                    Rectangle innerBounds = this.__ButtonsPanel.GetInnerBounds();
+                    ActionButtonsHelper.DoButtonsLayout(__Buttons, ref innerBounds, this.__CommonButtonsPosition, this.DxSourceProperties.ButtonsSize, this.__ButtonsPanel.CurrentDpi);
+
+                    if (!currentPanelVisible)
+                        this.__ButtonsPanel.Visible = true;
+                }
             }
         }
         /// <summary>
@@ -803,12 +808,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             _DoLayoutButtons();
 
             // Enabled na Buttony podle jejich akce a podle stavu ListBoxu:
-            _SetButtonsEnabled();
+            _SetButtonsEnabled(true);
         }
         /// <summary>
         /// Nastaví Enabled buttonů
         /// </summary>
-        private void _SetButtonsEnabled()
+        /// <param name="doLayoutButtons">Provést povinně layout buttonů (umístění na souřadnice)</param>
+        private void _SetButtonsEnabled(bool doLayoutButtons)
         {
             if (!this._ButtonsRequired) return;
 
@@ -820,7 +826,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool clipEnabled = this.DxProperties.ClipboardActionsEnabled;
             bool undoRedoEnabled = this.DxTargetProperties.UndoRedoEnabled;
 
-            ActionButtonsHelper.EnableButtons(__Buttons, totalLeftCount, selectedLeftCount, totalRightCount, selectedRightCount, isEditable, clipEnabled, undoRedoEnabled);
+            var isChangedVisibility = ActionButtonsHelper.EnableButtons(__Buttons, totalLeftCount, selectedLeftCount, totalRightCount, selectedRightCount, isEditable, clipEnabled, undoRedoEnabled);
+            if (doLayoutButtons || isChangedVisibility) _DoLayoutButtons();
         }
         /// <summary>
         /// Provede akci danou buttonem <paramref name="sender"/>
@@ -872,7 +879,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="changeType"></param>
         protected void DoCommonButtonClick(ControlKeyActionType actionType, DxItemsChangeType changeType = DxItemsChangeType.Code)
         {
-            ITextItem[] actionItems;
             bool isAllItems = ((actionType & (ControlKeyActionType.CopyToTargetAllE | ControlKeyActionType.CopyToTargetAllC | ControlKeyActionType.CopyToSourceAllE | ControlKeyActionType.CopyToSourceAllC)) != 0);
             bool atCurrentIndex = acceptTargetPosition(((actionType & (ControlKeyActionType.CopyToTargetOneC | ControlKeyActionType.CopyToTargetAllC | ControlKeyActionType.CopyToSourceAllC | ControlKeyActionType.CopyToSourceAllC)) != 0));
             bool removeFrom = this._HasAnyMode(DblListModeType.SourceToTargetMove, DblListModeType.TargetToSourceMove);
@@ -882,24 +888,55 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (isSourceToTarget && this._HasAnyMode(DblListModeType.SourceToTargetCopy, DblListModeType.SourceToTargetMove))
             {
                 // Co půjde doprava:
-                actionItems = (isAllItems ? DxSourceProperties.MenuItems : DxSourceProperties.SelectedMenuItems);
-                // Kam to půjde: na aktuální pozici nebo na konec:
-                DxTargetProperties.InsertItems(actionItems, atCurrentIndex, true, changeType);
-                // Ze vstupního listu (Source = vlevo) se má smazat:
-                if (removeFrom)
-                    DxSourceProperties.RemoveItems(actionItems);
+                var userItems = getItemInfos(DxSourceProperties, isAllItems);
+
+                // Event DblListActionBefore může cancellovat akci anebo omezit zpracované prvky:
+                var beforeArgs = new DxListBoxMenuItemsBeforeActionArgs(actionType, changeType, userItems, null);
+                _CallDblListActionBefore(beforeArgs);
+
+                if (!beforeArgs.Cancel)
+                {
+                    var workItems = getWorkItems(beforeArgs.ProcessItems);
+                    // Kam to půjde: na aktuální pozici nebo na konec:
+                    DxTargetProperties.InsertItems(workItems, atCurrentIndex, true, changeType);
+                    // Ze vstupního listu (Source = vlevo) se má smazat:
+                    if (removeFrom)
+                        DxSourceProperties.RemoveItems(workItems);
+                }
             }
             if (isTargetToSource && this._HasAnyMode(DblListModeType.TargetToSourceCopy, DblListModeType.TargetToSourceMove))
-            {   // Co půjde doleva:
-                actionItems = (isAllItems ? DxTargetProperties.MenuItems : DxTargetProperties.SelectedMenuItems);
-                // Kam to půjde: na aktuální pozici nebo na konec:
-                DxSourceProperties.InsertItems(actionItems, atCurrentIndex, true, changeType);
-                // Ze vstupního listu (Target = vpravo) se má smazat:
-                if (removeFrom)
-                    DxTargetProperties.RemoveItems(actionItems);
+            {
+                // Co půjde doleva:
+                var userItems = getItemInfos(DxTargetProperties, isAllItems);
+
+                // Event DblListActionBefore může cancellovat akci anebo omezit zpracované prvky:
+                var beforeArgs = new DxListBoxMenuItemsBeforeActionArgs(actionType, changeType, userItems, null);
+                _CallDblListActionBefore(beforeArgs);
+
+                if (!beforeArgs.Cancel)
+                {
+                    var workItems = getWorkItems(beforeArgs.ProcessItems);
+                    // Kam to půjde: na aktuální pozici nebo na konec:
+                    DxSourceProperties.InsertItems(workItems, atCurrentIndex, true, changeType);
+                    // Ze vstupního listu (Target = vpravo) se má smazat:
+                    if (removeFrom)
+                        DxTargetProperties.RemoveItems(workItems);
+                }
             }
 
-
+            // Z dodaných dxProperties vybere podle getAllItems buď všechny MenuItems anebo SelectedMenuItems, konvertuje na DxListBoxNative.ListMenuItemInfo a vrátí pole
+            DxListBoxNative.ListMenuItemInfo[] getItemInfos(DxListBoxPanel.DxPropertiesInfo dxProperties, bool getAllItems)
+            {
+                var items = (getAllItems ? dxProperties.MenuItems : dxProperties.SelectedMenuItems);
+                if (items is null) return null;
+                return items.Select(i => new DxListBoxNative.ListMenuItemInfo(i)).ToArray();
+            }
+            // Z dodaných prvků DxListBoxNative.ListMenuItemInfo vrátí pole ITextItem
+            ITextItem[] getWorkItems(DxListBoxNative.ListMenuItemInfo[] processInfos)
+            {
+                if (processInfos is null) return null;
+                return processInfos.Select(i => i.MenuItem).ToArray();
+            }
             // Akceptuje nastavení CopyItemTargetPosition, podle něj ovlivní dodanou hodnotu cílové pozice 'atCurrentIndex'
             bool acceptTargetPosition(bool target)
             {
@@ -955,6 +992,67 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (this.DoubleClickEnabled && args.Item != null)
                 DoCommonButtonClick(ControlKeyActionType.CopyToSourceOneE, DxItemsChangeType.UserInteractive);
         }
+        /// <summary>
+        /// Proběhne po změně obsahu prvků v SourceListu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _TargetList_MenuItemsChanged(object sender, DxListBoxMenuItemsChangedEventArgs e)
+        {
+            _SetButtonsEnabled(true);
+        }
+        /// <summary>
+        /// Proběhne po změně obsahu prvků v TargetListu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _SourceList_MenuItemsChanged(object sender, DxListBoxMenuItemsChangedEventArgs e)
+        {
+            _SetButtonsEnabled(true);
+        }
+
+        /// <summary>
+        /// Volá se před provedením kteréhokoli požadavku, který má charakter DoubleList = přesuny SourceToTarget a TargetToSource; eventhandler může cancellovat akci
+        /// </summary>
+        /// <param name="args"></param>
+        private void _CallDblListActionBefore(DxListBoxMenuItemsBeforeActionArgs args)
+        {
+            OnDblListActionBefore(args);
+            DblListActionBefore?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Proběhne před provedením kteréhokoli požadavku, který má charakter DoubleList = přesuny SourceToTarget a TargetToSource; eventhandler může cancellovat akci
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnDblListActionBefore(DxListBoxMenuItemsBeforeActionArgs args) { }
+        /// <summary>
+        /// Událost vyvolaná před provedením kteréhokoli požadavku, který má charakter DoubleList = přesuny SourceToTarget a TargetToSource.
+        /// <para/>
+        /// Eventhandler může detekovat druh akce i původ jejího spuštění.<br/>
+        /// Může získat seznam prvků, které mají být ovlivněny (<see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>), <br/>
+        /// a může je upravit = do property <see cref="DxListBoxMenuItemsBeforeActionArgs.RequestedItems"/> vloží pole prvků, které vybere (vyfiltruje) z prvků <see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>.<br/>
+        /// Může cancellovat celou akci (nastaví <see cref="DxListBoxMenuItemsBeforeActionArgs.Cancel"/> = true);
+        /// </summary>
+        protected event DxListBoxMenuItemsActionBeforeDelegate DblListActionBefore;
+
+        /// <summary>
+        /// Volá se po provedení kteréhokoli požadavku, který má charakter DoubleList = přesuny SourceToTarget a TargetToSource
+        /// </summary>
+        /// <param name="args"></param>
+        private void _CallDblListActionAfter(DxListBoxMenuItemsAfterActionArgs args)
+        {
+            OnDblListActionAfter(args);
+            DblListActionAfter?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Proběhne po provedení kteréhokoli požadavku, který má charakter DoubleList = přesuny SourceToTarget a TargetToSource
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnDblListActionAfter(DxListBoxMenuItemsAfterActionArgs args) { }
+        /// <summary>
+        /// Událost vyvolaná po provedení kteréhokoli požadavku, který má charakter DoubleList = přesuny SourceToTarget a TargetToSource.
+        /// </summary>
+        protected event DxListBoxMenuItemsActionAfterDelegate DblListActionAfter;
         #endregion
         #region DxProperties : property + třída, která do sebe shrnuje čistě jen Nephrite vlastnosti
         /// <summary>
@@ -1125,6 +1223,19 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Událost volaná po změně prvků Target Listu typu MenuItems.<br/>
             /// </summary>
             public event DxListBoxMenuItemsChangedDelegate TargetMenuItemsChanged { add { __Owner.DxTargetProperties.MenuItemsChanged += value; } remove { __Owner.DxTargetProperties.MenuItemsChanged -= value; } }
+            /// <summary>
+            /// Událost vyvolaná před provedením kteréhokoli požadavku, který má charakter DoubleList = přesuny SourceToTarget a TargetToSource.
+            /// <para/>
+            /// Eventhandler může detekovat druh akce i původ jejího spuštění.<br/>
+            /// Může získat seznam prvků, které mají být ovlivněny (<see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>), <br/>
+            /// a může je upravit = do property <see cref="DxListBoxMenuItemsBeforeActionArgs.RequestedItems"/> vloží pole prvků, které vybere (vyfiltruje) z prvků <see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>.<br/>
+            /// Může cancellovat celou akci (nastaví <see cref="DxListBoxMenuItemsBeforeActionArgs.Cancel"/> = true);
+            /// </summary>
+            public event DxListBoxMenuItemsActionBeforeDelegate DblListActionBefore { add { __Owner.DblListActionBefore += value; } remove { __Owner.DblListActionBefore -= value; } }
+            /// <summary>
+            /// Událost vyvolaná po provedení kteréhokoli požadavku, který má charakter DoubleList = přesuny SourceToTarget a TargetToSource.
+            /// </summary>
+            public event DxListBoxMenuItemsActionAfterDelegate DblListActionAfter { add { __Owner.DblListActionAfter += value; } remove { __Owner.DblListActionAfter -= value; } }
             /// <summary>
             /// Událost vyvolaná před provedením kteréhokoli požadavku v ListBoxu Source.
             /// <para/>
@@ -3218,7 +3329,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                         validItems = _GetSortedItems(validItems);
 
                     _ItemsMode = ListBoxItemsMode.MenuItems;
-                    _StoreItemsSilent(validItems);
+                    _StoreItemsSilent(validItems, true);
                     _SetItemsAsPrevious(validItems);
                 }
                 else
@@ -3288,7 +3399,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             var selectedItems = this.SelectedMenuItems;
 
             var sortedItems = _GetSortedItems(menuItems);
-            _StoreItemsSilent(sortedItems);
+            _StoreItemsSilent(sortedItems, true);
 
             this.SelectedMenuItems = selectedItems;
         }
@@ -3320,7 +3431,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Do this ListBoxu vloží dodané Items, pokud možno nenápadně
         /// </summary>
         /// <param name="items"></param>
-        private void _StoreItemsSilent(ITextItem[] items)
+        /// <param name="callChangeOnEnd">Na konci akce zavolat event o změně Items</param>
+        private void _StoreItemsSilent(ITextItem[] items, bool callChangeOnEnd)
         {
             var hasRowFilter = HasRowFilter;
             var rowFilter = RowFilterCondition;
@@ -3337,6 +3449,9 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 this.ViewInfo.ScrollInfo.HScroll.Value = hscv;
             }
+
+            if (callChangeOnEnd)
+                this._CallMenuItemsChanged(DxItemsChangeType.Code, false);
         }
         /// <summary>
         /// Metoda z dodané kolekce prvku vrátí jen ty platné.
@@ -6912,116 +7027,6 @@ SetSelected() - vstup           Absolutní
         /// může nastavit povolení akce do <see cref="DxDragDropArgs.SourceDragEnabled"/>.
         /// </summary>
         protected event DxDragDropEventHandler DragDropActionAfter;
-
-
-        /*
-
-        /// <summary>
-        /// Vyvolá metodu <see cref="OnDragSourceStartBefore(DxDragDropArgs)"/> a event <see cref="DragSourceStartBefore"/>
-        /// </summary>
-        /// <param name="args"></param>
-        private void _CallDragSourceStartBefore(DxDragDropArgs args)
-        {
-            OnDragSourceStartBefore(args);
-            DragSourceStartBefore?.Invoke(this, args);
-        }
-        /// <summary>
-        /// Proběhne při zahájení akce DragAndDrop
-        /// </summary>
-        /// <param name="args"></param>
-        protected virtual void OnDragSourceStartBefore(DxDragDropArgs args) { }
-        /// <summary>
-        /// Proběhne při zahájení akce DragAndDrop na controlu Source = odkud jsou prvky přetahovány.<br/>
-        /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit text <see cref="DxDragDropArgs.SourceText"/> zobrazovaný v Drag miniokně,
-        /// může nastavit povolení akce do <see cref="DxDragDropArgs.SourceDragEnabled"/>.
-        /// </summary>
-        protected event DxDragDropEventHandler DragSourceStartBefore;
-
-        /// <summary>
-        /// Vyvolá metodu <see cref="OnDragSourceDropBefore(DxDragDropArgs)"/> a event <see cref="DragSourceDropBefore"/>
-        /// </summary>
-        /// <param name="args"></param>
-        private void _CallDragSourceDropBefore(DxDragDropArgs args)
-        {
-            OnDragSourceDropBefore(args);
-            DragSourceDropBefore?.Invoke(this, args);
-        }
-        /// <summary>
-        /// Proběhne při ukončení akce DragAndDrop
-        /// </summary>
-        /// <param name="args"></param>
-        protected virtual void OnDragSourceDropBefore(DxDragDropArgs args) { }
-        /// <summary>
-        /// Proběhne při ukončení akce DragAndDrop na controlu Source = odkud jsou prvky přetahovány.<br/>
-        /// Proběhne před provedením akce Drop.<br/>
-        /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole. Může nastavit <see cref="DxDragDropArgs.Cancel"/> = true a zrušt tak proces.
-        /// </summary>
-        protected event DxDragDropEventHandler DragSourceDropBefore;
-
-        /// <summary>
-        /// Vyvolá metodu <see cref="OnDragSourceDropAfter(DxDragDropArgs)"/> a event <see cref="DragSourceDropAfter"/>
-        /// </summary>
-        /// <param name="args"></param>
-        private void _CallDragSourceDropAfter(DxDragDropArgs args)
-        {
-            OnDragSourceDropAfter(args);
-            DragSourceDropAfter?.Invoke(this, args);
-        }
-        /// <summary>
-        /// Proběhne při ukončení akce DragAndDrop
-        /// </summary>
-        /// <param name="args"></param>
-        protected virtual void OnDragSourceDropAfter(DxDragDropArgs args) { }
-        /// <summary>
-        /// Proběhne při ukončení akce DragAndDrop na controlu Source = odkud jsou prvky přetahovány<br/>
-        /// Proběhne před provedením akce Drop.<br/>
-        /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole.
-        /// </summary>
-        protected event DxDragDropEventHandler DragSourceDropAfter;
-
-        /// <summary>
-        /// Vyvolá metodu <see cref="OnDragTargetDropBefore(DxDragDropArgs)"/> a event <see cref="DragTargetDropBefore"/>
-        /// </summary>
-        /// <param name="args"></param>
-        private void _CallDragTargetDropBefore(DxDragDropArgs args)
-        {
-            OnDragTargetDropBefore(args);
-            DragTargetDropBefore?.Invoke(this, args);
-        }
-        /// <summary>
-        /// Proběhne při ukončení akce DragAndDrop
-        /// </summary>
-        /// <param name="args"></param>
-        protected virtual void OnDragTargetDropBefore(DxDragDropArgs args) { }
-        /// <summary>
-        /// Proběhne při ukončení akce DragAndDrop na controlu Target = kam jsou prvky přetahovány<br/>
-        /// Proběhne před provedením akce Drop.<br/>
-        /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole. Může nastavit <see cref="DxDragDropArgs.Cancel"/> = true a zrušt tak proces.
-        /// </summary>
-        protected event DxDragDropEventHandler DragTargetDropBefore;
-
-        /// <summary>
-        /// Vyvolá metodu <see cref="OnDragTargetDropAfter(DxDragDropArgs)"/> a event <see cref="DragTargetDropAfter"/>
-        /// </summary>
-        /// <param name="args"></param>
-        private void _CallDragTargetDropAfter(DxDragDropArgs args)
-        {
-            OnDragTargetDropAfter(args);
-            DragTargetDropAfter?.Invoke(this, args);
-        }
-        /// <summary>
-        /// Proběhne při ukončení akce DragAndDrop
-        /// </summary>
-        /// <param name="args"></param>
-        protected virtual void OnDragTargetDropAfter(DxDragDropArgs args) { }
-        /// <summary>
-        /// Proběhne při ukončení akce DragAndDrop na controlu Target = kam jsou prvky přetahovány<br/>
-        /// Proběhne po provedení akce Drop.<br/>
-        /// Eventhandler může získat dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, může upravit toto pole.
-        /// </summary>
-        protected event DxDragDropEventHandler DragTargetDropAfter;
-
-        */
 
         /// <summary>
         /// Vyvolá háček <see cref="OnUndoRedoEnabledChanged"/> a událost <see cref="UndoRedoEnabledChanged"/>.

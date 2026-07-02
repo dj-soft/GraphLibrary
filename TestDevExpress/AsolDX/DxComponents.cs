@@ -10039,7 +10039,7 @@ White
         [DefaultMessageText("Označit vše")]
         DxKeyActionSelectAllText,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
-        [DefaultMessageText("Ctrl+A")]
+        [DefaultMessageText("Zrušit")]
         DxKeyActionDeselectAllTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Odznačit vše")]

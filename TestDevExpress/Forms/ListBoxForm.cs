@@ -480,6 +480,7 @@ namespace TestDevExpress.Forms
             
             sampleDblList.DxProperties.TargetMenuItemsChanged += _Sample4_TargetMenuItemsChanged;
             sampleDblList.DxProperties.TargetListActionBefore += _Sample4_TargetListActionBefore;
+            sampleDblList.DxProperties.DblListActionBefore += _Sample4_DblListActionBefore;
 
             sampleDblList.SplitterPositionChanged += Sample4DblList_SplitterPositionChanged;
             this._HostContainer.Controls.Add(sampleDblList);
@@ -536,6 +537,14 @@ namespace TestDevExpress.Forms
                     break;
 
             }
+        }
+        /// <summary>
+        /// Proběhne před provedením akce DoubleList (převody zleva doprava)
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _Sample4_DblListActionBefore(object sender, DxListBoxMenuItemsBeforeActionArgs args)
+        {
         }
         private void Sample4DblList_SplitterPositionChanged(object sender, EventArgs e)
         {
