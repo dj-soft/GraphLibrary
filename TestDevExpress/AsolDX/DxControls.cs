@@ -12900,6 +12900,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Klávesa CtrlY: Redo (znovu provést poslední změnu)
         /// </summary>
         Redo = 0x2000,
+        /// <summary>
+        /// MouseDrag
+        /// </summary>
+        MouseDrag = 0x4000,
 
         /// <summary>
         /// Klávesa Ctrl Home: přejdi na začátek

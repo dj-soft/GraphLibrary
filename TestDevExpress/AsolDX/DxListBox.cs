@@ -1237,6 +1237,24 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public event DxListBoxMenuItemsActionAfterDelegate DblListActionAfter { add { __Owner.DblListActionAfter += value; } remove { __Owner.DblListActionAfter -= value; } }
             /// <summary>
+            /// Událost vyvolaná před provedením požadavku na smazání prvků z SourceListu, z libovolného důvodu (klávesa, šipky pro přesun, MouseDrag); eventhandler může cancellovat akci
+            /// <para/>
+            /// Eventhandler může detekovat druh akce i původ jejího spuštění.<br/>
+            /// Může získat seznam prvků, které mají být ovlivněny (<see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>), <br/>
+            /// a může je upravit = do property <see cref="DxListBoxMenuItemsBeforeActionArgs.RequestedItems"/> vloží pole prvků, které vybere (vyfiltruje) z prvků <see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>.<br/>
+            /// Může cancellovat celou akci (nastaví <see cref="DxListBoxMenuItemsBeforeActionArgs.Cancel"/> = true);
+            /// </summary>
+            public event DxListBoxMenuItemsActionBeforeDelegate SourceListRemoveBefore { add { __Owner.DxSourceProperties.ListRemoveBefore += value; } remove { __Owner.DxSourceProperties.ListRemoveBefore -= value; } }
+            /// <summary>
+            /// Událost vyvolaná před provedením požadavku na smazání prvků z TargetListu, z libovolného důvodu (klávesa, šipky pro přesun, MouseDrag); eventhandler může cancellovat akci
+            /// <para/>
+            /// Eventhandler může detekovat druh akce i původ jejího spuštění.<br/>
+            /// Může získat seznam prvků, které mají být ovlivněny (<see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>), <br/>
+            /// a může je upravit = do property <see cref="DxListBoxMenuItemsBeforeActionArgs.RequestedItems"/> vloží pole prvků, které vybere (vyfiltruje) z prvků <see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>.<br/>
+            /// Může cancellovat celou akci (nastaví <see cref="DxListBoxMenuItemsBeforeActionArgs.Cancel"/> = true);
+            /// </summary>
+            public event DxListBoxMenuItemsActionBeforeDelegate TargetListRemoveBefore { add { __Owner.DxSourceProperties.ListRemoveBefore += value; } remove { __Owner.DxSourceProperties.ListRemoveBefore -= value; } }
+            /// <summary>
             /// Událost vyvolaná před provedením kteréhokoli požadavku v ListBoxu Source.
             /// <para/>
             /// Eventhandler může detekovat druh akce i původ jejího spuštění.<br/>
@@ -2404,6 +2422,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public event PaintEventHandler PaintList { add { DxListProperties.PaintList += value; } remove { DxListProperties.PaintList -= value; } }
             /// <summary>
+            /// Událost vyvolaná před provedením požadavku na smazání prvků, z libovolného důvodu (klávesa, šipky pro přesun, MouseDrag); eventhandler může cancellovat akci
+            /// <para/>
+            /// Eventhandler může detekovat druh akce i původ jejího spuštění.<br/>
+            /// Může získat seznam prvků, které mají být ovlivněny (<see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>), <br/>
+            /// a může je upravit = do property <see cref="DxListBoxMenuItemsBeforeActionArgs.RequestedItems"/> vloží pole prvků, které vybere (vyfiltruje) z prvků <see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>.<br/>
+            /// Může cancellovat celou akci (nastaví <see cref="DxListBoxMenuItemsBeforeActionArgs.Cancel"/> = true);
+            /// </summary>
+            public event DxListBoxMenuItemsActionBeforeDelegate ListRemoveBefore { add { DxListProperties.ListRemoveBefore += value; } remove { DxListProperties.ListRemoveBefore -= value; } }
+            /// <summary>
             /// Událost vyvolaná před provedením kteréhokoli požadavku.
             /// <para/>
             /// Eventhandler může detekovat druh akce i původ jejího spuštění.<br/>
@@ -3111,6 +3138,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Událost volaná po vykreslení základu Listu, před vykreslením Reorder ikony
             /// </summary>
             public event PaintEventHandler PaintList { add { DxListProperties.PaintList += value; } remove { DxListProperties.PaintList -= value; } }
+            /// <summary>
+            /// Událost vyvolaná před provedením požadavku na smazání prvků, z libovolného důvodu (klávesa, šipky pro přesun, MouseDrag); eventhandler může cancellovat akci
+            /// <para/>
+            /// Eventhandler může detekovat druh akce i původ jejího spuštění.<br/>
+            /// Může získat seznam prvků, které mají být ovlivněny (<see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>), <br/>
+            /// a může je upravit = do property <see cref="DxListBoxMenuItemsBeforeActionArgs.RequestedItems"/> vloží pole prvků, které vybere (vyfiltruje) z prvků <see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>.<br/>
+            /// Může cancellovat celou akci (nastaví <see cref="DxListBoxMenuItemsBeforeActionArgs.Cancel"/> = true);
+            /// </summary>
+            public event DxListBoxMenuItemsActionBeforeDelegate ListRemoveBefore { add { DxListProperties.ListRemoveBefore += value; } remove { DxListProperties.ListRemoveBefore -= value; } }
             /// <summary>
             /// Událost vyvolaná před provedením kteréhokoli požadavku.
             /// <para/>
@@ -5888,11 +5924,11 @@ SetSelected() - vstup           Absolutní
             _CallListActionBefore(beforeArgs);
             if (!beforeArgs.Cancel)
             {
-                _RunActionCtrlC(beforeArgs.ProcessItems);
+                _RunActionCtrlC(beforeArgs.ProcessItems, false);
             }
             return beforeArgs;
         }
-        private void _RunActionCtrlC(DxListBoxNative.ListMenuItemInfo[] processItems)
+        private void _RunActionCtrlC(DxListBoxNative.ListMenuItemInfo[] processItems, bool asCtrlX)
         {
             var selectedItems = processItems.Select(t => t.MenuItem).ToArray();
             string textTxt = selectedItems.ToOneString();
@@ -5907,11 +5943,15 @@ SetSelected() - vstup           Absolutní
         private DxListBoxMenuItemsBeforeActionArgs _DoKeyActionCtrlX(ControlKeyActionType actionType, DxItemsChangeType changeType, KeyEventArgs keyArgs)
         {
             var beforeArgs = new DxListBoxMenuItemsBeforeActionArgs(actionType, changeType, this.SelectedMenuInfos, keyArgs);
-            _CallListActionBefore(beforeArgs);
+            _CallListRemoveBefore(beforeArgs);
             if (!beforeArgs.Cancel)
             {
-                _RunActionCtrlC(beforeArgs.ProcessItems);
-                _RunActionDelete(beforeArgs.ProcessItems);
+                _CallListActionBefore(beforeArgs);
+                if (!beforeArgs.Cancel)
+                {
+                    _RunActionCtrlC(beforeArgs.ProcessItems, true);
+                    _RunActionDelete(beforeArgs.ProcessItems);
+                }
             }
             return beforeArgs;
         }
@@ -5944,10 +5984,14 @@ SetSelected() - vstup           Absolutní
         private DxListBoxMenuItemsBeforeActionArgs _DoKeyActionDelete(ControlKeyActionType actionType, DxItemsChangeType changeType, KeyEventArgs keyArgs)
         {
             var beforeArgs = new DxListBoxMenuItemsBeforeActionArgs(actionType, changeType, this.SelectedMenuInfos, keyArgs);
-            _CallListActionBefore(beforeArgs);
+            _CallListRemoveBefore(beforeArgs);
             if (!beforeArgs.Cancel)
             {
-                _RunActionDelete(beforeArgs.ProcessItems);
+                _CallListActionBefore(beforeArgs);
+                if (!beforeArgs.Cancel)
+                {
+                    _RunActionDelete(beforeArgs.ProcessItems);
+                }
             }
             return beforeArgs;
         }
@@ -6568,8 +6612,12 @@ SetSelected() - vstup           Absolutní
             // DragAndDrop event:
             _CallDragDropActionBefore(args);
             if (args.Cancel) return;
+            
+            // Získáme přesouvané prvky (my jsme Source, jde tedy o naše prvky):
+            bool hasItems = _DxDragTargetTryGetMenuInfos(args, out var selectedItemsInfo);
+            if (!hasItems) return;
 
-            if ((args.TargetIsSource || args.CurrentEffect == DragDropEffects.Move) && _DxDragTargetTryGetMenuInfos(args, out var selectedItemsInfo))
+            if ((args.TargetIsSource || args.CurrentEffect == DragDropEffects.Move))
             {   // Pokud (Cíl == Zdroj (provádíme přesun v rámci jednoho Listu) anebo efekt DragAndDrop je Move) pak musíme zdrojové prvky odstranit:
                 var changeType = DxItemsChangeType.DragAndDrop;
                 if (args.TargetIsSource)
@@ -6582,6 +6630,24 @@ SetSelected() - vstup           Absolutní
                     //  pak zdejší akce _RemoveIndexes by neměla volat eventhandler o změně Items,
                     //  protože jej my budeme volat za chvilku v metodě DoDragTargetDrop(), a tam předáme changeType = DxItemsChangeType.DragAndDrop:
                     changeType = DxItemsChangeType.None;
+                }
+                else if (args.CurrentEffect == DragDropEffects.Move)
+                {   // Provádíme přesun do jiného prvku, a akce je Move (= přesunout) => zeptáme se eventhandleru ListRemoveBefore, jestli nám povolí dané prvky smazat, a případně které:
+                    var beforeArgs = new DxListBoxMenuItemsBeforeActionArgs(ControlKeyActionType.MouseDrag, changeType, selectedItemsInfo, null);
+                    _CallListRemoveBefore(beforeArgs);
+                    if (beforeArgs.Cancel)
+                    {   // Pokud event cancelloval celou akci, pak předáme do args.Cancel true, a skončíme tak i celý Drag Drop proces:
+                        args.Cancel = true;
+                        return;
+                    }
+                    // Anebo event mohl změnit (omezit) počet prvků, které se mají odebrat (a do Target prvku vložit):
+                    if (beforeArgs.HasChangedItems)
+                    {
+                        // a) Do dalšího zpracování jdou jen prvky určené handlerem:
+                        selectedItemsInfo = beforeArgs.ProcessItems;
+                        // b) Do procesu DragDrop rovněž vstupují jen prvky povolené handlerem (Move = Delete ze source + Insert do target, a musí to být v souladu):
+                        args.SourceObject = selectedItemsInfo;
+                    }
                 }
                 // Odebereme zdrojové prvky:
                 this._RunRemoveIndexes(selectedItemsInfo.Select(t => t.AbsoluteIndex));
@@ -6853,6 +6919,30 @@ SetSelected() - vstup           Absolutní
         /// Událost volaná po vykreslení základu Listu, před vykreslením Reorder ikony
         /// </summary>
         protected event PaintEventHandler PaintList;
+
+        /// <summary>
+        /// Volá se před provedením požadavku na smazání prvků, z libovolného důvodu (klávesa, šipky pro přesun, MouseDrag); eventhandler může cancellovat akci
+        /// </summary>
+        /// <param name="args"></param>
+        private void _CallListRemoveBefore(DxListBoxMenuItemsBeforeActionArgs args)
+        {
+            OnListRemoveBefore(args);
+            ListRemoveBefore?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Proběhne před provedením požadavku na smazání prvků, z libovolného důvodu (klávesa, šipky pro přesun, MouseDrag); eventhandler může cancellovat akci
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnListRemoveBefore(DxListBoxMenuItemsBeforeActionArgs args) { }
+        /// <summary>
+        /// Událost vyvolaná před provedením požadavku na smazání prvků, z libovolného důvodu (klávesa, šipky pro přesun, MouseDrag); eventhandler může cancellovat akci
+        /// <para/>
+        /// Eventhandler může detekovat druh akce i původ jejího spuštění.<br/>
+        /// Může získat seznam prvků, které mají být ovlivněny (<see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>), <br/>
+        /// a může je upravit = do property <see cref="DxListBoxMenuItemsBeforeActionArgs.RequestedItems"/> vloží pole prvků, které vybere (vyfiltruje) z prvků <see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>.<br/>
+        /// Může cancellovat celou akci (nastaví <see cref="DxListBoxMenuItemsBeforeActionArgs.Cancel"/> = true);
+        /// </summary>
+        protected event DxListBoxMenuItemsActionBeforeDelegate ListRemoveBefore;
 
         /// <summary>
         /// Volá se před provedením kteréhokoli požadavku, eventhandler může cancellovat akci
@@ -7353,6 +7443,15 @@ SetSelected() - vstup           Absolutní
             /// Událost volaná po vykreslení základu Listu, před vykreslením Reorder ikony
             /// </summary>
             public event PaintEventHandler PaintList { add { __Owner.PaintList += value; } remove { __Owner.PaintList -= value; } }
+            /// <summary>
+            /// Událost vyvolaná před provedením požadavku na smazání prvků, z libovolného důvodu (klávesa, šipky pro přesun, MouseDrag); eventhandler může cancellovat akci
+            /// <para/>
+            /// Eventhandler může detekovat druh akce i původ jejího spuštění.<br/>
+            /// Může získat seznam prvků, které mají být ovlivněny (<see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>), <br/>
+            /// a může je upravit = do property <see cref="DxListBoxMenuItemsBeforeActionArgs.RequestedItems"/> vloží pole prvků, které vybere (vyfiltruje) z prvků <see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>.<br/>
+            /// Může cancellovat celou akci (nastaví <see cref="DxListBoxMenuItemsBeforeActionArgs.Cancel"/> = true);
+            /// </summary>
+            public event DxListBoxMenuItemsActionBeforeDelegate ListRemoveBefore { add { __Owner.ListRemoveBefore += value; } remove { __Owner.ListRemoveBefore -= value; } }
             /// <summary>
             /// Událost vyvolaná před provedením kteréhokoli požadavku.
             /// <para/>
@@ -8691,6 +8790,10 @@ SetSelected() - vstup           Absolutní
     /// </summary>
     public class DxListBoxMenuItemsAfterActionArgs : EventArgs
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="beforeArgs"></param>
         public DxListBoxMenuItemsAfterActionArgs(DxListBoxMenuItemsBeforeActionArgs beforeArgs)
         {
             ActionType = beforeArgs.ActionType;
@@ -8699,6 +8802,14 @@ SetSelected() - vstup           Absolutní
             _RequestedItems = beforeArgs.RequestedItems;
             Keys = beforeArgs.Keys;
         }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="actionType"></param>
+        /// <param name="changeSourceType"></param>
+        /// <param name="selectedItems"></param>
+        /// <param name="requestedItems"></param>
+        /// <param name="keys"></param>
         public DxListBoxMenuItemsAfterActionArgs(ControlKeyActionType actionType, DxItemsChangeType changeSourceType, DxListBoxNative.ListMenuItemInfo[] selectedItems, DxListBoxNative.ListMenuItemInfo[] requestedItems, KeyEventArgs keys)
         {
             ActionType = actionType;
@@ -8707,6 +8818,12 @@ SetSelected() - vstup           Absolutní
             _RequestedItems = requestedItems;
             Keys = keys;
         }
+        /// <summary>
+        /// Prvky, které eventhandler chce změnit.
+        /// <para/>
+        /// Setování provádí pouze potomek <see cref="DxListBoxMenuItemsBeforeActionArgs"/>,
+        /// a umožní setovat jen ty prvky, které jsou přítomny v poli <see cref="SelectedItems"/>, a to pouze jedenkrát (nonduplicitně).
+        /// </summary>
         protected DxListBoxNative.ListMenuItemInfo[] _RequestedItems;
         /// <summary>
         /// Typ probíhající akce
@@ -8716,19 +8833,32 @@ SetSelected() - vstup           Absolutní
         /// Zdroj akce
         /// </summary>
         public DxItemsChangeType ChangeSourceType { get; private set; }
+        /// <summary>
+        /// Prvky vybrané do akce uživatelem
+        /// </summary>
         public DxListBoxNative.ListMenuItemInfo[] SelectedItems { get; private set; }
         /// <summary>
         /// Klávesové argumenty
         /// </summary>
         public KeyEventArgs Keys { get; private set; }
+        /// <summary>
+        /// Prvky, které vybral do akce eventhandler 'Before' a mají tedy přednost před <see cref="SelectedItems"/>.
+        /// </summary>
         public DxListBoxNative.ListMenuItemInfo[] RequestedItems { get { return _RequestedItems; } }
         /// <summary>
         /// Pole prvků, které se mají zpracovat.
         /// <para/>
-        /// Pokud je zadáno not null pole do <see cref="RequestedItems"/>, pak je zde toto pole.<br/>
+        /// Pokud je zadáno not null pole do <see cref="RequestedItems"/>, pak je zde toto pole. A obsahuje pouze validní prvky! (tedy pouze ty, které jsou přítomny v <see cref="SelectedItems"/>, a nejsou zde duplicitně)<br/>
         /// Pokud <see cref="RequestedItems"/> není zadáno (je null), pak zde je <see cref="SelectedItems"/>.
         /// </summary>
         public DxListBoxNative.ListMenuItemInfo[] ProcessItems { get { return _RequestedItems != null ? _RequestedItems : SelectedItems; } }
+        /// <summary>
+        /// Obsahuje true, pokud eventhandler vložil nějaké pole do <see cref="RequestedItems"/> = a tedy chce, aby do zpracování šla jen podmnožina prvků z <see cref="SelectedItems"/>.
+        /// <para/>
+        /// Pokud v poli <see cref="RequestedItems"/> je null, pak se pracuje s prvky <see cref="SelectedItems"/>, <br/>
+        /// ale pokud je tam pole s počtem prvků 0, pak to má přednost.
+        /// </summary>
+        public bool HasChangedItems { get { return (_RequestedItems != null); } }
     }
 
     /// <summary>
