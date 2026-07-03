@@ -1271,7 +1271,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// a může je upravit = do property <see cref="DxListBoxMenuItemsBeforeActionArgs.RequestedItems"/> vloží pole prvků, které vybere (vyfiltruje) z prvků <see cref="DxListBoxMenuItemsAfterActionArgs.SelectedItems"/>.<br/>
             /// Může cancellovat celou akci (nastaví <see cref="DxListBoxMenuItemsBeforeActionArgs.Cancel"/> = true);
             /// </summary>
-            public event DxListBoxMenuItemsActionBeforeDelegate TargetListRemoveBefore { add { __Owner.DxSourceProperties.ListRemoveBefore += value; } remove { __Owner.DxSourceProperties.ListRemoveBefore -= value; } }
+            public event DxListBoxMenuItemsActionBeforeDelegate TargetListRemoveBefore { add { __Owner.DxTargetProperties.ListRemoveBefore += value; } remove { __Owner.DxTargetProperties.ListRemoveBefore -= value; } }
             /// <summary>
             /// Událost vyvolaná před provedením kteréhokoli požadavku v ListBoxu Source.
             /// <para/>
@@ -1301,7 +1301,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Eventhandler nyní nemůže akci Cancelovat, a nemá měnit dragované objekty z <see cref="DxDragDropArgs.SourceObject"/>, nemá význam upravit text <see cref="DxDragDropArgs.SourceText"/> zobrazovaný v Drag miniokně,
             /// může nastavit povolení akce do <see cref="DxDragDropArgs.SourceDragEnabled"/>.
             /// </summary>
-            public event DxDragDropEventHandler TargetDragDropActionBefore { add { __Owner.DxSourceProperties.DragDropActionAfter += value; } remove { __Owner.DxSourceProperties.DragDropActionAfter -= value; } }
+            public event DxDragDropEventHandler TargetDragDropActionBefore { add { __Owner.DxTargetProperties.DragDropActionAfter += value; } remove { __Owner.DxTargetProperties.DragDropActionAfter -= value; } }
             /// <summary>
             /// Proběhne po změně pozice splitteru mezi dvěma panely. Událost je vyvolána po dokončení přesunu splitteru, a to i při změně velikosti celého panelu.
             /// </summary>

@@ -479,7 +479,7 @@ namespace TestDevExpress.Forms
             sampleDblList.DxProperties.TargetMenuItems = getTargetItems();
             
             sampleDblList.DxProperties.TargetMenuItemsChanged += _Sample4_TargetMenuItemsChanged;
-            sampleDblList.DxProperties.TargetListActionBefore += _Sample4_TargetListActionBefore;
+            sampleDblList.DxProperties.TargetListRemoveBefore += _Sample4_TargetListRemoveBefore;
             sampleDblList.DxProperties.DblListActionBefore += _Sample4_DblListActionBefore;
 
             sampleDblList.SplitterPositionChanged += Sample4DblList_SplitterPositionChanged;
@@ -522,21 +522,10 @@ namespace TestDevExpress.Forms
                 }
             }
         }
-        /// <summary>
-        /// Proběhne před provedením každé akce v TargetList, lze zrušit akci nastavením args.Cancel = true anebo upravit pole prvků
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="args"></param>
-        private void _Sample4_TargetListActionBefore(object sender, DxListBoxMenuItemsBeforeActionArgs args)
-        {
-            switch (args.ActionType)
-            {
-                case ControlKeyActionType.Delete:
-                    // Smazat mohu jen ty prvky, které 
-                    args.RequestedItems = args.SelectedItems.Where(i => i.MenuItem.Enabled).ToArray();
-                    break;
 
-            }
+        private void _Sample4_TargetListRemoveBefore(object sender, DxListBoxMenuItemsBeforeActionArgs args)
+        {
+            args.RequestedItems = args.SelectedItems.Where(i => i.MenuItem.Enabled).ToArray();
         }
         /// <summary>
         /// Proběhne před provedením akce DoubleList (převody zleva doprava)
