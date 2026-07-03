@@ -884,43 +884,61 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool removeFrom = this._HasAnyMode(DblListModeType.SourceToTargetMove, DblListModeType.TargetToSourceMove);
 
             bool isSourceToTarget = ((actionType & (ControlKeyActionType.CopyToTargetOneE | ControlKeyActionType.CopyToTargetOneC | ControlKeyActionType.CopyToTargetAllE | ControlKeyActionType.CopyToTargetAllC)) != 0);
-            bool isTargetToSource = ((actionType & (ControlKeyActionType.CopyToSourceOneE | ControlKeyActionType.CopyToSourceOneC | ControlKeyActionType.CopyToSourceAllE | ControlKeyActionType.CopyToSourceAllC)) != 0);
             if (isSourceToTarget && this._HasAnyMode(DblListModeType.SourceToTargetCopy, DblListModeType.SourceToTargetMove))
             {
                 // Co půjde doprava:
                 var userItems = getItemInfos(DxSourceProperties, isAllItems);
 
-                // Event DblListActionBefore může cancellovat akci anebo omezit zpracované prvky:
                 var beforeArgs = new DxListBoxMenuItemsBeforeActionArgs(actionType, changeType, userItems, null);
-                _CallDblListActionBefore(beforeArgs);
+
+                // Pokud máme režim "removeFrom = true", pak musíme odeslat event SourceList.ListRemoveBefore:
+                if (removeFrom)
+                    this.SourceListBox.ListBoxNative.CallListRemoveBefore(beforeArgs);
 
                 if (!beforeArgs.Cancel)
                 {
-                    var workItems = getWorkItems(beforeArgs.ProcessItems);
-                    // Kam to půjde: na aktuální pozici nebo na konec:
-                    DxTargetProperties.InsertItems(workItems, atCurrentIndex, true, changeType);
-                    // Ze vstupního listu (Source = vlevo) se má smazat:
-                    if (removeFrom)
-                        DxSourceProperties.RemoveItems(workItems);
+                    // Event DblListActionBefore může cancellovat akci anebo omezit zpracované prvky:
+                    _CallDblListActionBefore(beforeArgs);
+
+                    if (!beforeArgs.Cancel)
+                    {
+                        var workItems = getWorkItems(beforeArgs.ProcessItems);
+                        // Kam to půjde: na aktuální pozici nebo na konec:
+                        DxTargetProperties.InsertItems(workItems, atCurrentIndex, true, changeType);
+                        // Ze vstupního listu (Source = vlevo) se má smazat:
+                        if (removeFrom)
+                            DxSourceProperties.RemoveItems(workItems);
+                    }
                 }
             }
+
+            bool isTargetToSource = ((actionType & (ControlKeyActionType.CopyToSourceOneE | ControlKeyActionType.CopyToSourceOneC | ControlKeyActionType.CopyToSourceAllE | ControlKeyActionType.CopyToSourceAllC)) != 0);
             if (isTargetToSource && this._HasAnyMode(DblListModeType.TargetToSourceCopy, DblListModeType.TargetToSourceMove))
             {
                 // Co půjde doleva:
                 var userItems = getItemInfos(DxTargetProperties, isAllItems);
 
-                // Event DblListActionBefore může cancellovat akci anebo omezit zpracované prvky:
                 var beforeArgs = new DxListBoxMenuItemsBeforeActionArgs(actionType, changeType, userItems, null);
-                _CallDblListActionBefore(beforeArgs);
+
+                // Pokud máme režim "removeFrom = true", pak musíme odeslat event SourceList.ListRemoveBefore:
+                if (removeFrom)
+                    this.TargetListBox.ListBoxNative.CallListRemoveBefore(beforeArgs);
 
                 if (!beforeArgs.Cancel)
                 {
-                    var workItems = getWorkItems(beforeArgs.ProcessItems);
-                    // Kam to půjde: na aktuální pozici nebo na konec:
-                    DxSourceProperties.InsertItems(workItems, atCurrentIndex, true, changeType);
-                    // Ze vstupního listu (Target = vpravo) se má smazat:
-                    if (removeFrom)
-                        DxTargetProperties.RemoveItems(workItems);
+
+                    // Event DblListActionBefore může cancellovat akci anebo omezit zpracované prvky:
+                    _CallDblListActionBefore(beforeArgs);
+
+                    if (!beforeArgs.Cancel)
+                    {
+                        var workItems = getWorkItems(beforeArgs.ProcessItems);
+                        // Kam to půjde: na aktuální pozici nebo na konec:
+                        DxSourceProperties.InsertItems(workItems, atCurrentIndex, true, changeType);
+                        // Ze vstupního listu (Target = vpravo) se má smazat:
+                        if (removeFrom)
+                            DxTargetProperties.RemoveItems(workItems);
+                    }
                 }
             }
 
@@ -1326,6 +1344,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             __ButtonsPosition = ToolbarPosition.RightSideCenter;
             __ButtonsTypes = null;
             __ButtonsSize = ResourceImageSizeType.Medium;
+            __InnerPadding = new Padding(3, 3, 3, 3);
+            __InnerSpaces = new Size(3, 3);
+
             this.Controls.Add(__TitleLabel);
             this.Controls.Add(__ListBox);
             this.Padding = new Padding(0);
@@ -1408,7 +1429,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             void doLayout()
             {
-                Rectangle innerBounds = this.GetInnerBounds();
+                Rectangle innerBounds = this.GetInnerBounds(InnerPadding);
                 if (innerBounds.Width >= 30 && innerBounds.Height >= 30)
                 {
                     _ButtonsLayout(ref innerBounds);
@@ -1437,6 +1458,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Instance ListBoxu
         /// </summary>
         private DxListBoxControl __ListBox;
+        /// <summary>
+        /// Okraje mezi Containerem a vnitřními prvky
+        /// </summary>
+        private Padding InnerPadding { get { return DxComponent.ZoomToGui(__InnerPadding, this.DeviceDpi); } }
+        private Padding __InnerPadding;
+        private Size InnerSpaces { get { return DxComponent.ZoomToGui(__InnerSpaces, this.DeviceDpi); } }
+        private Size __InnerSpaces;
         #endregion
         #region Public prvky
         /// <summary>
@@ -6920,6 +6948,14 @@ SetSelected() - vstup           Absolutní
         /// </summary>
         protected event PaintEventHandler PaintList;
 
+        /// <summary>
+        /// Volá se před provedením požadavku na smazání prvků, z libovolného důvodu (klávesa, šipky pro přesun, MouseDrag); eventhandler může cancellovat akci
+        /// </summary>
+        /// <param name="args"></param>
+        internal void CallListRemoveBefore(DxListBoxMenuItemsBeforeActionArgs args)
+        {
+            _CallListRemoveBefore(args);
+        }
         /// <summary>
         /// Volá se před provedením požadavku na smazání prvků, z libovolného důvodu (klávesa, šipky pro přesun, MouseDrag); eventhandler může cancellovat akci
         /// </summary>
