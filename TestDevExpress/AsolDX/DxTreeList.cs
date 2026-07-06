@@ -38,7 +38,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void Initialize()
         {
             __TitleLabel = new DxTitleLabelControl() { Text = "", Visible = false, Name = "TitleLabel" };
-            __TreeListNative = new DxTreeListNative() { Dock = DockStyle.Fill, TabIndex = 1, Name = "TreeListNative" };
+            __TreeListNative = new DxTreeListNative() { Dock = DockStyle.None, TabIndex = 1, Name = "TreeListNative" };
             this.Controls.Add(__TitleLabel);
             this.Controls.Add(__TreeListNative);
             _RowFilterInitialize();
