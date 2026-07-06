@@ -1429,7 +1429,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             void doLayout()
             {
-                Rectangle innerBounds = this.GetInnerBounds(InnerPadding);
+                Rectangle innerBounds = this.InnerBounds;
                 if (innerBounds.Width >= 30 && innerBounds.Height >= 30)
                 {
                     _ButtonsLayout(ref innerBounds);
@@ -1458,6 +1458,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Instance ListBoxu
         /// </summary>
         private DxListBoxControl __ListBox;
+        /// <summary>
+        /// Souřadnice vnitřního prostoru panelu zmenšené o <see cref="InnerPadding"/>, do tohoto prostoru se vkládají vnitřní prvky
+        /// </summary>
+        protected Rectangle InnerBounds { get { return this.GetInnerBounds(InnerPadding); } }
         /// <summary>
         /// Okraje mezi Containerem a vnitřními prvky
         /// </summary>
@@ -2039,7 +2043,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             void doLayout()
             {
-                Rectangle innerBounds = this.GetInnerBounds();
+                Rectangle innerBounds = this.InnerBounds;
                 if (innerBounds.Width >= 30 && innerBounds.Height >= 30)
                 {
                     _ButtonsLayout(ref innerBounds);
