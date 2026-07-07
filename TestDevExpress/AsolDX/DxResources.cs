@@ -3997,7 +3997,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         /// <summary>Standardní ikona pro danou příležitost</summary>
         public static string DxImagePickerClearFilter { get { return Names.__DxImagePickerClearFilter; } set { Names.__DxImagePickerClearFilter = value; } }
-        private string __DxImagePickerClearFilter = "pic_0/UI/FilterBox/CancelFilter";                    // "svgimages/spreadsheet/clearfilter.svg";
+        private string __DxImagePickerClearFilter = "svgimages/spreadsheet/clearfilter.svg";
         /// <summary>Standardní ikona pro danou příležitost</summary>
         public static string DxImagePickerClipboarCopy { get { return Names.__DxImagePickerClipboarCopy; } set { Names.__DxImagePickerClipboarCopy = value; } }
         private string __DxImagePickerClipboarCopy = "svgimages/xaf/action_copy.svg";
@@ -4007,10 +4007,10 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         /// <summary>Standardní ikona pro danou příležitost</summary>
         public static string DxFilterBoxMenu { get { return Names.__DxFilterBoxMenu; } set { Names.__DxFilterBoxMenu = value; } }
-        private string __DxFilterBoxMenu = "svgimages/dashboards/horizontallines.svg";
+        private string __DxFilterBoxMenu = "svgimages/diagramicons/textalignment/textalignment6.svg";
         /// <summary>Standardní ikona pro danou příležitost</summary>
         public static string DxFilterClearFilter { get { return Names.__DxFilterClearFilter; } set { Names.__DxFilterClearFilter = value; } }
-        private string __DxFilterClearFilter = "pic_0/UI/FilterBox/CancelFilter";
+        private string __DxFilterClearFilter = "svgimages/spreadsheet/clearfilter.svg";
         /// <summary>Standardní ikona pro danou příležitost</summary>
         public static string DxFilterOperatorContains { get { return Names.__DxFilterOperatorContains; } set { Names.__DxFilterOperatorContains = value; } }
         private string __DxFilterOperatorContains = "pic_0/UI/FilterBox/Contains";
@@ -4068,19 +4068,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         private string __DxDialogCancel = "svgimages/outlook%20inspired/delete.svg";
         /// <summary>Standardní ikona pro danou příležitost</summary>
         public static string DxDialogIconInfo { get { return Names.__DxDialogIconInfo; } set { Names.__DxDialogIconInfo = value; } }
-        private string __DxDialogIconInfo = "pic_0/Win/MessageBox/info";
+        private string __DxDialogIconInfo = "svgimages/xaf/state_validation_information.svg";
         /// <summary>Standardní ikona pro danou příležitost</summary>
         public static string DxDialogIconWarning { get { return Names.__DxDialogIconWarning; } set { Names.__DxDialogIconWarning = value; } }
-        private string __DxDialogIconWarning = "pic_0/Win/MessageBox/warning";
+        private string __DxDialogIconWarning = "svgimages/xaf/state_validation_warning.svg";
         /// <summary>Standardní ikona pro danou příležitost</summary>
         public static string DxDialogIconError { get { return Names.__DxDialogIconError; } set { Names.__DxDialogIconError = value; } }
-        private string __DxDialogIconError = "pic_0/Win/MessageBox/error";
+        private string __DxDialogIconError = "svgimages/xaf/state_validation_invalid.svg";
         /// <summary>Standardní ikona pro danou příležitost</summary>
         public static string DxDialogIconSave { get { return Names.__DxDialogIconSave; } set { Names.__DxDialogIconSave = value; } }
-        private string __DxDialogIconSave = "pic_0/Menu/frmsave";
+        private string __DxDialogIconSave = "devav/actions/save.svg";
         /// <summary>Standardní ikona pro danou příležitost</summary>
         public static string DxDialogIconSaveAs { get { return Names.__DxDialogIconSaveAs; } set { Names.__DxDialogIconSaveAs = value; } }
-        private string __DxDialogIconSaveAs = "pic_0/Menu/SaveAs";
+        private string __DxDialogIconSaveAs = "devav/actions/saveas.svg";
 
         /// <summary>Standardní ikona pro danou příležitost</summary>
         public static string DxKeyActionMoveTop { get { return Names.__DxKeyActionMoveTop; } set { Names.__DxKeyActionMoveTop = value; } }
@@ -4147,7 +4147,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>Standardní ikona pro danou příležitost</summary>
         public static string DxKeyActionRedo { get { return Names.__DxKeyActionRedo; } set { Names.__DxKeyActionRedo = value; } }
         private string __DxKeyActionRedo = "svgimages/dashboards/redo.svg";
-
     }
     #endregion
     #region class DxBmpImageList : Kolekce Images rozšířená o možnost reloadu při změně barevnosti

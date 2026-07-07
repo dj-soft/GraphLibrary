@@ -30,12 +30,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxTreeList()
         {
-            this.Initialize();
         }
         /// <summary>
         /// Inicializace komponent a hodnot
         /// </summary>
-        private void Initialize()
+        protected override void InitializeContent()
         {
             __TitleLabel = new DxTitleLabelControl() { Text = "", Visible = false, Name = "TitleLabel" };
             __TreeListNative = new DxTreeListNative() { Dock = DockStyle.None, TabIndex = 1, Name = "TreeListNative" };
@@ -625,7 +624,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             void doLayout()
             {
-                Rectangle innerBounds = this.GetInnerBounds();
+                Rectangle innerBounds = this.CurrentInnerBounds;
                 if (innerBounds.Width >= 30 && innerBounds.Height >= 30)
                 {
                     _ButtonsLayout(ref innerBounds);
@@ -635,6 +634,30 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
         }
+        #region CurrentInnerBounds, InnerPadding, InnerSpaces
+        /// <summary>
+        /// Souřadnice vnitřního prostoru panelu zmenšené o <see cref="_CurrentInnerPadding"/>, do tohoto prostoru se vkládají vnitřní prvky
+        /// </summary>
+        protected Rectangle CurrentInnerBounds { get { return this.GetInnerBounds(_CurrentInnerPadding); } }
+        /// <summary>
+        /// Okraje mezi Containerem a vnitřními prvky, designové pixely.
+        /// <para/>
+        /// Nepřehánějme to s vrstvením <see cref="InnerPadding"/>: pokud do sebe vkládáme jednotlivé containery, pak vnitřní by měly mít hodnotu 0!
+        /// </summary>
+        protected Padding InnerPadding { get { return __InnerPadding; } set { __InnerPadding = value; this.DoLayout(); } } private Padding __InnerPadding;
+        /// <summary>
+        /// Okraje mezi Containerem a vnitřními prvky, aktuální fyzické pixely
+        /// </summary>
+        private Padding _CurrentInnerPadding { get { return DxComponent.ZoomToGui(__InnerPadding, this.DeviceDpi); } }
+        /// <summary>
+        /// Vzájemné mezery (odstupy) mezi vnitřními prvky, designové pixely
+        /// </summary>
+        protected Size InnerSpaces { get { return __InnerSpaces; } set { __InnerSpaces = value; this.DoLayout(); } } private Size __InnerSpaces;
+        /// <summary>
+        /// Vzájemné mezery (odstupy) mezi vnitřními prvky, aktuální fyzické pixely
+        /// </summary>
+        private Size _CurrentInnerSpaces { get { return DxComponent.ZoomToGui(__InnerSpaces, this.DeviceDpi); } }
+        #endregion
         #endregion
         #region DxProperties : property + třída, která do sebe shrnuje čistě jen Nephrite vlastnosti
         /// <summary>

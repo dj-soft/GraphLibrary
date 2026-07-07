@@ -1871,6 +1871,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxPanelControl()
         {
+            this.__PanelState = DxComponentState.Creating;
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
             this.Margin = new Padding(0);
             this.Padding = new Padding(0);
@@ -1882,6 +1883,28 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.LogActive = DxComponent.LogActive;
             this.SetStyle(ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint, true);
             DxComponent.RegisterListener(this);
+            InitializeContent();
+            this.__PanelState = DxComponentState.Created;
+        }
+        /// <summary>
+        /// Inicializace obsahu
+        /// </summary>
+        protected virtual void InitializeContent()
+        { }
+        protected override void OnLoaded()
+        {
+            base.OnLoaded();
+
+            this.__PanelState = DxComponentState.HandleCreated;
+        }
+        protected override void OnPaintCore(GraphicsCache cache)
+        {
+            bool isFirst = (this.__PanelState != DxComponentState.Showed);
+            if (isFirst) this.__PanelState = DxComponentState.Showing;
+
+            base.OnPaintCore(cache);
+
+            if (isFirst) this.__PanelState = DxComponentState.Showed;
         }
         /// <summary>
         /// Dispose panelu a všech Child prvků.
@@ -1889,11 +1912,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
+            this.__PanelState = DxComponentState.Disposing;
             this.__IsDispose = true;
             DxComponent.UnregisterListener(this);
             DestroyContent();
             this.DisposeContent();
             base.Dispose(disposing);
+            this.__PanelState = DxComponentState.Disposed;
         }
         /// <summary>
         /// Zruší veškerý svůj obsah v procesu Dispose.
@@ -2012,6 +2037,52 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Jsou aktivní zápisy do logu? Default = <see cref="DxComponent.LogActive"/>
         /// </summary>
         public virtual bool LogActive { get; set; }
+        /// <summary>
+        /// Obsahuje true v provozním stavu (<see cref="PanelState"/> má některou hodnotu z: <see cref="DxComponentState.Created"/>, <see cref="DxComponentState.HandleCreated"/>, <see cref="DxComponentState.Showing"/>, <see cref="DxComponentState.Showed"/>)
+        /// </summary>
+        public bool PanelStateIsWorking { get { var s = this.__PanelState; return (s == DxComponentState.Created || s == DxComponentState.HandleCreated || s == DxComponentState.Showing || s == DxComponentState.Showed); } }
+        /// <summary>
+        /// Stav panelu
+        /// </summary>
+        public DxComponentState PanelState { get { return __PanelState; } protected set { __PanelState = value; } } private DxComponentState __PanelState = DxComponentState.None;
+        /// <summary>
+        /// Stavy komponenty
+        /// </summary>
+        public enum DxComponentState 
+        {
+            /// <summary>
+            /// Před zahájením konstruktoru
+            /// </summary>
+            None,
+            /// <summary>
+            /// V rámci konstrktoru, včetně virtual metody <see cref="InitializeContent"/>;
+            /// </summary>
+            Creating,
+            /// <summary>
+            /// Po skončení konstruktoru a po skončení metody <see cref="InitializeContent"/>;
+            /// </summary>
+            Created,
+            /// <summary>
+            /// Po dokončení HandleCreated
+            /// </summary>
+            HandleCreated, 
+            /// <summary>
+            /// Na začátku první metody Paint
+            /// </summary>
+            Showing, 
+            /// <summary>
+            /// Po vykreslení uživateli, většina života
+            /// </summary>
+            Showed, 
+            /// <summary>
+            /// Zahájen proces Dispose
+            /// </summary>
+            Disposing,
+            /// <summary>
+            /// Dokončen proces Dispose
+            /// </summary>
+            Disposed
+        }
         #endregion
         #region HasMouse a InteractiveState
         /// <summary>
@@ -2261,6 +2332,37 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Používejme přednostně před <see cref="Control.Disposing"/> nebo <see cref="Control.IsDisposed"/>.
         /// </summary>
         public bool IsDispose { get { return (__IsDispose || Disposing || IsDisposed); } } private bool __IsDispose;
+        /// <summary>
+        /// Aktuální pixelová velikost Borderu = pixely mezi vnější souřadnicí a vnitřní disponibilní velikostí
+        /// </summary>
+        public Padding CurrentBordersSize
+        {
+            get
+            {
+                var outerSize = this.Size;
+                var innerSize = this.ClientSize;
+                if (outerSize == innerSize) return new Padding(0);                                 // Bez okrajů
+                
+                measure(outerSize.Width, innerSize.Width, out var left, out var right);            // Vlevo a vpravo
+                measure(outerSize.Height, innerSize.Height, out var top, out var bottom);          // Nahoře a dole
+                return new Padding(left, top, right, bottom);
+
+                static void measure(int outSize, int innSize, out int begin, out int end)
+                {
+                    var size = outSize - innSize;
+                    if (size > 0)
+                    {
+                        begin = size / 2;
+                        end = size - begin;
+                    }
+                    else
+                    {
+                        begin = 0;
+                        end = 0;
+                    }
+                }
+            }
+        }
         /// <summary>
         /// Vizualizace
         /// </summary>

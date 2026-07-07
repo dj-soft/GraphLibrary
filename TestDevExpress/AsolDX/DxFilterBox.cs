@@ -27,20 +27,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxFilterBox()
         {
-            Initialize();
         }
         /// <summary>
-        /// Inicializace panelu a jeho komponent
+        /// Inicializace panelu a jeho komponent. Volá předek.
         /// </summary>
-        protected void Initialize()
+        protected override void InitializeContent()
         {
-            _Margins = 1;
-            _OperatorButtonImageDefault = ImageName.DxFilterBoxMenu;
+            InnerSpaces = new Size(2, 1);
+            InnerPadding = new Padding(1, 1, 1, 1);
+
+            __OperatorButtonImageDefault = ImageName.DxFilterBoxMenu;
             _OperatorButtonImageName = null;
-            _ClearButtonImageDefault = ImageName.DxFilterClearFilter;
-            _ClearButtonImage = null;
-            _ClearButtonToolTipTitle = DxComponent.Localize(MsgCode.DxFilterBoxClearTipTitle);
-            _ClearButtonToolTipText = DxComponent.Localize(MsgCode.DxFilterBoxClearTipText);
+            __ClearButtonImageDefault = ImageName.DxFilterClearFilter;
+            __ClearButtonImage = null;
+            __ClearButtonToolTipTitle = DxComponent.Localize(MsgCode.DxFilterBoxClearTipTitle);
+            __ClearButtonToolTipText = DxComponent.Localize(MsgCode.DxFilterBoxClearTipText);
 
             _OperatorButton = DxComponent.CreateDxMiniButton(0, 0, 24, 24, this, OperatorButton_Click, tabStop: false);
             _OperatorButton.Name = "FilterOperatorButton";
@@ -64,15 +65,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             FilterValueChangedSources = DxFilterBoxChangeEventSource.Default;
             LastFilterValue = null;
         }
-        private string _OperatorButtonImageDefault;
+        private string __OperatorButtonImageDefault;
         private Image _OperatorButtonImage;
         private string _OperatorButtonImageName;
         private string _OperatorButtonToolTipTitle;
         private string _OperatorButtonToolTipText;
-        private string _ClearButtonImageDefault;
-        private string _ClearButtonImage;
-        private string _ClearButtonToolTipTitle;
-        private string _ClearButtonToolTipText;
+        private string __ClearButtonImageDefault;
+        private string __ClearButtonImage;
+        private string __ClearButtonToolTipTitle;
+        private string __ClearButtonToolTipText;
         private DxSimpleButton _OperatorButton;
         private DxTextEdit _FilterText;
         private DxSimpleButton _ClearButton;
@@ -117,55 +118,63 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected void DoLayout()
         {
-            if (_InDoLayoutProcess) return;
+            if (__InDoLayoutProcess) return;
+            if (!this.PanelStateIsWorking) return;
             try
             {
-                _InDoLayoutProcess = true;
-
-                // tlačítko '_OperatorButton' může být neviditelné!
-                bool operatorButtonVisible = _OperatorButton.VisibleInternal;
+                __InDoLayoutProcess = true;
 
                 // Výška textu, výška vnitřní, vnější (reagujeme i na Zoom a Skin):
-                int margins = Margins;
-                int margins2 = 2 * margins;
-                int minButtonHeight = DxComponent.ZoomToGui(24);
-                int minHeight = minButtonHeight + margins2;
-                var clientSize = this.ClientSize;
-                int currentHeight = this.Size.Height;
-                int border = currentHeight - clientSize.Height;
+                var padding = CurrentInnerPadding;
+                int buttonSize = CurrentButtonSize;
+                var border = this.CurrentBordersSize;
                 int textHeight = _FilterText.Height;
-                int innerHeight = (textHeight < minHeight ? minHeight : textHeight);
-                int outerHeight = innerHeight + border;
-                if (currentHeight != outerHeight) this.Height = outerHeight;            // Tady se vyvolá událost OnClientSizeChanged() a z ní rekurzivně zdejší metoda, ale ignoruje se protože (_InDoLayoutProcess = true;)
+                int innerHeight = (textHeight > buttonSize ? textHeight : buttonSize);   // Vnitřní výška (button / text), k té se pak přičte padding + border
+                int outerHeight = innerHeight + padding.Vertical + border.Vertical;      // Vnější výška = včetně padding + border
+                if (this.Height != outerHeight) this.Height = outerHeight;               // Tady se vyvolá událost OnClientSizeChanged() a z ní rekurzivně zdejší metoda, ale ignoruje se protože (_InDoLayoutProcess = true)
 
                 // Souřadnice buttonů a textu:
-                int buttonCount = (operatorButtonVisible ? 2 : 1);
-                int buttonSize = innerHeight - margins2;
-                int spaceX = 1;
-                int y = margins;
-                int x = margins;
-                int textWidth = clientSize.Width - margins2 - (buttonCount * (buttonSize + spaceX));
-                int textY = (innerHeight - textHeight) / 2;
-                if (operatorButtonVisible) { _OperatorButton.Bounds = new Rectangle(x, y, buttonSize, buttonSize); x += (buttonSize + spaceX); }
-                _FilterText.Bounds = new Rectangle(x, textY, textWidth, textHeight); x += (textWidth + spaceX);
-                _ClearButton.Bounds = new Rectangle(x, y, buttonSize, buttonSize); x += (buttonSize + spaceX);
+                var clientSize = this.ClientSize;
+                var innerSpace = this.CurrentInnerSpaces;
+                var clientHeight = clientSize.Height;                                    // Výška prvků + padding = vnitřní ClientSize prostor
+                int x = padding.Left;
+                int yb = (clientHeight - buttonSize) / 2;
+                int yt = (clientHeight - textHeight) / 2;
 
+                // OperatorButton:
+                bool operatorButtonVisible = _OperatorButton.VisibleInternal;            // tlačítko '_OperatorButton' může být neviditelné!
+                if (operatorButtonVisible) 
+                {
+                    _OperatorButton.Bounds = new Rectangle(x, yb, buttonSize, buttonSize);
+                    x += (buttonSize + innerSpace.Width);
+                }
+
+                // FilterText:
+                int buttonCount = (operatorButtonVisible ? 2 : 1);
+                int textWidth = clientSize.Width - padding.Right - buttonSize - InnerSpaces.Width - x;
+                _FilterText.Bounds = new Rectangle(x, yt, textWidth, textHeight);
+                x += (textWidth + InnerSpaces.Width);
+
+                // ClearButton:
+                _ClearButton.Bounds = new Rectangle(x, yb, buttonSize, buttonSize);
+
+                // Refresh obsahu buttonu:
                 OperatorButtonRefresh();
                 ClearButtonRefresh();
             }
             finally
             {
-                _InDoLayoutProcess = false;
+                __InDoLayoutProcess = false;
             }
         }
         /// <summary>
         /// Refreshuje button Operator (Image a ToolTip)
         /// </summary>
-        protected void OperatorButtonRefresh() { ButtonRefresh(_OperatorButton, _OperatorButtonImageName, _OperatorButtonToolTipTitle, _OperatorButtonToolTipText, _OperatorButtonImageDefault); }
+        protected void OperatorButtonRefresh() { ButtonRefresh(_OperatorButton, _OperatorButtonImageName, _OperatorButtonToolTipTitle, _OperatorButtonToolTipText, __OperatorButtonImageDefault); }
         /// <summary>
         /// Refreshuje button Clear (Image a ToolTip)
         /// </summary>
-        protected void ClearButtonRefresh() { ButtonRefresh(_ClearButton, _ClearButtonImage, _ClearButtonToolTipTitle, _ClearButtonToolTipText, _ClearButtonImageDefault); }
+        protected void ClearButtonRefresh() { ButtonRefresh(_ClearButton, __ClearButtonImage, __ClearButtonToolTipTitle, __ClearButtonToolTipText, __ClearButtonImageDefault); }
         /// <summary>
         /// Pro daný button refreshuje jeho Image a ToolTip
         /// </summary>
@@ -185,14 +194,37 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Probíhá přepočet layoutu
         /// </summary>
-        private bool _InDoLayoutProcess;
+        private bool __InDoLayoutProcess;
+        #region CurrentInnerBounds, InnerPadding, InnerSpaces
+        /// <summary>
+        /// Souřadnice vnitřního prostoru panelu zmenšené o <see cref="CurrentInnerPadding"/>, do tohoto prostoru se vkládají vnitřní prvky
+        /// </summary>
+        protected Rectangle CurrentInnerBounds { get { return this.GetInnerBounds(CurrentInnerPadding); } }
+        /// <summary>
+        /// Aktuální pixelová velikost buttonu
+        /// </summary>
+        protected int CurrentButtonSize { get { return DxComponent.ZoomToGui(24, this.DeviceDpi); } }
+        /// <summary>
+        /// Okraje mezi Containerem a vnitřními prvky, designové pixely.
+        /// <para/>
+        /// Nepřehánějme to s vrstvením <see cref="InnerPadding"/>: pokud do sebe vkládáme jednotlivé containery, pak vnitřní by měly mít hodnotu 0!
+        /// </summary>
+        protected Padding InnerPadding { get { return __InnerPadding; } set { __InnerPadding = value; this.DoLayout(); } } private Padding __InnerPadding;
+        /// <summary>
+        /// Okraje mezi Containerem a vnitřními prvky, aktuální fyzické pixely
+        /// </summary>
+        protected Padding CurrentInnerPadding { get { return DxComponent.ZoomToGui(__InnerPadding, this.DeviceDpi); } }
+        /// <summary>
+        /// Vzájemné mezery (odstupy) mezi vnitřními prvky, designové pixely
+        /// </summary>
+        protected Size InnerSpaces { get { return __InnerSpaces; } set { __InnerSpaces = value; this.DoLayout(); } } private Size __InnerSpaces;
+        /// <summary>
+        /// Vzájemné mezery (odstupy) mezi vnitřními prvky, aktuální fyzické pixely
+        /// </summary>
+        protected Size CurrentInnerSpaces { get { return DxComponent.ZoomToGui(__InnerSpaces, this.DeviceDpi); } }
+        #endregion
         #endregion
         #region Public properties
-        /// <summary>
-        /// Okraje kolem prvků, platný rozsah (0 - 10)
-        /// </summary>
-        public int Margins { get { return _Margins; } set { int m = value; _Margins = (m < 0 ? 0 : (m > 10 ? 10 : value)); this.RunInGui(DoLayout); } }
-        private int _Margins;
         /// <summary>
         /// Položky v nabídce typů filtru. 
         /// Lze setovat, lze modifikovat. Pokud bude modifikován ten operátor, který je zrovna vybraný, pak je vhodné zavolat metodu <see cref="FilterOperatorsRefresh()"/>,
@@ -358,19 +390,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Defaultní jméno ikony na tlačítku Operator
         /// </summary>
-        public string OperatorButtonImageDefault { get { return _OperatorButtonImageDefault; } set { _OperatorButtonImageDefault = value; this.RunInGui(OperatorButtonRefresh); } }
+        public string OperatorButtonImageDefault { get { return __OperatorButtonImageDefault; } set { __OperatorButtonImageDefault = value; this.RunInGui(OperatorButtonRefresh); } }
         /// <summary>
         /// Jméno ikony na tlačítku Clear
         /// </summary>
-        public string ClearButtonImage { get { return _ClearButtonImage; } set { _ClearButtonImage = value; this.RunInGui(ClearButtonRefresh); } }
+        public string ClearButtonImage { get { return __ClearButtonImage; } set { __ClearButtonImage = value; this.RunInGui(ClearButtonRefresh); } }
         /// <summary>
         /// Titulek tooltipu na tlačítku Clear
         /// </summary>
-        public string ClearButtonToolTipTitle { get { return _ClearButtonToolTipTitle; } set { _ClearButtonToolTipTitle = value; this.RunInGui(ClearButtonRefresh); } }
+        public string ClearButtonToolTipTitle { get { return __ClearButtonToolTipTitle; } set { __ClearButtonToolTipTitle = value; this.RunInGui(ClearButtonRefresh); } }
         /// <summary>
         /// Text tooltipu na tlačítku Clear
         /// </summary>
-        public string ClearButtonToolTipText { get { return _ClearButtonToolTipText; } set { _ClearButtonToolTipText = value; this.RunInGui(ClearButtonRefresh); } }
+        public string ClearButtonToolTipText { get { return __ClearButtonToolTipText; } set { __ClearButtonToolTipText = value; this.RunInGui(ClearButtonRefresh); } }
         #endregion
         #region Privátní interaktivita
         /// <summary>

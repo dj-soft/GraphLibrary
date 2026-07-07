@@ -68,7 +68,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void OnZoomChanged()
         {
             base.OnZoomChanged();
-            this._DoLayoutButtons();
+            this._ButtonsLayoutAll();
         }
         /// <summary>
         /// Změna Skinu může mít vliv na velikost mezery vedle buttonů
@@ -76,7 +76,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void OnStyleChanged()
         {
             base.OnStyleChanged();
-            this._DoLayoutButtons();
+            this._ButtonsLayoutAll();
         }
         /// <summary>
         /// Dispose panelu
@@ -296,7 +296,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxSourceProperties.ButtonsPosition = sourcePosition;
             DxTargetProperties.ButtonsPosition = targetPosition;
             CommonButtonsPosition = commonPosition;                 // Vyvolá AcceptListStyles
-            _DoLayoutButtons();
+            _ButtonsLayoutAll();
         }
         /// <summary>
         /// Akceptuje zadané hodnoty <see cref="DblListMode"/>, <see cref="MoveAllEnabled"/>, <see cref="DragAndDropEnabled"/>, <see cref="ClipboardActionsEnabled"/>, <see cref="CommonButtonsPosition"/>
@@ -721,7 +721,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _ButtonsPanel_ClientSizeChanged(object sender, EventArgs e)
         {
-            _DoLayoutButtons();
+            _ButtonsLayoutAll();
         }
         /// <summary>
         /// Společné buttony uprostřed mají být zobrazeny?
@@ -730,12 +730,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Umístí středové buttony
         /// </summary>
-        private void _DoLayoutButtons()
+        private void _ButtonsLayoutAll()
         {
-            this.RunInGui(_DoLayoutButtonsGui);
+            this.RunInGui(buttonsLayoutAllGui);
             
             // Umístí středové buttony, je voláno v GUI threadu
-            void _DoLayoutButtonsGui()
+            void buttonsLayoutAllGui()
             {
                 // Viditelnost:
                 bool currentPanelVisible = this.__ButtonsPanel.IsSetVisible();
@@ -805,7 +805,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Vytvoříme a umístíme buttony:
             ActionButtonsHelper.CreateActionButtons(__CommonButtonsTypes, ref __Buttons, __ButtonsPanel, this._ButtonClick, out var enabledButtonsActions);
-            _DoLayoutButtons();
+            _ButtonsLayoutAll();
 
             // Enabled na Buttony podle jejich akce a podle stavu ListBoxu:
             _SetButtonsEnabled(true);
@@ -827,7 +827,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool undoRedoEnabled = this.DxTargetProperties.UndoRedoEnabled;
 
             var isChangedVisibility = ActionButtonsHelper.EnableButtons(__Buttons, totalLeftCount, selectedLeftCount, totalRightCount, selectedRightCount, isEditable, clipEnabled, undoRedoEnabled);
-            if (doLayoutButtons || isChangedVisibility) _DoLayoutButtons();
+            if (doLayoutButtons || isChangedVisibility) _ButtonsLayoutAll();
         }
         /// <summary>
         /// Provede akci danou buttonem <paramref name="sender"/>
@@ -1429,7 +1429,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             void doLayout()
             {
-                Rectangle innerBounds = this.InnerBounds;
+                Rectangle innerBounds = this.CurrentInnerBounds;
                 if (innerBounds.Width >= 30 && innerBounds.Height >= 30)
                 {
                     _ButtonsLayout(ref innerBounds);
@@ -1458,17 +1458,30 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Instance ListBoxu
         /// </summary>
         private DxListBoxControl __ListBox;
+        #region CurrentInnerBounds, InnerPadding, InnerSpaces
         /// <summary>
-        /// Souřadnice vnitřního prostoru panelu zmenšené o <see cref="InnerPadding"/>, do tohoto prostoru se vkládají vnitřní prvky
+        /// Souřadnice vnitřního prostoru panelu zmenšené o <see cref="_CurrentInnerPadding"/>, do tohoto prostoru se vkládají vnitřní prvky
         /// </summary>
-        protected Rectangle InnerBounds { get { return this.GetInnerBounds(InnerPadding); } }
+        protected Rectangle CurrentInnerBounds { get { return this.GetInnerBounds(_CurrentInnerPadding); } }
         /// <summary>
-        /// Okraje mezi Containerem a vnitřními prvky
+        /// Okraje mezi Containerem a vnitřními prvky, designové pixely.
+        /// <para/>
+        /// Nepřehánějme to s vrstvením <see cref="InnerPadding"/>: pokud do sebe vkládáme jednotlivé containery, pak vnitřní by měly mít hodnotu 0!
         /// </summary>
-        private Padding InnerPadding { get { return DxComponent.ZoomToGui(__InnerPadding, this.DeviceDpi); } }
-        private Padding __InnerPadding;
-        private Size InnerSpaces { get { return DxComponent.ZoomToGui(__InnerSpaces, this.DeviceDpi); } }
-        private Size __InnerSpaces;
+        protected Padding InnerPadding { get { return __InnerPadding; } set { __InnerPadding = value; this.DoLayout(); } } private Padding __InnerPadding;
+        /// <summary>
+        /// Okraje mezi Containerem a vnitřními prvky, aktuální fyzické pixely
+        /// </summary>
+        private Padding _CurrentInnerPadding { get { return DxComponent.ZoomToGui(__InnerPadding, this.DeviceDpi); } }
+        /// <summary>
+        /// Vzájemné mezery (odstupy) mezi vnitřními prvky, designové pixely
+        /// </summary>
+        protected Size InnerSpaces { get { return __InnerSpaces; } set { __InnerSpaces = value; this.DoLayout(); } } private Size __InnerSpaces;
+        /// <summary>
+        /// Vzájemné mezery (odstupy) mezi vnitřními prvky, aktuální fyzické pixely
+        /// </summary>
+        private Size _CurrentInnerSpaces { get { return DxComponent.ZoomToGui(__InnerSpaces, this.DeviceDpi); } }
+        #endregion
         #endregion
         #region Public prvky
         /// <summary>
@@ -2043,7 +2056,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             void doLayout()
             {
-                Rectangle innerBounds = this.InnerBounds;
+                Rectangle innerBounds = this.CurrentInnerBounds;
                 if (innerBounds.Width >= 30 && innerBounds.Height >= 30)
                 {
                     _ButtonsLayout(ref innerBounds);

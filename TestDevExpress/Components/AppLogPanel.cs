@@ -21,6 +21,9 @@ namespace TestDevExpress.Components
         /// </summary>
         public AppLogPanel()
         {
+        }
+        protected override void InitializeContent()
+        {
             _InitToolbar();
             _InitAppLog();
         }
