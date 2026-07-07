@@ -4117,36 +4117,51 @@ namespace Noris.Clients.Win.Components.AsolDX
         private string __DxKeyActionClipPaste = "devav/actions/paste.svg";
 
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public static string DxKeyActionCopyToRightOneC { get { return Names.__DxKeyActionCopyToRightOneC; } set { Names.__DxKeyActionCopyToRightOneC = value; } }
-        private string __DxKeyActionCopyToRightOneC = "@arrowsmall|right|blue";
+        public static string DxKeyActionCopyToRightOneC { get { return Names.__DxKeyActionCopyToRightOneC; } set { Names.__DxKeyActionCopyToRightOneC = value; } } private string __DxKeyActionCopyToRightOneC = "@arrowsmall|right|blue";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public static string DxKeyActionCopyToRightOneE { get { return Names.__DxKeyActionCopyToRightOneE; } set { Names.__DxKeyActionCopyToRightOneE = value; } }
-        private string __DxKeyActionCopyToRightOneE = "@arrowsmall|right|green";
+        public static string DxKeyActionCopyToRightOneE { get { return Names.__DxKeyActionCopyToRightOneE; } set { Names.__DxKeyActionCopyToRightOneE = value; } } private string __DxKeyActionCopyToRightOneE = "@arrowsmall|right|green";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public static string DxKeyActionCopyToRightAllC { get { return Names.__DxKeyActionCopyToRightAllC; } set { Names.__DxKeyActionCopyToRightAllC = value; } }
-        private string __DxKeyActionCopyToRightAllC = "@arrow|right|blue";
+        public static string DxKeyActionCopyToRightAllC { get { return Names.__DxKeyActionCopyToRightAllC; } set { Names.__DxKeyActionCopyToRightAllC = value; } } private string __DxKeyActionCopyToRightAllC = "@arrow|right|blue";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public static string DxKeyActionCopyToRightAllE { get { return Names.__DxKeyActionCopyToRightAllE; } set { Names.__DxKeyActionCopyToRightAllE = value; } }
-        private string __DxKeyActionCopyToRightAllE = "@arrow|right|green";
+        public static string DxKeyActionCopyToRightAllE { get { return Names.__DxKeyActionCopyToRightAllE; } set { Names.__DxKeyActionCopyToRightAllE = value; } } private string __DxKeyActionCopyToRightAllE = "@arrow|right|green";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public static string DxKeyActionCopyToLeftOneC { get { return Names.__DxKeyActionCopyToLeftOneC; } set { Names.__DxKeyActionCopyToLeftOneC = value; } }
-        private string __DxKeyActionCopyToLeftOneC = "@arrowsmall|left|blue";
+        public static string DxKeyActionCopyToLeftOneC { get { return Names.__DxKeyActionCopyToLeftOneC; } set { Names.__DxKeyActionCopyToLeftOneC = value; } } private string __DxKeyActionCopyToLeftOneC = "@arrowsmall|left|blue";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public static string DxKeyActionCopyToLeftOneE { get { return Names.__DxKeyActionCopyToLeftOneE; } set { Names.__DxKeyActionCopyToLeftOneE = value; } }
-        private string __DxKeyActionCopyToLeftOneE = "@arrowsmall|left|green";
+        public static string DxKeyActionCopyToLeftOneE { get { return Names.__DxKeyActionCopyToLeftOneE; } set { Names.__DxKeyActionCopyToLeftOneE = value; } } private string __DxKeyActionCopyToLeftOneE = "@arrowsmall|left|green";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public static string DxKeyActionCopyToLeftAllC { get { return Names.__DxKeyActionCopyToLeftAllC; } set { Names.__DxKeyActionCopyToLeftAllC = value; } }
-        private string __DxKeyActionCopyToLeftAllC = "@arrow|left|blue";
+        public static string DxKeyActionCopyToLeftAllC { get { return Names.__DxKeyActionCopyToLeftAllC; } set { Names.__DxKeyActionCopyToLeftAllC = value; } } private string __DxKeyActionCopyToLeftAllC = "@arrow|left|blue";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public static string DxKeyActionCopyToLeftAllE { get { return Names.__DxKeyActionCopyToLeftAllE; } set { Names.__DxKeyActionCopyToLeftAllE = value; } }
-        private string __DxKeyActionCopyToLeftAllE = "@arrow|left|blue";
+        public static string DxKeyActionCopyToLeftAllE { get { return Names.__DxKeyActionCopyToLeftAllE; } set { Names.__DxKeyActionCopyToLeftAllE = value; } } private string __DxKeyActionCopyToLeftAllE = "@arrow|left|blue";
 
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public static string DxKeyActionUndo { get { return Names.__DxKeyActionUndo; } set { Names.__DxKeyActionUndo = value; } }
-        private string __DxKeyActionUndo = "svgimages/dashboards/undo.svg";
+        public static string DxKeyActionUndo { get { return Names.__DxKeyActionUndo; } set { Names.__DxKeyActionUndo = value; } } private string __DxKeyActionUndo = "svgimages/dashboards/undo.svg";
         /// <summary>Standardní ikona pro danou příležitost</summary>
-        public static string DxKeyActionRedo { get { return Names.__DxKeyActionRedo; } set { Names.__DxKeyActionRedo = value; } }
-        private string __DxKeyActionRedo = "svgimages/dashboards/redo.svg";
+        public static string DxKeyActionRedo { get { return Names.__DxKeyActionRedo; } set { Names.__DxKeyActionRedo = value; } } private string __DxKeyActionRedo = "svgimages/dashboards/redo.svg";
+
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxMediaActionDoubleGoFirst { get { return Names.__DxMediaActionDoubleGoFirst; } set { Names.__DxMediaActionDoubleGoFirst = value; } } private string __DxMediaActionDoubleGoFirst = "svgimages/arrows/doublefirst.svg";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxMediaActionDoubleGoLast { get { return Names.__DxMediaActionDoubleGoLast; } set { Names.__DxMediaActionDoubleGoLast = value; } } private string __DxMediaActionDoubleGoLast = "svgimages/arrows/doublelast.svg";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxMediaActionDoubleGoNext { get { return Names.__DxMediaActionDoubleGoNext; } set { Names.__DxMediaActionDoubleGoNext = value; } } private string __DxMediaActionDoubleGoNext = "svgimages/arrows/doublenext.svg";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxMediaActionDoubleGoPrev { get { return Names.__DxMediaActionDoubleGoPrev; } set { Names.__DxMediaActionDoubleGoPrev = value; } } private string __DxMediaActionDoubleGoPrev = "svgimages/arrows/doubleprev.svg";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxMediaActionGoFirst { get { return Names.__DxMediaActionGoFirst; } set { Names.__DxMediaActionGoFirst = value; } } private string __DxMediaActionGoFirst = "svgimages/arrows/first.svg";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxMediaActionGoLast { get { return Names.__DxMediaActionGoLast; } set { Names.__DxMediaActionGoLast = value; } } private string __DxMediaActionGoLast = "svgimages/arrows/last.svg";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxMediaActionGoNext { get { return Names.__DxMediaActionGoNext; } set { Names.__DxMediaActionGoNext = value; } } private string __DxMediaActionGoNext = "svgimages/arrows/next.svg";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxMediaActionGoPrev { get { return Names.__DxMediaActionGoPrev; } set { Names.__DxMediaActionGoPrev = value; } } private string __DxMediaActionGoPrev = "svgimages/arrows/prev.svg";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxMediaActionMoveDown { get { return Names.__DxMediaActionMoveDown; } set { Names.__DxMediaActionMoveDown = value; } } private string __DxMediaActionMoveDown = "svgimages/arrows/movedown.svg";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxMediaActionMoveUp { get { return Names.__DxMediaActionMoveUp; } set { Names.__DxMediaActionMoveUp = value; } } private string __DxMediaActionMoveUp = "svgimages/arrows/moveup.svg";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxMediaActionPause { get { return Names.__DxMediaActionPause; } set { Names.__DxMediaActionPause = value; } } private string __DxMediaActionPause = "svgimages/arrows/pause.svg";
+        /// <summary>Standardní ikona pro danou příležitost</summary>
+        public static string DxMediaActionStop { get { return Names.__DxMediaActionStop; } set { Names.__DxMediaActionStop = value; } } private string __DxMediaActionStop = "svgimages/arrows/stop.svg";
     }
     #endregion
     #region class DxBmpImageList : Kolekce Images rozšířená o možnost reloadu při změně barevnosti

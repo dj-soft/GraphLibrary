@@ -34,12 +34,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxDblListBoxPanel()
         {
-            this.Initialize();
         }
         /// <summary>
         /// Inicializace komponent a hodnot
         /// </summary>
-        private void Initialize()
+        protected override void InitializeContent()
         {
             this.SplitterOrientation = Orientation.Horizontal;
             this.FixedPanel = SplitFixedPanel.Panel1;
@@ -49,13 +48,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             var listPanelSource = new DxListBoxPanel();
             listPanelSource.Dock = DockStyle.Fill;
             this.Panel1.Controls.Add(listPanelSource);
-            this.Panel1.MinSize = 120;
+            this.Panel1.MinSize = 60;
             __SourceListPanel = listPanelSource;
 
             var listPanelTarget = new DxListBoxPanel();
             listPanelTarget.Dock = DockStyle.Fill;
             this.Panel2.Controls.Add(listPanelTarget);
-            this.Panel2.MinSize = 120;
+            this.Panel2.MinSize = 60;
             __TargetListPanel = listPanelTarget;
 
             _InitButtons();                                // Buttony přidávám až po ListBoxu do Panel1, protože jsou Dock = Right a ListBox je Dock = Fill. A takhle to funguje správně.
@@ -1331,12 +1330,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxListBoxPanel()
         {
-            this.Initialize();
         }
         /// <summary>
         /// Inicializace komponent a hodnot
         /// </summary>
-        private void Initialize()
+        protected override void InitializeContent()
         {
             __TitleLabel = new DxTitleLabelControl() { Text = "", Visible = false };
             __ListBox = new DxListBoxControl();

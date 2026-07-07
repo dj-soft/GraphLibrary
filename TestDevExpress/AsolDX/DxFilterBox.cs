@@ -119,7 +119,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected void DoLayout()
         {
             if (__InDoLayoutProcess) return;
-            if (!this.PanelStateIsWorking) return;
+            if (!this.ComponentStateIsWorking) return;
             try
             {
                 __InDoLayoutProcess = true;

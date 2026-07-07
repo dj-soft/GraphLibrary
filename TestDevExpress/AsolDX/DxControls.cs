@@ -1867,11 +1867,11 @@ namespace Noris.Clients.Win.Components.AsolDX
     {
         #region Konstruktor a základní vlastnosti
         /// <summary>
-        /// Konstruktor
+        /// Konstruktor. Vyvolá <see cref="InitializeContent"/>.
         /// </summary>
         public DxPanelControl()
         {
-            this.__PanelState = DxComponentState.Creating;
+            this.__ComponentState = DxComponentState.Creating;
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
             this.Margin = new Padding(0);
             this.Padding = new Padding(0);
@@ -1884,27 +1884,34 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.SetStyle(ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint, true);
             DxComponent.RegisterListener(this);
             InitializeContent();
-            this.__PanelState = DxComponentState.Created;
+            this.__ComponentState = DxComponentState.Created;
         }
         /// <summary>
         /// Inicializace obsahu
         /// </summary>
         protected virtual void InitializeContent()
         { }
+        /// <summary>
+        /// <see cref="OnLoaded"/> se volá v proces HandleCreating
+        /// </summary>
         protected override void OnLoaded()
         {
             base.OnLoaded();
 
-            this.__PanelState = DxComponentState.HandleCreated;
+            this.__ComponentState = DxComponentState.HandleCreated;
         }
+        /// <summary>
+        /// Jakékoli vykreslení zajistí přechod stavu ( AnyBefore -» Showing -» Showed )
+        /// </summary>
+        /// <param name="cache"></param>
         protected override void OnPaintCore(GraphicsCache cache)
         {
-            bool isFirst = (this.__PanelState != DxComponentState.Showed);
-            if (isFirst) this.__PanelState = DxComponentState.Showing;
+            bool isFirst = (this.__ComponentState != DxComponentState.Showed);
+            if (isFirst) this.__ComponentState = DxComponentState.Showing;
 
             base.OnPaintCore(cache);
 
-            if (isFirst) this.__PanelState = DxComponentState.Showed;
+            if (isFirst) this.__ComponentState = DxComponentState.Showed;
         }
         /// <summary>
         /// Dispose panelu a všech Child prvků.
@@ -1912,13 +1919,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
-            this.__PanelState = DxComponentState.Disposing;
+            this.__ComponentState = DxComponentState.Disposing;
             this.__IsDispose = true;
             DxComponent.UnregisterListener(this);
             DestroyContent();
             this.DisposeContent();
             base.Dispose(disposing);
-            this.__PanelState = DxComponentState.Disposed;
+            this.__ComponentState = DxComponentState.Disposed;
         }
         /// <summary>
         /// Zruší veškerý svůj obsah v procesu Dispose.
@@ -2038,51 +2045,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual bool LogActive { get; set; }
         /// <summary>
-        /// Obsahuje true v provozním stavu (<see cref="PanelState"/> má některou hodnotu z: <see cref="DxComponentState.Created"/>, <see cref="DxComponentState.HandleCreated"/>, <see cref="DxComponentState.Showing"/>, <see cref="DxComponentState.Showed"/>)
+        /// Obsahuje true v provozním stavu (<see cref="ComponentState"/> má některou hodnotu z: <see cref="DxComponentState.Created"/>, <see cref="DxComponentState.HandleCreated"/>, <see cref="DxComponentState.Showing"/>, <see cref="DxComponentState.Showed"/>)
         /// </summary>
-        public bool PanelStateIsWorking { get { var s = this.__PanelState; return (s == DxComponentState.Created || s == DxComponentState.HandleCreated || s == DxComponentState.Showing || s == DxComponentState.Showed); } }
+        public bool ComponentStateIsWorking { get { var s = this.__ComponentState; return (s == DxComponentState.Created || s == DxComponentState.HandleCreated || s == DxComponentState.Showing || s == DxComponentState.Showed); } }
         /// <summary>
         /// Stav panelu
         /// </summary>
-        public DxComponentState PanelState { get { return __PanelState; } protected set { __PanelState = value; } } private DxComponentState __PanelState = DxComponentState.None;
-        /// <summary>
-        /// Stavy komponenty
-        /// </summary>
-        public enum DxComponentState 
-        {
-            /// <summary>
-            /// Před zahájením konstruktoru
-            /// </summary>
-            None,
-            /// <summary>
-            /// V rámci konstrktoru, včetně virtual metody <see cref="InitializeContent"/>;
-            /// </summary>
-            Creating,
-            /// <summary>
-            /// Po skončení konstruktoru a po skončení metody <see cref="InitializeContent"/>;
-            /// </summary>
-            Created,
-            /// <summary>
-            /// Po dokončení HandleCreated
-            /// </summary>
-            HandleCreated, 
-            /// <summary>
-            /// Na začátku první metody Paint
-            /// </summary>
-            Showing, 
-            /// <summary>
-            /// Po vykreslení uživateli, většina života
-            /// </summary>
-            Showed, 
-            /// <summary>
-            /// Zahájen proces Dispose
-            /// </summary>
-            Disposing,
-            /// <summary>
-            /// Dokončen proces Dispose
-            /// </summary>
-            Disposed
-        }
+        public DxComponentState ComponentState { get { return __ComponentState; } protected set { __ComponentState = value; } } private DxComponentState __ComponentState = DxComponentState.None;
         #endregion
         #region HasMouse a InteractiveState
         /// <summary>
@@ -2392,17 +2361,54 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class DxSplitContainerControl : DevExpress.XtraEditors.SplitContainerControl, IListenerZoomChange, IListenerStyleChanged
     {
+        #region Konstruktor a základní vlastnosti
         /// <summary>
-        /// Zde je uvedena orientace oddělovací čáry. Lze setovat.
-        /// <para/>
-        /// Pokud jsou panely vlevo a vpravo, pak dělící čára má orientaci <see cref="SplitterOrientation"/> = <see cref="Orientation.Vertical"/> = je svislá;<br/>
-        /// Pokud jsou panely nahoře a dole, pak dělící čára má orientaci <see cref="SplitterOrientation"/> = <see cref="Orientation.Horizontal"/> = je vodorovná;
+        /// Konstruktor. Vyvolá <see cref="InitializeContent"/>.
         /// </summary>
-        public Orientation SplitterOrientation
+        public DxSplitContainerControl()
         {
-            get { return (Horizontal ? Orientation.Horizontal : Orientation.Vertical); }
-            set { Horizontal = (value == Orientation.Horizontal); }
+            this.__ComponentState = DxComponentState.Creating;
+            this.Panel1.MinSize = 30;
+            this.Panel2.MinSize = 30;
+            InitializeContent();
+            this.__ComponentState = DxComponentState.Created;
         }
+        /// <summary>
+        /// Inicializace obsahu
+        /// </summary>
+        protected virtual void InitializeContent()
+        { }
+        /// <summary>
+        /// <see cref="OnLoaded"/> se volá v proces HandleCreating
+        /// </summary>
+        protected override void OnLoaded()
+        {
+            base.OnLoaded();
+
+            this.__ComponentState = DxComponentState.HandleCreated;
+        }
+        /// <summary>
+        /// Jakékoli vykreslení zajistí přechod stavu ( AnyBefore -» Showing -» Showed )
+        /// </summary>
+        /// <param name="cache"></param>
+        protected override void OnPaintCore(GraphicsCache cache)
+        {
+            bool isFirst = (this.__ComponentState != DxComponentState.Showed);
+            if (isFirst) this.__ComponentState = DxComponentState.Showing;
+
+            base.OnPaintCore(cache);
+
+            if (isFirst) this.__ComponentState = DxComponentState.Showed;
+        }
+        /// <summary>
+        /// Obsahuje true v provozním stavu (<see cref="ComponentState"/> má některou hodnotu z: <see cref="DxComponentState.Created"/>, <see cref="DxComponentState.HandleCreated"/>, <see cref="DxComponentState.Showing"/>, <see cref="DxComponentState.Showed"/>)
+        /// </summary>
+        public bool ComponentStateIsWorking { get { var s = this.__ComponentState; return (s == DxComponentState.Created || s == DxComponentState.HandleCreated || s == DxComponentState.Showing || s == DxComponentState.Showed); } }
+        /// <summary>
+        /// Stav panelu
+        /// </summary>
+        public DxComponentState ComponentState { get { return __ComponentState; } protected set { __ComponentState = value; } } private DxComponentState __ComponentState = DxComponentState.None;
+        #endregion
         #region Rozšířené property
         /// <summary>
         /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
@@ -2426,6 +2432,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #region SplitterFixedSide, SplitterFixedPosition, SplitterPercentagePosition, SplitterPositionInfo
+        /// <summary>
+        /// Zde je uvedena orientace oddělovací čáry. Lze setovat.
+        /// <para/>
+        /// Pokud jsou panely vlevo a vpravo, pak dělící čára má orientaci <see cref="SplitterOrientation"/> = <see cref="Orientation.Vertical"/> = je svislá;<br/>
+        /// Pokud jsou panely nahoře a dole, pak dělící čára má orientaci <see cref="SplitterOrientation"/> = <see cref="Orientation.Horizontal"/> = je vodorovná;
+        /// </summary>
+        public Orientation SplitterOrientation
+        {
+            get { return (Horizontal ? Orientation.Horizontal : Orientation.Vertical); }
+            set { Horizontal = (value == Orientation.Horizontal); }
+        }
         /// <summary>
         /// Režim pozice Splitteru při změně velikosti containeru
         /// </summary>
@@ -12586,6 +12603,44 @@ namespace Noris.Clients.Win.Components.AsolDX
     }
     #endregion
     #region Enumy: LabelStyleType, RectangleSide, RectangleCorner, ...
+    /// <summary>
+    /// Stavy komponenty
+    /// </summary>
+    public enum DxComponentState
+    {
+        /// <summary>
+        /// Před zahájením konstruktoru
+        /// </summary>
+        None,
+        /// <summary>
+        /// V rámci konstrktoru, včetně virtual metody <see cref="InitializeContent"/>;
+        /// </summary>
+        Creating,
+        /// <summary>
+        /// Po skončení konstruktoru a po skončení metody <see cref="InitializeContent"/>;
+        /// </summary>
+        Created,
+        /// <summary>
+        /// Po dokončení HandleCreated
+        /// </summary>
+        HandleCreated,
+        /// <summary>
+        /// Na začátku první metody Paint
+        /// </summary>
+        Showing,
+        /// <summary>
+        /// Po vykreslení uživateli, většina života
+        /// </summary>
+        Showed,
+        /// <summary>
+        /// Zahájen proces Dispose
+        /// </summary>
+        Disposing,
+        /// <summary>
+        /// Dokončen proces Dispose
+        /// </summary>
+        Disposed
+    }
     /// <summary>
     /// Druh položky menu
     /// </summary>

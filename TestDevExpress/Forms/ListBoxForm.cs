@@ -453,6 +453,16 @@ namespace TestDevExpress.Forms
         }
         private void _CreateSample4()
         {
+            Noris.Clients.Win.Components.AsolDX.ImageName.DxKeyActionCopyToRightOneC = Noris.Clients.Win.Components.AsolDX.ImageName.DxMediaActionGoNext;
+            Noris.Clients.Win.Components.AsolDX.ImageName.DxKeyActionCopyToRightOneE = Noris.Clients.Win.Components.AsolDX.ImageName.DxMediaActionGoNext;
+            Noris.Clients.Win.Components.AsolDX.ImageName.DxKeyActionCopyToRightAllC = Noris.Clients.Win.Components.AsolDX.ImageName.DxMediaActionDoubleGoNext;
+            Noris.Clients.Win.Components.AsolDX.ImageName.DxKeyActionCopyToRightAllE = Noris.Clients.Win.Components.AsolDX.ImageName.DxMediaActionDoubleGoNext;
+
+            Noris.Clients.Win.Components.AsolDX.ImageName.DxKeyActionCopyToLeftOneC = Noris.Clients.Win.Components.AsolDX.ImageName.DxMediaActionGoPrev;
+            Noris.Clients.Win.Components.AsolDX.ImageName.DxKeyActionCopyToLeftOneE = Noris.Clients.Win.Components.AsolDX.ImageName.DxMediaActionGoPrev;
+            Noris.Clients.Win.Components.AsolDX.ImageName.DxKeyActionCopyToLeftAllC = Noris.Clients.Win.Components.AsolDX.ImageName.DxMediaActionDoubleGoPrev;
+            Noris.Clients.Win.Components.AsolDX.ImageName.DxKeyActionCopyToLeftAllE = Noris.Clients.Win.Components.AsolDX.ImageName.DxMediaActionDoubleGoPrev;
+
             var bounds = _SampleBounds;
             var dblListBounds = new Rectangle(bounds.X, bounds.Y + 62, 800, 600);
             var sampleDblList = new DxDblListBoxPanel() { Bounds = dblListBounds };
