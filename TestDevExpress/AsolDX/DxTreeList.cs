@@ -1203,7 +1203,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.RootNodeVisible = true;
             InitTreeList();
             DataExchangeInit();
-            DxDragDropInit(DxDragDropActionType.None);
+            _DxDragDropInit(DxDragDropActionType.None);
             DxComponent.RegisterListener(this);
         }
         /// <summary>
@@ -1215,7 +1215,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxComponent.UnregisterListener(this);
             CurrentViewDispose();
             base.Dispose(disposing);
-            DxDragDropDispose();
+            _DxDragDropDispose();
         }
         /// <summary>
         /// Incializace komponenty Simple
@@ -3642,7 +3642,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Souhrn povolených akcí Drag and Drop
         /// </summary>
-        protected DxDragDropActionType DragDropActions { get { return _DragDropActions; } set { DxDragDropInit(value); } }
+        protected DxDragDropActionType DragDropActions { get { return _DragDropActions; } set { _DxDragDropInit(value); } }
         DxDragDropActionType IDxDragDropControl.DragDropActions { get { return _DragDropActions; } }
         private DxDragDropActionType _DragDropActions;
         /// <summary>
@@ -3654,32 +3654,29 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Nepoužívejme v aplikačním kódu. 
         /// Místo toho používejme property <see cref="DragDropActions"/>.
         /// </summary>
-        public override bool AllowDrop { get { return this._AllowDrop; } set { } }
-        /// <summary>
-        /// Obsahuje true, pokud this prvek může být cílem Drag and Drop
-        /// </summary>
-        private bool _AllowDrop
-        {
-            get
-            {
-                var actions = this._DragDropActions;
-                return (actions.HasFlag(DxDragDropActionType.ReorderItems) || actions.HasFlag(DxDragDropActionType.ImportItemsInto));
-            }
-        }
+        public override bool AllowDrop { get { return base.AllowDrop; } set { } }
         /// <summary>
         /// Inicializace controlleru Drag and Drop
         /// </summary>
         /// <param name="actions"></param>
-        private void DxDragDropInit(DxDragDropActionType actions)
+        private void _DxDragDropInit(DxDragDropActionType actions)
         {
             if (actions != DxDragDropActionType.None && _DxDragDrop == null)
                 _DxDragDrop = new DxDragDrop(this);
+
             _DragDropActions = actions;
+
+            if (_DxDragDrop != null)
+                _DxDragDrop.IsActive = (actions != DxDragDropActionType.None);
+
+            // Musíme zdejšímu nativnímu controlu sdělit, zda může/nemůže hrát roli AllowDrop:
+            var allowDrop = (actions.HasFlag(DxDragDropActionType.ReorderItems) || actions.HasFlag(DxDragDropActionType.ImportItemsInto));
+            base.AllowDrop = allowDrop;
         }
         /// <summary>
         /// Dispose controlleru Drag and Drop
         /// </summary>
-        private void DxDragDropDispose()
+        private void _DxDragDropDispose()
         {
             if (_DxDragDrop != null)
                 _DxDragDrop.Dispose();
