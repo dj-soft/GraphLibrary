@@ -139,6 +139,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             targetProperties.ItemMouseDoubleClick += _TargetList_MouseDoubleClick;
             targetProperties.ListActionAfter += _ListActionAfter;
             targetProperties.MenuItemsChanged += _TargetList_MenuItemsChanged;
+
+            __SourceListPanel.Name = "SourceListPanel";
+            __SourceListPanel.ListBox.Name = "SourceListControl";
+            __SourceListPanel.ListBox.ListBoxNative.Name = "SourceListBox";
+
+            __TargetListPanel.Name = "TargetListPanel";
+            __TargetListPanel.ListBox.Name = "TargetListControl";
+            __TargetListPanel.ListBox.ListBoxNative.Name = "TargetListBox";
+
         }
         /// <summary>
         /// Po změně Selected v Listu Source = vlevo
@@ -907,6 +916,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                         // Ze vstupního listu (Source = vlevo) se má smazat:
                         if (removeFrom)
                             DxSourceProperties.RemoveItems(workItems);
+                        // Event DblListActionAfter:
+                        _CallDblListActionAfter(new DxListBoxMenuItemsAfterActionArgs(beforeArgs));
                     }
                 }
             }
@@ -937,6 +948,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                         // Ze vstupního listu (Target = vpravo) se má smazat:
                         if (removeFrom)
                             DxTargetProperties.RemoveItems(workItems);
+                        // Event DblListActionAfter:
+                        _CallDblListActionAfter(new DxListBoxMenuItemsAfterActionArgs(beforeArgs));
                     }
                 }
             }
@@ -6512,18 +6525,7 @@ SetSelected() - vstup           Absolutní
         /// Nepoužívejme v aplikačním kódu. 
         /// Místo toho používejme property <see cref="DragDropActions"/>.
         /// </summary>
-        public override bool AllowDrop { get { return this._AllowDrop; } set { } }
-        /// <summary>
-        /// Obsahuje true, pokud this prvek může být cílem Drag and Drop
-        /// </summary>
-        private bool _AllowDrop
-        {
-            get
-            {
-                var actions = this._DragDropActions;
-                return (actions.HasFlag(DxDragDropActionType.ReorderItems) || actions.HasFlag(DxDragDropActionType.ImportItemsInto));
-            }
-        }
+        public override bool AllowDrop { get { return base.AllowDrop; } set { } }
         /// <summary>
         /// Inicializace controlleru Drag and Drop
         /// </summary>
@@ -6537,6 +6539,10 @@ SetSelected() - vstup           Absolutní
 
             if (_DxDragDrop != null)
                 _DxDragDrop.IsActive = (actions != DxDragDropActionType.None);
+
+            // Musíme zdejšímu nativnímu controlu sdělit, zda může/nemůže hrát roli AllowDrop:
+            var allowDrop = (actions.HasFlag(DxDragDropActionType.ReorderItems) || actions.HasFlag(DxDragDropActionType.ImportItemsInto));
+            base.AllowDrop = allowDrop;
         }
         /// <summary>
         /// Dispose controlleru Drag and Drop
@@ -6584,6 +6590,7 @@ SetSelected() - vstup           Absolutní
         /// <param name="args">Veškerá data o procesu Drag and Drop, permanentní po dobu výskytu myši nad Source objektem</param>
         void IDxDragDropControl.DoDragTarget(DxDragDropArgs args)
         {
+            var name = (args.TargetControl as Control).Name;
             switch (args.ActionType)
             {
                 case DxDragDropEventType.DragMove:

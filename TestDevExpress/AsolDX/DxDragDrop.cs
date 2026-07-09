@@ -215,6 +215,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (sender is IDxDragDropControl dxTargetControl && dxTargetControl.DxDragDrop != null)
                 DoDragTargetDragOver(dxTargetControl, e);
         }
+
+        /*  Jen přidávám info o hodnotě        DragEventArgs.KeyState    :
+         
+•	MK_LBUTTON = 0x0001 (left mouse)
+•	MK_RBUTTON = 0x0002 (right mouse)
+•	MK_SHIFT   = 0x0004
+•	MK_CONTROL = 0x0008
+•	MK_MBUTTON = 0x0010
+•	MK_XBUTTON1 = 0x0020
+•	MK_XBUTTON2 = 0x0040         
+         */
+
         /// <summary>
         /// Drag and Drop proces opustil možný cíl pro Drag a Drop
         /// </summary>
@@ -375,7 +387,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="dxTargetControl">Cílový control, nad nímž se aktuálně pohybuje myš</param>
         /// <param name="e"></param>
-
         private void DoDragTargetEnter(IDxDragDropControl dxTargetControl, DragEventArgs e)
         {
             if (!TryGetDragSource(e, out DxDragDrop dxSourceDrag)) return;
