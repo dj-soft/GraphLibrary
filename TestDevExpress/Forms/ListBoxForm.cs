@@ -467,6 +467,7 @@ namespace TestDevExpress.Forms
             var dblListBounds = new Rectangle(bounds.X, bounds.Y + 62, 800, 600);
             var sampleDblList = new DxDblListBoxPanel() { Bounds = dblListBounds };
             
+            // Přednastavím režim:
             sampleDblList.DxProperties.DblListMode = DxDblListBoxPanel.DblListModeType.Mode_Ballance;
 
             if (_Sample4SplitPosition != null)
