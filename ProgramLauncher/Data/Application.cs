@@ -139,18 +139,15 @@ namespace DjSoft.Tools.ProgramLauncher
         /// Pokud byla aplikace spuštěna s příkazovým řádkem: 'Aplikace.exe reset maximized config = "c:\data aplikací.cfg" '    (mezery okolo rovnítka),
         /// pak zde je pět argumentů: { reset , maximized , config , = , c:\data aplikací.cfg }           (kde čárka odděluje jednotlivé stringy, a celý string  c:\data aplikací.cfg  je pátý argument)
         /// </summary>
-        public static string[] Arguments { get { return Current.__Arguments.ToArray(); } }
-        private string[] __Arguments;
+        public static string[] Arguments { get { return Current.__Arguments.ToArray(); } } private string[] __Arguments;
         /// <summary>
         /// Plné jméno this aplikace
         /// </summary>
-        public static string ApplicationFile { get { return Current.__ApplicationFile; } }
-        private string __ApplicationFile;
+        public static string ApplicationFile { get { return Current.__ApplicationFile; } } private string __ApplicationFile;
         /// <summary>
         /// Adresář this aplikace
         /// </summary>
-        public static string ApplicationPath { get { return Current.__ApplicationPath; } }
-        private string __ApplicationPath;
+        public static string ApplicationPath { get { return Current.__ApplicationPath; } } private string __ApplicationPath;
         /// <summary>
         /// Zkusí najít argument s daným textem. Vrací true = nalezeno.
         /// </summary>
