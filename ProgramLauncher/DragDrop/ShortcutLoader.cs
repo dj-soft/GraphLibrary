@@ -1,0 +1,147 @@
+using System;
+using System.IO;
+
+namespace ShortcutParser
+{
+    /// <summary>
+    /// Třída pro načítání a parsování Windows zástupců (.lnk soubory)
+    /// </summary>
+    public class ShortcutLoader
+    {
+        /// <summary>
+        /// Načte obsah Windows zástupce z daného souboru
+        /// </summary>
+        /// <param name="lnkFilePath">Cesta k souboru *.lnk</param>
+        /// <returns>Objekt ShortcutInfo s načtenými údaji</returns>
+        /// <exception cref="ArgumentException">Soubor neexistuje nebo není .lnk soubor</exception>
+        /// <exception cref="Exception">Chyba při čtení zástupce</exception>
+        public static ShortcutInfo LoadShortcut(string lnkFilePath)
+        {
+            // Validace vstupů
+            if (string.IsNullOrWhiteSpace(lnkFilePath))
+                throw new ArgumentException("Cesta k souboru nesmí být prázdná.", nameof(lnkFilePath));
+
+            if (!File.Exists(lnkFilePath))
+                throw new ArgumentException($"Soubor '{lnkFilePath}' neexistuje.", nameof(lnkFilePath));
+
+            if (!lnkFilePath.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException($"Soubor '{lnkFilePath}' není zástupce (.lnk soubor).", nameof(lnkFilePath));
+
+            try
+            {
+                // Vytvoření Shell objektu pro práci se zástupci
+                dynamic shell = Activator.CreateInstance(Type.GetTypeFromProgID("WScript.Shell"));
+                
+                // Načtení objektu zástupce
+                dynamic shortcutLink = shell.CreateShortCut(lnkFilePath);
+
+                // Vytvoření objektu ShortcutInfo a naplnění jeho vlastností
+                var shortcutInfo = new ShortcutInfo
+                {
+                    LinkPath = lnkFilePath,
+                    LinkName = Path.GetFileNameWithoutExtension(lnkFilePath),
+                    TargetPath = shortcutLink.TargetPath ?? "",
+                    Arguments = shortcutLink.Arguments ?? "",
+                    WorkingDirectory = shortcutLink.WorkingDirectory ?? "",
+                    Description = shortcutLink.Description ?? "",
+                    IconLocation = shortcutLink.IconLocation ?? "",
+                    IconIndex = ParseIconIndex(shortcutLink.IconLocation),
+                    WindowStyle = (WindowStyle)(shortcutLink.WindowStyle ?? 1),
+                    HotKey = shortcutLink.Hotkey ?? "",
+                    RelativePath = shortcutLink.RelativePath ?? "",
+                    Flags = ParseFlags(shortcutLink)
+                };
+
+                // Uvolnění COM objektů
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(shortcutLink);
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(shell);
+
+                return shortcutInfo;
+            }
+            catch (Exception ex) when (!(ex is ArgumentException))
+            {
+                throw new Exception($"Chyba při čtení zástupce '{lnkFilePath}': {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
+        /// Parsuje index ikony z řetězce IconLocation
+        /// </summary>
+        private static int ParseIconIndex(string iconLocation)
+        {
+            if (string.IsNullOrEmpty(iconLocation))
+                return 0;
+
+            // Formát je obvykle: "cesta\k\souboru,indexIkony"
+            int commaIndex = iconLocation.LastIndexOf(',');
+            if (commaIndex > 0 && int.TryParse(iconLocation.Substring(commaIndex + 1).Trim(), out int index))
+                return index;
+
+            return 0;
+        }
+
+        /// <summary>
+        /// Parsuje speciální příznaky zástupce
+        /// </summary>
+        private static ShortcutFlags ParseFlags(dynamic shortcutLink)
+        {
+            var flags = ShortcutFlags.None;
+
+            try
+            {
+                // Kontrola příznaku pro spuštění jako administrátor
+                // Poznámka: Toto není dostupné přes standardní COM API WshShell
+                // Pro plnou detekci by bylo potřeba parsovat binární formát .lnk souboru
+                // nebo použít OS API na nižší úrovni
+            }
+            catch
+            {
+                // Ignorovat chyby při čtení příznaků
+            }
+
+            return flags;
+        }
+
+        /// <summary>
+        /// Uloží (vytvoří nový) zástupce s danými vlastnostmi
+        /// </summary>
+        /// <param name="lnkFilePath">Cesta, kam uložit zástupce</param>
+        /// <param name="shortcutInfo">Údaje zástupce</param>
+        /// <exception cref="ArgumentException">Neplatné vstupy</exception>
+        /// <exception cref="Exception">Chyba při vytváření zástupce</exception>
+        public static void SaveShortcut(string lnkFilePath, ShortcutInfo shortcutInfo)
+        {
+            if (string.IsNullOrWhiteSpace(lnkFilePath))
+                throw new ArgumentException("Cesta k souboru nesmí být prázdná.", nameof(lnkFilePath));
+
+            if (shortcutInfo == null)
+                throw new ArgumentNullException(nameof(shortcutInfo));
+
+            if (string.IsNullOrWhiteSpace(shortcutInfo.TargetPath))
+                throw new ArgumentException("Cílový soubor musí být zadán.", nameof(shortcutInfo));
+
+            try
+            {
+                dynamic shell = Activator.CreateInstance(Type.GetTypeFromProgID("WScript.Shell"));
+                dynamic shortcutLink = shell.CreateShortCut(lnkFilePath);
+
+                shortcutLink.TargetPath = shortcutInfo.TargetPath;
+                shortcutLink.Arguments = shortcutInfo.Arguments ?? "";
+                shortcutLink.WorkingDirectory = shortcutInfo.WorkingDirectory ?? "";
+                shortcutLink.Description = shortcutInfo.Description ?? "";
+                shortcutLink.IconLocation = shortcutInfo.IconLocation ?? "";
+                shortcutLink.WindowStyle = (int)shortcutInfo.WindowStyle;
+                shortcutLink.Hotkey = shortcutInfo.HotKey ?? "";
+
+                shortcutLink.Save();
+
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(shortcutLink);
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(shell);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Chyba při vytváření zástupce '{lnkFilePath}': {ex.Message}", ex);
+            }
+        }
+    }
+}

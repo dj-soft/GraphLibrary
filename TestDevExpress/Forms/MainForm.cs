@@ -4914,7 +4914,6 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _TreeList.DxProperties.LazyLoadFocusNode = TreeListLazyLoadFocusNodeType.ParentNode;
             _TreeList.DxProperties.RowFilterMode = RowFilterBoxMode.Server;
             _TreeList.DxProperties.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.MouseUp;
-            _TreeList.DxProperties.IncrementalSearchMode = TreeListIncrementalSearchMode.InAllNodes;
             _TreeList.DxProperties.RowFilterServerOperators = DxFilterBox.CreateDefaultOperatorItems(FilterBoxOperatorItems.DefaultText);
             _TreeList.DxProperties.RowFilterServerChangedSources = DxFilterBoxChangeEventSource.Default;
             _TreeList.DxProperties.MultiSelectEnabled = true;

@@ -86,6 +86,20 @@
     <Compile Include="Data\WatchTimer.cs" />
     <Compile Include="Data\Win32.cs" />
     <Compile Include="Data\XmlPersist.cs" />
+    <Compile Include="DragDrop\AdvancedShortcutDropForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="DragDrop\ClipboardExamples.cs" />
+    <Compile Include="DragDrop\ClipboardTestForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="DragDrop\IconExtractionExamples.cs" />
+    <Compile Include="DragDrop\IconExtractor.cs" />
+    <Compile Include="DragDrop\Program.cs" />
+    <Compile Include="DragDrop\Program_FormMain.cs" />
+    <Compile Include="DragDrop\ShortcutDropForm.cs" />
+    <Compile Include="DragDrop\ShortcutInfo.cs" />
+    <Compile Include="DragDrop\ShortcutLoader.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -108,6 +122,10 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <None Include="DragDrop\1-INSTRUKCE.md" />
+    <None Include="DragDrop\2-IKONY_ALGORITMUS.md" />
+    <None Include="DragDrop\3-DRAGDROP_GUIDE.md" />
+    <None Include="DragDrop\4-CLIPBOARD_INTEGRATION.md" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>

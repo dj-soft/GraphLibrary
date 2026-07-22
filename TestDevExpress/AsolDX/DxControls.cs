@@ -12668,6 +12668,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         Header
     }
     /// <summary>
+    /// Druh řádkového filtru (nativní / externí)
+    /// </summary>
+    public enum RowFilterBoxMode
+    {
+        /// <summary>
+        /// Žádný filtrační řádek
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Serverový = externí, filtrování řeší server přenačtením obsahu stromu
+        /// </summary>
+        Server,
+        /// <summary>
+        /// Klientský filtr = nativní, vhodný pokud TreeList má na klientu načtená všechna data. Filtruje vyhovující řádky; nevyhovující řádky skryje. Nevyhovující řádky se nezobrazí, ale zůstanou v TreeListu a lze je vyfiltrovat zpět.
+        /// </summary>
+        ClientFilter,
+        /// <summary>
+        /// Klientský vyhledávač = nativní, vhodný pokud TreeList má na klientu načtená všechna data. Označí hledaný text v nodu. Ostatní řádky zůstávají viditelné.
+        /// </summary>
+        ClientSearch
+    }
+    /// <summary>
     /// Druh změny obsahu aktuálního prvku
     /// </summary>
     public enum ContentChangeMode

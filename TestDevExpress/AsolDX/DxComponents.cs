@@ -10192,7 +10192,11 @@ White
         DxGridMenuCollapseAllGroups,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Zrušit všechna seskupení")]
-        DxGridMenuClearAllGrouping
+        DxGridMenuClearAllGrouping,
+
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Hledat...")]
+        DxFindNullPrompt
 
 
         // Nové kódy přidej do Messages.xml v klientu!!!     Do AdapterTest.cs není nutno, tam se načítá hodnota atributu DefaultMessageText() !
