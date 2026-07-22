@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
 
-namespace ShortcutParser
+namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
 {
     /// <summary>
     /// Příklady použití Drag&Drop a Clipboard funkčnosti

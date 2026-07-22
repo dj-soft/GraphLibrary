@@ -1,7 +1,7 @@
 using System;
 using System.Windows.Forms;
 
-namespace ShortcutParser
+namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
 {
     /// <summary>
     /// Entry point aplikace - spuštění formuláře s Drag&Drop

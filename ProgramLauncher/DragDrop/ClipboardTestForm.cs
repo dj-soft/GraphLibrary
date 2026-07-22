@@ -2,7 +2,7 @@ using System;
 using System.Collections.Specialized;
 using System.Windows.Forms;
 
-namespace ShortcutParser
+namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
 {
     /// <summary>
     /// Testovací aplikace pro funkcionalitu Clipboard

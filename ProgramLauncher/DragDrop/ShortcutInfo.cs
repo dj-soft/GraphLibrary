@@ -1,6 +1,6 @@
 using System;
 
-namespace ShortcutParser
+namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
 {
     /// <summary>
     /// Třída reprezentující všechny údaje z Windows zástupce (.lnk souboru)

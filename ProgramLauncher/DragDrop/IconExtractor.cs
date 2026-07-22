@@ -3,7 +3,7 @@ using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace ShortcutParser
+namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
 {
     /// <summary>
     /// Třída pro extrakci ikon z EXE, DLL a jiných souborů

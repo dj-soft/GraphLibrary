@@ -1,6 +1,6 @@
 using System;
 
-namespace ShortcutParser
+namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
 {
     /// <summary>
     /// Příklad použití tříd pro práci se Windows zástupci

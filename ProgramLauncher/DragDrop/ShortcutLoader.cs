@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 
-namespace ShortcutParser
+namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
 {
     /// <summary>
     /// Třída pro načítání a parsování Windows zástupců (.lnk soubory)
