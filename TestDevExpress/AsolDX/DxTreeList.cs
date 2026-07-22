@@ -1554,15 +1554,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.OptionsFilter.ExpandNodesOnFiltering = true;
 
         }
-        protected override void OnOptionsFilterChanged(object sender, BaseOptionChangedEventArgs e)
-        {
-            base.OnOptionsFilterChanged(sender, e);
-        }
-
         /// <summary>
         /// Vyhledávač řádků (Search) je viditelný?
         /// </summary>
-        public bool ClientRowSearcherVisible 
+        public bool ClientRowSearcherVisible
         {
             get 
             {

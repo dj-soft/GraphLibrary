@@ -19,11 +19,25 @@ namespace TestDevExpress
         /// Vrať náhodné slovo
         /// </summary>
         /// <param name="firstUpper"></param>
+        /// <param name="allowHtml"></param>
         /// <returns></returns>
-        public static string GetWord(bool firstUpper = false)
+        public static string GetWord(bool firstUpper = false, bool allowHtml = false)
         {
             string word = WordBook[Rand.Next(WordBook.Length)];
             if (firstUpper) word = word.Substring(0, 1).ToUpper() + word.Substring(1);
+            if (allowHtml)
+            {
+                if (Rand.Next(10) == 0)
+                {
+                    string tag = GetItem(new string[] { "b", "i", "u" });
+                    word = $"<{tag}>{word}</{tag}>";
+                }
+                else if (Rand.Next(10) == 0)
+                {
+                    string color = GetItem(new string[] { "96,255,192,255", "96,192,255,255", "96,255,255,192", "96,192,192,255", "96,255,192,192" });
+                    word = $"<backcolor={color}>{word}</backcolor>";
+                }
+            }
             return word;
         }
         /// <summary>
@@ -59,15 +73,16 @@ namespace TestDevExpress
         /// <param name="minSentenceCount"></param>
         /// <param name="maxSentenceCount"></param>
         /// <param name="addDot"></param>
+        /// <param name="allowHtml"></param>
         /// <returns></returns>
-        public static string[] GetSentencesArray(int minWordCount, int maxWordCount, int minSentenceCount, int maxSentenceCount, bool addDot = false)
+        public static string[] GetSentencesArray(int minWordCount, int maxWordCount, int minSentenceCount, int maxSentenceCount, bool addDot = false, bool allowHtml = false)
         {
             List<string> sentences = new List<string>();
             int sentenceCount = Rand.Next(minSentenceCount, maxSentenceCount);
             string eol = Environment.NewLine;
             for (int s = 0; s < sentenceCount; s++)
             {
-                string sentence = GetSentence(minWordCount, maxWordCount, addDot);
+                string sentence = GetSentence(minWordCount, maxWordCount, addDot, allowHtml);
                 sentences.Add(sentence);
             }
             return sentences.ToArray();
@@ -78,23 +93,25 @@ namespace TestDevExpress
         /// <param name="minCount"></param>
         /// <param name="maxCount"></param>
         /// <param name="addDot"></param>
+        /// <param name="allowHtml"></param>
         /// <returns></returns>
-        public static string GetSentence(int minCount, int maxCount, bool addDot = false)
+        public static string GetSentence(int minCount, int maxCount, bool addDot = false, bool allowHtml = false)
         {
             int count = Rand.Next(minCount, maxCount);
-            return GetSentence(count, addDot);
+            return GetSentence(count, addDot, allowHtml);
         }
         /// <summary>
         /// Vrať náhodnou větu
         /// </summary>
         /// <param name="count"></param>
         /// <param name="addDot"></param>
+        /// <param name="allowHtml"></param>
         /// <returns></returns>
-        public static string GetSentence(int count, bool addDot = false)
+        public static string GetSentence(int count, bool addDot = false, bool allowHtml = false)
         {
             string sentence = "";
             for (int w = 0; w < count; w++)
-                sentence += (sentence.Length > 0 ? ((Rand.Next(12) < 1) ? ", " : " ") : "") + GetWord((w == 0));
+                sentence += (sentence.Length > 0 ? ((Rand.Next(12) < 1) ? ", " : " ") : "") + GetWord((w == 0), allowHtml);
             if (addDot)
                 sentence += GetItem(SentenceDots);
             return sentence;
