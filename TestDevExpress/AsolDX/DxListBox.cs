@@ -957,9 +957,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Z dodaných dxProperties vybere podle getAllItems buď všechny MenuItems anebo SelectedMenuItems, konvertuje na DxListBoxNative.ListMenuItemInfo a vrátí pole
             DxListBoxNative.ListMenuItemInfo[] getItemInfos(DxListBoxPanel.DxPropertiesInfo dxProperties, bool getAllItems)
             {
-                var items = (getAllItems ? dxProperties.MenuItems : dxProperties.SelectedMenuItems);
-                if (items is null) return null;
-                return items.Select(i => new DxListBoxNative.ListMenuItemInfo(i)).ToArray();
+                if (getAllItems) return dxProperties.FilteredMenuItems;
+                return dxProperties.SelectedMenuItems?.Select(i => new DxListBoxNative.ListMenuItemInfo(i)).ToArray();
             }
             // Z dodaných prvků DxListBoxNative.ListMenuItemInfo vrátí pole ITextItem
             ITextItem[] getWorkItems(DxListBoxNative.ListMenuItemInfo[] processInfos)
@@ -1643,19 +1642,19 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 var oldFilterMode = __RowFilterMode;
 
-                if (newFilterMode != RowFilterBoxMode.Client && _RowFilterClientExists)
+                if (newFilterMode != RowFilterBoxMode.ClientFilter && _RowFilterClientExists)
                     _RowFilterClientRemove();
                 if (newFilterMode != RowFilterBoxMode.Server && _RowFilterServerExists)
                     _RowFilterServerRemove();
 
-                if (newFilterMode == RowFilterBoxMode.Client && !_RowFilterClientExists)
+                if (newFilterMode == RowFilterBoxMode.ClientFilter && !_RowFilterClientExists)
                     _RowFilterClientPrepare();
                 if (newFilterMode == RowFilterBoxMode.Server && !_RowFilterServerExists)
                     _RowFilterServerPrepare();
 
                 switch (newFilterMode)
                 {
-                    case RowFilterBoxMode.Client:
+                    case RowFilterBoxMode.ClientFilter:
                         if (!__RowFilterClient.IsSetVisible())
                             __RowFilterClient.Visible = true;
                         break;
@@ -1690,7 +1689,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             string text = ((args.ActionType == ControlKeyActionType.FillKeyToFilter) ? DxComponent.KeyConvertToChar(args.Keys, true)?.ToString() : (string)null);
             switch (filterMode)
             {
-                case RowFilterBoxMode.Client:
+                case RowFilterBoxMode.ClientFilter:
                     _RowFilterClientSetFocus(text);
                     break;
                 case RowFilterBoxMode.Server:
@@ -1706,7 +1705,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             switch (__RowFilterMode)
             {
-                case RowFilterBoxMode.Client:
+                case RowFilterBoxMode.ClientFilter:
                     _RowFilterClientLayout(ref innerBounds);
                     break;
                 case RowFilterBoxMode.Server:
@@ -1725,7 +1724,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 switch (__RowFilterMode)
                 {
-                    case RowFilterBoxMode.Client:
+                    case RowFilterBoxMode.ClientFilter:
                         _RowFilterClientClear();
                         break;
                     case RowFilterBoxMode.Server:
@@ -6590,7 +6589,6 @@ SetSelected() - vstup           Absolutní
         /// <param name="args">Veškerá data o procesu Drag and Drop, permanentní po dobu výskytu myši nad Source objektem</param>
         void IDxDragDropControl.DoDragTarget(DxDragDropArgs args)
         {
-            var name = (args.TargetControl as Control).Name;
             switch (args.ActionType)
             {
                 case DxDragDropEventType.DragMove:

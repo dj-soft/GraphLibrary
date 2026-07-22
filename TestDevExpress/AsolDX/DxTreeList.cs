@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Drawing;
 using System.Diagnostics;
@@ -15,6 +14,7 @@ using System.Diagnostics;
 using DevExpress.Utils;
 using DevExpress.XtraTreeList.Nodes;
 using DevExpress.XtraTreeList.ViewInfo;
+using DevExpress.Utils.Controls;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -198,21 +198,29 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 var oldFilterMode = __RowFilterMode;
 
-                if (newFilterMode != RowFilterBoxMode.Client && _RowFilterClientExists)
+                if (newFilterMode != RowFilterBoxMode.ClientFilter && _RowFilterClientExists)
                     _RowFilterClientRemove();
+                if (newFilterMode != RowFilterBoxMode.ClientSearch && _RowSearcherClientExists)
+                    _RowSearcherClientRemove();
                 if (newFilterMode != RowFilterBoxMode.Server && _RowFilterServerExists)
                     _RowFilterServerRemove();
 
-                if (newFilterMode == RowFilterBoxMode.Client && !_RowFilterClientExists)
+                if (newFilterMode == RowFilterBoxMode.ClientFilter && !_RowFilterClientExists)
                     _RowFilterClientPrepare();
+                if (newFilterMode == RowFilterBoxMode.ClientSearch && !_RowSearcherClientExists)
+                    _RowSearcherClientPrepare();
                 if (newFilterMode == RowFilterBoxMode.Server && !_RowFilterServerExists)
                     _RowFilterServerPrepare();
 
                 switch (newFilterMode)
                 {
-                    case RowFilterBoxMode.Client:
+                    case RowFilterBoxMode.ClientFilter:
                         if (!_RowFilterClientVisible)
                             _RowFilterClientVisible = true;
+                        break;
+                    case RowFilterBoxMode.ClientSearch:
+                        if (!_RowSearcherClientVisible)
+                            _RowSearcherClientVisible = true;
                         break;
                     case RowFilterBoxMode.Server:
                         if (!__RowFilterServer.IsVisible)
@@ -245,8 +253,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             string text = ((e.ActionType == ControlKeyActionType.FillKeyToFilter) ? DxComponent.KeyConvertToChar(e.Keys, true)?.ToString() : (string)null);
             switch (filterMode)
             {
-                case RowFilterBoxMode.Client:
+                case RowFilterBoxMode.ClientFilter:
                     _RowFilterClientSetFocus(text);
+                    break;
+                case RowFilterBoxMode.ClientSearch:
+                    _RowSearcherClientSetFocus(text);
                     break;
                 case RowFilterBoxMode.Server:
                     _RowFilterServerSetFocus(text);
@@ -261,8 +272,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             switch (__RowFilterMode)
             {
-                case RowFilterBoxMode.Client:
+                case RowFilterBoxMode.ClientFilter:
                     _RowFilterClientLayout(ref innerBounds);
+                    break;
+                case RowFilterBoxMode.ClientSearch:
+                    _RowSearcherClientLayout(ref innerBounds);
                     break;
                 case RowFilterBoxMode.Server:
                     _RowFilterServerLayout(ref innerBounds);
@@ -280,8 +294,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 switch (__RowFilterMode)
                 {
-                    case RowFilterBoxMode.Client:
+                    case RowFilterBoxMode.ClientFilter:
                         _RowFilterClientClear();
+                        break;
+                    case RowFilterBoxMode.ClientSearch:
+                        _RowSearcherClientClear();
                         break;
                     case RowFilterBoxMode.Server:
                         _RowFilterServerClear();
@@ -295,6 +312,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _RowFilterDispose()
         {
             _RowFilterClientRemove();
+            _RowSearcherClientRemove();
             _RowFilterServerRemove();
             __RowFilterMode = RowFilterBoxMode.None;
         }
@@ -302,7 +320,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Varianta řádkového filtru.
         /// </summary>
         private RowFilterBoxMode __RowFilterMode;
-        #region Klientský řádkový filtr = používá Searcher
+        #region Klientský řádkový filtr = používá ClientRowFilter
         /// <summary>
         /// Aktuálně existuje řádkový filtr typu Client?
         /// </summary>
@@ -316,8 +334,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _RowFilterClientPrepare()
         {   // Je řešen jako interní vlastnost TreeListu, a zdejší metody / property pouze navazují tuto DevExpress komponentu:
-            this.__TreeListNative.DxProperties.PresetClientRowFilter();
-            this.__TreeListNative.DxProperties.ClientRowFilterVisible = true;
+            this.DxProperties.PresetClientRowFilter();
+            this.DxProperties.ClientRowFilterVisible = true;
         }
         /// <summary>
         /// Umístí FilterBox typu Klient (pokud je Visible) do daného prostoru, a ten zmenší o velikost FilterBoxu
@@ -351,6 +369,51 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _RowFilterClientRemove()
         {
             DxProperties.ClientRowFilterVisible = false;
+        }
+        #endregion
+        #region Klientský řádkový vyhledávač = používá ClientRowSearcher
+        /// <summary>
+        /// Aktuálně existuje řádkový vyhledávač typu Client?
+        /// </summary>
+        private bool _RowSearcherClientExists { get { return DxProperties.ClientRowSearcherVisible; } }
+        /// <summary>
+        /// Aktuálně existuje řádkový vyhledávač typu Client?
+        /// </summary>
+        private bool _RowSearcherClientVisible { get { return DxProperties.ClientRowSearcherVisible; } set { DxProperties.ClientRowSearcherVisible = true; } }
+        /// <summary>
+        /// Inicializace klientského vyhledávače
+        /// </summary>
+        private void _RowSearcherClientPrepare()
+        {   // Je řešen jako interní vlastnost TreeListu, a zdejší metody / property pouze navazují tuto DevExpress komponentu:
+            this.DxProperties.PresetClientRowSearcher();
+            this.DxProperties.ClientRowSearcherVisible = true;
+        }
+        /// <summary>
+        /// Umístí vyhledávač typu Klient (pokud je Visible) do daného prostoru, a ten zmenší o velikost FilterBoxu
+        /// </summary>
+        /// <param name="innerBounds"></param>
+        private void _RowSearcherClientLayout(ref Rectangle innerBounds)
+        {   // Je řešen jako interní vlastnost TreeListu, a zdejší metody / property pouze navazují tuto DevExpress komponentu
+        }
+        /// <summary>
+        /// Smaže obsah klientského vyhledávače
+        /// </summary>
+        private void _RowSearcherClientClear()
+        {
+        }
+        /// <summary>
+        /// Aktivuje klientský vyhledávač, volitelně do něj vepíše daný text (pokud není null)
+        /// </summary>
+        private void _RowSearcherClientSetFocus(string text)
+        {
+            DxProperties.ClientRowFilterVisible = false;
+        }
+        /// <summary>
+        /// Odebere klientský vyhledávač
+        /// </summary>
+        private void _RowSearcherClientRemove()
+        {
+            DxProperties.ClientRowSearcherVisible = false;
         }
         #endregion
         #region Serverový řádkový filtr = používá FilterBox
@@ -742,11 +805,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public DevExpress.XtraTreeList.TreeListEditorShowMode EditorShowMode { get { return DxTreeProperties.EditorShowMode; } set { DxTreeProperties.EditorShowMode = value; } }
             /// <summary>
-            /// Režim inkrementálního vyhledávání (=psaní na klávesnici).
-            /// Default = <see cref="TreeListIncrementalSearchMode.InExpandedNodesOnly"/>
-            /// </summary>
-            public TreeListIncrementalSearchMode IncrementalSearchMode { get { return DxTreeProperties.IncrementalSearchMode; } set { DxTreeProperties.IncrementalSearchMode = value; } }
-            /// <summary>
             /// Odstup sousedních hladin nodů v TreeListu
             /// </summary>
             public int TreeNodeIndent { get { return DxTreeProperties.TreeNodeIndent; } set { DxTreeProperties.TreeNodeIndent = value; } }
@@ -811,6 +869,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public bool ClientRowFilterVisible { get { return DxTreeProperties.ClientRowFilterVisible; } set { DxTreeProperties.ClientRowFilterVisible = value; } }
             /// <summary>
+            /// Vyhledávač řádků (Search) je viditelný?
+            /// </summary>
+            public bool ClientRowSearcherVisible { get { return DxTreeProperties.ClientRowSearcherVisible; } set { DxTreeProperties.ClientRowSearcherVisible = value; } }
+            /// <summary>
             /// Vlastnosti klientského řádkového filtru
             /// </summary>
             public DevExpress.XtraTreeList.TreeListOptionsFilter ClientRowFilterOptions { get { return DxTreeProperties.ClientRowFilterOptions; } }
@@ -818,6 +880,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Připraví nastavení pro klientský RowFilter v tomto TreeListu
             /// </summary>
             public void PresetClientRowFilter() { DxTreeProperties.PresetClientRowFilter(); }
+            /// <summary>
+            /// Připraví nastavení pro klientský RowSearcher v tomto TreeListu
+            /// </summary>
+            public void PresetClientRowSearcher() { DxTreeProperties.PresetClientRowSearcher(); }
+            /// <summary>
+            /// Nápovědný text pro hledání v řádkovém filtru. Default = "Hledat...". Lze setovat null.
+            /// </summary>
+            public string FindNullPrompt { get { return DxTreeProperties.FindNullPrompt; } set { DxTreeProperties.FindNullPrompt = value; } }
             #endregion
             #region Nody: soupis, počet, Selected, metody Add, TryGet, Refresh, Remove, Clear. Lock pro výměnu nodů
             /// <summary>
@@ -1247,7 +1317,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.OptionsMenu.EnableNodeMenu = false;
             this.LevelLineType = TreeLevelLineType.None;             // Defaultní nastavení
 
-            this.IncrementalSearchMode = TreeListIncrementalSearchMode.InExpandedNodesOnly;
+            this._FiltersInit();
+
             this.SelectNodeBeforeShowContextMenu = true;
             this.MainClickMode = NodeMainClickMode.RunEvent;
 
@@ -1429,10 +1500,37 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return result;
         }
+        #endregion
+        #region Řádkový filtr a searcher
+        /// <summary>
+        /// Inicializace nastavení pro řádkový filtr a inkrementální vyhledávání
+        /// </summary>
+        private void _FiltersInit()
+        {
+            PresetClientRowFilter(true);
+            this.ClientRowFilterVisible = false;
+
+            PresetClientRowSearcher(true);
+            this.ClientRowSearcherVisible = false;
+        }
         /// <summary>
         /// Řádkový filtr je viditelný?
         /// </summary>
-        protected bool ClientRowFilterVisible { get { return this.OptionsView.ShowAutoFilterRow; } set { this.OptionsView.ShowAutoFilterRow = value; } }
+        protected bool ClientRowFilterVisible
+        {
+            get 
+            {
+                return __ClientRowFilterVisible;
+            }
+            set 
+            {
+                this.ActiveFilterEnabled = value;
+                this.OptionsView.ShowAutoFilterRow = value;
+                this.OptionsFilter.AllowFilterEditor = value;
+                __ClientRowFilterVisible = value;
+            }
+        }
+        private bool __ClientRowFilterVisible;
         /// <summary>
         /// Vlastnosti klientského řádkového filtru
         /// </summary>
@@ -1440,11 +1538,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Připraví nastavení pro klientský RowFilter v tomto TreeListu
         /// </summary>
-        protected void PresetClientRowFilter()
+        protected void PresetClientRowFilter(bool isInit = false)
         {
-            this.ActiveFilterEnabled = true;
             this.OptionsFilter.FilterMode = DevExpress.XtraTreeList.FilterMode.ParentBranch;
-            this.OptionsFilter.AllowFilterEditor = true;
             this.OptionsFilter.AllowAutoFilterConditionChange = DefaultBoolean.True;
             this.OptionsFilter.ColumnFilterPopupMode = DevExpress.XtraTreeList.ColumnFilterPopupMode.Classic;
             this.OptionsFilter.DefaultFilterEditorView = DevExpress.XtraEditors.FilterEditorViewMode.VisualAndText;
@@ -1456,7 +1552,67 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.OptionsFilter.MRUColumnFilterListCount = 7;
             this.OptionsFilter.ColumnFilterPopupRowCount = 24;
             this.OptionsFilter.ExpandNodesOnFiltering = true;
+
         }
+        /// <summary>
+        /// Vyhledávač řádků (Search) je viditelný?
+        /// </summary>
+        public bool ClientRowSearcherVisible
+        {
+            get 
+            {
+                return __ClientRowSearcherVisible;
+            }
+            set 
+            {
+                this.OptionsFind.AllowFindPanel = value;
+                this.OptionsFind.AlwaysVisible = value;
+                this.OptionsFind.AllowIncrementalSearch = value;
+                if (value)
+                    this.ShowFindPanel();
+                else
+                    this.HideFindPanel();
+
+                if (this.FindPanel != null)
+                    this.FindPanel.Visible = value;
+
+                __ClientRowSearcherVisible = value;
+            }
+        }
+        private bool __ClientRowSearcherVisible;
+        /// <summary>
+        /// Připraví nastavení pro klientský RowSearcher v tomto TreeListu
+        /// </summary>
+        public void PresetClientRowSearcher(bool isInit = false) 
+        {
+            this.OptionsFind.ExpandNodesOnSearch = DefaultBoolean.True;
+            this.OptionsFind.Behavior = DevExpress.XtraEditors.FindPanelBehavior.Search;
+            this.OptionsFind.ShowFindButton = true;
+            this.OptionsFind.ShowSearchNavButtons = true;
+            this.OptionsFind.ExpandNodesOnIncrementalSearch = true;
+
+            if (isInit)
+            {
+                __FindNullPrompt = DxComponent.Localize(MsgCode.DxFindNullPrompt);
+                this.OptionsFind.FindNullPrompt = __FindNullPrompt;
+            }
+        }
+        /// <summary>
+        /// Nápovědný text pro hledání v řádkovém filtru. Default = "Hledat...". Lze setovat null.
+        /// </summary>
+        protected string FindNullPrompt
+        {
+            get
+            {
+                return __FindNullPrompt;
+            }
+            set 
+            {
+                __FindNullPrompt = value;
+                this.OptionsFind.FindNullPrompt = __FindNullPrompt;
+            }
+        }
+        private string __FindNullPrompt;
         #endregion
         #region Úložiště dat nodů, a třída NodePair
         /// <summary>
@@ -3973,21 +4129,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             set { this.OptionsBehavior.EditorShowMode = value; }
         }
         /// <summary>
-        /// Režim inkrementálního vyhledávání (=psaní na klávesnici).
-        /// Default = <see cref="TreeListIncrementalSearchMode.InExpandedNodesOnly"/>
-        /// </summary>
-        protected TreeListIncrementalSearchMode IncrementalSearchMode
-        {
-            get { return _IncrementalSearchMode; }
-            set
-            {
-                _IncrementalSearchMode = value;
-                this.OptionsFind.AllowIncrementalSearch = (value == TreeListIncrementalSearchMode.InExpandedNodesOnly || value == TreeListIncrementalSearchMode.InAllNodes);
-                this.OptionsFind.ExpandNodesOnIncrementalSearch = (value == TreeListIncrementalSearchMode.InAllNodes);
-            }
-        }
-        private TreeListIncrementalSearchMode _IncrementalSearchMode;
-        /// <summary>
         /// Odstup sousedních hladin nodů v TreeListu
         /// </summary>
         protected int TreeNodeIndent { get { return this.TreeLevelWidth; } set { this.TreeLevelWidth = (value < 5 ? 5 : (value > 100 ? 100 :value)); } }
@@ -5158,11 +5299,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public DevExpress.XtraTreeList.TreeListEditorShowMode EditorShowMode { get { return __Owner.EditorShowMode; } set { __Owner.EditorShowMode = value; } }
             /// <summary>
-            /// Režim inkrementálního vyhledávání (=psaní na klávesnici).
-            /// Default = <see cref="TreeListIncrementalSearchMode.InExpandedNodesOnly"/>
-            /// </summary>
-            public TreeListIncrementalSearchMode IncrementalSearchMode { get { return __Owner.IncrementalSearchMode; } set { __Owner.IncrementalSearchMode = value; } }
-            /// <summary>
             /// Odstup sousedních hladin nodů v TreeListu
             /// </summary>
             public int TreeNodeIndent { get { return __Owner.TreeNodeIndent; } set { __Owner.TreeNodeIndent = value; } }
@@ -5234,6 +5370,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Připraví nastavení pro klientský RowFilter v tomto TreeListu
             /// </summary>
             public void PresetClientRowFilter() { __Owner.PresetClientRowFilter(); }
+            /// <summary>
+            /// Vyhledávač řádků (Search) je viditelný?
+            /// </summary>
+            public bool ClientRowSearcherVisible { get { return __Owner.ClientRowSearcherVisible; } set { __Owner.ClientRowSearcherVisible = value; } }
+            /// <summary>
+            /// Připraví nastavení pro klientský RowSearcher v tomto TreeListu
+            /// </summary>
+            public void PresetClientRowSearcher() { __Owner.PresetClientRowSearcher(); }
+            /// <summary>
+            /// Nápovědný text pro hledání v řádkovém filtru. Default = "Hledat...". Lze setovat null.
+            /// </summary>
+            public string FindNullPrompt { get { return __Owner.FindNullPrompt; } set { __Owner.FindNullPrompt = value; } }
             #endregion
             #region Nody: sopis, počet, Selected, metody Add, TryGet, Refresh, Remove, Clear. Lock pro výměnu nodů
             /// <summary>
@@ -5840,25 +5988,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         AllNodes
     }
     /// <summary>
-    /// Režim hledání nodu při typování na klávesnici
-    /// </summary>
-    public enum TreeListIncrementalSearchMode
-    {
-        /// <summary>
-        /// IncrementalSearch se nepoužívá
-        /// </summary>
-        None,
-        /// <summary>
-        /// IncrementalSearch vyhledává pouze v nodech, které jsou Expanded (exaktně řečeno: v nodech, jejichž Parent je Expanded).
-        /// Pokud by hledaný text byl v nodu, který není Expanded, pak nebude nalezen.
-        /// </summary>
-        InExpandedNodesOnly,
-        /// <summary>
-        /// IncrementalSearch vyhledává i v nodexh, které nejsou Expanded.
-        /// </summary>
-        InAllNodes
-    }
-    /// <summary>
     /// Část TreeList, na kterou bylo kliknuto
     /// </summary>
     public enum TreeListPartType
@@ -6371,24 +6500,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Zarovnání obsahu sloupce (text v buňce)
         /// </summary>
         HorzAlignment? CellContentAlignment { get; }
-    }
-    /// <summary>
-    /// Druh řádkového filtru (nativní / externí)
-    /// </summary>
-    public enum RowFilterBoxMode
-    {
-        /// <summary>
-        /// Žádný filtrační řádek
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Klientský = nativní, vhodný pokud existuje jeden TreeList a má na klientu načtená všechna data
-        /// </summary>
-        Client,
-        /// <summary>
-        /// Serverový = externí, filtrování řeší server přenačtením obsahu stromu
-        /// </summary>
-        Server
     }
     /// <summary>
     /// Typ uzlu

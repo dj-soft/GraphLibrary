@@ -430,7 +430,6 @@ namespace TestDevExpress.Forms
             DxTreeList.DxProperties.LazyLoadFocusNode = TreeListLazyLoadFocusNodeType.ParentNode;
             DxTreeList.DxProperties.RowFilterMode = RowFilterBoxMode.Server;
             DxTreeList.DxProperties.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.MouseUp;
-            DxTreeList.DxProperties.IncrementalSearchMode = TreeListIncrementalSearchMode.InAllNodes;
             DxTreeList.DxProperties.RowFilterServerOperators = DxFilterBox.CreateDefaultOperatorItems(FilterBoxOperatorItems.DefaultText);
             DxTreeList.DxProperties.RowFilterServerChangedSources = DxFilterBoxChangeEventSource.Default;
             DxTreeList.DxProperties.MultiSelectEnabled = true;
@@ -978,7 +977,7 @@ namespace TestDevExpress.Forms
 
             node.ImageName = GetMainImageName(SettingsNodeImageSet);
             node.ToolTipTitle = null;
-            node.ToolTipText = Randomizer.GetSentence(10, 50);
+            node.ToolTipText = Randomizer.GetSentence(10, 50, false, true);
 
             if (SettingsUseExactStyle && Randomizer.IsTrue(33))
             {
@@ -2169,7 +2168,8 @@ namespace TestDevExpress.Forms
                 switch (value)
                 {
                     case "N": return RowFilterBoxMode.None;
-                    case "C": return RowFilterBoxMode.Client;
+                    case "C": return RowFilterBoxMode.ClientFilter;
+                    case "H": return RowFilterBoxMode.ClientSearch;
                     case "S": return RowFilterBoxMode.Server;
                 }
             }
@@ -2196,7 +2196,8 @@ namespace TestDevExpress.Forms
             switch (value)
             {
                 case RowFilterBoxMode.None: return "N";
-                case RowFilterBoxMode.Client: return "C";
+                case RowFilterBoxMode.ClientFilter: return "C";
+                case RowFilterBoxMode.ClientSearch: return "H";
                 case RowFilterBoxMode.Server: return "S";
             }
             return "";
