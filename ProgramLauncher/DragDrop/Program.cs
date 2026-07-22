@@ -7,7 +7,7 @@ namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
     /// </summary>
     class Program
     {
-        static void Main(string[] args)
+        static void xxMain(string[] args)
         {
             // Příklad 1: Načtení zástupce z disku
             Console.WriteLine("=== NAČÍTÁNÍ ZÁSTUPCE ===\n");

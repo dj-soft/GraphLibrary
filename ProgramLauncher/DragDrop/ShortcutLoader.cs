@@ -11,21 +11,44 @@ namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
         /// <summary>
         /// Načte obsah Windows zástupce z daného souboru
         /// </summary>
+        /// <param name="lnkFilePath"></param>
+        /// <returns></returns>
+        public static ShortcutInfo LoadShortcut(string lnkFilePath)
+        {
+            var success = _LoadShortcut(lnkFilePath, out ShortcutInfo shortcut, out string errorText);
+            if (success) return shortcut;
+            throw new ArgumentException(errorText);
+        }
+        /// <summary>
+        /// Načte obsah Windows zástupce z daného souboru
+        /// </summary>
         /// <param name="lnkFilePath">Cesta k souboru *.lnk</param>
         /// <returns>Objekt ShortcutInfo s načtenými údaji</returns>
         /// <exception cref="ArgumentException">Soubor neexistuje nebo není .lnk soubor</exception>
         /// <exception cref="Exception">Chyba při čtení zástupce</exception>
-        public static ShortcutInfo LoadShortcut(string lnkFilePath)
+        private static bool _LoadShortcut(string lnkFilePath, out ShortcutInfo shortcut, out string errorText)
         {
+            shortcut = null;
+            errorText = null;
+
             // Validace vstupů
             if (string.IsNullOrWhiteSpace(lnkFilePath))
-                throw new ArgumentException("Cesta k souboru nesmí být prázdná.", nameof(lnkFilePath));
+            {
+                errorText = $"Není zadán soubor obsahující Shortcut.";
+                return false;
+            }
 
-            if (!File.Exists(lnkFilePath))
-                throw new ArgumentException($"Soubor '{lnkFilePath}' neexistuje.", nameof(lnkFilePath));
-
+            lnkFilePath = lnkFilePath.Trim();
             if (!lnkFilePath.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
-                throw new ArgumentException($"Soubor '{lnkFilePath}' není zástupce (.lnk soubor).", nameof(lnkFilePath));
+            {
+                errorText = $"Soubor '{lnkFilePath}' není typu Shortcut.";
+                return false;
+            }
+            if (!File.Exists(lnkFilePath))
+            {
+                errorText = $"Soubor '{lnkFilePath}' typu Shortcut neexistuje.";
+                return false;
+            }
 
             try
             {
@@ -45,61 +68,58 @@ namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
                     WorkingDirectory = shortcutLink.WorkingDirectory ?? "",
                     Description = shortcutLink.Description ?? "",
                     IconLocation = shortcutLink.IconLocation ?? "",
-                    IconIndex = ParseIconIndex(shortcutLink.IconLocation),
+                    IconIndex = parseIconIndex(shortcutLink.IconLocation),
                     WindowStyle = (WindowStyle)(shortcutLink.WindowStyle ?? 1),
                     HotKey = shortcutLink.Hotkey ?? "",
                     RelativePath = shortcutLink.RelativePath ?? "",
-                    Flags = ParseFlags(shortcutLink)
+                    Flags = parseFlags(shortcutLink)
                 };
 
                 // Uvolnění COM objektů
                 System.Runtime.InteropServices.Marshal.ReleaseComObject(shortcutLink);
                 System.Runtime.InteropServices.Marshal.ReleaseComObject(shell);
 
-                return shortcutInfo;
+                shortcut = shortcutInfo;
+                return true;
             }
             catch (Exception ex) when (!(ex is ArgumentException))
             {
-                throw new Exception($"Chyba při čtení zástupce '{lnkFilePath}': {ex.Message}", ex);
+                errorText = $"Chyba při čtení zástupce '{lnkFilePath}': {ex.Message}";
+                return false;
             }
-        }
 
-        /// <summary>
-        /// Parsuje index ikony z řetězce IconLocation
-        /// </summary>
-        private static int ParseIconIndex(string iconLocation)
-        {
-            if (string.IsNullOrEmpty(iconLocation))
+            // Parsuje index ikony z řetězce IconLocation
+            static int parseIconIndex(string iconLocation)
+            {
+                if (string.IsNullOrEmpty(iconLocation))
+                    return 0;
+
+                // Formát je obvykle: "cesta\k\souboru,indexIkony"
+                int commaIndex = iconLocation.LastIndexOf(',');
+                if (commaIndex > 0 && int.TryParse(iconLocation.Substring(commaIndex + 1).Trim(), out int index))
+                    return index;
+
                 return 0;
-
-            // Formát je obvykle: "cesta\k\souboru,indexIkony"
-            int commaIndex = iconLocation.LastIndexOf(',');
-            if (commaIndex > 0 && int.TryParse(iconLocation.Substring(commaIndex + 1).Trim(), out int index))
-                return index;
-
-            return 0;
-        }
-
-        /// <summary>
-        /// Parsuje speciální příznaky zástupce
-        /// </summary>
-        private static ShortcutFlags ParseFlags(dynamic shortcutLink)
-        {
-            var flags = ShortcutFlags.None;
-
-            try
-            {
-                // Kontrola příznaku pro spuštění jako administrátor
-                // Poznámka: Toto není dostupné přes standardní COM API WshShell
-                // Pro plnou detekci by bylo potřeba parsovat binární formát .lnk souboru
-                // nebo použít OS API na nižší úrovni
             }
-            catch
+            // Parsuje speciální příznaky zástupce
+            static ShortcutFlags parseFlags(dynamic shortcutLink)
             {
-                // Ignorovat chyby při čtení příznaků
-            }
+                var flags = ShortcutFlags.None;
 
-            return flags;
+                try
+                {
+                    // Kontrola příznaku pro spuštění jako administrátor
+                    // Poznámka: Toto není dostupné přes standardní COM API WshShell
+                    // Pro plnou detekci by bylo potřeba parsovat binární formát .lnk souboru
+                    // nebo použít OS API na nižší úrovni
+                }
+                catch
+                {
+                    // Ignorovat chyby při čtení příznaků
+                }
+
+                return flags;
+            }
         }
 
         /// <summary>
