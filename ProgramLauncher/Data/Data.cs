@@ -240,7 +240,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         private static void _RunContextMenuAction(IMenuItem menuItem)
         {
             if (menuItem.UserData is ContextMenuItemInfo itemInfo)
-                RunContextMenuAction(itemInfo.ActionType, itemInfo.ActionInfo);
+                RunContextMenuAction(itemInfo.ActionType, itemInfo.ActionInfo, itemInfo.UserData);
         }
         /// <summary>
         /// Balíček s daty pro akce konkrétní položky kontextového menu
@@ -304,8 +304,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Provede vybranou akci z kontextového menu
         /// </summary>
-        /// <param name="menuItem"></param>
-        public static void RunContextMenuAction(DataItemActionType actionType, ContextActionInfo actionInfo)
+        /// <param name="actionType">Typ akce</param>
+        /// <param name="actionInfo">Základní data pro kontextovou akci</param>
+        /// <param name="userData">Přidaná data (obsah clipoboardu, shortcuts, ...</param>
+        public static void RunContextMenuAction(DataItemActionType actionType, ContextActionInfo actionInfo, object userData)
         {
             // Kompletní data si odzálohuji ještě před tím, než se začnou provádět změny. Pak je možná dám do UndoRedo containeru:
             PageSetData pageSetClone = actionInfo.PageSetData.Clone(true);
@@ -319,7 +321,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 case DataItemActionType.EditPage:
                 case DataItemActionType.CopyPage:
                 case DataItemActionType.DeletePage:
-                    isEdited = PageSetData.RunEditAction(actionType, actionInfo);
+                    isEdited = PageSetData.RunEditAction(actionType, actionInfo, userData);
                     break;
                 case DataItemActionType.MoveGroup:
                     break;
@@ -327,7 +329,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 case DataItemActionType.EditGroup:
                 case DataItemActionType.CopyGroup:
                 case DataItemActionType.DeleteGroup:
-                    isEdited = PageData.RunEditAction(actionType, actionInfo);
+                    isEdited = PageData.RunEditAction(actionType, actionInfo, userData);
                     break;
                 case DataItemActionType.MoveApplication:
                     break;
@@ -335,12 +337,13 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 case DataItemActionType.EditApplication:
                 case DataItemActionType.CopyApplication:
                 case DataItemActionType.DeleteApplication:
-                    isEdited = GroupData.RunEditAction(actionType, actionInfo);
+                case DataItemActionType.PasteApplication:
+                    isEdited = GroupData.RunEditAction(actionType, actionInfo, userData);
                     break;
                 case DataItemActionType.RunApplication:
                 case DataItemActionType.RunApplicationAsAdmin:
                 case DataItemActionType.ShowApplictionInToolbar:
-                    isEdited = ApplicationData.RunEditAction(actionType, actionInfo);
+                    isEdited = ApplicationData.RunEditAction(actionType, actionInfo, userData);
                     break;
             }
 
@@ -355,8 +358,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Provede vybranou akci pro svoje stránky
         /// </summary>
-        /// <param name="menuItem"></param>
-        public static bool RunEditAction(DataItemActionType actionType, ContextActionInfo actionInfo)
+        /// <param name="actionType">Typ akce</param>
+        /// <param name="actionInfo">Základní data pro kontextovou akci</param>
+        /// <param name="userData">Přidaná data (obsah clipoboardu, shortcuts, ...</param>
+        public static bool RunEditAction(DataItemActionType actionType, ContextActionInfo actionInfo, object userData)
         {
             var pageSetData = actionInfo.PageSetData;
 
@@ -719,8 +724,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Provede vybranou akci pro svoje grupy
         /// </summary>
-        /// <param name="menuItem"></param>
-        public static bool RunEditAction(DataItemActionType actionType, ContextActionInfo actionInfo)
+        /// <param name="actionType">Typ akce</param>
+        /// <param name="actionInfo">Základní data pro kontextovou akci</param>
+        /// <param name="userData">Přidaná data (obsah clipoboardu, shortcuts, ...</param>
+        public static bool RunEditAction(DataItemActionType actionType, ContextActionInfo actionInfo, object userData)
         {
             var pageData = actionInfo.AreaData as PageData;
             bool hasPageData = (pageData != null);
@@ -1059,8 +1066,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Provede vybranou akci pro svoje stránky
         /// </summary>
-        /// <param name="menuItem"></param>
-        public static bool RunEditAction(DataItemActionType actionType, ContextActionInfo actionInfo)
+        /// <param name="actionType">Typ akce</param>
+        /// <param name="actionInfo">Základní data pro kontextovou akci</param>
+        /// <param name="userData">Přidaná data (obsah clipoboardu, shortcuts, ...</param>
+        public static bool RunEditAction(DataItemActionType actionType, ContextActionInfo actionInfo, object userData)
         {
             var pageData = actionInfo.AreaData as PageData;
             bool hasPageData = (pageData != null);
@@ -1083,6 +1092,12 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 case DataItemActionType.CopyApplication:
                     applicationData = applicationData.Clone(false);
                     isAppend = applicationData.EditData(actionInfo.MouseState.LocationAbsolute, App.Messages.Format(App.Messages.EditFormTitleClone, applicationData.Title));
+                    break;
+                case DataItemActionType.PasteApplication:
+                    if (userData is string[] shortcutFiles && shortcutFiles.Length > 0)
+                    {
+                        int c = 0;
+                    }
                     break;
                 case DataItemActionType.DeleteApplication:
                     if (hasApplicationData)
@@ -1368,8 +1383,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// <summary>
         /// Provede vybranou akci pro danou aplikaci
         /// </summary>
-        /// <param name="menuItem"></param>
-        public static bool RunEditAction(DataItemActionType actionType, ContextActionInfo actionInfo)
+        /// <param name="actionType">Typ akce</param>
+        /// <param name="actionInfo">Základní data pro kontextovou akci</param>
+        /// <param name="userData">Přidaná data (obsah clipoboardu, shortcuts, ...</param>
+        public static bool RunEditAction(DataItemActionType actionType, ContextActionInfo actionInfo, object userData)
         {
             bool result = false;
             if (actionInfo.ItemData is ApplicationData applicationData)
@@ -1710,9 +1727,14 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         public virtual string ToolTipText { get; set; }
         /// <summary>
-        /// Jméno obrázku
+        /// Jméno obrázku: PNG, JPG, BMP nebo ICO nebo DLL nebo EXE...
+        /// Pokud jde o DLL nebo EXE, pak v <see cref="ImageFileNumber"/> je index ikony.
         /// </summary>
         public virtual string ImageFileName { get; set; }
+        /// <summary>
+        /// Index ikony, pokud v <see cref="ImageFileName"/> je soubor DLL nebo EXE.
+        /// </summary>
+        public virtual int? ImageFileNumber { get; set; }
         /// <summary>
         /// Druh layoutu, podle něhož se tento prvek kreslí.
         /// Konkrétní layout je získán z <see cref="InteractiveGraphicsControl.GetLayout(DataLayoutKind)"/>, kam se předává zdejší <see cref="LayoutKind"/>.
@@ -1759,6 +1781,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             clone.Description = this.Description;
             clone.ToolTipText = this.ToolTipText;
             clone.ImageFileName = this.ImageFileName;
+            clone.ImageFileNumber = this.ImageFileNumber;
             clone.LayoutKind = this.LayoutKind;
             clone.RelativeAdress = this.RelativeAdress;
             clone.BackColor = this.BackColor;
@@ -1849,7 +1872,6 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             if (cmp == 0) cmp = a.RelativeAdress.X.CompareTo(b.RelativeAdress.X);
             return cmp;
         }
-
         #endregion
         #region Id a UniqueId
         /// <summary>
