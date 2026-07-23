@@ -9,7 +9,7 @@ namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
     /// </summary>
     class IconExtractionExamples
     {
-        static void Main(string[] args)
+        static void MainTest(string[] args)
         {
             Console.WriteLine("=== PŘÍKLADY EXTRAKCE IKON ===\n");
 
@@ -111,7 +111,7 @@ namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
                 // Nejdřív načti zástupce
                 string shortcutPath = @"C:\Users\YourUsername\Desktop\Notepad.lnk";
 
-                ShortcutInfo shortcut = ShortcutLoader.LoadShortcut(shortcutPath);
+                ShortcutInfo shortcut = ShortcutLoader.LoadShortcutFromFile(shortcutPath);
                 Console.WriteLine($"Zástupce: {shortcut.LinkName}");
                 Console.WriteLine($"IconLocation: {shortcut.IconLocation}");
                 Console.WriteLine($"IconIndex: {shortcut.IconIndex}");

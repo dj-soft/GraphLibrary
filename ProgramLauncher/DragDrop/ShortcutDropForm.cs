@@ -202,7 +202,7 @@ namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
             try
             {
                 // 1. Načti informace o zástupci
-                ShortcutInfo shortcutInfo = ShortcutLoader.LoadShortcut(lnkFilePath);
+                ShortcutInfo shortcutInfo = ShortcutLoader.LoadShortcutFromFile(lnkFilePath);
 
                 if (shortcutInfo == null || string.IsNullOrWhiteSpace(shortcutInfo.TargetPath))
                 {

@@ -6,10 +6,9 @@ namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
     /// <summary>
     /// Entry point aplikace - spuštění formuláře s Drag&Drop
     /// </summary>
-    static class Program
+    static class Program2
     {
-        [STAThread]
-        static void Main()
+        static void MainTest()
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);

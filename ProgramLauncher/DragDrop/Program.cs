@@ -18,7 +18,7 @@ namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
                 string shortcutPath = @"C:\Users\YourUsername\Desktop\YourShortcut.lnk";
 
                 Console.WriteLine($"Načítám zástupce: {shortcutPath}\n");
-                ShortcutInfo shortcut = ShortcutLoader.LoadShortcut(shortcutPath);
+                ShortcutInfo shortcut = ShortcutLoader.LoadShortcutFromFile(shortcutPath);
 
                 // Výstup všech vlastností
                 Console.WriteLine(shortcut);
@@ -62,7 +62,7 @@ namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
 
                 // Ověření - znovu načteme zástupce
                 Console.WriteLine("\nOvěření - nově vytvořený zástupce:");
-                ShortcutInfo loadedShortcut = ShortcutLoader.LoadShortcut(newShortcutPath);
+                ShortcutInfo loadedShortcut = ShortcutLoader.LoadShortcutFromFile(newShortcutPath);
                 Console.WriteLine(loadedShortcut);
             }
             catch (Exception ex)
@@ -78,7 +78,7 @@ namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
                 string shortcutPath = @"C:\Users\YourUsername\Desktop\YourShortcut.lnk";
                 
                 Console.WriteLine($"Načítám zástupce: {shortcutPath}");
-                ShortcutInfo shortcut = ShortcutLoader.LoadShortcut(shortcutPath);
+                ShortcutInfo shortcut = ShortcutLoader.LoadShortcutFromFile(shortcutPath);
 
                 // Modifikace
                 Console.WriteLine("Modifikuji zástupce...");

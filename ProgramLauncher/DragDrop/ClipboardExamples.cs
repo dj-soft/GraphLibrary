@@ -9,7 +9,7 @@ namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
     /// </summary>
     class ClipboardExamples
     {
-        static void Main()
+        static void MainTest()
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);

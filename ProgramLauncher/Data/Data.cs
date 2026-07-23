@@ -224,6 +224,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     menuItems.Add(new DataMenuItem() { ItemType = MenuItemType.Header, Text = App.Messages.AppContextMenuTitleApplications });
                     menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewApplicationText, ToolTip = App.Messages.AppContextMenuNewApplicationToolTip, Image = Properties.Resources.archive_insert_3_22, UserData = new ContextMenuItemInfo(DataItemActionType.NewApplication, actionInfo) });
                     menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewGroupText, ToolTip = App.Messages.AppContextMenuNewGroupToolTip, Image = Properties.Resources.insert_horizontal_rule_22, UserData = new ContextMenuItemInfo(DataItemActionType.NewGroup, actionInfo) });
+
+                    // Paste Shortcut[s]:
+                    var shortcutFiles = DjSoft.Tools.ProgramLauncher.ShortcutParser.ShortcutLoader.GetShortcutsFilesFromClipboard();
+                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuPasteClipboardText, ToolTip = App.Messages.AppContextMenuPasteClipboardToolTip, Image = Properties.Resources.edit_paste_3_22, Enabled = (shortcutFiles.Length > 0), UserData = new ContextMenuItemInfo(DataItemActionType.PasteApplication, actionInfo, shortcutFiles) });
                 }
             }
 
@@ -243,10 +247,17 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         private class ContextMenuItemInfo
         {
-            public ContextMenuItemInfo(DataItemActionType actionType, ContextActionInfo actionInfo)
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="actionType"></param>
+            /// <param name="actionInfo"></param>
+            /// <param name="userData"></param>
+            public ContextMenuItemInfo(DataItemActionType actionType, ContextActionInfo actionInfo, object userData = null)
             {
                 this.ActionType = actionType;
                 this.ActionInfo = actionInfo;
+                this.UserData = userData;
             }
             /// <summary>
             /// Druh akce
@@ -256,6 +267,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             /// Kompletní data o prvku a controlu
             /// </summary>
             public ContextActionInfo ActionInfo { get; private set; }
+            /// <summary>
+            /// Přidaná data
+            /// </summary>
+            public object UserData { get; private set; }
         }
         /// <summary>
         /// Provede editaci daného prvku
@@ -2101,6 +2116,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         MoveApplication,
         EditApplication,
         CopyApplication,
+        PasteApplication,
         DeleteApplication,
         RunApplication,
         RunApplicationAsAdmin,

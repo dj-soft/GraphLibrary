@@ -130,7 +130,7 @@ namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
         {
             try
             {
-                ShortcutInfo shortcutInfo = ShortcutLoader.LoadShortcut(lnkFilePath);
+                ShortcutInfo shortcutInfo = ShortcutLoader.LoadShortcutFromFile(lnkFilePath);
 
                 if (shortcutInfo == null || string.IsNullOrWhiteSpace(shortcutInfo.TargetPath))
                     return;

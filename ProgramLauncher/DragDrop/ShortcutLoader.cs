@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Windows.Forms;
 
 namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
 {
@@ -9,24 +11,73 @@ namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
     public class ShortcutLoader
     {
         /// <summary>
-        /// Načte obsah Windows zástupce z daného souboru
+        /// Získej seznam .lnk souborů z Clipboardu
         /// </summary>
-        /// <param name="lnkFilePath"></param>
-        /// <returns></returns>
-        public static ShortcutInfo LoadShortcut(string lnkFilePath)
+        public static string[] GetShortcutsFilesFromClipboard()
         {
-            var success = _LoadShortcut(lnkFilePath, out ShortcutInfo shortcut, out string errorText);
+            var shortcuts = new List<string>();
+
+            try
+            {
+                if (!Clipboard.ContainsFileDropList())
+                    return shortcuts.ToArray();
+
+                var files = Clipboard.GetFileDropList();
+                foreach (string file in files)
+                {
+                    try
+                    {
+                        if (!String.IsNullOrEmpty(file))
+                        {
+                            var shortcutFile = file.Trim();
+                            if (shortcutFile.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase) && File.Exists(shortcutFile))
+                                shortcuts.Add(shortcutFile);
+                        }
+                    }
+                    catch (Exception ex) { /* Chybné jméno, práva, atd... */ }
+                }
+            }
+            catch (Exception ex) { /* Chyba při čtení Clipboardu */ }
+
+            return shortcuts.ToArray();
+        }
+        /// <summary>
+        /// Načte obsah Windows zástupce z daného souboru.
+        /// Pokud se nepodaří, dojde k chybě.
+        /// </summary>
+        /// <param name="shortcutFile">Cesta k souboru *.lnk</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException">Soubor neexistuje nebo není .lnk soubor</exception>
+        public static ShortcutInfo LoadShortcutFromFile(string shortcutFile)
+        {
+            var success = _TryLoadShortcutFromFile(shortcutFile, out ShortcutInfo shortcut, out string errorText);
             if (success) return shortcut;
             throw new ArgumentException(errorText);
+        }
+        /// <summary>
+        /// Zkusí načíst obsah Windows zástupce z daného souboru. Pokud se nezdaří, vrací false. Nevyhodí chybu.
+        /// </summary>
+        /// <param name="shortcutFile">Cesta k souboru *.lnk</param>
+        /// <returns>Objekt ShortcutInfo s načtenými údaji</returns>
+        public static bool TryLoadShortcutFromFile(string shortcutFile, out ShortcutInfo shortcut)
+        {
+            return _TryLoadShortcutFromFile(shortcutFile, out shortcut, out var _);
+        }
+        /// <summary>
+        /// Zkusí načíst obsah Windows zástupce z daného souboru. Pokud se nezdaří, vrací false. Nevyhodí chybu.
+        /// </summary>
+        /// <param name="shortcutFile">Cesta k souboru *.lnk</param>
+        /// <returns>Objekt ShortcutInfo s načtenými údaji</returns>
+        public static bool TryLoadShortcutFromFile(string shortcutFile, out ShortcutInfo shortcut, out string errorText) 
+        {
+            return _TryLoadShortcutFromFile(shortcutFile, out shortcut, out errorText);
         }
         /// <summary>
         /// Načte obsah Windows zástupce z daného souboru
         /// </summary>
         /// <param name="lnkFilePath">Cesta k souboru *.lnk</param>
         /// <returns>Objekt ShortcutInfo s načtenými údaji</returns>
-        /// <exception cref="ArgumentException">Soubor neexistuje nebo není .lnk soubor</exception>
-        /// <exception cref="Exception">Chyba při čtení zástupce</exception>
-        private static bool _LoadShortcut(string lnkFilePath, out ShortcutInfo shortcut, out string errorText)
+        private static bool _TryLoadShortcutFromFile(string lnkFilePath, out ShortcutInfo shortcut, out string errorText)
         {
             shortcut = null;
             errorText = null;
@@ -89,7 +140,7 @@ namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
             }
 
             // Parsuje index ikony z řetězce IconLocation
-            static int parseIconIndex(string iconLocation)
+            int parseIconIndex(string iconLocation)
             {
                 if (string.IsNullOrEmpty(iconLocation))
                     return 0;
@@ -102,7 +153,7 @@ namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
                 return 0;
             }
             // Parsuje speciální příznaky zástupce
-            static ShortcutFlags parseFlags(dynamic shortcutLink)
+            ShortcutFlags parseFlags(dynamic shortcutLink)
             {
                 var flags = ShortcutFlags.None;
 

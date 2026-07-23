@@ -319,6 +319,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public string AppContextMenuNewApplicationToolTip { get { return _GetText("Přidá novou aplikaci: otevře okno a umožní změnit popis, cílovou aplikaci a chování této položky"); } }
         public string AppContextMenuNewGroupText { get { return _GetText("Nová skupina"); } }
         public string AppContextMenuNewGroupToolTip { get { return _GetText("Přidá novou skupinu aplikací, do ní pak bude možno přidávat aplikace"); } }
+        public string AppContextMenuPasteClipboardText { get { return _GetText("Vložit z Clipbardu"); } }
+        public string AppContextMenuPasteClipboardToolTip { get { return _GetText("Pokud v Clipbardu je přítomen zástupce (shortcut), pak je možno jej vložit touto funkcí"); } }
 
         public string EditFormTitleNewPage { get { return _GetText("Nová stránka"); } }
         public string EditFormTitleEditPage { get { return _GetText("Upravit stránku '%0'"); } }

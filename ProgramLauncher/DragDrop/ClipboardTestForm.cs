@@ -157,8 +157,7 @@ Nyní můžeš:
             this.ResumeLayout(false);
         }
 
-        [STAThread]
-        static void Main()
+        static void MainTest()
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
