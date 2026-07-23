@@ -1278,6 +1278,27 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Při klonování se 
         /// </summary>
         private static int __NewUniqueId = 0;
+        /// <summary>
+        /// Jméno souboru: default = aplikace (on si z ní někdo tu ikonu najde)
+        /// </summary>
+        public override string ImageFileName 
+        { 
+            get 
+            {
+                var fileName = base.ImageFileName;
+                if (String.IsNullOrEmpty(fileName))
+                    fileName = this.ExecutableFileName;
+                return fileName;
+            }
+            set
+            {
+                 base.ImageFileName = value;
+            }
+        }
+        /// <summary>
+        /// Jméno souboru: bázové = explicitně zadané
+        /// </summary>
+        public string ImageFileNameBase { get { return base.ImageFileName; } set { base.ImageFileName = value; } }
         #endregion
         #region Podpora de/serializace
         /// <summary>
@@ -1295,6 +1316,9 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         protected override void OnPersistDeserializeDone() { }
         #endregion
         #region Data o aplikaci
+        /// <summary>
+        /// Soubor aplikace (EXE)
+        /// </summary>
         [PropertyName("File")]
         public string ExecutableFileName { get; set; }
         [PropertyName("WorkingDirectory")]
@@ -1357,7 +1381,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             if (!String.IsNullOrEmpty(this.Title)) toolTip += this.Title + Environment.NewLine;
             if (!String.IsNullOrEmpty(this.Description)) toolTip += this.Description + Environment.NewLine;
             if (!String.IsNullOrEmpty(this.ToolTipText)) toolTip += this.ToolTipText + Environment.NewLine;
-            var button = new ToolStripButton() { Image = App.GetImage(this.ImageFileName), ToolTipText = toolTip, Tag = this };
+            var button = new ToolStripButton() { Image = App.GetImage(this.ImageFileName, this.ImageIconIndex, null), ToolTipText = toolTip, Tag = this };
             button.MouseUp += _ToolButton_MouseUp;
             return button;
         }
@@ -1669,7 +1693,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             panel.AddCell(ControlType.FileBox, App.Messages.EditDataExecutableFileNameText, nameof(ExecutableFileName), x1, y, w3, validator: ValidateExecutableFileName); y += s2;
             panel.AddCell(ControlType.FileBox, App.Messages.EditDataExecutableWorkingDirectory, nameof(ExecutableWorkingDirectory), x1, y, w3, validator: ValidateExecutableFileName); y += s2;
             panel.AddCell(ControlType.TextBox, App.Messages.EditDataExecutableArgumentsText, nameof(ExecutableArguments), x1, y, w3); y += s2;
-            panel.AddCell(ControlType.FileBox, App.Messages.EditDataImageFileNameText, nameof(ImageFileName), x1, y, w3); y += s1;
+            panel.AddCell(ControlType.FileBox, App.Messages.EditDataImageFileNameText, nameof(ImageFileNameBase), x1, y, w3); y += s1;
 
             int x = x1 + 4;
             int w4 = 175;
@@ -1728,13 +1752,13 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public virtual string ToolTipText { get; set; }
         /// <summary>
         /// Jméno obrázku: PNG, JPG, BMP nebo ICO nebo DLL nebo EXE...
-        /// Pokud jde o DLL nebo EXE, pak v <see cref="ImageFileNumber"/> je index ikony.
+        /// Pokud jde o DLL nebo EXE, pak v <see cref="ImageIconIndex"/> je index ikony.
         /// </summary>
         public virtual string ImageFileName { get; set; }
         /// <summary>
         /// Index ikony, pokud v <see cref="ImageFileName"/> je soubor DLL nebo EXE.
         /// </summary>
-        public virtual int? ImageFileNumber { get; set; }
+        public virtual int? ImageIconIndex { get; set; }
         /// <summary>
         /// Druh layoutu, podle něhož se tento prvek kreslí.
         /// Konkrétní layout je získán z <see cref="InteractiveGraphicsControl.GetLayout(DataLayoutKind)"/>, kam se předává zdejší <see cref="LayoutKind"/>.
@@ -1781,7 +1805,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             clone.Description = this.Description;
             clone.ToolTipText = this.ToolTipText;
             clone.ImageFileName = this.ImageFileName;
-            clone.ImageFileNumber = this.ImageFileNumber;
+            clone.ImageIconIndex = this.ImageIconIndex;
             clone.LayoutKind = this.LayoutKind;
             clone.RelativeAdress = this.RelativeAdress;
             clone.BackColor = this.BackColor;
@@ -2162,6 +2186,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public override string ToolTipText { get { return (!String.IsNullOrEmpty(__Data.ToolTipText) ? __Data.ToolTipText : __Data.Description); } set { } }
         public override Point Adress { get { return __Data.Adress; } set { } }
         public override string ImageName { get { return __Data.ImageFileName; } set { } }
+        public override int? ImageIndex { get { return __Data.ImageIconIndex; } set { } }
         public override Color? BackColor { get { return __Data.BackColor; } set { } }
         public override DataLayoutKind? LayoutKind { get { return __Data.LayoutKind; } set { __Data.LayoutKind = value; } }
     }

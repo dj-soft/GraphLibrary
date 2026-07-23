@@ -1,15 +1,15 @@
-﻿using System;
+﻿using DjSoft.Tools.ProgramLauncher.Data;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Drawing.Drawing2D;
-using System.Drawing;
-using System.Windows.Forms;
-using DjSoft.Tools.ProgramLauncher.Data;
 using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Linq;
 using System.Management;
-using System.Threading;
 using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
+using System.Windows.Forms;
 
 namespace DjSoft.Tools.ProgramLauncher
 {
@@ -1498,35 +1498,38 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         /// <param name="fileName"></param>
         /// <returns></returns>
-        public static Image GetImage(string fileName)
+        public static Image GetImage(string fileName, int? iconIndex = null)
         {
-            return Current._GetImage(fileName, null);
+            return Current._GetImage(fileName, iconIndex, null);
         }
         /// <summary>
         /// Najde a vrátí Image načtený z dodaného obsahu.
         /// Image se nesmí měnit ani Disposovat, používá se opakovaně.
         /// <para/>
-        /// Dodaný <paramref name="imageName"/> nesmí být prázdný - používá se jako jednoznačný klíč pro Image, pod ním je uložen v interní paměti aplikace!
+        /// Dodaný <paramref name="fileName"/> nesmí být prázdný - používá se jako jednoznačný klíč pro Image, pod ním je uložen v interní paměti aplikace!
         /// </summary>
-        /// <param name="imageName"></param>
+        /// <param name="fileName">Jméno souboru s obrázkem (PNG, JPG, BMP), anebo s ikonou (DLL, EXE)</param>
+        /// <param name="iconIndex">Index ikony, pokud soubor odkazuje na DLL/EXE</param>
         /// <param name="content"></param>
         /// <returns></returns>
-        public static Image GetImage(string imageName, byte[] content)
+        public static Image GetImage(string fileName, int? iconIndex, byte[] content)
         {
-            return Current._GetImage(imageName, content);
+            return Current._GetImage(fileName, iconIndex, content);
         }
         /// <summary>
         /// Najde / vytvoří a vrátí Image z dané definice.
         /// </summary>
-        /// <param name="fileName"></param>
+        /// <param name="fileName">Jméno souboru s obrázkem (PNG, JPG, BMP), anebo s ikonou (DLL, EXE)</param>
+        /// <param name="iconIndex">Index ikony, pokud soubor odkazuje na DLL/EXE</param>
         /// <param name="content"></param>
         /// <returns></returns>
-        private Image _GetImage(string fileName, byte[] content)
+        private Image _GetImage(string fileName, int? iconIndex, byte[] content)
         {
             if (String.IsNullOrEmpty(fileName)) return null;
+            fileName = fileName.Trim();
 
             string type = (content is null ? "File" : "Data");
-            string key = _GetImageKey(type, fileName);
+            string key = _GetImageKey(type, fileName, iconIndex);
             if (!__Images.TryGetValue(key, out Image image))
             {
                 try
@@ -1538,7 +1541,7 @@ namespace DjSoft.Tools.ProgramLauncher
                     }
                     else if (System.IO.File.Exists(fileName))
                     {   // Ze souboru:
-                        image = Image.FromFile(fileName);
+                        image = image = _LoadImageFromFile(fileName, iconIndex);
                     }
                 }
                 catch (Exception) { image = null; }
@@ -1547,14 +1550,53 @@ namespace DjSoft.Tools.ProgramLauncher
             return image;
         }
         /// <summary>
+        /// Načte obrázek z daného souboru, případně ikonu 
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="iconIndex"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        private Image _LoadImageFromFile(string fileName, int? iconIndex)
+        {
+            if (String.IsNullOrEmpty(fileName)) return null;
+            var extension = System.IO.Path.GetExtension(fileName).ToLower();
+            switch (extension)
+            {
+                case ".png":
+                case ".jpg":
+                case ".jpeg":
+                case ".bmp":
+                case ".gif":
+                    return Image.FromFile(fileName);
+
+                case ".ico":
+                    using (var icon = new Icon(fileName))
+                    {
+                        return icon.ToBitmap();                      // Vytvoří new instanci = izolovanou od Icon
+                    }                                                // Icon lze disposovat
+
+                case ".exe":
+                case ".dll":
+                    if (iconIndex.HasValue)
+                    { }
+                    using (var icon = Icon.ExtractAssociatedIcon(fileName))
+                    {
+                        return icon?.ToBitmap();
+                    }
+            }
+            return null;
+        }
+        /// <summary>
         /// Vrátí klíč pro Image
         /// </summary>
         /// <param name="type"></param>
         /// <param name="name"></param>
+        /// <param name="iconIndex"></param>
         /// <returns></returns>
-        private string _GetImageKey(string type, string name)
+        private string _GetImageKey(string type, string name, int? iconIndex)
         {
             name = name.Trim().ToLower().Replace("\\", "/");
+            if (iconIndex.HasValue) name += $":{iconIndex.Value}";
             return $"{type}>{name}";
         }
         /// <summary>
