@@ -479,7 +479,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="titleText"></param>
         public void AddControl(Control userControl, string titleText = null)
         {
-            if (userControl == null) return;
             AddControlParams parameters = new AddControlParams() { TitleText = titleText };
             _AddControlDefault(userControl, parameters);
         }
@@ -718,6 +717,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             _AddControlTo(userControl, newControlPanel, isPrimaryPanel, parameters.TitleText, parameters.TitleSubstitute);
         }
         /// <summary>
+        /// Factory: creates a <see cref="DxLayoutItemPanel"/> for hosting a user control.
+        /// Override in a subclass to return a specialized panel (e.g. with a custom title bar).
+        /// </summary>
+        protected virtual DxLayoutItemPanel _CreateItemPanel()
+        {
+            return new DxLayoutItemPanel(this);
+        }
+        /// <summary>
         /// Přidá daný control do daného parenta jako jeho Child, dá Dock = Fill, a přidá informaci do evidence v <see cref="__Controls"/>.
         /// </summary>
         /// <param name="userControl"></param>
@@ -727,7 +734,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="titleSubstitute"></param>
         private void _AddControlTo(Control userControl, Control parent, bool isPrimaryPanel, string titleText, string titleSubstitute)
         {
-            DxLayoutItemPanel hostControl = new DxLayoutItemPanel(this);
+            DxLayoutItemPanel hostControl = _CreateItemPanel();
             hostControl.UserControl = userControl;
             hostControl.TitleBarVisible = true;
             hostControl.TitleText = titleText;
@@ -3576,8 +3583,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
         {
             get
             {
-                if (this.FindForm() == null) return false;
                 if (this.LayoutOwner.TitleCompulsory) return true;
+                if (this.FindForm() == null) return false;
                 if (this.LayoutOwner.ControlCount > 1) return true;
                 if (!this.TitleBarVisible) return false;
                 if (!String.IsNullOrEmpty(TitleText)) return true;
@@ -3674,13 +3681,25 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
         /// </summary>
         private void _TitleBarCreate()
         {
-            _TitleBar = new DxLayoutTitlePanel(this);
+            _TitleBar = _CreateTitlePanel();
             _TitleBar.MouseEnter += _TitleBar_MouseEnter;
             _TitleBar.DockButtonClick += _TitleBar_DockButtonClick;
             _TitleBar.CloseButtonClick += _TitleBar_CloseButtonClick;
 
             _FillPanelControls();
         }
+        /// <summary>
+        /// Factory: creates the title panel for this item panel.
+        /// Override in a subclass to return a specialized title panel (e.g. with custom buttons).
+        /// </summary>
+        protected virtual DxLayoutTitlePanel _CreateTitlePanel()
+        {
+            return new DxLayoutTitlePanel(this);
+        }
+        /// <summary>
+        /// Access to the title bar control for subclasses.
+        /// </summary>
+        protected DxLayoutTitlePanel TitleBar => _TitleBar;
         /// <summary>
         /// Obsahuje true, pokud nyní TitleBar existuje
         /// </summary>
@@ -3989,12 +4008,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
         /// <summary>
         /// Kreslit pozadí a linku pomocí DxPaint?
         /// </summary>
-        private bool UseDxPainter { get { return LayoutOwner?.UseDxPainter ?? false; } }
+        private bool UseDxPainter { get { return LayoutOwner?.UseDxPainter ?? StandaloneUseDxPainter; } }
+        /// <summary>
+        /// Override to return true to enable DX custom painting when used standalone (without LayoutOwner).
+        /// </summary>
+        protected virtual bool StandaloneUseDxPainter { get { return false; } }
         /// <summary>
         /// Vykreslit výrazně záhlaví i pro jediný panel?
         /// true = i jediný panel bude mít zvýrazněný Header.
         /// </summary>
-        public bool HighlightSinglePanel { get { return LayoutOwner.HighlightSinglePanel; } }
+        public bool HighlightSinglePanel { get { return LayoutOwner?.HighlightSinglePanel ?? false; } }
         /// <summary>
         /// Je povoleno přemístění titulku pomocí Drag And Drop
         /// </summary>
@@ -4027,7 +4050,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
         /// <summary>
         /// Text titulku
         /// </summary>
-        private string TitleText { get { return PanelOwner?.TitleText ?? ""; } }
+        private string TitleText { get { return __StandaloneTitleText ?? PanelOwner?.TitleText ?? ""; } }
+        /// <summary>
+        /// Standalone titulek bez PanelOwnera. Má přednost před <see cref="TitleText"/> z PanelOwner.
+        /// Umožňuje použití <see cref="DxLayoutTitlePanel"/> jako samostatný header bez celého DxLayoutPanel systému.
+        /// </summary>
+        protected string StandaloneTitleText
+        {
+            get => __StandaloneTitleText;
+            set { __StandaloneTitleText = value; if (_TitleLabel != null) _RefreshTitle(); }
+        }
+        private string __StandaloneTitleText;
         /// <summary>
         /// Záložní titulek, použije se tehdy, když se musí zobrazit titulek a v <see cref="TitleText"/> nic není.
         /// Titulek se musí zobrazit tehdy, když <see cref="DxLayoutPanel"/> má režim TitleCompulsory = true, 
@@ -4290,7 +4323,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
             int spacePosition = _ButtonSpacePosition;
             int spaceClose = _ButtonSpaceClose;
             bool hasMouse = IsMouseOnPanel;
-            if (hasMouse) this.PanelOwner.ChangeInteractiveStatePanelMouse();
+            if (hasMouse) this.PanelOwner?.ChangeInteractiveStatePanelMouse();
 
             // Tlačítko Close:
             bool enableCloseButton = this.EnableCloseButton;
@@ -4345,7 +4378,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
         /// <summary>
         /// Rozmístí vnitřní prvky this panelu. Zajistí i správnou výšku panelu.
         /// </summary>
-        private void _DoLayout()
+        protected void _DoLayout()
         {
             int buttonSize = _ButtonSize;
             int panelHeight = getPanelHeight();
@@ -4368,6 +4401,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
 
                 doLayoutTitleImage();
                 _TitleLabelLeft = left;
+                _TitleLabelLeft = _DoLayoutCustomTitleLeft(_TitleLabelLeft, y, buttonSize, buttonSpacePosition);
 
                 // Buttony zpracujeme v pořadí zprava:
                 doLayoutButtonOne(_CloseButton, _IsCloseButtonsVisible, CloseButtonVisibility, buttonSpaceClose);
@@ -4376,6 +4410,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
                 doLayoutButtonOne(_DockTopButton, _IsDockButtonsVisible, DockButtonVisibility, buttonSpacePosition);
                 doLayoutButtonOne(_DockLeftButton, _IsDockButtonsVisible, DockButtonVisibility, buttonSpacePosition);
 
+                right = _DoLayoutCustomButtons(right, y, buttonSize, buttonSpaceClose);
                 _TitleLabelRight = right;
                 _DoLayoutTitleLabel();
                 _AdditionalDxImagesHasLayout = false;
@@ -4442,6 +4477,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
                 }
             }
         }
+        /// <summary>
+        /// Virtual hook — subclass can shift the title label start by positioning a custom element on the left (e.g. a header icon).
+        /// Returns the new left X boundary (i.e. where the title label should begin).
+        /// </summary>
+        protected virtual int _DoLayoutCustomTitleLeft(int left, int y, int buttonSize, int space) { return left; }
+        /// <summary>
+        /// Virtual hook — subclass positions custom buttons on the right side (before the title label's right boundary).
+        /// Called after dock buttons are placed. Returns the new right X boundary.
+        /// </summary>
+        protected virtual int _DoLayoutCustomButtons(int right, int y, int buttonSize, int space) { return right; }
         /// <summary>
         /// Umístí objekt <see cref="_TitleLabel"/> do patřičných souřadnic.
         /// </summary>
@@ -4659,15 +4704,20 @@ namespace Noris.Clients.Win.Components.AsolDX.DxLayout
         {
             get
             {
+                if (PanelOwner == null) return StandaloneDrawHeaderAsActive;
                 bool isActiveForm = this.IsActiveForm;
                 if (!isActiveForm && this.OnlyActiveFormHasActiveTitle) return false;
                 bool isActivePanel = this.IsActivePanel;
                 if (!isActivePanel) return false;
-                bool isSingle = (this.LayoutOwner.ControlCount == 1);
+                bool isSingle = ((this.LayoutOwner?.ControlCount ?? 0) == 1);
                 if (!isSingle) return true;
                 return this.HighlightSinglePanel;
             }
         }
+        /// <summary>
+        /// Override to return true to draw the title as active when used standalone (without PanelOwner).
+        /// </summary>
+        protected virtual bool StandaloneDrawHeaderAsActive { get { return false; } }
         #endregion
         #region Vykreslení Dx 21.1
         /// <summary>
