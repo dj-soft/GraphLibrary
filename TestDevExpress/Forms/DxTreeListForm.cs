@@ -976,8 +976,8 @@ namespace TestDevExpress.Forms
                 node.SuffixImageName = GetSuffixImageName();
 
             node.ImageName = GetMainImageName(SettingsNodeImageSet);
-            node.ToolTipTitle = null;
-            node.ToolTipText = Randomizer.GetSentence(10, 50, false, true);
+            node.ToolTipTitle = Randomizer.GetSentence(3, 7, false, true) + ":";
+            node.ToolTipText = Randomizer.GetSentences(6, 12, 2, 9, true);
 
             if (SettingsUseExactStyle && Randomizer.IsTrue(33))
             {

@@ -19,23 +19,27 @@ namespace TestDevExpress
         /// Vrať náhodné slovo
         /// </summary>
         /// <param name="firstUpper"></param>
-        /// <param name="allowHtml"></param>
+        /// <param name="allowHtml">Povolit HTML značky?</param>
         /// <returns></returns>
         public static string GetWord(bool firstUpper = false, bool allowHtml = false)
         {
-            string word = WordBook[Rand.Next(WordBook.Length)];
-            if (firstUpper) word = word.Substring(0, 1).ToUpper() + word.Substring(1);
+            string word = WordBook[Rand.Next(WordBook.Length)];                                    // Holé slovo malými písmeny
+            if (firstUpper) word = word.Substring(0, 1).ToUpper() + word.Substring(1);             // První písmeno velké
             if (allowHtml)
-            {
-                if (Rand.Next(10) == 0)
-                {
-                    string tag = GetItem(new string[] { "b", "i", "u" });
+            {   // Přidáme HTML značky?
+                if (IsTrue(10))
+                {   // 10% slov obalíme tagem B/I/U 
+                    string tag = GetItem(new string[] { "b", "i", "u", "r" });
                     word = $"<{tag}>{word}</{tag}>";
                 }
-                else if (Rand.Next(10) == 0)
-                {
+                else if (IsTrue(10))
+                {   // 10% slov obarvíme:
                     string color = GetItem(new string[] { "96,255,192,255", "96,192,255,255", "96,255,255,192", "96,192,192,255", "96,255,192,192" });
                     word = $"<backcolor={color}>{word}</backcolor>";
+                }
+                else if (IsTrue(10))
+                {   // 10% slov dáme větším písmem:
+                    word = $"<size=+2>{word}</size>";
                 }
             }
             return word;
@@ -47,15 +51,16 @@ namespace TestDevExpress
         /// <param name="maxWordCount"></param>
         /// <param name="minSentenceCount"></param>
         /// <param name="maxSentenceCount"></param>
+        /// <param name="allowHtml">Povolit HTML značky?</param>
         /// <returns></returns>
-        public static string GetSentences(int minWordCount, int maxWordCount, int minSentenceCount, int maxSentenceCount)
+        public static string GetSentences(int minWordCount, int maxWordCount, int minSentenceCount, int maxSentenceCount, bool allowHtml = false)
         {
             string sentences = "";
             int sentenceCount = Rand.Next(minSentenceCount, maxSentenceCount);
             string eol = Environment.NewLine;
             for (int s = 0; s < sentenceCount; s++)
             {
-                string sentence = GetSentence(minWordCount, maxWordCount, true);
+                string sentence = GetSentence(minWordCount, maxWordCount, true, allowHtml);
                 if (sentences.Length > 0)
                 {
                     if (Rand.Next(3) == 0) sentences += eol;
@@ -73,7 +78,7 @@ namespace TestDevExpress
         /// <param name="minSentenceCount"></param>
         /// <param name="maxSentenceCount"></param>
         /// <param name="addDot"></param>
-        /// <param name="allowHtml"></param>
+        /// <param name="allowHtml">Povolit HTML značky?</param>
         /// <returns></returns>
         public static string[] GetSentencesArray(int minWordCount, int maxWordCount, int minSentenceCount, int maxSentenceCount, bool addDot = false, bool allowHtml = false)
         {
@@ -93,7 +98,7 @@ namespace TestDevExpress
         /// <param name="minCount"></param>
         /// <param name="maxCount"></param>
         /// <param name="addDot"></param>
-        /// <param name="allowHtml"></param>
+        /// <param name="allowHtml">Povolit HTML značky?</param>
         /// <returns></returns>
         public static string GetSentence(int minCount, int maxCount, bool addDot = false, bool allowHtml = false)
         {
@@ -105,16 +110,52 @@ namespace TestDevExpress
         /// </summary>
         /// <param name="count"></param>
         /// <param name="addDot"></param>
-        /// <param name="allowHtml"></param>
+        /// <param name="allowHtml">Povolit HTML značky?</param>
         /// <returns></returns>
         public static string GetSentence(int count, bool addDot = false, bool allowHtml = false)
         {
             string sentence = "";
+            int rowCount = 0;
             for (int w = 0; w < count; w++)
-                sentence += (sentence.Length > 0 ? ((Rand.Next(12) < 1) ? ", " : " ") : "") + GetWord((w == 0), allowHtml);
+            {
+                var delimiter = getDelimiter(w, ref rowCount, allowHtml);
+                var word = GetWord((w == 0), allowHtml);
+                sentence+= delimiter + word;
+            }
+
             if (addDot)
+            {
                 sentence += GetItem(SentenceDots);
+                if (allowHtml)
+                    sentence += Environment.NewLine;
+            }
+
             return sentence;
+
+            // Vrátí string = oddělovač, který bude vložen před nově přidávané slovo
+            string getDelimiter(int wordTotalIndex, ref int wordOnRowIndex, bool allowHtml)
+            {
+                string delimiter = "";
+                wordOnRowIndex++;
+                if (wordTotalIndex > 0)
+                {   // Nikdy ne před první slovo!
+                    if (wordTotalIndex > 3 && IsTrue(20))
+                        // Někdy (s pravděpodobností 20%) oddělíme dosavadní text čárkou:
+                        delimiter = ",";
+
+                    if (allowHtml && wordOnRowIndex > 5 && IsTrue(35))
+                    {   // allowHtml povoluje EOL; ale nejméně po 5 slovech na jedné řádce, s pravděpodobností 35%:
+                        // předsadíme EOL (ale nikoliv mezeru), a začneme počítat slova na řádku od 0:
+                        delimiter += Environment.NewLine;
+                        wordOnRowIndex = 0;
+                    }
+                    else
+                    {   // Bez HTML a bez EOL: oddělíme jen mezerou:
+                        delimiter += " ";
+                    }
+                }
+                return delimiter;
+            }
         }
         #endregion
         #region MenuItems, DataTable, Icons, Images, Myco
