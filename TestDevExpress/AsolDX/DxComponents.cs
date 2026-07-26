@@ -6830,7 +6830,9 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (String.IsNullOrEmpty(text)) return false;
 
-            string test = text.Trim().ToLower();
+            string testS = text.Trim().ToLower();                              // Ponechány vnitřní mezery:      "<a href=xxx>Text odkazu</a>"
+            string testN = text.Replace(" ", "").ToLower();                    // Neobsahuje vnitřní mezery      "<size=+2>Velký text</size>"
+
             if (containsPairTag("b")) return true;
             if (containsPairTag("i")) return true;
             if (containsPairTag("s")) return true;
@@ -6853,24 +6855,34 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return false;
 
-
+            // Obsahuje daný tag, bez hledání end tagu?
             bool containsSingleTag(string tag)
             {
-                if (contains($"<{tag}>", 0, out var b1)) return true;                                                       //    <br>
-                if (contains($"<{tag}/>", 0, out var b2)) return true;                                                      //    <br/>
-                if (contains($"<{tag}", 0, out var b3) && contains($">", b3, out var e3) && e3 > b3) return true;           //    <href="">
+                if (containsN($"<{tag}>", 0, out var b1)) return true;                                                           //    <br>         a to včetně   <  br >
+                if (containsN($"<{tag}/>", 0, out var b2)) return true;                                                          //    <br/>
+                if (containsS($"<{tag} ", 0, out var b3) && containsS($">", b3, out var e3) && e3 > b3) return true;             //    <a aref..>
+                if (containsN($"<{tag}", 0, out var b4) && containsN($">", b4, out var e4) && e4 > b4) return true;              //    <href="">
                 return false;
             }
+            // Obsahuje daný tag, včetně odpovídajícího end tagu?
             bool containsPairTag(string tag)
             {
-                if (contains($"<{tag}>", 0, out var b1) && contains($"</{tag}>", b1, out var e1) && e1 > b1) return true;   //    <tag>...</tag>
-                if (contains($"<{tag} ", 0, out var b2) && contains($"</{tag}>", b2, out var e2) && e2 > b2) return true;   //    <tag attr ... </tag>
-                if (contains($"<{tag}/>", 0, out var b3)) return true;                                                      //    <tag/>
+                if (containsN($"<{tag}>", 0, out var b1) && containsN($"</{tag}>", b1, out var e1) && e1 > b1) return true;      //    <tag>...</tag>
+                if (containsS($"<{tag} ", 0, out var b2) && containsS($"</{tag}>", b2, out var e2) && e2 > b2) return true;      //    <tag attr ... </tag>
+                if (containsN($"<{tag}=", 0, out var b3) && containsN($"</{tag}>", b3, out var e3) && e3 > b3) return true;      //    <tag=value ... </tag>
+                if (containsN($"<{tag}/>", 0, out var b4)) return true;                                                          //    <tag/>
                 return false;
             }
-            bool contains(string text, int startIndex, out int position)
+            // Vstupní text včetně vnitřních mezer obsahuje hledaný token?
+            bool containsS(string text, int startIndex, out int position)
             {
-                position = test.IndexOf(text, startIndex);
+                position = testS.IndexOf(text, startIndex);
+                return (position >= 0);
+            }
+            // Vstupní text bez vnitřních mezer obsahuje hledaný token?
+            bool containsN(string text, int startIndex, out int position)
+            {
+                position = testN.IndexOf(text, startIndex);
                 return (position >= 0);
             }
         }

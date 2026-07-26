@@ -6347,6 +6347,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (needTitleText)
             {
                 __TitleItem.Text = __TitleText;
+                __TitleItem.AllowHtmlText = DxComponent.ConvertBool(DxComponent.AllowHtmlText(__TitleText, __ToolTipAllowHtmlText));
             }
 
             if (needTitleIcon)
