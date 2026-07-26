@@ -1525,6 +1525,7 @@ namespace DjSoft.Tools.ProgramLauncher
         public virtual MenuItemType ItemType { get; set; }
         public virtual bool Enabled { get; set; }
         public virtual FontStyle? FontStyle { get; set; }
+        public virtual IMenuItem[] SubItems { get; set; }
         public virtual object ToolItem { get; set; }
         public virtual object UserData { get; set; }
         public virtual void Process() { }
@@ -1562,6 +1563,10 @@ namespace DjSoft.Tools.ProgramLauncher
         /// Styl písma
         /// </summary>
         FontStyle? FontStyle { get; }
+        /// <summary>
+        /// Prvky podřízeného menu
+        /// </summary>
+        IMenuItem[] SubItems { get; }
         /// <summary>
         /// Vizuální objekt menu (typicky <see cref="ToolStripItem"/>), uložený sem po jeho vytvoření.
         /// Aplikace se o tuto hodnotu nemá starat.

@@ -197,6 +197,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         MenuItemType IMenuItem.ItemType { get { return MenuItemType.Button; } }
         bool IMenuItem.Enabled { get { return true; } }
         FontStyle? IMenuItem.FontStyle { get { return (Object.ReferenceEquals(this, App.CurrentLayoutSet) ? (FontStyle?)FontStyle.Bold : (FontStyle?)null); } }
+        IMenuItem[] IMenuItem.SubItems { get { return null; } }
         object IMenuItem.ToolItem { get; set; }
         object IMenuItem.UserData { get; set; }
         void IMenuItem.Process()

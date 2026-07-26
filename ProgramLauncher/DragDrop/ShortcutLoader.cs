@@ -11,7 +11,8 @@ namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
     public class ShortcutLoader
     {
         /// <summary>
-        /// Získej seznam .lnk souborů z Clipboardu
+        /// Získej seznam .lnk souborů z Clipboardu.
+        /// Pokud tam nic není, vrátí prázdné pole, ale ne null.
         /// </summary>
         public static string[] GetShortcutsFilesFromClipboard()
         {
@@ -43,6 +44,7 @@ namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
         }
         /// <summary>
         /// Načte obsah Windows zástupce z daného souboru.
+        /// <para/>
         /// Pokud se nepodaří, dojde k chybě.
         /// </summary>
         /// <param name="shortcutFile">Cesta k souboru *.lnk</param>
@@ -55,16 +57,40 @@ namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
             throw new ArgumentException(errorText);
         }
         /// <summary>
-        /// Zkusí načíst obsah Windows zástupce z daného souboru. Pokud se nezdaří, vrací false. Nevyhodí chybu.
+        /// Zkusí načíst obsah Windows zástupce (<see cref="ShortcutInfo"/>) z daného souboru.
+        /// <para/>
+        /// Pokud se nezdaří, vrací false. Nevyhodí chybu.
         /// </summary>
         /// <param name="shortcutFile">Cesta k souboru *.lnk</param>
-        /// <returns>Objekt ShortcutInfo s načtenými údaji</returns>
+        /// <returns>Objekt <see cref="ShortcutInfo"/> s načtenými údaji</returns>
         public static bool TryLoadShortcutFromFile(string shortcutFile, out ShortcutInfo shortcut)
         {
             return _TryLoadShortcutFromFile(shortcutFile, out shortcut, out var _);
         }
         /// <summary>
-        /// Zkusí načíst obsah Windows zástupce z daného souboru. Pokud se nezdaří, vrací false. Nevyhodí chybu.
+        /// Zkusí načíst obsah Windows zástupců (<see cref="ShortcutInfo"/>) z dodaných souborů. 
+        /// <para/>
+        /// Pokud na vstupu nic není, anebo se nezdaří, vrací prázdné pole. Nevrací null, nevyhodí chybu.
+        /// </summary>
+        /// <param name="shortcutFiles">Cesta k souboru *.lnk</param>
+        /// <returns>Pole objektů <see cref="ShortcutInfo"/> s načtenými údaji</returns>
+        public static ShortcutInfo[] LoadShortcutsFromFiles(string[] shortcutFiles)
+        {
+            var shortcuts = new List<ShortcutInfo>();
+            if (shortcutFiles != null && shortcutFiles.Length > 0)
+            {
+                foreach (var shortcutFile in shortcutFiles)
+                {
+                    if (_TryLoadShortcutFromFile(shortcutFile, out var shortcut, out var _))
+                        shortcuts.Add(shortcut);
+                }
+            }
+            return shortcuts.ToArray();
+        }
+        /// <summary>
+        /// Zkusí načíst obsah Windows zástupce z daného souboru. 
+        /// <para/>
+        /// Pokud se nezdaří, vrací false. Nevyhodí chybu.
         /// </summary>
         /// <param name="shortcutFile">Cesta k souboru *.lnk</param>
         /// <returns>Objekt ShortcutInfo s načtenými údaji</returns>
@@ -110,21 +136,19 @@ namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
                 dynamic shortcutLink = shell.CreateShortCut(lnkFilePath);
 
                 // Vytvoření objektu ShortcutInfo a naplnění jeho vlastností
-                var shortcutInfo = new ShortcutInfo
-                {
-                    LinkPath = lnkFilePath,
-                    LinkName = Path.GetFileNameWithoutExtension(lnkFilePath),
-                    TargetPath = shortcutLink.TargetPath ?? "",
-                    Arguments = shortcutLink.Arguments ?? "",
-                    WorkingDirectory = shortcutLink.WorkingDirectory ?? "",
-                    Description = shortcutLink.Description ?? "",
-                    IconLocation = shortcutLink.IconLocation ?? "",
-                    IconIndex = parseIconIndex(shortcutLink.IconLocation),
-                    WindowStyle = (WindowStyle)(shortcutLink.WindowStyle ?? 1),
-                    HotKey = shortcutLink.Hotkey ?? "",
-                    RelativePath = shortcutLink.RelativePath ?? "",
-                    Flags = parseFlags(shortcutLink)
-                };
+                var shortcutInfo = new ShortcutInfo();
+                shortcutInfo.LinkPath = lnkFilePath;
+                shortcutInfo.LinkName = Path.GetFileNameWithoutExtension(lnkFilePath);
+                shortcutInfo.TargetPath = tryGetValue(() => shortcutLink.TargetPath, "") ?? "";
+                shortcutInfo.Arguments = tryGetValue(() => shortcutLink.Arguments, "") ?? "";
+                shortcutInfo.WorkingDirectory = tryGetValue(() => shortcutLink.WorkingDirectory, "") ?? "";
+                shortcutInfo.Description = tryGetValue(() => shortcutLink.Description, "") ?? "";
+                shortcutInfo.IconLocation = tryGetValue(() => shortcutLink.IconLocation, "") ?? "";
+                shortcutInfo.IconIndex = parseIconIndex(tryGetValue(() => shortcutLink.IconLocation, 0));
+                shortcutInfo.WindowStyle = (WindowStyle)(tryGetValue(() => shortcutLink.WindowStyle, 0));
+                shortcutInfo.HotKey = tryGetValue(() => shortcutLink.Hotkey, "") ?? "";
+                shortcutInfo.RelativePath = tryGetValue(() => shortcutLink.RelativePath, "") ?? "";
+                shortcutInfo.Flags = parseFlags(shortcutLink);
 
                 // Uvolnění COM objektů
                 System.Runtime.InteropServices.Marshal.ReleaseComObject(shortcutLink);
@@ -139,6 +163,19 @@ namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
                 return false;
             }
 
+            T tryGetValue<T>(Func<T> func, T defaultValue)
+            {
+                T result = defaultValue;
+                try
+                {
+                    result = func();
+                }
+                catch
+                {
+                    result = defaultValue;
+                }
+                return result;
+            }
             // Parsuje index ikony z řetězce IconLocation
             int parseIconIndex(string iconLocation)
             {

@@ -226,12 +226,50 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewGroupText, ToolTip = App.Messages.AppContextMenuNewGroupToolTip, Image = Properties.Resources.insert_horizontal_rule_22, UserData = new ContextMenuItemInfo(DataItemActionType.NewGroup, actionInfo) });
 
                     // Paste Shortcut[s]:
-                    var shortcutFiles = DjSoft.Tools.ProgramLauncher.ShortcutParser.ShortcutLoader.GetShortcutsFilesFromClipboard();
-                    menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuPasteClipboardText, ToolTip = App.Messages.AppContextMenuPasteClipboardToolTip, Image = Properties.Resources.edit_paste_3_22, Enabled = (shortcutFiles.Length > 0), UserData = new ContextMenuItemInfo(DataItemActionType.PasteApplication, actionInfo, shortcutFiles) });
+                    _AddContextMenuPasteShortcuts(menuItems, actionInfo);
                 }
             }
-
             App.SelectFromMenu(menuItems, mouseState.LocationAbsolute, true, _RunContextMenuAction);
+        }
+
+        private void _AddContextMenuPasteShortcuts(List<IMenuItem> menuItems, ContextActionInfo actionInfo)
+        {
+            var shortcutFiles = DjSoft.Tools.ProgramLauncher.ShortcutParser.ShortcutLoader.GetShortcutsFilesFromClipboard();
+            var shortcuts = DjSoft.Tools.ProgramLauncher.ShortcutParser.ShortcutLoader.LoadShortcutsFromFiles(shortcutFiles);
+            if (shortcuts.Length == 0)
+            {
+                menuItems.Add(createMenuItem(null, false, false));
+                return;
+            }
+            if (shortcuts.Length == 1)
+            {
+                menuItems.Add(createMenuItem(shortcuts[0], true, false));
+            }
+            else
+            {
+                var menuPasteItem = createMenuItem(null, true, false);
+                var subItems = new List<DataMenuItem>();
+
+                foreach (var shortcut in shortcuts)
+                    subItems.Add(createMenuItem(shortcut, true, true));
+
+                menuPasteItem.SubItems = subItems.ToArray();
+                menuItems.Add(menuPasteItem);
+            }
+
+            DataMenuItem createMenuItem(ShortcutParser.ShortcutInfo shortcut, bool enabled, bool textFromName)
+            {
+                var text = (textFromName && shortcut != null ? System.IO.Path.GetFileNameWithoutExtension(shortcut.LinkPath) : App.Messages.AppContextMenuPasteClipboardText);
+                var menuItem = new DataMenuItem()
+                {
+                    Text = text,
+                    ToolTip = App.Messages.AppContextMenuPasteClipboardToolTip,
+                    Image = Properties.Resources.edit_paste_3_22,
+                    Enabled = enabled,
+                    UserData = new ContextMenuItemInfo(DataItemActionType.PasteApplication, actionInfo, shortcut)
+                };
+                return menuItem;
+            }
         }
         /// <summary>
         /// Provede vybranou akci z kontextového menu
