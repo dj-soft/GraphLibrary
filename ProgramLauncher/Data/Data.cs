@@ -238,28 +238,28 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 var shortcuts = DjSoft.Tools.ProgramLauncher.ShortcutParser.ShortcutLoader.LoadShortcutsFromFiles(shortcutFiles);
                 if (shortcuts.Length == 0)
                 {
-                    targetMenuItems.Add(createMenuItem(null, actInfo, false, false));
+                    targetMenuItems.Add(createMenuItem(null, actInfo, false, App.Messages.AppContextMenuPasteClipboardText));       // Disabled
                     return;
                 }
                 if (shortcuts.Length == 1)
                 {
-                    targetMenuItems.Add(createMenuItem(shortcuts[0], actInfo, true, false));
+                    var shortcut = shortcuts[0];
+                    targetMenuItems.Add(createMenuItem(shortcut, actInfo, true, $"{App.Messages.AppContextMenuPasteClipboardText}: {shortcut.LinkName}"));
                 }
                 else
                 {
-                    var menuPasteItem = createMenuItem(null, actInfo, true, false);
+                    var menuPasteItem = createMenuItem(null, actInfo, true, $"{App.Messages.AppContextMenuPasteClipboardText} ...");
                     var subItems = new List<DataMenuItem>();
 
                     foreach (var shortcut in shortcuts)
-                        subItems.Add(createMenuItem(shortcut, actInfo, true, true));
+                        subItems.Add(createMenuItem(shortcut, actInfo, true, shortcut.LinkName));
 
                     menuPasteItem.SubItems = subItems.ToArray();
                     targetMenuItems.Add(menuPasteItem);
                 }
             }
-            DataMenuItem createMenuItem(ShortcutParser.ShortcutInfo shortcut, ContextActionInfo actInfo, bool enabled, bool textFromName)
+            DataMenuItem createMenuItem(ShortcutParser.ShortcutInfo shortcut, ContextActionInfo actInfo, bool enabled, string text)
             {
-                var text = (textFromName && shortcut != null ? System.IO.Path.GetFileNameWithoutExtension(shortcut.LinkPath) : App.Messages.AppContextMenuPasteClipboardText);
                 var menuItem = new DataMenuItem()
                 {
                     Text = text,

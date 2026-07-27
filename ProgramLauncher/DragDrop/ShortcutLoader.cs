@@ -173,110 +173,22 @@ namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
 
             return result;
 
-
-            /*
-             * 
-The error means your project has no reference to the Windows Script Host COM interop (IWshRuntimeLibrary). Two ways to fix:
-1.	Add COM reference (Visual Studio)
-•	Project -> Add -> Reference...
-•	COM tab -> check "Windows Script Host Object Model" (wshom.ocx) -> OK
-•	Add at top of file: using IWshRuntimeLibrary;
-•	Now IWshRuntimeLibrary and WshShell types will compile.
-2.	No COM reference (use dynamic / late-bound)
-•	Keep using Activator.CreateInstance and release with Marshal.FinalReleaseComObject.
-•	This requires no COM reference.
-Example (safe FinalReleaseComObject with dynamic — works without IWshRuntimeLibrary):
-             * 
-             * 
-            // requires COM reference to "Windows Script Host Object Model"
-using IWshRuntimeLibrary;
-
-var shell = new WshShell();
-IWshShortcut shortcut = (IWshShortcut)shell.CreateShortcut(lnkFilePath);
-string target = shortcut.TargetPath;
-
-            Marshal.FinalReleaseComObject
-
-
-
-using System;
-using System.Runtime.InteropServices;
-using IWshRuntimeLibrary; // add COM reference "Windows Script Host Object Model"
-
-void LoadShortcutTyped(string lnkFilePath)
-{
-WshShell shell = null;
-IWshShortcut shortcut = null;
-try
-{
-    shell = new WshShell();
-    shortcut = (IWshShortcut)shell.CreateShortcut(lnkFilePath);
-
-    string target = shortcut.TargetPath;
-    // ... use values ...
-}
-finally
-{
-    try { if (shortcut != null) Marshal.FinalReleaseComObject(shortcut); } catch { }
-    try { if (shell != null) Marshal.FinalReleaseComObject(shell); } catch { }
-    shortcut = null;
-    shell = null;
-}
-}
-
-            */
-            /*
-            // Vytvoření Shell objektu pro práci se zástupci
-            dynamic shell = Activator.CreateInstance(Type.GetTypeFromProgID("WScript.Shell"));
-                
-                // Načtení objektu zástupce
-                dynamic shortcutLink = shell.CreateShortCut(lnkFilePath);
-
-                // Vytvoření objektu ShortcutInfo a naplnění jeho vlastností
-                var shortcutInfo = new ShortcutInfo();
-                shortcutInfo.LinkPath = lnkFilePath;
-                shortcutInfo.LinkName = Path.GetFileNameWithoutExtension(lnkFilePath);
-                shortcutInfo.TargetPath = tryGetValue(() => shortcutLink.TargetPath, "") ?? "";
-                shortcutInfo.Arguments = tryGetValue(() => shortcutLink.Arguments, "") ?? "";
-                shortcutInfo.WorkingDirectory = tryGetValue(() => shortcutLink.WorkingDirectory, "") ?? "";
-                shortcutInfo.Description = tryGetValue(() => shortcutLink.Description, "") ?? "";
-                shortcutInfo.IconInfo = tryGetValue(() => shortcutLink.IconLocation, "") ?? "";
-                shortcutInfo.WindowStyle = (WindowStyle)(tryGetValue(() => shortcutLink.WindowStyle, 0));
-                shortcutInfo.HotKey = tryGetValue(() => shortcutLink.Hotkey, "") ?? "";
-                shortcutInfo.RelativePath = tryGetValue(() => shortcutLink.RelativePath, "") ?? "";
-                shortcutInfo.Flags = parseFlags(shortcutLink);
-
-                _FillIconIndex(shortcutInfo);
-
-
-                // Uvolnění COM objektů
-                System.Runtime.InteropServices.Marshal.ReleaseComObject(shortcutLink);
-                System.Runtime.InteropServices.Marshal.ReleaseComObject(shell);
-
-                shortcut = shortcutInfo;
-                return true;
-            }
-            catch (Exception ex) when (!(ex is ArgumentException))
-            {
-                errorText = $"Chyba při čtení zástupce '{lnkFilePath}': {ex.Message}";
-                return false;
-            }
-            */
+            // Pokusí se načíst hodnotu pomocí dané funkce
             T tryGetValue<T>(Func<T> func, T defaultValue)
             {
-                T result = defaultValue;
+                T value = defaultValue;
                 try
                 {
-                    result = func();
+                    value = func();
                 }
                 catch
                 {
-                    result = defaultValue;
+                    value = defaultValue;
                 }
-                return result;
+                return value;
             }
             // Parsuje speciální příznaky zástupce
-            ShortcutFlags parseFlags(dynamic shortcutLink)
+            ShortcutFlags parseFlags(IWshRuntimeLibrary.IWshShortcut shortcutLink)
             {
                 var flags = ShortcutFlags.None;
 
