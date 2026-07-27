@@ -1096,16 +1096,19 @@ namespace DjSoft.Tools.ProgramLauncher
             menuItem.ToolItem = toolItem;
             return toolItem;
 
-            void createSubMenu(IMenuItem[] subItems, ToolStripMenuItem buttonItem, Action<IMenuItem> onSelectSubItemItem)
+
+            // Pokud je v 'subItems' dodán nějaký subprvek, pak pro ně postaví funkční submenu.
+            void createSubMenu(IMenuItem[] subItems, ToolStripMenuItem toolMenuItem, Action<IMenuItem> onSelectSubItemItem)
             {
                 if (subItems is null || subItems.Length == 0) return;
 
-                buttonItem.DropDownItems.Clear();
+                toolMenuItem.DropDownItems.Clear();
+                toolMenuItem.DropDownItemClicked += _OnMenuItemClicked;
                 foreach (var subItem in subItems)
                 {
                     var subMenuItem = _CreateToolStripItem(subItem, onSelectSubItemItem);
                     if (subMenuItem != null)
-                        buttonItem.DropDownItems.Add(subMenuItem);
+                        toolMenuItem.DropDownItems.Add(subMenuItem);
                 }
             }
         }

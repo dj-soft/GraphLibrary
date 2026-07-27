@@ -226,38 +226,38 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     menuItems.Add(new DataMenuItem() { Text = App.Messages.AppContextMenuNewGroupText, ToolTip = App.Messages.AppContextMenuNewGroupToolTip, Image = Properties.Resources.insert_horizontal_rule_22, UserData = new ContextMenuItemInfo(DataItemActionType.NewGroup, actionInfo) });
 
                     // Paste Shortcut[s]:
-                    _AddContextMenuPasteShortcuts(menuItems, actionInfo);
+                    addContextMenuPasteShortcuts(menuItems, actionInfo);
                 }
             }
             App.SelectFromMenu(menuItems, mouseState.LocationAbsolute, true, _RunContextMenuAction);
-        }
 
-        private void _AddContextMenuPasteShortcuts(List<IMenuItem> menuItems, ContextActionInfo actionInfo)
-        {
-            var shortcutFiles = DjSoft.Tools.ProgramLauncher.ShortcutParser.ShortcutLoader.GetShortcutsFilesFromClipboard();
-            var shortcuts = DjSoft.Tools.ProgramLauncher.ShortcutParser.ShortcutLoader.LoadShortcutsFromFiles(shortcutFiles);
-            if (shortcuts.Length == 0)
+
+            void addContextMenuPasteShortcuts(List<IMenuItem> targetMenuItems, ContextActionInfo actInfo)
             {
-                menuItems.Add(createMenuItem(null, false, false));
-                return;
-            }
-            if (shortcuts.Length == 1)
-            {
-                menuItems.Add(createMenuItem(shortcuts[0], true, false));
-            }
-            else
-            {
-                var menuPasteItem = createMenuItem(null, true, false);
-                var subItems = new List<DataMenuItem>();
+                var shortcutFiles = DjSoft.Tools.ProgramLauncher.ShortcutParser.ShortcutLoader.GetShortcutsFilesFromClipboard();
+                var shortcuts = DjSoft.Tools.ProgramLauncher.ShortcutParser.ShortcutLoader.LoadShortcutsFromFiles(shortcutFiles);
+                if (shortcuts.Length == 0)
+                {
+                    targetMenuItems.Add(createMenuItem(null, actInfo, false, false));
+                    return;
+                }
+                if (shortcuts.Length == 1)
+                {
+                    targetMenuItems.Add(createMenuItem(shortcuts[0], actInfo, true, false));
+                }
+                else
+                {
+                    var menuPasteItem = createMenuItem(null, actInfo, true, false);
+                    var subItems = new List<DataMenuItem>();
 
-                foreach (var shortcut in shortcuts)
-                    subItems.Add(createMenuItem(shortcut, true, true));
+                    foreach (var shortcut in shortcuts)
+                        subItems.Add(createMenuItem(shortcut, actInfo, true, true));
 
-                menuPasteItem.SubItems = subItems.ToArray();
-                menuItems.Add(menuPasteItem);
+                    menuPasteItem.SubItems = subItems.ToArray();
+                    targetMenuItems.Add(menuPasteItem);
+                }
             }
-
-            DataMenuItem createMenuItem(ShortcutParser.ShortcutInfo shortcut, bool enabled, bool textFromName)
+            DataMenuItem createMenuItem(ShortcutParser.ShortcutInfo shortcut, ContextActionInfo actInfo, bool enabled, bool textFromName)
             {
                 var text = (textFromName && shortcut != null ? System.IO.Path.GetFileNameWithoutExtension(shortcut.LinkPath) : App.Messages.AppContextMenuPasteClipboardText);
                 var menuItem = new DataMenuItem()
@@ -266,7 +266,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     ToolTip = App.Messages.AppContextMenuPasteClipboardToolTip,
                     Image = Properties.Resources.edit_paste_3_22,
                     Enabled = enabled,
-                    UserData = new ContextMenuItemInfo(DataItemActionType.PasteApplication, actionInfo, shortcut)
+                    UserData = new ContextMenuItemInfo(DataItemActionType.PasteApplication, actInfo, shortcut)
                 };
                 return menuItem;
             }
@@ -1132,9 +1132,11 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     isAppend = applicationData.EditData(actionInfo.MouseState.LocationAbsolute, App.Messages.Format(App.Messages.EditFormTitleClone, applicationData.Title));
                     break;
                 case DataItemActionType.PasteApplication:
-                    if (userData is string[] shortcutFiles && shortcutFiles.Length > 0)
+                    if (userData is ShortcutParser.ShortcutInfo shortcut)
                     {
-                        int c = 0;
+                        applicationData = new ApplicationData(shortcut);
+                        isAppend = applicationData.EditData(actionInfo.MouseState.LocationAbsolute, App.Messages.EditFormTitleNewApplication);
+                        break;
                     }
                     break;
                 case DataItemActionType.DeleteApplication:
@@ -1247,6 +1249,24 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// Konstruktor
         /// </summary>
         public ApplicationData() : this(NewIdMode.New) { }
+        /// <summary>
+        /// Konstruktor pro data z <see cref="ShortcutParser.ShortcutInfo"/>
+        /// </summary>
+        /// <param name="shortcut"></param>
+        public ApplicationData(ShortcutParser.ShortcutInfo shortcut)
+            : this(NewIdMode.New)
+        {
+            if (shortcut != null)
+            {
+                this.Title = shortcut.LinkName;
+                this.Description = shortcut.Description;
+                this.ExecutableFileName = shortcut.TargetPath;
+                this.ExecutableArguments = shortcut.Arguments;
+                this.ExecutableWorkingDirectory = shortcut.WorkingDirectory;
+                this.ImageFileNameBase = shortcut.IconLocation;
+                this.ImageIconIndex = shortcut.IconIndex;
+            }
+        }
         /// <summary>
         /// Konstruktor pro daný režim
         /// </summary>

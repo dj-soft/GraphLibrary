@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
@@ -105,6 +106,7 @@ namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
         /// <returns>Objekt ShortcutInfo s načtenými údaji</returns>
         private static bool _TryLoadShortcutFromFile(string lnkFilePath, out ShortcutInfo shortcut, out string errorText)
         {
+            bool result = false;
             shortcut = null;
             errorText = null;
 
@@ -112,25 +114,120 @@ namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
             if (string.IsNullOrWhiteSpace(lnkFilePath))
             {
                 errorText = $"Není zadán soubor obsahující Shortcut.";
-                return false;
+                return result;
             }
 
             lnkFilePath = lnkFilePath.Trim();
             if (!lnkFilePath.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
             {
                 errorText = $"Soubor '{lnkFilePath}' není typu Shortcut.";
-                return false;
+                return result;
             }
             if (!File.Exists(lnkFilePath))
             {
                 errorText = $"Soubor '{lnkFilePath}' typu Shortcut neexistuje.";
-                return false;
+                return result;
             }
 
+
+            IWshRuntimeLibrary.WshShell wShell = null;
+            IWshRuntimeLibrary.IWshShortcut wShortcut = null;
             try
             {
-                // Vytvoření Shell objektu pro práci se zástupci
-                dynamic shell = Activator.CreateInstance(Type.GetTypeFromProgID("WScript.Shell"));
+                // 1. Načtu COM objekt pro Shortcut:
+                wShell = new IWshRuntimeLibrary.WshShell();
+                wShortcut = (IWshRuntimeLibrary.IWshShortcut)wShell.CreateShortcut(lnkFilePath);
+
+                // 2. Vytvořím náš objekt ShortcutInfo a naplnění jeho vlastností:
+                var shortcutInfo = new ShortcutInfo();
+                shortcutInfo.LinkPath = lnkFilePath;
+                shortcutInfo.LinkName = Path.GetFileNameWithoutExtension(lnkFilePath);
+                shortcutInfo.TargetPath = tryGetValue(() => wShortcut.TargetPath, "") ?? "";
+                shortcutInfo.Arguments = tryGetValue(() => wShortcut.Arguments, "") ?? "";
+                shortcutInfo.WorkingDirectory = tryGetValue(() => wShortcut.WorkingDirectory, "") ?? "";
+                shortcutInfo.Description = tryGetValue(() => wShortcut.Description, "") ?? "";
+                shortcutInfo.IconInfo = tryGetValue(() => wShortcut.IconLocation, "") ?? "";
+                shortcutInfo.WindowStyle = (WindowStyle)(tryGetValue(() => wShortcut.WindowStyle, 0));
+                shortcutInfo.HotKey = tryGetValue(() => wShortcut.Hotkey, "") ?? "";
+                shortcutInfo.Flags = parseFlags(wShortcut);
+
+                _FillIconIndex(shortcutInfo);
+
+                // 3. Výstup:
+                shortcut = shortcutInfo;
+                result = true;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                errorText = $"Chyba při čtení zástupce '{lnkFilePath}': {ex.Message}";
+            }
+            finally
+            {
+                try { if (wShortcut != null) Marshal.FinalReleaseComObject(wShortcut); } catch { }
+                wShortcut = null;
+
+                try { if (wShell != null) Marshal.FinalReleaseComObject(wShell); } catch { }
+                wShell = null;
+            }
+
+            return result;
+
+
+            /*
+             * 
+The error means your project has no reference to the Windows Script Host COM interop (IWshRuntimeLibrary). Two ways to fix:
+1.	Add COM reference (Visual Studio)
+•	Project -> Add -> Reference...
+•	COM tab -> check "Windows Script Host Object Model" (wshom.ocx) -> OK
+•	Add at top of file: using IWshRuntimeLibrary;
+•	Now IWshRuntimeLibrary and WshShell types will compile.
+2.	No COM reference (use dynamic / late-bound)
+•	Keep using Activator.CreateInstance and release with Marshal.FinalReleaseComObject.
+•	This requires no COM reference.
+Example (safe FinalReleaseComObject with dynamic — works without IWshRuntimeLibrary):
+             * 
+             * 
+            // requires COM reference to "Windows Script Host Object Model"
+using IWshRuntimeLibrary;
+
+var shell = new WshShell();
+IWshShortcut shortcut = (IWshShortcut)shell.CreateShortcut(lnkFilePath);
+string target = shortcut.TargetPath;
+
+            Marshal.FinalReleaseComObject
+
+
+
+using System;
+using System.Runtime.InteropServices;
+using IWshRuntimeLibrary; // add COM reference "Windows Script Host Object Model"
+
+void LoadShortcutTyped(string lnkFilePath)
+{
+WshShell shell = null;
+IWshShortcut shortcut = null;
+try
+{
+    shell = new WshShell();
+    shortcut = (IWshShortcut)shell.CreateShortcut(lnkFilePath);
+
+    string target = shortcut.TargetPath;
+    // ... use values ...
+}
+finally
+{
+    try { if (shortcut != null) Marshal.FinalReleaseComObject(shortcut); } catch { }
+    try { if (shell != null) Marshal.FinalReleaseComObject(shell); } catch { }
+    shortcut = null;
+    shell = null;
+}
+}
+
+            */
+            /*
+            // Vytvoření Shell objektu pro práci se zástupci
+            dynamic shell = Activator.CreateInstance(Type.GetTypeFromProgID("WScript.Shell"));
                 
                 // Načtení objektu zástupce
                 dynamic shortcutLink = shell.CreateShortCut(lnkFilePath);
@@ -143,12 +240,14 @@ namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
                 shortcutInfo.Arguments = tryGetValue(() => shortcutLink.Arguments, "") ?? "";
                 shortcutInfo.WorkingDirectory = tryGetValue(() => shortcutLink.WorkingDirectory, "") ?? "";
                 shortcutInfo.Description = tryGetValue(() => shortcutLink.Description, "") ?? "";
-                shortcutInfo.IconLocation = tryGetValue(() => shortcutLink.IconLocation, "") ?? "";
-                shortcutInfo.IconIndex = parseIconIndex(tryGetValue(() => shortcutLink.IconLocation, 0));
+                shortcutInfo.IconInfo = tryGetValue(() => shortcutLink.IconLocation, "") ?? "";
                 shortcutInfo.WindowStyle = (WindowStyle)(tryGetValue(() => shortcutLink.WindowStyle, 0));
                 shortcutInfo.HotKey = tryGetValue(() => shortcutLink.Hotkey, "") ?? "";
                 shortcutInfo.RelativePath = tryGetValue(() => shortcutLink.RelativePath, "") ?? "";
                 shortcutInfo.Flags = parseFlags(shortcutLink);
+
+                _FillIconIndex(shortcutInfo);
+
 
                 // Uvolnění COM objektů
                 System.Runtime.InteropServices.Marshal.ReleaseComObject(shortcutLink);
@@ -162,7 +261,7 @@ namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
                 errorText = $"Chyba při čtení zástupce '{lnkFilePath}': {ex.Message}";
                 return false;
             }
-
+            */
             T tryGetValue<T>(Func<T> func, T defaultValue)
             {
                 T result = defaultValue;
@@ -175,19 +274,6 @@ namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
                     result = defaultValue;
                 }
                 return result;
-            }
-            // Parsuje index ikony z řetězce IconLocation
-            int parseIconIndex(string iconLocation)
-            {
-                if (string.IsNullOrEmpty(iconLocation))
-                    return 0;
-
-                // Formát je obvykle: "cesta\k\souboru,indexIkony"
-                int commaIndex = iconLocation.LastIndexOf(',');
-                if (commaIndex > 0 && int.TryParse(iconLocation.Substring(commaIndex + 1).Trim(), out int index))
-                    return index;
-
-                return 0;
             }
             // Parsuje speciální příznaky zástupce
             ShortcutFlags parseFlags(dynamic shortcutLink)
@@ -209,7 +295,26 @@ namespace DjSoft.Tools.ProgramLauncher.ShortcutParser
                 return flags;
             }
         }
+        /// <summary>
+        /// Parsuje index ikony z řetězce IconInfo
+        /// </summary>
+        /// <param name="iconInfo"></param>
+        private static void _FillIconIndex(ShortcutInfo shortcutInfo)
+        {
+            string iconInfo = shortcutInfo.IconInfo;
+            shortcutInfo.IconLocation = iconInfo;
+            shortcutInfo.IconIndex = 0;
 
+            if (String.IsNullOrEmpty(iconInfo)) return;
+
+            // Formát je obvykle: "cesta\k\souboru,indexIkony"
+            int commaIndex = iconInfo.LastIndexOf(',');
+            if (commaIndex > 0 && commaIndex < (iconInfo.Length - 1) && Int32.TryParse(iconInfo.Substring(commaIndex + 1).Trim(), out int index))
+            {
+                shortcutInfo.IconLocation = iconInfo.Substring(0, commaIndex);
+                shortcutInfo.IconIndex = index;
+            }
+        }
         /// <summary>
         /// Uloží (vytvoří nový) zástupce s danými vlastnostmi
         /// </summary>
