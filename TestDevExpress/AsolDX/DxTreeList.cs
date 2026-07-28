@@ -1023,6 +1023,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <param name="method"></param>
             /// <param name="args"></param>
             public void RunInLock(Delegate method, params object[] args) { DxTreeProperties.RunInLock(method, args); }
+            /// <summary>
+            /// Vyexportuje svoje data do daného formátu <paramref name="format"/>, s použitím daných předvoleb <paramref name="options"/>. Výstupem je <c>byte[]</c> = obsah souboru.
+            /// </summary>
+            /// <param name="format">Výstupní formát</param>
+            /// <param name="options">Předvolby exportu</param>
+            /// <param name="errors">Out: Chyby</param>
+            /// <returns></returns>
+            public byte[] ExportContent(ContentExportType format, KeyValuePair<string, string>[] options, out string errors)
+            {
+                return DxTreeProperties.ExportContent(format, options, out errors);
+            }
             #endregion
             #region KeyActions, DataExchange, Drag and Drop
             /// <summary>
@@ -1215,6 +1226,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             /// <param name="eventSource">Jaký je důvod eventu? Default = null = <see cref="DxFilterBoxChangeEventSource.TextChange"/></param>
             public void RaiseFilterBoxChanged(DxFilterBoxChangeEventSource? eventSource = null) { __Owner.RaiseFilterBoxChanged(eventSource); }
+
             /// <summary>
             /// Událost volaná po hlídané změně obsahu filtru.
             /// Argument obsahuje hodnotu filtru a druh události, která vyvolala event.
@@ -4598,6 +4610,246 @@ namespace Noris.Clients.Win.Components.AsolDX
             return _HotKeys != null && _HotKeys.ContainsKey(key);
         }
         #endregion
+        #region ExportContent
+        /// <summary>
+        /// Vyexportuje svoje data do daného formátu <paramref name="format"/>, s použitím daných předvoleb <paramref name="options"/>. Výstupem je <c>byte[]</c> = obsah souboru.
+        /// </summary>
+        /// <param name="format">Výstupní formát</param>
+        /// <param name="options">Předvolby exportu</param>
+        /// <param name="errors">Out: Chyby</param>
+        /// <returns></returns>
+        protected byte[] ExportContent(ContentExportType format, KeyValuePair<string, string>[] options, out string errors)
+        {
+            byte[] result = null;
+            errors = null;
+            try
+            {
+                using (var exportStream = new System.IO.MemoryStream())
+                {
+                    switch (format)
+                    {
+                        case ContentExportType.Txt:
+                            _ExportContentTxt(options, exportStream, out errors);
+                            break;
+                        case ContentExportType.Csv:
+                            _ExportContentCsv(options, exportStream, out errors);
+                            break;
+                        case ContentExportType.Rtf:
+                            _ExportContentRtf(options, exportStream, out errors);
+                            break;
+                        case ContentExportType.Pdf:
+                            _ExportContentPdf(options, exportStream, out errors);
+                            break;
+                        case ContentExportType.Html:
+                            _ExportContentHtml(options, exportStream, out errors);
+                            break;
+                        case ContentExportType.Mht:
+                            _ExportContentMht(options, exportStream, out errors);
+                            break;
+                        case ContentExportType.Xls:
+                            _ExportContentXls(options, exportStream, out errors);
+                            break;
+                        case ContentExportType.Xlsx:
+                            _ExportContentXlsx(options, exportStream, out errors);
+                            break;
+                        case ContentExportType.Docx:
+                            _ExportContentDocx(options, exportStream, out errors);
+                            break;
+                        default:
+                            errors = $"Unsupported export format: '{format}'.";
+                            break;
+                    }
+                    if (exportStream.Length > 0)
+                    {
+                        exportStream.Position = 0;
+                        result = exportStream.ToArray();
+                    }
+                }
+            }
+            catch (Exception exc)
+            {
+                errors = DxComponent.FormatExceptionsMessage(exc);
+                result = null;
+            }
+            return result;
+        }
+        /// <summary>
+        /// Export obsahu do formátu <b>TXT</b>
+        /// </summary>
+        /// <param name="options"></param>
+        /// <param name="exportStream"></param>
+        /// <param name="errors">Out: Chyby</param>
+        private void _ExportContentTxt(KeyValuePair<string, string>[] options, System.IO.MemoryStream exportStream, out string errors)
+        {
+            var txtOptions = new DevExpress.XtraPrinting.TextExportOptions()
+            {
+                Encoding = Encoding.UTF8,
+                Separator = "\t",
+                TextExportMode = DevExpress.XtraPrinting.TextExportMode.Text,
+                QuoteStringsWithSeparators = false
+            };
+            DxComponent.FillValuesToObject(txtOptions, options, out errors);
+
+            this.ExportToText(exportStream, txtOptions);
+        }
+        /// <summary>
+        /// Export obsahu do formátu <b>CSV</b>
+        /// </summary>
+        /// <param name="options"></param>
+        /// <param name="exportStream"></param>
+        /// <param name="errors">Out: Chyby</param>
+        private void _ExportContentCsv(KeyValuePair<string, string>[] options, System.IO.MemoryStream exportStream, out string errors)
+        {
+            var csvOptions = new DevExpress.XtraPrinting.CsvExportOptions()
+            {
+                Encoding = Encoding.UTF8,
+                Separator = "\t",
+                SkipEmptyColumns = false,
+                SkipEmptyRows = false,
+                TextExportMode = DevExpress.XtraPrinting.TextExportMode.Text,
+                EncodeExecutableContent = DefaultBoolean.False,
+                QuoteStringsWithSeparators = false
+            };
+            DxComponent.FillValuesToObject(csvOptions, options, out errors);
+
+            this.ExportToCsv(exportStream, csvOptions);
+        }
+        /// <summary>
+        /// Export obsahu do formátu <b>RTF</b>
+        /// </summary>
+        /// <param name="options"></param>
+        /// <param name="exportStream"></param>
+        /// <param name="errors">Out: Chyby</param>
+        private void _ExportContentRtf(KeyValuePair<string, string>[] options, System.IO.MemoryStream exportStream, out string errors)
+        {
+            errors = null;
+            this.ExportToRtf(exportStream);
+        }
+        /// <summary>
+        /// Export obsahu do formátu <b>PDF</b>
+        /// </summary>
+        /// <param name="options"></param>
+        /// <param name="exportStream"></param>
+        /// <param name="errors">Out: Chyby</param>
+        private void _ExportContentPdf(KeyValuePair<string, string>[] options, System.IO.MemoryStream exportStream, out string errors)
+        {
+            var pdfOptions = new DevExpress.XtraPrinting.PdfExportOptions()
+            {
+                ImageQuality = DevExpress.XtraPrinting.PdfJpegImageQuality.High,
+                AdditionalMetadata = "DevExpress.TreeList",
+                RasterizationResolution = 300,
+                PdfACompatibility = DevExpress.XtraPrinting.PdfACompatibility.PdfA3a,
+                PdfUACompatibility = DevExpress.XtraPrinting.PdfUACompatibility.None,
+                ConvertImagesToJpeg = true
+            };
+            DxComponent.FillValuesToObject(pdfOptions, options, out errors);
+
+            this.ExportToPdf(exportStream, pdfOptions);
+        }
+        /// <summary>
+        /// Export obsahu do formátu <b>HTML</b>
+        /// </summary>
+        /// <param name="options"></param>
+        /// <param name="exportStream"></param>
+        /// <param name="errors">Out: Chyby</param>
+        private void _ExportContentHtml(KeyValuePair<string, string>[] options, System.IO.MemoryStream exportStream, out string errors)
+        {
+            var htmlOptions = new DevExpress.XtraPrinting.HtmlExportOptions()
+            {
+                ExportMode = DevExpress.XtraPrinting.HtmlExportMode.SingleFile,
+                TableLayout = true,
+                InlineCss = true,
+                EmbedImagesInHTML = true,
+                PageBorderColor = Color.Wheat,
+                RasterizationResolution = 300,
+                Title = "TreeList content"
+            };
+            DxComponent.FillValuesToObject(htmlOptions, options, out errors);
+
+            this.ExportToHtml(exportStream, htmlOptions);
+        }
+        /// <summary>
+        /// Export obsahu do formátu <b>MHT</b>
+        /// </summary>
+        /// <param name="options"></param>
+        /// <param name="exportStream"></param>
+        /// <param name="errors">Out: Chyby</param>
+        private void _ExportContentMht(KeyValuePair<string, string>[] options, System.IO.MemoryStream exportStream, out string errors)
+        {
+            var mhtOptions = new DevExpress.XtraPrinting.MhtExportOptions()
+            {
+                ExportMode = DevExpress.XtraPrinting.HtmlExportMode.SingleFile,
+                TableLayout = true,
+                InlineCss = true,
+                PageBorderColor = Color.Wheat,
+                RasterizationResolution = 300,
+                Title = "TreeList content"
+            };
+            DxComponent.FillValuesToObject(mhtOptions, options, out errors);
+
+            this.ExportToMht(exportStream, mhtOptions);
+        }
+        /// <summary>
+        /// Export obsahu do formátu <b>XLS</b>
+        /// </summary>
+        /// <param name="options"></param>
+        /// <param name="exportStream"></param>
+        /// <param name="errors">Out: Chyby</param>
+        private void _ExportContentXls(KeyValuePair<string, string>[] options, System.IO.MemoryStream exportStream, out string errors)
+        {
+            var xlsOptions = new DevExpress.XtraPrinting.XlsExportOptions()
+            {
+                ExportMode = DevExpress.XtraPrinting.XlsExportMode.SingleFile,
+                RawDataMode = false,
+                RasterizeImages = true,
+                RasterizationResolution = 300,
+                SheetName = "TreeList content"
+            };
+            DxComponent.FillValuesToObject(xlsOptions, options, out errors);
+
+            this.ExportToXls(exportStream, xlsOptions);
+        }
+        /// <summary>
+        /// Export obsahu do formátu <b>XLSX</b>
+        /// </summary>
+        /// <param name="options"></param>
+        /// <param name="exportStream"></param>
+        /// <param name="errors">Out: Chyby</param>
+        private void _ExportContentXlsx(KeyValuePair<string, string>[] options, System.IO.MemoryStream exportStream, out string errors)
+        {
+            var xlsxOptions = new DevExpress.XtraPrinting.XlsxExportOptions()
+            {
+                ExportMode = DevExpress.XtraPrinting.XlsxExportMode.SingleFile,
+                ShowGridLines = true,
+                RasterizeImages = true,
+                RasterizationResolution = 300,
+                SheetName = "TreeList content"
+            };
+            DxComponent.FillValuesToObject(xlsxOptions, options, out errors);
+
+            this.ExportToXlsx(exportStream, xlsxOptions);
+        }
+        /// <summary>
+        /// Export obsahu do formátu <b>DOCX</b>
+        /// </summary>
+        /// <param name="options"></param>
+        /// <param name="exportStream"></param>
+        /// <param name="errors">Out: Chyby</param>
+        private void _ExportContentDocx(KeyValuePair<string, string>[] options, System.IO.MemoryStream exportStream, out string errors)
+        {
+            var docxOptions = new DevExpress.XtraPrinting.DocxExportOptions()
+            {
+                ExportMode = DevExpress.XtraPrinting.DocxExportMode.SingleFile,
+                TableLayout = true,
+                RasterizeImages = true,
+                KeepRowHeight = true,
+                RasterizationResolution = 300
+            };
+            DxComponent.FillValuesToObject(docxOptions, options, out errors);
+
+            this.ExportToDocx(exportStream, docxOptions);
+        }
+        #endregion
         #region Obrázky - ImageListy, režim ImageMode, NodeImageType (Png / Svg), NodeImageSize (Small?)
         /// <summary>
         /// Pozice ikon v rámci TreeListu
@@ -5565,6 +5817,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <param name="method"></param>
             /// <param name="args"></param>
             public void RunInLock(Delegate method, params object[] args) { __Owner.RunInLock(method, args); }
+            /// <summary>
+            /// Vyexportuje svoje data do daného formátu <paramref name="format"/>, s použitím daných předvoleb <paramref name="options"/>. Výstupem je <c>byte[]</c> = obsah souboru.
+            /// </summary>
+            /// <param name="format">Výstupní formát</param>
+            /// <param name="options">Předvolby exportu</param>
+            /// <param name="errors">Out: Chyby</param>
+            /// <returns></returns>
+            public byte[] ExportContent(ContentExportType format, KeyValuePair<string, string>[] options, out string errors)
+            {
+                return __Owner.ExportContent(format, options, out errors);
+            }
             #endregion
             #region KeyActions, DataExchange, Drag and Drop
             /// <summary>

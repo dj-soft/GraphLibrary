@@ -363,11 +363,11 @@ namespace TestDevExpress.Forms
             string exportPdf = "svgimages/diagramicons/exporttopdf.svg";
 
             var treeExportGroup = new DataRibbonGroup() { GroupText = "Export obsahu" };
-            treeExportGroup.Items.Add(new DataRibbonItem() { ItemId = "TreeExport1", ImageName = exportHtm, Text = "Export HTML", Tag = "HTM", RibbonStyle = RibbonItemStyles.Large });
-            treeExportGroup.Items.Add(new DataRibbonItem() { ItemId = "TreeExport2", ImageName = exportPdf, Text = "Export PDF", Tag = "PDF", RibbonStyle = RibbonItemStyles.Large });
-            treeExportGroup.Items.Add(new DataRibbonItem() { ItemId = "TreeExport3", ImageName = exportJpg, Text = "Export JPEG", Tag = "JPG", RibbonStyle = RibbonItemStyles.Large });
-            treeExportGroup.Items.Add(new DataRibbonItem() { ItemId = "TreeExport4", ImageName = exportXls, Text = "Export Excel", Tag = "XLS", RibbonStyle = RibbonItemStyles.Large });
-            treeExportGroup.Items.Add(new DataRibbonItem() { ItemId = "TreeExport5", ImageName = exportPng, Text = "Export Png", Tag = "PNG", RibbonStyle = RibbonItemStyles.Large });
+            treeExportGroup.Items.Add(new DataRibbonItem() { ItemId = "TreeExport1", ImageName = exportHtm, Text = "Export HTML", Tag = ContentExportType.Html, RibbonStyle = RibbonItemStyles.Large });
+            treeExportGroup.Items.Add(new DataRibbonItem() { ItemId = "TreeExport2", ImageName = exportPdf, Text = "Export PDF", Tag = ContentExportType.Pdf, RibbonStyle = RibbonItemStyles.Large });
+            treeExportGroup.Items.Add(new DataRibbonItem() { ItemId = "TreeExport3", ImageName = exportJpg, Text = "Export CSV", Tag = ContentExportType.Csv, RibbonStyle = RibbonItemStyles.Large });
+            treeExportGroup.Items.Add(new DataRibbonItem() { ItemId = "TreeExport4", ImageName = exportXls, Text = "Export Excel", Tag = ContentExportType.Xlsx, RibbonStyle = RibbonItemStyles.Large });
+            treeExportGroup.Items.Add(new DataRibbonItem() { ItemId = "TreeExport5", ImageName = exportPng, Text = "Export Docx", Tag = ContentExportType.Docx, RibbonStyle = RibbonItemStyles.Large });
             homePage.Groups.Add(treeExportGroup);
 
             ribbonContent.Pages.Add(homePage);
@@ -1815,59 +1815,93 @@ namespace TestDevExpress.Forms
         #region Export
         private void ExportTree(object tag)
         {
-            if (tag is string format)
+            if (tag is ContentExportType format)
             {
-                var key = format.Trim().ToUpper();
-                using (var stream = new System.IO.MemoryStream())
+                var options = getOptions(format);
+                var content = DxTreeList.DxProperties.ExportContent(format, options, out var errors);
+                if (content != null && content.Length > 0)
                 {
-                    switch (key)
+                    var fileName = getFileName(format);
+                    if (!String.IsNullOrEmpty(fileName))
                     {
-                        case "HTM":
-                        case "HTML":
-                            var htmlOptions = new DevExpress.XtraPrinting.HtmlExportOptions();
-                            htmlOptions.
-                            fillOptions(htmlOptions, "");
-                            DxTreeList.TreeListNative.ExportToHtml(stream, htmlOptions);
-                            break;
-
-                        case "MHT":
-                            var mhtOptions = new DevExpress.XtraPrinting.MhtExportOptions();
-                            DxTreeList.TreeListNative.ExportToMht(stream, mhtOptions);
-                            break;
-
-                        case "PDF":
-                            var pdfOptions = new DevExpress.XtraPrinting.PdfExportOptions();
-                            DxTreeList.TreeListNative.ExportToPdf(stream, pdfOptions);
-                            break;
-
-                        case "XLS":
-                            var xlsOptions = new DevExpress.XtraPrinting.XlsExportOptions();
-                            DxTreeList.TreeListNative.ExportToXls(stream, xlsOptions);
-                            break;
-
-                        case "XLSX":
-                            var xlsxOptions = new DevExpress.XtraPrinting.XlsxExportOptions();
-                            DxTreeList.TreeListNative.ExportToXlsx(stream, xlsxOptions);
-                            break;
-
-                        case "DOCX":
-                            var docxOptions = new DevExpress.XtraPrinting.DocxExportOptions();
-                            DxTreeList.TreeListNative.ExportToDocx(stream, docxOptions);
-                            break;
-
-                        default:
-                            throw new ArgumentException($"Nepodporovaný výstupní formát: '{format}'.");
+                        System.IO.File.WriteAllBytes(fileName, content);
+                        DxComponent.ShowMessageInfo($"Obsah TreeListu je uložen do souboru '{fileName}'.");
                     }
-                    byte[] content = stream.ToArray();
+                }
+                else if (errors != null)
+                {
+                    DxComponent.ShowMessageError(errors);
                 }
             }
 
-
-            void fillOptions(object target, string source)
+            // Vrátí pole explicitních Options pro daný formát; null je přípustné
+            KeyValuePair<string, string>[] getOptions(ContentExportType format)
             {
-                if (target is null || String.IsNullOrEmpty(source)) return;
+                var optionList = new List<KeyValuePair<string, string>>();
+                switch (format)
+                {
+                    case ContentExportType.Html:
+                        addOption(optionList, "", "");
+                        break;
 
+                    case ContentExportType.Pdf:
+                        addOption(optionList, "ImageQuality", "DevExpress.XtraPrinting.PdfJpegImageQuality.High");
+                        addOption(optionList, "AdditionalMetadata", "DevExpress.TreeList");
+                        addOption(optionList, "DocumentOptions.Author", "David Janáček");
+                        addOption(optionList, "SignatureOptions.ContactInfo", "ASOL Hradec Králové, druhé patro");
+                        if ((DateTime.Now.Minute % 2) == 0)
+                        {   // Občas zařadíme heslo:
+                            addOption(optionList, "PasswordSecurityOptions.OpenPassword", "heslo");
+                            addOption(optionList, "PasswordSecurityOptions.EncryptionLevel", "DevExpress.XtraPrinting.PdfEncryptionLevel.AES256");
+                            addOption(optionList, "PasswordSecurityOptions.PermissionsOptions.EnableCopying", "DevExpress.XtraPrinting.PdfEncryptionLevel.AES256");
+                        }
+                        break;
 
+                    case ContentExportType.Csv:
+                        addOption(optionList, "", "");
+                        break;
+
+                    case ContentExportType.Xlsx:
+                        addOption(optionList, "SheetName", "Obsah stromu výroby");
+                        break;
+
+                    case ContentExportType.Docx:
+                        addOption(optionList, "DocumentOptions.Keywords", "Klíčová slova dokumentu");
+                        addOption(optionList, "DocumentOptions.Author", "To jsem byl já :-)");
+                        addOption(optionList, "DocumentOptions.Subject", "Strom výroby");
+                        addOption(optionList, "DocumentOptions.Title", "Strom výroby ze dneška");
+                        break;
+
+                }
+                return optionList.ToArray();
+            }
+            void addOption(List<KeyValuePair<string, string>> optionList, string key, string value)
+            {
+                optionList.Add(new KeyValuePair<string, string>(key, value));
+            }
+            // Vrátí nové plné jméno pro exportovaný soubor (adresář = složka na Desktop, jméno = dnešní datum, přípona = dle formátu)
+            string getFileName(ContentExportType format)
+            {
+                var targetPath = System.IO.Path.Combine(System.Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), "DxTreeLists");
+                if (!System.IO.Directory.Exists(targetPath))
+                    System.IO.Directory.CreateDirectory(targetPath);
+
+                string fileName = System.IO.Path.Combine(targetPath, "Export-" + DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss"));
+                switch (format)
+                {
+                    case ContentExportType.Txt: return fileName + ".txt";
+                    case ContentExportType.Csv: return fileName + ".csv";
+                    case ContentExportType.Rtf: return fileName + ".rtf";
+                    case ContentExportType.Pdf: return fileName + ".pdf";
+                    case ContentExportType.Html: return fileName + ".html";
+                    case ContentExportType.Mht: return fileName + ".mht";
+                    case ContentExportType.Xls: return fileName + ".xls";
+                    case ContentExportType.Xlsx: return fileName + ".xlsx";
+                    case ContentExportType.Docx: return fileName + ".docx";
+                    case ContentExportType.Png: return fileName + ".png";
+                    case ContentExportType.Jpg: return fileName + ".jpg";
+                }
+                return null;
             }
         }
         #endregion

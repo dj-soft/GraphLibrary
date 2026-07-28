@@ -6886,6 +6886,33 @@ namespace Noris.Clients.Win.Components.AsolDX
                 return (position >= 0);
             }
         }
+        /// <summary>
+        /// Vrátí string, obsahující Messages dané chyby a jejích InnerException.
+        /// </summary>
+        /// <param name="exc"></param>
+        /// <returns></returns>
+        public static string FormatExceptionsMessage(Exception exc)
+        {
+            StringBuilder sb = new StringBuilder();
+            addException(sb, exc, 1, "");
+            return sb.ToString();
+
+            // Přidá text za danou chybu, přidá AggregateException.InnerExceptions, přidá InnerException
+            void addException(StringBuilder sb, Exception e, int numb, string indent)
+            {
+                if (e is null) return;
+
+                sb.AppendLine($"{indent}{numb}. {e.Message}");
+
+                if (e is System.AggregateException agx)
+                {
+                    foreach (var agi in agx.InnerExceptions)
+                        addException(sb, agi, numb, indent + "  ");
+                }
+
+                addException(sb, e.InnerException, numb + 1, indent + "  ");
+            }
+        }
         #endregion
         #region SleepUntil - pozastavit thread do splnění podmínky
         /// <summary>
@@ -7675,7 +7702,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (content is null) return null;
             if (String.IsNullOrEmpty(content)) return new KeyValuePair<string, string>[0];
 
-            List<KeyValuePair<string, string>> result = new List<KeyValuePair<string, string>>();
+            var result = new List<KeyValuePair<string, string>>();
             var items = content.Split(new string[] { itemDelimiter }, StringSplitOptions.RemoveEmptyEntries);
             foreach (var item in items)
             {
@@ -7746,6 +7773,215 @@ namespace Noris.Clients.Win.Components.AsolDX
                 return new KeyValuePair<string, string>(key, value);
             }
             return null;
+        }
+        /// <summary>
+        /// Metoda do daného objektu <paramref name="target"/> vloží do jeho property hodnoty, dodané ve <paramref name="values"/>.<br/>
+        /// V údaji <c>Key</c> je název property, v údaje <c>Value</c> je stringová hodnota.
+        /// <para/>
+        /// <b>Název property</b> může obsahovat vnořené objekty v objektu <paramref name="target"/>, tak jako v C# kódu.<br/>
+        /// Pokud bychom tedy do objektu <c>target</c> typu <see cref="DevExpress.XtraPrinting.PdfExportOptions"/> chtěli naplnit hodnotu <c>target.ConvertImagesToJpeg</c> typu <see cref="Boolean"/>, 
+        /// pak <c>Key = "ConvertImagesToJpeg"</c>.<br/>
+        /// Pokud do téhož objektu budeme nastavovat <c>target.DocumentOptions.Title</c> (kde <c>DocumentOptions</c> je instance dalšího typu),
+        /// pak <c>Key = "DocumentOptions.Title"</c>.
+        /// <para/>
+        /// <b>Hodnota</b> je dodána ve formě stringu. Nelze dodat libovolný objekt.<br/>
+        /// Povoleny jsou základní hodnoty (int, decimal, string, char, boolean, datetime).<br/>
+        /// Je možno zadat hodnotu enumu ve formě plné nebo částečné, 
+        /// pak <c>Value = "DevExpress.XtraPrinting.PdfJpegImageQuality.High"</c> nebo <c>"PdfJpegImageQuality.High"</c> nebo dokonce jen <c>"High"</c>.
+        /// <para/>
+        /// Pokud v dodaném poli <paramref name="values"/> bude zadána nevalidní hodnota (název property nebo text hodnoty), bude ignorována.<br/>
+        /// Hodnoty jsou do objektu vepisovány v tom pořadí, v jakém jsou zadané.<br/>
+        /// Lze zadat jednu a tu samou property vícekrát, na různých pozicích v poli: bude zadána opakovaně, v daném pořadí. Lze tak postupně změnit hodnotu. Odpovídá to psanému C# kódu.
+        /// </summary>
+        /// <param name="target"></param>
+        /// <param name="values"></param>
+        internal static void FillValuesToObject(object target, KeyValuePair<string, string>[] values)
+        { }
+        /// <summary>
+        /// Metoda do daného objektu <paramref name="target"/> vloží do jeho property hodnoty, dodané ve <paramref name="values"/>.<br/>
+        /// V údaji <c>Key</c> je název property, v údaje <c>Value</c> je stringová hodnota.
+        /// <para/>
+        /// <b>Název property</b> může obsahovat vnořené objekty v objektu <paramref name="target"/>, tak jako v C# kódu.<br/>
+        /// Pokud bychom tedy do objektu <c>target</c> typu <see cref="DevExpress.XtraPrinting.PdfExportOptions"/> chtěli naplnit hodnotu <c>target.ConvertImagesToJpeg</c> typu <see cref="Boolean"/>, 
+        /// pak <c>Key = "ConvertImagesToJpeg"</c>.<br/>
+        /// Pokud do téhož objektu budeme nastavovat <c>target.DocumentOptions.Title</c> (kde <c>DocumentOptions</c> je instance dalšího typu),
+        /// pak <c>Key = "DocumentOptions.Title"</c>.
+        /// <para/>
+        /// <b>Hodnota</b> je dodána ve formě stringu. Nelze dodat libovolný objekt.<br/>
+        /// Povoleny jsou základní hodnoty (int, decimal, string, char, boolean, datetime).<br/>
+        /// Je možno zadat hodnotu enumu ve formě plné nebo částečné, 
+        /// pak <c>Value = "DevExpress.XtraPrinting.PdfJpegImageQuality.High"</c> nebo <c>"PdfJpegImageQuality.High"</c> nebo dokonce jen <c>"High"</c>.
+        /// <para/>
+        /// Pokud v dodaném poli <paramref name="values"/> bude zadána nevalidní hodnota (název property nebo text hodnoty), bude ignorována.<br/>
+        /// Hodnoty jsou do objektu vepisovány v tom pořadí, v jakém jsou zadané.<br/>
+        /// Lze zadat jednu a tu samou property vícekrát, na různých pozicích v poli: bude zadána opakovaně, v daném pořadí. Lze tak postupně změnit hodnotu. Odpovídá to psanému C# kódu.
+        /// </summary>
+        /// <param name="target"></param>
+        /// <param name="values"></param>
+        /// <param name="errors">Out: Chyby</param>
+        internal static void FillValuesToObject(object target, KeyValuePair<string, string>[] values, out string errors)
+        {
+            errors = null;
+            if (target is null || values is null || values.Length == 0) return;
+
+            var errorSb = new StringBuilder();
+
+            foreach (var keyValue in values)
+            {
+                // Máme základní cílový objekt 'target', ale pro víceúrovňovou property najdeme reálný cílový objekt:
+                //   Pokud target je 'DevExpress.XtraPrinting.PdfExportOptions', a cílová property je "PasswordSecurityOptions.PermissionsOptions.EnableCopying",
+                //   pak postupně najdeme target.PasswordSecurityOptions, v ní pak najdeme objekt z property 'PermissionsOptions', a získáme i název property "EnableCopying":
+                bool found = trySearchObject(target, keyValue.Key, errorSb, out var currentTarget, out var currentProperty);
+                if (found)
+                    trySetValue(currentTarget, currentProperty, keyValue.Value, keyValue.Key, errorSb);
+            }
+
+            // Suma chyb:
+            if (errorSb.Length > 0) errors = errorSb.ToString();
+
+
+            // V rámci daného Root objektu vyhledá jeho SubObjekty dle názvů v propertyId, poslední objekt uloží do out currTarg a do out currProp vloží název cílové property v něm
+            bool trySearchObject(object targ, string propertyId, StringBuilder errSb, out object currTarg, out string currProp)
+            {
+                currTarg = null;
+                currProp = null;
+
+                if (String.IsNullOrEmpty(propertyId)) return false;            // Není zadáno zhola nic, není to chyba
+
+                // propertyId může obsahovat sekvenci objektů: "PasswordSecurityOptions.PermissionsOptions.EnableCopying"
+                // Rozdělíme na jednotlivé property:   "PasswordSecurityOptions", "PermissionsOptions", "EnableCopying"
+                var propertyNames = propertyId.Split('.')
+                    .Where(n => !String.IsNullOrEmpty(n))
+                    .Select(n => n.Trim())
+                    .ToArray();
+
+                if (propertyNames.Length == 0)
+                {   // Není zadáno nic podstatného:
+                    errSb.AppendLine($"PropertyId '{propertyId}' is invalid.");
+                    return false;
+                }
+
+                // Nejprve najdu případně vnořený objekt uvnitř target objektu (pokud propertyName je složené = obsahuje více property s oddělovacími tečkami):
+                var testTarg = targ;                                           // Na začátku není null
+                int lastIndex = propertyNames.Length - 1;                      // Poslední prvek v řadě je jméno property toho objektu, který je na předposledním místě :-)
+                for (int i = 0; i < lastIndex; i++)
+                {   // Pokud na vstupu je 'propertyId' = "DocumentOptions.Author",
+                    //   tak v objektu testTarg najdu property "DocumentOptions",
+                    //   její objekt dám do testTarg,
+                    //   a název property "Author" dom do out currProp:
+                    var propName = propertyNames[i];
+                    // Tady jsem jen tehdy, když 'propName' není poslední prvek = a tedy identifikuje nějakou složitou property v testTarg, která obsahuje objekt k dalšímu zpracování!
+                    if (!tryGetObject(testTarg, propName, out var nextTarg))
+                    {   // Property nebyla nalezena podle jména:
+                        errSb.AppendLine($"PropertyId '{propertyId}' contains a non-existent part '{propName}'.");
+                        return false;
+                    }
+                    if (nextTarg is null)
+                    {   // Property existuje, ale její obsah je null:
+                        errSb.AppendLine($"PropertyId '{propertyId}' contains a part '{propName}' that is null.");
+                        return false;
+                    }
+
+                    testTarg = nextTarg;
+                }
+
+                // OK, sub-objekt byl nalezen, vracíme jeho instanci a název property v něm:
+                currTarg = testTarg;
+                currProp = propertyNames[lastIndex];
+                return true;
+            }
+            // Z daného objektu najde property nebo field daného jména a získá jeho obsah.
+            bool tryGetObject(object targ, string name, out object content)
+            {
+                bool hasMember = tryGetMember(targ, name, true, false, out var prop, out var fiel, true, out content);
+                return hasMember;
+            }
+            // Zkusí najít property/field daného jména s povoleným get / set, zkusí načíst jeho obsah
+            bool tryGetMember(object targ, string name, bool withGet, bool withSet, out System.Reflection.PropertyInfo property, out System.Reflection.FieldInfo field, bool getValue, out object value)
+            {
+                property = null;
+                field = null;
+                value = null;
+
+                try
+                {
+                    var type = targ.GetType();
+
+                    // a) property?
+                    property = type.GetProperty(name, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.FlattenHierarchy);
+                    if (property != null)
+                    {
+                        if (withGet || getValue)
+                        {
+                            if (property.GetMethod is null) return false;
+                            if (!property.GetMethod.IsPublic) return false;
+                        }
+                        if (withSet)
+                        {
+                            if (property.SetMethod is null) return false;
+                            if (!property.SetMethod.IsPublic) return false;
+                        }
+                        if (getValue)
+                            value = property.GetValue(targ);
+
+                        return true;
+                    }
+
+                    // b) field?
+                    field = type.GetField(name, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.FlattenHierarchy);
+                    if (field != null)
+                    {
+                        // Není na čem testovat get/set metody.
+                        // Lze načíst hodnotu:
+                        if (getValue)
+                            value = field.GetValue(targ);
+                        return true;
+                    }
+                }
+                catch
+                {   // Chyba:
+                }
+                return false;
+            }
+            // Do daného objektu do jeho property/field daného jména vloží hodnotu získanou z daného stringu
+            bool trySetValue(object targ, string name, string valueText, string propertyId, StringBuilder errSb)
+            {
+                bool hasMember = tryGetMember(targ, name, true, true, out var prop, out var fiel, true, out var content);
+                if (!hasMember)
+                {
+                    errSb.AppendLine($"The requested PropertyId '{propertyId}' does not exist.");
+                    return false;
+                }
+
+                var memberType = (prop?.PropertyType ?? fiel.FieldType ?? null);
+                if (memberType is null)
+                {
+                    errSb.AppendLine($"The data type of the requested PropertyId '{propertyId}' cannot be determined.");
+                    return false;
+                }
+
+                // Konvertujeme dodaný text na hodnotu očekávaného typu:
+                var value = Convertor.StringToObject(valueText, memberType);
+                if (value is null)
+                {
+                    return false;
+                }
+
+                // Zkusíme setovat hodnotu:
+                try
+                {
+                    if (prop != null)
+                        prop.SetValue(targ, value);
+                    else if (fiel != null)
+                        fiel.SetValue(targ, value);
+                    return true;
+                }
+                catch (Exception exc)
+                {
+                    errSb.AppendLine($"Failed to insert value '{valueText}' into PropertyId '{propertyId}' (data type: '{memberType.FullName}'), error: {exc.Message}.");
+                }
+                return false;
+            }
         }
         #endregion
         #region DxClipboard : obálka nad systémovým clipboardem plus support pro DataExchangeContainer
@@ -14599,6 +14835,9 @@ White
         public static object StringToObject(string text, Type type)
         {
             if (type == null) return null;
+
+            if (type.IsEnum) return StringToEnumType(text, type);
+
             string typeName = type.FullName;
             switch (typeName)
             {
@@ -14617,6 +14856,7 @@ White
                 case "System.DateTime": return StringToDateTime(text);
                 case "System.TimeSpan": return StringToTimeSpan(text);
                 case "System.Char": return StringToChar(text);
+                case "System.String": return text;
                 case "System.DateTimeOffset": return StringToDateTimeOffset(text);
                 case "System.Guid": return StringToGuid(text);
                 case "System.Drawing.Color": return StringToColor(text);
@@ -15441,6 +15681,72 @@ White
                 return value;
             return defaultValue;
         }
+        /// <summary>
+        /// Konvertuje název enum do hodnoty pro daný cílový typ
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="enumType"></param>
+        /// <returns></returns>
+        public static object StringToEnumType(string text, Type enumType)
+        {
+            // Nezadáno? Vrátím první hodnotu zadaného enumu:
+            if (String.IsNullOrEmpty(text))
+            {
+                if (enumType != null)
+                {
+                    var values = Enum.GetValues(enumType);
+                    if (values.Length > 0) return values.GetValue(0);
+                }
+                return null;
+            }
+
+            // Zadáno s tečkami (např. "DevExpress.XtraPrinting.PdfJpegImageQuality.High"):
+            if (text.Contains("."))
+            {
+                var valueName = text;                                                                             // "DevExpress.XtraPrinting.PdfJpegImageQuality.High"
+                var valueTypeName = StringCutOff(ref valueName, ".", t => t.LastIndexOf("."));                    // typeName = "DevExpress.XtraPrinting.PdfJpegImageQuality";   value = "High"
+
+                // Pokud hodnota 'text' je zadána včetně úplného názvu enumu (tedy: "DevExpress.XtraPrinting.PdfJpegImageQuality.High")
+                //   anebo jen části názvu (tedy: ""PdfJpegImageQuality.High"), 
+                // pak zjistíme, zda název enumu v hodnotě je odpovídající tomu očekávanému 'enumType.FullName', kde je vždy plný název typu "DevExpress.XtraPrinting.PdfJpegImageQuality":
+                var resultTypeName = enumType?.FullName ?? "";                                                    // Tento typ očekáváme...
+                // Pokud v hodnotě je zadán plný nebo částečný název toho typu, který očekáváme, pak nebudeme řešit zdejší větev!
+                //  (ta proběhne jen tehdy, když zvenku zadaný typ je jiný než očekávaný !)
+                bool isExpectedType = valueTypeName.Length <= resultTypeName.Length && resultTypeName.EndsWith(valueTypeName);
+                if (!isExpectedType)
+                {
+                    Type valueType = null;
+                    try
+                    {
+                        valueType = Type.ReflectionOnlyGetType(valueTypeName, false, false);                          // type = DevExpress.XtraPrinting.PdfJpegImageQuality
+                    }
+                    catch { }
+
+                    if (valueType != null && valueType.IsEnum && tryGetEnum(valueName, valueType, out var result))    // Pro daný konkrétní Type parsujeme hodnotu "High"
+                        return result;
+                }
+
+                text = valueName;            // Do dalšího kola konverze postupuje pouze holý název hodnoty enumu: "High"
+            }
+
+            if (tryGetEnum(text, enumType, out var textValue))
+                return textValue;
+
+            return null;
+
+            // Zkusí parsovat název hodnoty (bez tečky) v daném typu Enumu do out hodnoty
+            bool tryGetEnum(string valueName, Type typeEnum, out object enumValue)
+            {
+                try
+                {
+                    enumValue = Enum.Parse(typeEnum, valueName);
+                    return true;
+                }
+                catch { }
+                enumValue = null;
+                return false;
+            }
+        }
         #endregion
         #region Helpers
         /// <summary>
@@ -15584,12 +15890,19 @@ White
         }
         /// <summary>
         /// Z daného řetězce (text) odkrojí a vrátí část, která se nachází před delimiterem.
-        /// Dany text (ref) zkrátí, bude obsahovat část za delimiterem.
+        /// Daný text (ref) zkrátí, bude obsahovat část za delimiterem.
+        /// <para/>
+        /// Například:
+        /// <code>
+        /// string text = "Název,Hodnota";
+        /// string key = StringCutOff(ref text, ",");    // key = "Název";   text = "Hodnota";
+        /// </code>
         /// </summary>
-        /// <param name="text"></param>
-        /// <param name="delimiter"></param>
+        /// <param name="text">Vstupní text: v něm se hledá; Výstupní text: zde bude to, co se nachází za delimiterem</param>
+        /// <param name="delimiter">Oddělovač, který hledáme implicitně pomocí <see cref="String.IndexOf(string)"/></param>
+        /// <param name="searcher">Externě dodaný hledač pozice delimiteru; ale delimiter i tak musí být dodán kvůli jeho délce!!!</param>
         /// <returns></returns>
-        public static string StringCutOff(ref string text, string delimiter)
+        public static string StringCutOff(ref string text, string delimiter, Func<string, int> searcher = null)
         {
             if (text == null) return null;
             if (text.Length == 0) return "";
@@ -15597,7 +15910,7 @@ White
             if (String.IsNullOrEmpty(delimiter))
                 throw new ArgumentNullException("delimiter", "Parametr metody Convertor.StringCutOff(«delimiter») nemůže být prázdný.");
             int len = delimiter.Length;
-            int at = text.IndexOf(delimiter);
+            int at = (searcher is null ? text.IndexOf(delimiter) : searcher(text));      // Je možno použít externě dodaný searcher
             if (at < 0)
             {
                 result = text;

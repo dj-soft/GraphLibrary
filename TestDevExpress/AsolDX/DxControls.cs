@@ -12691,6 +12691,60 @@ namespace Noris.Clients.Win.Components.AsolDX
         ClientSearch
     }
     /// <summary>
+    /// Varianta formátu exportu obsahu do souboru
+    /// </summary>
+    public enum ContentExportType
+    {
+        /// <summary>
+        /// Neexportuje
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// TXT
+        /// </summary>
+        Txt,
+        /// <summary>
+        /// CSV
+        /// </summary>
+        Csv,
+        /// <summary>
+        /// RTF
+        /// </summary>
+        Rtf,
+        /// <summary>
+        /// PDF
+        /// </summary>
+        Pdf,
+        /// <summary>
+        /// HTML
+        /// </summary>
+        Html,
+        /// <summary>
+        /// MHT
+        /// </summary>
+        Mht,
+        /// <summary>
+        /// Excel 2007
+        /// </summary>
+        Xls,
+        /// <summary>
+        /// Excel
+        /// </summary>
+        Xlsx,
+        /// <summary>
+        /// Word
+        /// </summary>
+        Docx,
+        /// <summary>
+        /// Image PNG
+        /// </summary>
+        Png,
+        /// <summary>
+        /// Image JPG
+        /// </summary>
+        Jpg
+    }
+    /// <summary>
     /// Druh změny obsahu aktuálního prvku
     /// </summary>
     public enum ContentChangeMode
