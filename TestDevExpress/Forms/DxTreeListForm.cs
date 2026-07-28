@@ -356,18 +356,18 @@ namespace TestDevExpress.Forms
             treePrepareGroup.Items.Add(new DataRibbonItem() { ItemId = "TreePrepareSet5000", ImageName = "svgimages/icon%20builder/actions_addcircled.svg", Text = "Vytvoř TreeList 5000", RibbonStyle = RibbonItemStyles.Large });
             homePage.Groups.Add(treePrepareGroup);
 
-            string exportXls = "images/xaf/templatesv2images/action_export_toexcel.svg";
-            string exportHtm = "images/xaf/templatesv2images/action_export_tohtml.svg";
-            string exportJpg = "svgimages/diagramicons/exportdiagram_jpeg.svg";
-            string exportPng = "svgimages/diagramicons/exportdiagram_png.svg";
-            string exportPdf = "svgimages/diagramicons/exporttopdf.svg";
+            string exportHtm = "svgimages/export/exporttohtml.svg";
+            string exportPdf = "svgimages/export/exporttopdf.svg";
+            string exportCsv = "svgimages/export/exporttocsv.svg";
+            string exportXls = "svgimages/export/exporttoxlsx.svg";
+            string exportDoc = "svgimages/export/exporttodocx.svg";
 
             var treeExportGroup = new DataRibbonGroup() { GroupText = "Export obsahu" };
             treeExportGroup.Items.Add(new DataRibbonItem() { ItemId = "TreeExport1", ImageName = exportHtm, Text = "Export HTML", Tag = ContentExportType.Html, RibbonStyle = RibbonItemStyles.Large });
             treeExportGroup.Items.Add(new DataRibbonItem() { ItemId = "TreeExport2", ImageName = exportPdf, Text = "Export PDF", Tag = ContentExportType.Pdf, RibbonStyle = RibbonItemStyles.Large });
-            treeExportGroup.Items.Add(new DataRibbonItem() { ItemId = "TreeExport3", ImageName = exportJpg, Text = "Export CSV", Tag = ContentExportType.Csv, RibbonStyle = RibbonItemStyles.Large });
+            treeExportGroup.Items.Add(new DataRibbonItem() { ItemId = "TreeExport3", ImageName = exportCsv, Text = "Export CSV", Tag = ContentExportType.Csv, RibbonStyle = RibbonItemStyles.Large });
             treeExportGroup.Items.Add(new DataRibbonItem() { ItemId = "TreeExport4", ImageName = exportXls, Text = "Export Excel", Tag = ContentExportType.Xlsx, RibbonStyle = RibbonItemStyles.Large });
-            treeExportGroup.Items.Add(new DataRibbonItem() { ItemId = "TreeExport5", ImageName = exportPng, Text = "Export Docx", Tag = ContentExportType.Docx, RibbonStyle = RibbonItemStyles.Large });
+            treeExportGroup.Items.Add(new DataRibbonItem() { ItemId = "TreeExport5", ImageName = exportDoc, Text = "Export Docx", Tag = ContentExportType.Docx, RibbonStyle = RibbonItemStyles.Large });
             homePage.Groups.Add(treeExportGroup);
 
             ribbonContent.Pages.Add(homePage);
@@ -1825,7 +1825,16 @@ namespace TestDevExpress.Forms
                     if (!String.IsNullOrEmpty(fileName))
                     {
                         System.IO.File.WriteAllBytes(fileName, content);
-                        DxComponent.ShowMessageInfo($"Obsah TreeListu je uložen do souboru '{fileName}'.");
+                        if (System.IO.File.Exists(fileName))
+                        {
+                            var response = DxComponent.ShowMessageQuestion($"Obsah TreeListu je uložen do souboru '{fileName}'.\r\n\r\nOtevřít soubor?", "Export", DialogResult.Yes, DialogResult.No);
+                            if (response == DialogResult.Yes)
+                                DxComponent.StartProcess(fileName);
+                        }
+                        else
+                        {
+                            DxComponent.ShowMessageError($"Nepodařilo se uložit data do souboru '{fileName}'.");
+                        }
                     }
                 }
                 else if (errors != null)
