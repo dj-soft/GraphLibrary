@@ -1024,13 +1024,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <param name="args"></param>
             public void RunInLock(Delegate method, params object[] args) { DxTreeProperties.RunInLock(method, args); }
             /// <summary>
-            /// Vyexportuje svoje data do daného formátu <paramref name="format"/>, s použitím daných předvoleb <paramref name="options"/>. Výstupem je <c>byte[]</c> = obsah souboru.
+            /// Vyexportuje svoje data do daného formátu <paramref name="format"/>, s použitím daných předvoleb <paramref name="options"/>.<br/>
+            /// Výstupem je <c>byte[]</c> = obsah souboru.
             /// </summary>
             /// <param name="format">Výstupní formát</param>
             /// <param name="options">Předvolby exportu</param>
             /// <param name="errors">Out: Chyby</param>
             /// <returns></returns>
-            public byte[] ExportContent(ContentExportType format, KeyValuePair<string, string>[] options, out string errors)
+            public byte[] ExportContent(ContentExportType format, string[] options, out string errors)
             {
                 return DxTreeProperties.ExportContent(format, options, out errors);
             }
@@ -4612,13 +4613,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region ExportContent
         /// <summary>
-        /// Vyexportuje svoje data do daného formátu <paramref name="format"/>, s použitím daných předvoleb <paramref name="options"/>. Výstupem je <c>byte[]</c> = obsah souboru.
+        /// Vyexportuje svoje data do daného formátu <paramref name="format"/>, s použitím daných předvoleb <paramref name="options"/>.<br/>
+        /// Výstupem je <c>byte[]</c> = obsah souboru.
         /// </summary>
         /// <param name="format">Výstupní formát</param>
         /// <param name="options">Předvolby exportu</param>
         /// <param name="errors">Out: Chyby</param>
         /// <returns></returns>
-        protected byte[] ExportContent(ContentExportType format, KeyValuePair<string, string>[] options, out string errors)
+        protected byte[] ExportContent(ContentExportType format, string[] options, out string errors)
         {
             byte[] result = null;
             errors = null;
@@ -4679,7 +4681,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="options"></param>
         /// <param name="exportStream"></param>
         /// <param name="errors">Out: Chyby</param>
-        private void _ExportContentTxt(KeyValuePair<string, string>[] options, System.IO.MemoryStream exportStream, out string errors)
+        private void _ExportContentTxt(string[] options, System.IO.MemoryStream exportStream, out string errors)
         {
             var txtOptions = new DevExpress.XtraPrinting.TextExportOptions()
             {
@@ -4698,7 +4700,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="options"></param>
         /// <param name="exportStream"></param>
         /// <param name="errors">Out: Chyby</param>
-        private void _ExportContentCsv(KeyValuePair<string, string>[] options, System.IO.MemoryStream exportStream, out string errors)
+        private void _ExportContentCsv(string[] options, System.IO.MemoryStream exportStream, out string errors)
         {
             var csvOptions = new DevExpress.XtraPrinting.CsvExportOptions()
             {
@@ -4720,7 +4722,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="options"></param>
         /// <param name="exportStream"></param>
         /// <param name="errors">Out: Chyby</param>
-        private void _ExportContentRtf(KeyValuePair<string, string>[] options, System.IO.MemoryStream exportStream, out string errors)
+        private void _ExportContentRtf(string[] options, System.IO.MemoryStream exportStream, out string errors)
         {
             errors = null;
             this.ExportToRtf(exportStream);
@@ -4731,7 +4733,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="options"></param>
         /// <param name="exportStream"></param>
         /// <param name="errors">Out: Chyby</param>
-        private void _ExportContentPdf(KeyValuePair<string, string>[] options, System.IO.MemoryStream exportStream, out string errors)
+        private void _ExportContentPdf(string[] options, System.IO.MemoryStream exportStream, out string errors)
         {
             var pdfOptions = new DevExpress.XtraPrinting.PdfExportOptions()
             {
@@ -4752,7 +4754,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="options"></param>
         /// <param name="exportStream"></param>
         /// <param name="errors">Out: Chyby</param>
-        private void _ExportContentHtml(KeyValuePair<string, string>[] options, System.IO.MemoryStream exportStream, out string errors)
+        private void _ExportContentHtml(string[] options, System.IO.MemoryStream exportStream, out string errors)
         {
             var htmlOptions = new DevExpress.XtraPrinting.HtmlExportOptions()
             {
@@ -4774,7 +4776,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="options"></param>
         /// <param name="exportStream"></param>
         /// <param name="errors">Out: Chyby</param>
-        private void _ExportContentMht(KeyValuePair<string, string>[] options, System.IO.MemoryStream exportStream, out string errors)
+        private void _ExportContentMht(string[] options, System.IO.MemoryStream exportStream, out string errors)
         {
             var mhtOptions = new DevExpress.XtraPrinting.MhtExportOptions()
             {
@@ -4795,7 +4797,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="options"></param>
         /// <param name="exportStream"></param>
         /// <param name="errors">Out: Chyby</param>
-        private void _ExportContentXls(KeyValuePair<string, string>[] options, System.IO.MemoryStream exportStream, out string errors)
+        private void _ExportContentXls(string[] options, System.IO.MemoryStream exportStream, out string errors)
         {
             var xlsOptions = new DevExpress.XtraPrinting.XlsExportOptions()
             {
@@ -4815,7 +4817,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="options"></param>
         /// <param name="exportStream"></param>
         /// <param name="errors">Out: Chyby</param>
-        private void _ExportContentXlsx(KeyValuePair<string, string>[] options, System.IO.MemoryStream exportStream, out string errors)
+        private void _ExportContentXlsx(string[] options, System.IO.MemoryStream exportStream, out string errors)
         {
             var xlsxOptions = new DevExpress.XtraPrinting.XlsxExportOptions()
             {
@@ -4835,7 +4837,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="options"></param>
         /// <param name="exportStream"></param>
         /// <param name="errors">Out: Chyby</param>
-        private void _ExportContentDocx(KeyValuePair<string, string>[] options, System.IO.MemoryStream exportStream, out string errors)
+        private void _ExportContentDocx(string[] options, System.IO.MemoryStream exportStream, out string errors)
         {
             var docxOptions = new DevExpress.XtraPrinting.DocxExportOptions()
             {
@@ -5818,13 +5820,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <param name="args"></param>
             public void RunInLock(Delegate method, params object[] args) { __Owner.RunInLock(method, args); }
             /// <summary>
-            /// Vyexportuje svoje data do daného formátu <paramref name="format"/>, s použitím daných předvoleb <paramref name="options"/>. Výstupem je <c>byte[]</c> = obsah souboru.
+            /// Vyexportuje svoje data do daného formátu <paramref name="format"/>, s použitím daných předvoleb <paramref name="options"/>.<br/>
+            /// Výstupem je <c>byte[]</c> = obsah souboru.
             /// </summary>
             /// <param name="format">Výstupní formát</param>
             /// <param name="options">Předvolby exportu</param>
             /// <param name="errors">Out: Chyby</param>
             /// <returns></returns>
-            public byte[] ExportContent(ContentExportType format, KeyValuePair<string, string>[] options, out string errors)
+            public byte[] ExportContent(ContentExportType format, string[] options, out string errors)
             {
                 return __Owner.ExportContent(format, options, out errors);
             }

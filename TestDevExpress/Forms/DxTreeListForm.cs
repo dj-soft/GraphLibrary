@@ -1844,9 +1844,9 @@ namespace TestDevExpress.Forms
             }
 
             // Vrátí pole explicitních Options pro daný formát; null je přípustné
-            KeyValuePair<string, string>[] getOptions(ContentExportType format)
+            string[] getOptions(ContentExportType format)
             {
-                var optionList = new List<KeyValuePair<string, string>>();
+                var optionList = new List<string>();
                 switch (format)
                 {
                     case ContentExportType.Html:
@@ -1884,9 +1884,9 @@ namespace TestDevExpress.Forms
                 }
                 return optionList.ToArray();
             }
-            void addOption(List<KeyValuePair<string, string>> optionList, string key, string value)
+            void addOption(List<string> optionList, string key, string value)
             {
-                optionList.Add(new KeyValuePair<string, string>(key, value));
+                optionList.Add($"{key}={value}");
             }
             // Vrátí nové plné jméno pro exportovaný soubor (adresář = složka na Desktop, jméno = dnešní datum, přípona = dle formátu)
             string getFileName(ContentExportType format)

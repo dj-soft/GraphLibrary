@@ -7795,9 +7795,82 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="target"></param>
         /// <param name="values"></param>
+        internal static void FillValuesToObject(object target, string[] values)
+        {
+            var pairs = _SplitValuesToPairs(values);
+            _FillValuesToObject(target, pairs, out var _);
+        }
+        /// <summary>
+        /// Metoda do daného objektu <paramref name="target"/> vloží do jeho property hodnoty, dodané ve <paramref name="values"/>.<br/>
+        /// V údaji <c>Key</c> je název property, v údaje <c>Value</c> je stringová hodnota.
+        /// <para/>
+        /// <b>Název property</b> může obsahovat vnořené objekty v objektu <paramref name="target"/>, tak jako v C# kódu.<br/>
+        /// Pokud bychom tedy do objektu <c>target</c> typu <see cref="DevExpress.XtraPrinting.PdfExportOptions"/> chtěli naplnit hodnotu <c>target.ConvertImagesToJpeg</c> typu <see cref="Boolean"/>, 
+        /// pak <c>Key = "ConvertImagesToJpeg"</c>.<br/>
+        /// Pokud do téhož objektu budeme nastavovat <c>target.DocumentOptions.Title</c> (kde <c>DocumentOptions</c> je instance dalšího typu),
+        /// pak <c>Key = "DocumentOptions.Title"</c>.
+        /// <para/>
+        /// <b>Hodnota</b> je dodána ve formě stringu. Nelze dodat libovolný objekt.<br/>
+        /// Povoleny jsou základní hodnoty (int, decimal, string, char, boolean, datetime).<br/>
+        /// Je možno zadat hodnotu enumu ve formě plné nebo částečné, 
+        /// pak <c>Value = "DevExpress.XtraPrinting.PdfJpegImageQuality.High"</c> nebo <c>"PdfJpegImageQuality.High"</c> nebo dokonce jen <c>"High"</c>.
+        /// <para/>
+        /// Pokud v dodaném poli <paramref name="values"/> bude zadána nevalidní hodnota (název property nebo text hodnoty), bude ignorována.<br/>
+        /// Hodnoty jsou do objektu vepisovány v tom pořadí, v jakém jsou zadané.<br/>
+        /// Lze zadat jednu a tu samou property vícekrát, na různých pozicích v poli: bude zadána opakovaně, v daném pořadí. Lze tak postupně změnit hodnotu. Odpovídá to psanému C# kódu.
+        /// </summary>
+        /// <param name="target"></param>
+        /// <param name="values"></param>
+        /// <param name="errors">Out: Chyby</param>
+        internal static void FillValuesToObject(object target, string[] values, out string errors)
+        {
+            var pairs = _SplitValuesToPairs(values);
+            _FillValuesToObject(target, pairs, out errors);
+        }
+        /// <summary>
+        /// Vrátí pole KeyValuePair z dodaného pole stringů, které mají být ve formátu "Key=Value"
+        /// </summary>
+        /// <param name="values"></param>
+        /// <returns></returns>
+        private static KeyValuePair<string, string>[] _SplitValuesToPairs(string[] values)
+        {
+            if (values is null) return null;
+            var pairs = new List<KeyValuePair<string, string>>();
+            foreach (var value in values)
+            {
+                if (!String.IsNullOrEmpty(value))
+                {
+                    var pair = SplitToKeyValue(value, "=", true, false);
+                    if (pair.HasValue && !String.IsNullOrEmpty(pair.Value.Key))
+                        pairs.Add(pair.Value);
+                }
+            }
+            return pairs.ToArray();
+        }
+        /// <summary>
+        /// Metoda do daného objektu <paramref name="target"/> vloží do jeho property hodnoty, dodané ve <paramref name="values"/>.<br/>
+        /// V údaji <c>Key</c> je název property, v údaje <c>Value</c> je stringová hodnota.
+        /// <para/>
+        /// <b>Název property</b> může obsahovat vnořené objekty v objektu <paramref name="target"/>, tak jako v C# kódu.<br/>
+        /// Pokud bychom tedy do objektu <c>target</c> typu <see cref="DevExpress.XtraPrinting.PdfExportOptions"/> chtěli naplnit hodnotu <c>target.ConvertImagesToJpeg</c> typu <see cref="Boolean"/>, 
+        /// pak <c>Key = "ConvertImagesToJpeg"</c>.<br/>
+        /// Pokud do téhož objektu budeme nastavovat <c>target.DocumentOptions.Title</c> (kde <c>DocumentOptions</c> je instance dalšího typu),
+        /// pak <c>Key = "DocumentOptions.Title"</c>.
+        /// <para/>
+        /// <b>Hodnota</b> je dodána ve formě stringu. Nelze dodat libovolný objekt.<br/>
+        /// Povoleny jsou základní hodnoty (int, decimal, string, char, boolean, datetime).<br/>
+        /// Je možno zadat hodnotu enumu ve formě plné nebo částečné, 
+        /// pak <c>Value = "DevExpress.XtraPrinting.PdfJpegImageQuality.High"</c> nebo <c>"PdfJpegImageQuality.High"</c> nebo dokonce jen <c>"High"</c>.
+        /// <para/>
+        /// Pokud v dodaném poli <paramref name="values"/> bude zadána nevalidní hodnota (název property nebo text hodnoty), bude ignorována.<br/>
+        /// Hodnoty jsou do objektu vepisovány v tom pořadí, v jakém jsou zadané.<br/>
+        /// Lze zadat jednu a tu samou property vícekrát, na různých pozicích v poli: bude zadána opakovaně, v daném pořadí. Lze tak postupně změnit hodnotu. Odpovídá to psanému C# kódu.
+        /// </summary>
+        /// <param name="target"></param>
+        /// <param name="values"></param>
         internal static void FillValuesToObject(object target, KeyValuePair<string, string>[] values)
         {
-            FillValuesToObject(target, values, out var _);
+            _FillValuesToObject(target, values, out var _);
         }
         /// <summary>
         /// Metoda do daného objektu <paramref name="target"/> vloží do jeho property hodnoty, dodané ve <paramref name="values"/>.<br/>
@@ -7822,6 +7895,32 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="values"></param>
         /// <param name="errors">Out: Chyby</param>
         internal static void FillValuesToObject(object target, KeyValuePair<string, string>[] values, out string errors)
+        {
+            _FillValuesToObject(target, values, out errors);
+        }
+        /// <summary>
+        /// Metoda do daného objektu <paramref name="target"/> vloží do jeho property hodnoty, dodané ve <paramref name="values"/>.<br/>
+        /// V údaji <c>Key</c> je název property, v údaje <c>Value</c> je stringová hodnota.
+        /// <para/>
+        /// <b>Název property</b> může obsahovat vnořené objekty v objektu <paramref name="target"/>, tak jako v C# kódu.<br/>
+        /// Pokud bychom tedy do objektu <c>target</c> typu <see cref="DevExpress.XtraPrinting.PdfExportOptions"/> chtěli naplnit hodnotu <c>target.ConvertImagesToJpeg</c> typu <see cref="Boolean"/>, 
+        /// pak <c>Key = "ConvertImagesToJpeg"</c>.<br/>
+        /// Pokud do téhož objektu budeme nastavovat <c>target.DocumentOptions.Title</c> (kde <c>DocumentOptions</c> je instance dalšího typu),
+        /// pak <c>Key = "DocumentOptions.Title"</c>.
+        /// <para/>
+        /// <b>Hodnota</b> je dodána ve formě stringu. Nelze dodat libovolný objekt.<br/>
+        /// Povoleny jsou základní hodnoty (int, decimal, string, char, boolean, datetime).<br/>
+        /// Je možno zadat hodnotu enumu ve formě plné nebo částečné, 
+        /// pak <c>Value = "DevExpress.XtraPrinting.PdfJpegImageQuality.High"</c> nebo <c>"PdfJpegImageQuality.High"</c> nebo dokonce jen <c>"High"</c>.
+        /// <para/>
+        /// Pokud v dodaném poli <paramref name="values"/> bude zadána nevalidní hodnota (název property nebo text hodnoty), bude ignorována.<br/>
+        /// Hodnoty jsou do objektu vepisovány v tom pořadí, v jakém jsou zadané.<br/>
+        /// Lze zadat jednu a tu samou property vícekrát, na různých pozicích v poli: bude zadána opakovaně, v daném pořadí. Lze tak postupně změnit hodnotu. Odpovídá to psanému C# kódu.
+        /// </summary>
+        /// <param name="target"></param>
+        /// <param name="values"></param>
+        /// <param name="errors">Out: Chyby</param>
+        private static void _FillValuesToObject(object target, KeyValuePair<string, string>[] values, out string errors)
         {
             errors = null;
             if (target is null || values is null || values.Length == 0) return;
