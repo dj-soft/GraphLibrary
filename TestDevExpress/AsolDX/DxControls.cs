@@ -12678,15 +12678,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         None = 0,
         /// <summary>
+        /// Klientský filtr = nativní, vhodný pokud TreeList má na klientu načtená všechna data. Filtruje vyhovující řádky; nevyhovující řádky skryje. Nevyhovující řádky se nezobrazí, ale zůstanou v TreeListu a lze je vyfiltrovat zpět.
+        /// </summary>
+        Client,
+        /// <summary>
         /// Serverový = externí, filtrování řeší server přenačtením obsahu stromu
         /// </summary>
         Server,
         /// <summary>
-        /// Klientský filtr = nativní, vhodný pokud TreeList má na klientu načtená všechna data. Filtruje vyhovující řádky; nevyhovující řádky skryje. Nevyhovující řádky se nezobrazí, ale zůstanou v TreeListu a lze je vyfiltrovat zpět.
-        /// </summary>
-        ClientFilter,
-        /// <summary>
-        /// Klientský vyhledávač = nativní, vhodný pokud TreeList má na klientu načtená všechna data. Označí hledaný text v nodu. Ostatní řádky zůstávají viditelné.
+        /// Klientský vyhledávací box: zadaný text najde v nodech a označí, ale nefiltruje nody = jsou vidět všechny. Nabízí ikony Next/Prev a Clear.
         /// </summary>
         ClientSearch
     }
@@ -12979,7 +12979,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Zachovat stav vybraných prvků
         /// </summary>
-        SelectedItems = 0x0010
+        SelectedItems = 0x0010,
+        /// <summary>
+        /// Zachovat node, který má Focus
+        /// </summary>
+        FocusedNode = 0x0020
     }
     /// <summary>
     /// Viditelnost některého prvku v rámci parenta s ohledem na interaktivitu

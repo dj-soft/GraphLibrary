@@ -1642,19 +1642,19 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 var oldFilterMode = __RowFilterMode;
 
-                if (newFilterMode != RowFilterBoxMode.ClientFilter && _RowFilterClientExists)
+                if (newFilterMode != RowFilterBoxMode.Client && _RowFilterClientExists)
                     _RowFilterClientRemove();
                 if (newFilterMode != RowFilterBoxMode.Server && _RowFilterServerExists)
                     _RowFilterServerRemove();
 
-                if (newFilterMode == RowFilterBoxMode.ClientFilter && !_RowFilterClientExists)
+                if (newFilterMode == RowFilterBoxMode.Client && !_RowFilterClientExists)
                     _RowFilterClientPrepare();
                 if (newFilterMode == RowFilterBoxMode.Server && !_RowFilterServerExists)
                     _RowFilterServerPrepare();
 
                 switch (newFilterMode)
                 {
-                    case RowFilterBoxMode.ClientFilter:
+                    case RowFilterBoxMode.Client:
                         if (!__RowFilterClient.IsSetVisible())
                             __RowFilterClient.Visible = true;
                         break;
@@ -1689,7 +1689,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             string text = ((args.ActionType == ControlKeyActionType.FillKeyToFilter) ? DxComponent.KeyConvertToChar(args.Keys, true)?.ToString() : (string)null);
             switch (filterMode)
             {
-                case RowFilterBoxMode.ClientFilter:
+                case RowFilterBoxMode.Client:
                     _RowFilterClientSetFocus(text);
                     break;
                 case RowFilterBoxMode.Server:
@@ -1705,7 +1705,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             switch (__RowFilterMode)
             {
-                case RowFilterBoxMode.ClientFilter:
+                case RowFilterBoxMode.Client:
                     _RowFilterClientLayout(ref innerBounds);
                     break;
                 case RowFilterBoxMode.Server:
@@ -1724,7 +1724,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 switch (__RowFilterMode)
                 {
-                    case RowFilterBoxMode.ClientFilter:
+                    case RowFilterBoxMode.Client:
                         _RowFilterClientClear();
                         break;
                     case RowFilterBoxMode.Server:

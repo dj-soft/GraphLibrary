@@ -198,14 +198,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 var oldFilterMode = __RowFilterMode;
 
-                if (newFilterMode != RowFilterBoxMode.ClientFilter && _RowFilterClientExists)
+                if (newFilterMode != RowFilterBoxMode.Client && _RowFilterClientExists)
                     _RowFilterClientRemove();
                 if (newFilterMode != RowFilterBoxMode.ClientSearch && _RowSearcherClientExists)
                     _RowSearcherClientRemove();
                 if (newFilterMode != RowFilterBoxMode.Server && _RowFilterServerExists)
                     _RowFilterServerRemove();
 
-                if (newFilterMode == RowFilterBoxMode.ClientFilter && !_RowFilterClientExists)
+                if (newFilterMode == RowFilterBoxMode.Client && !_RowFilterClientExists)
                     _RowFilterClientPrepare();
                 if (newFilterMode == RowFilterBoxMode.ClientSearch && !_RowSearcherClientExists)
                     _RowSearcherClientPrepare();
@@ -214,7 +214,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 switch (newFilterMode)
                 {
-                    case RowFilterBoxMode.ClientFilter:
+                    case RowFilterBoxMode.Client:
                         if (!_RowFilterClientVisible)
                             _RowFilterClientVisible = true;
                         break;
@@ -253,7 +253,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             string text = ((e.ActionType == ControlKeyActionType.FillKeyToFilter) ? DxComponent.KeyConvertToChar(e.Keys, true)?.ToString() : (string)null);
             switch (filterMode)
             {
-                case RowFilterBoxMode.ClientFilter:
+                case RowFilterBoxMode.Client:
                     _RowFilterClientSetFocus(text);
                     break;
                 case RowFilterBoxMode.ClientSearch:
@@ -272,7 +272,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             switch (__RowFilterMode)
             {
-                case RowFilterBoxMode.ClientFilter:
+                case RowFilterBoxMode.Client:
                     _RowFilterClientLayout(ref innerBounds);
                     break;
                 case RowFilterBoxMode.ClientSearch:
@@ -294,7 +294,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 switch (__RowFilterMode)
                 {
-                    case RowFilterBoxMode.ClientFilter:
+                    case RowFilterBoxMode.Client:
                         _RowFilterClientClear();
                         break;
                     case RowFilterBoxMode.ClientSearch:
@@ -3173,46 +3173,90 @@ namespace Noris.Clients.Win.Components.AsolDX
                     ((System.ComponentModel.ISupportInitialize)(owner)).BeginInit();
                     owner.BeginUnboundLoad();
 
-                    _Owner = owner;
-                    _SilentMode = owner._SilentMode;
-                    _WithRefresh = withRefresh;
-                    _FocusedNodeId = owner.FocusedNodeInfo?.ItemId;
+                    __Owner = owner;
+                    __WithRefresh = withRefresh;
 
-                    _Owner._SilentMode = true;
+                    __SilentMode = owner._SilentMode;
+                    __FocusedNodeId = owner.FocusedNodeFullId;
+                    __TopVisibleIndex = owner.TopVisibleNodeIndex;
+                    __TopVisiblePixel = owner.TopVisibleNodePixel;
+
+                    __Owner._SilentMode = true;
                 }
             }
             void IDisposable.Dispose()
             {
-                var owner = _Owner;
+                var owner = __Owner;
                 if (owner != null)
                 {
+                    // Mým úkolem je vrátit TreeList do stejného stavu, v kterém byl při začátku akce = ten stav byl zaznamenán v našem konstruktoru.
+                    var initialFocusedNodeId = __FocusedNodeId;
+                    var initialTopVisibleIndex = __TopVisibleIndex;
+                    var initialTopVisiblePixel = __TopVisiblePixel;
+
+                    // Pro jistotu (a pro debug) si poznamenám aktuální stav:
+                    var currentFocusedNodeId = owner.FocusedNodeFullId;
+                    var currentTopVisibleIndex = owner.TopVisibleNodeIndex;
+                    var currentTopVisiblePixel = owner.TopVisibleNodePixel;
+
+                    // Odblokuji Freeze:
+                    owner._SilentMode = __SilentMode;
+                    owner.EndUnboundLoad();
+                    ((System.ComponentModel.ISupportInitialize)(owner)).EndInit();
+
+                    owner.TopVisibleNodeIndex = initialTopVisibleIndex;
+                    owner.TopVisibleNodePixel = initialTopVisiblePixel;
+
+                    // Refresh:
+                    if (__WithRefresh)
+                        owner.Refresh();
+
+                    // Vrátím FocusedNode: jsem ve stavu 'owner.IsLocked = true', takže se nevyvolají eventy o změně FocusedChange a SelectedChange:
+                    owner.FocusedNodeFullId = initialFocusedNodeId;
+
+                    // IsLocked: výchozí byl false (jinak by nevznikl zdejší objekt s naplněným Ownerem):
+                    //     Dokud IsLocked je true, pak handler 'DxTreeListNative._OnFocusedNodeChanged' NEVYVOLÁ eventy : _RunNodeFocusedChanged a _OnSelectedNodesChanged !
+                    owner.IsLocked = false;
+
+                    // Pokud ale nyní máme Focused node jiný, než byl Focused původní, tak event vyvolat musíme (došlo ke změně dat, a fyzicky se aktivuje jiný node nebo null):
+                    var resultFocusedNodeId = owner.FocusedNodeFullId;
+                    if (!String.Equals(resultFocusedNodeId, initialFocusedNodeId))
+                        owner._RunNodeFocusedChanged(owner?.FocusedNodeInfo, owner?.FocusedColumnIndex);
+
+
+                    /*   stav do 2026-07-27:
+
                     string focusedNodeFullId = owner.FocusedNodeFullId;
                     int topVisibleIndex = owner.TopVisibleNodeIndex;
                     int topVisiblePixel = owner.TopVisibleNodePixel;
 
-                    owner._SilentMode = _SilentMode;
+                    owner._SilentMode = __SilentMode;
                     owner.EndUnboundLoad();
                     ((System.ComponentModel.ISupportInitialize)(owner)).EndInit();
 
                     owner.TopVisibleNodeIndex = topVisibleIndex;
                     owner.TopVisibleNodePixel = topVisiblePixel;
 
-                    if (_WithRefresh)
+                    if (__WithRefresh)
                         owner.Refresh();
 
                     owner.IsLocked = false;
 
                     var focusedNodeInfo = owner.FocusedNodeInfo;
-                    string oldNodeId = _FocusedNodeId;
+                    string oldNodeId = __FocusedNodeId;
                     string newNodeId = focusedNodeInfo?.ItemId;
                     if (!String.Equals(oldNodeId, newNodeId))
-                        owner._RunNodeFocusedChanged(focusedNodeInfo, _Owner?.FocusedColumnIndex);
+                        owner._RunNodeFocusedChanged(focusedNodeInfo, __Owner?.FocusedColumnIndex);
+
+                    */
                 }
             }
-            private DxTreeListNative _Owner;
-            private bool _SilentMode;
-            private bool _WithRefresh;
-            private string _FocusedNodeId;
+            private DxTreeListNative __Owner;
+            private bool __SilentMode;
+            private bool __WithRefresh;
+            private string __FocusedNodeId;
+            private int __TopVisibleIndex;
+            private int __TopVisiblePixel;
         }
         #endregion
         #region Private sféra - přidávání nodů, odebírání, Clear, tvorba nodu...
@@ -3265,9 +3309,10 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Co budeme zachovávat?
             bool preserveSelected = preserveProperties.HasFlag(PreservePropertiesMode.SelectedItems);
+            bool preserveFocused = preserveProperties.HasFlag(PreservePropertiesMode.FocusedNode);
             bool preserveNodeIndex = preserveProperties.HasFlag(PreservePropertiesMode.FirstVisibleItem);
             bool preserveNodePixel = preserveProperties.HasFlag(PreservePropertiesMode.FirstVisiblePixel);
-            string focusedNodeFullId = (preserveSelected ? this.FocusedNodeFullId : null);
+            string focusedNodeFullId = (preserveFocused ? this.FocusedNodeFullId : null);
             int topVisibleIndex = (preserveNodeIndex ? this.TopVisibleNodeIndex : 0);
             int topVisiblePixel = (preserveNodePixel ? this.TopVisibleNodePixel : 0);
 
@@ -3314,10 +3359,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.SelectedNodes = selectedNodes;
             }
 
+            // Nyní máme všechny prvky načtené, zkusím vrátit Focus do patřičného nodu - ještě před provedením EndUnboundLoad(),
+            //   aby TreeList neblikal (protože po Clear a Fill má FocusedNodeFullId vybraný někde na prvním nodu, a v EndUnboundLoad() by viditelně bliknul na první a pak na požadovaný node:
+            if (preserveSelected) focusedNodeFullId = getValidActiveNode(selectedNodes, focusedNodeFullId);
+            if (preserveSelected && focusedNodeFullId != null) this.FocusedNodeFullId = focusedNodeFullId;
+
             this.EndUnboundLoad();
             this.FixRowStyleAfterChanges();
-
-            if (preserveSelected) focusedNodeFullId = getValidActiveNode(selectedNodes, focusedNodeFullId);
 
             // Co budeme obnovovat:
             if (preserveSelected && focusedNodeFullId != null) this.FocusedNodeFullId = focusedNodeFullId;
@@ -3326,7 +3374,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return firstPair;
 
-            // Vrátí ID nodu, který má být Selected.
+            // Vrátí ID nodu, který má být Focused.
             //  Bude to buď 'nodeId', pokud je obsažen v 'selNodes',
             //  anebo první z 'selNodes',
             //  anebo null pokud tam nic není.
@@ -4806,7 +4854,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (_SilentMode) return;
 
-            DxTreeListNodeArgs args = new DxTreeListNodeArgs(null, null, TreeListActionType.SelectedNodesChanged, TreeListPartType.None, this.IsActiveEditor);
+            DxTreeListNodeArgs args = new DxTreeListNodeArgs(this.FocusedNodeInfo, null, TreeListActionType.SelectedNodesChanged, TreeListPartType.None, this.IsActiveEditor);
             OnSelectedNodesChanged(args);
             SelectedNodesChanged?.Invoke(this, args);
         }

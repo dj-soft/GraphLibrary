@@ -349,11 +349,27 @@ namespace TestDevExpress.Forms
         {
             var ribbonContent = new DataRibbonContent();
             var homePage = DxRibbonControl.CreateStandardHomePage();
+
             var treePrepareGroup = new DataRibbonGroup() { GroupText = "Vytvoření TreeListu" };
             treePrepareGroup.Items.Add(new DataRibbonItem() { ItemId = "TreePrepareSet50", ImageName = "svgimages/icon%20builder/actions_addcircled.svg", Text = "Vytvoř TreeList 50", RibbonStyle = RibbonItemStyles.Large });
             treePrepareGroup.Items.Add(new DataRibbonItem() { ItemId = "TreePrepareSet500", ImageName = "svgimages/icon%20builder/actions_addcircled.svg", Text = "Vytvoř TreeList 500", RibbonStyle = RibbonItemStyles.Large });
             treePrepareGroup.Items.Add(new DataRibbonItem() { ItemId = "TreePrepareSet5000", ImageName = "svgimages/icon%20builder/actions_addcircled.svg", Text = "Vytvoř TreeList 5000", RibbonStyle = RibbonItemStyles.Large });
             homePage.Groups.Add(treePrepareGroup);
+
+            string exportXls = "images/xaf/templatesv2images/action_export_toexcel.svg";
+            string exportHtm = "images/xaf/templatesv2images/action_export_tohtml.svg";
+            string exportJpg = "svgimages/diagramicons/exportdiagram_jpeg.svg";
+            string exportPng = "svgimages/diagramicons/exportdiagram_png.svg";
+            string exportPdf = "svgimages/diagramicons/exporttopdf.svg";
+
+            var treeExportGroup = new DataRibbonGroup() { GroupText = "Export obsahu" };
+            treeExportGroup.Items.Add(new DataRibbonItem() { ItemId = "TreeExport1", ImageName = exportHtm, Text = "Export HTML", Tag = "HTM", RibbonStyle = RibbonItemStyles.Large });
+            treeExportGroup.Items.Add(new DataRibbonItem() { ItemId = "TreeExport2", ImageName = exportPdf, Text = "Export PDF", Tag = "PDF", RibbonStyle = RibbonItemStyles.Large });
+            treeExportGroup.Items.Add(new DataRibbonItem() { ItemId = "TreeExport3", ImageName = exportJpg, Text = "Export JPEG", Tag = "JPG", RibbonStyle = RibbonItemStyles.Large });
+            treeExportGroup.Items.Add(new DataRibbonItem() { ItemId = "TreeExport4", ImageName = exportXls, Text = "Export Excel", Tag = "XLS", RibbonStyle = RibbonItemStyles.Large });
+            treeExportGroup.Items.Add(new DataRibbonItem() { ItemId = "TreeExport5", ImageName = exportPng, Text = "Export Png", Tag = "PNG", RibbonStyle = RibbonItemStyles.Large });
+            homePage.Groups.Add(treeExportGroup);
+
             ribbonContent.Pages.Add(homePage);
 
             this.DxRibbon.RibbonContent = ribbonContent;
@@ -367,6 +383,12 @@ namespace TestDevExpress.Forms
                 case "TreePrepareSet50": PrepareTreeList(20, 1); break;
                 case "TreePrepareSet500": PrepareTreeList(40, 2); break;
                 case "TreePrepareSet5000": PrepareTreeList(80, 3); break;
+
+                case "TreeExport1":
+                case "TreeExport2":
+                case "TreeExport3":
+                case "TreeExport4":
+                case "TreeExport5": ExportTree(e.Item.Tag); break;
             }
         }
         #endregion
@@ -1790,6 +1812,65 @@ namespace TestDevExpress.Forms
 
         protected DxCheckEdit CheckLogToolTipChanges;
         #endregion
+        #region Export
+        private void ExportTree(object tag)
+        {
+            if (tag is string format)
+            {
+                var key = format.Trim().ToUpper();
+                using (var stream = new System.IO.MemoryStream())
+                {
+                    switch (key)
+                    {
+                        case "HTM":
+                        case "HTML":
+                            var htmlOptions = new DevExpress.XtraPrinting.HtmlExportOptions();
+                            htmlOptions.
+                            fillOptions(htmlOptions, "");
+                            DxTreeList.TreeListNative.ExportToHtml(stream, htmlOptions);
+                            break;
+
+                        case "MHT":
+                            var mhtOptions = new DevExpress.XtraPrinting.MhtExportOptions();
+                            DxTreeList.TreeListNative.ExportToMht(stream, mhtOptions);
+                            break;
+
+                        case "PDF":
+                            var pdfOptions = new DevExpress.XtraPrinting.PdfExportOptions();
+                            DxTreeList.TreeListNative.ExportToPdf(stream, pdfOptions);
+                            break;
+
+                        case "XLS":
+                            var xlsOptions = new DevExpress.XtraPrinting.XlsExportOptions();
+                            DxTreeList.TreeListNative.ExportToXls(stream, xlsOptions);
+                            break;
+
+                        case "XLSX":
+                            var xlsxOptions = new DevExpress.XtraPrinting.XlsxExportOptions();
+                            DxTreeList.TreeListNative.ExportToXlsx(stream, xlsxOptions);
+                            break;
+
+                        case "DOCX":
+                            var docxOptions = new DevExpress.XtraPrinting.DocxExportOptions();
+                            DxTreeList.TreeListNative.ExportToDocx(stream, docxOptions);
+                            break;
+
+                        default:
+                            throw new ArgumentException($"Nepodporovaný výstupní formát: '{format}'.");
+                    }
+                    byte[] content = stream.ToArray();
+                }
+            }
+
+
+            void fillOptions(object target, string source)
+            {
+                if (target is null || String.IsNullOrEmpty(source)) return;
+
+
+            }
+        }
+        #endregion
         #region Settings: načtení/uložení do konfigurace; zobrazení/sesbírání z Checkboxů Params; aplikování do TreeListu
         /// <summary>
         /// Načte konfiguraci z Settings do properties, do TreeListu i do Parametrů
@@ -2168,7 +2249,7 @@ namespace TestDevExpress.Forms
                 switch (value)
                 {
                     case "N": return RowFilterBoxMode.None;
-                    case "C": return RowFilterBoxMode.ClientFilter;
+                    case "C": return RowFilterBoxMode.Client;
                     case "H": return RowFilterBoxMode.ClientSearch;
                     case "S": return RowFilterBoxMode.Server;
                 }
@@ -2196,7 +2277,7 @@ namespace TestDevExpress.Forms
             switch (value)
             {
                 case RowFilterBoxMode.None: return "N";
-                case RowFilterBoxMode.ClientFilter: return "C";
+                case RowFilterBoxMode.Client: return "C";
                 case RowFilterBoxMode.ClientSearch: return "H";
                 case RowFilterBoxMode.Server: return "S";
             }
