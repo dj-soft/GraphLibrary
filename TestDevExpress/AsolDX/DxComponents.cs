@@ -7796,7 +7796,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="target"></param>
         /// <param name="values"></param>
         internal static void FillValuesToObject(object target, KeyValuePair<string, string>[] values)
-        { }
+        {
+            FillValuesToObject(target, values, out var _);
+        }
         /// <summary>
         /// Metoda do daného objektu <paramref name="target"/> vloží do jeho property hodnoty, dodané ve <paramref name="values"/>.<br/>
         /// V údaji <c>Key</c> je název property, v údaje <c>Value</c> je stringová hodnota.
