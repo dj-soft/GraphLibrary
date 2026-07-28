@@ -6910,6 +6910,12 @@ namespace Noris.Clients.Win.Components.AsolDX
                         addException(sb, agi, numb, indent + "  ");
                 }
 
+                if (e is DevExpress.XtraPrinting.PdfExportException dxe && dxe.ValidationErrors != null)
+                {
+                    foreach (var err in dxe.ValidationErrors)
+                        sb.AppendLine($"{indent} => {err}");
+                }
+
                 addException(sb, e.InnerException, numb + 1, indent + "  ");
             }
         }

@@ -1259,7 +1259,6 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             if (shortcut != null)
             {
                 this.Title = shortcut.LinkName;
-                // this.Description = shortcut.Description;
                 this.ToolTipText = shortcut.Description;
                 this.ExecutableFileName = shortcut.TargetPath;
                 this.ExecutableArguments = shortcut.Arguments;
