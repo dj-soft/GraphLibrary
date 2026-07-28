@@ -1083,6 +1083,7 @@ namespace DjSoft.Tools.ProgramLauncher
                     buttonItem.Enabled = menuItem.Enabled;
                     buttonItem.DisplayStyle = ToolStripItemDisplayStyle.ImageAndText;
                     buttonItem.ToolTipText = menuItem.ToolTip;
+                    createSubMenu(menuItem.SubItems, buttonItem, onSelectItem);
                     toolItem = buttonItem;
                     break;
             }
@@ -1094,6 +1095,22 @@ namespace DjSoft.Tools.ProgramLauncher
 
             menuItem.ToolItem = toolItem;
             return toolItem;
+
+
+            // Pokud je v 'subItems' dodán nějaký subprvek, pak pro ně postaví funkční submenu.
+            void createSubMenu(IMenuItem[] subItems, ToolStripMenuItem toolMenuItem, Action<IMenuItem> onSelectSubItemItem)
+            {
+                if (subItems is null || subItems.Length == 0) return;
+
+                toolMenuItem.DropDownItems.Clear();
+                toolMenuItem.DropDownItemClicked += _OnMenuItemClicked;
+                foreach (var subItem in subItems)
+                {
+                    var subMenuItem = _CreateToolStripItem(subItem, onSelectSubItemItem);
+                    if (subMenuItem != null)
+                        toolMenuItem.DropDownItems.Add(subMenuItem);
+                }
+            }
         }
         /// <summary>
         /// Provede se po kliknutí na prvek menu. Najde data o prvku i cílovou metodu, a vyvolá ji.

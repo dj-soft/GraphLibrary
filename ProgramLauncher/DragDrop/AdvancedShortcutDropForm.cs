@@ -192,7 +192,6 @@ Popis:           {info.Description}
 Ikona:           {info.IconLocation}
 Styl okna:       {info.WindowStyle}
 Horká klávesa:   {info.HotKey}
-Relativní cesta: {info.RelativePath}
 ";
             MessageBox.Show(details, "Detaily zástupce", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
