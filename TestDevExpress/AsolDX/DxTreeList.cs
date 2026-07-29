@@ -4683,15 +4683,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="errors">Out: Chyby</param>
         private void _ExportContentTxt(string[] options, System.IO.MemoryStream exportStream, out string errors)
         {
-            var txtOptions = new DevExpress.XtraPrinting.TextExportOptions()
-            {
-                Encoding = Encoding.UTF8,
-                Separator = "\t",
-                TextExportMode = DevExpress.XtraPrinting.TextExportMode.Text,
-                QuoteStringsWithSeparators = false
-            };
+            var txtOptions = new DevExpress.XtraPrinting.TextExportOptions();
             DxComponent.FillValuesToObject(txtOptions, options, out errors);
-
             this.ExportToText(exportStream, txtOptions);
         }
         /// <summary>
@@ -4702,18 +4695,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="errors">Out: Chyby</param>
         private void _ExportContentCsv(string[] options, System.IO.MemoryStream exportStream, out string errors)
         {
-            var csvOptions = new DevExpress.XtraPrinting.CsvExportOptions()
-            {
-                Encoding = Encoding.UTF8,
-                Separator = "\t",
-                SkipEmptyColumns = false,
-                SkipEmptyRows = false,
-                TextExportMode = DevExpress.XtraPrinting.TextExportMode.Text,
-                EncodeExecutableContent = DefaultBoolean.False,
-                QuoteStringsWithSeparators = false
-            };
+            var csvOptions = new DevExpress.XtraPrinting.CsvExportOptions();
             DxComponent.FillValuesToObject(csvOptions, options, out errors);
-
             this.ExportToCsv(exportStream, csvOptions);
         }
         /// <summary>
@@ -4735,17 +4718,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="errors">Out: Chyby</param>
         private void _ExportContentPdf(string[] options, System.IO.MemoryStream exportStream, out string errors)
         {
-            var pdfOptions = new DevExpress.XtraPrinting.PdfExportOptions()
-            {
-                ImageQuality = DevExpress.XtraPrinting.PdfJpegImageQuality.High,
-                AdditionalMetadata = "DevExpress.TreeList",
-                RasterizationResolution = 300,
-                PdfACompatibility = DevExpress.XtraPrinting.PdfACompatibility.PdfA3a,
-                PdfUACompatibility = DevExpress.XtraPrinting.PdfUACompatibility.None,
-                ConvertImagesToJpeg = true
-            };
+            var pdfOptions = new DevExpress.XtraPrinting.PdfExportOptions();
             DxComponent.FillValuesToObject(pdfOptions, options, out errors);
-
             this.ExportToPdf(exportStream, pdfOptions);
         }
         /// <summary>
@@ -4756,18 +4730,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="errors">Out: Chyby</param>
         private void _ExportContentHtml(string[] options, System.IO.MemoryStream exportStream, out string errors)
         {
-            var htmlOptions = new DevExpress.XtraPrinting.HtmlExportOptions()
-            {
-                ExportMode = DevExpress.XtraPrinting.HtmlExportMode.SingleFile,
-                TableLayout = true,
-                InlineCss = true,
-                EmbedImagesInHTML = true,
-                PageBorderColor = Color.Wheat,
-                RasterizationResolution = 300,
-                Title = "TreeList content"
-            };
+            var htmlOptions = new DevExpress.XtraPrinting.HtmlExportOptions();
             DxComponent.FillValuesToObject(htmlOptions, options, out errors);
-
             this.ExportToHtml(exportStream, htmlOptions);
         }
         /// <summary>
@@ -4778,17 +4742,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="errors">Out: Chyby</param>
         private void _ExportContentMht(string[] options, System.IO.MemoryStream exportStream, out string errors)
         {
-            var mhtOptions = new DevExpress.XtraPrinting.MhtExportOptions()
-            {
-                ExportMode = DevExpress.XtraPrinting.HtmlExportMode.SingleFile,
-                TableLayout = true,
-                InlineCss = true,
-                PageBorderColor = Color.Wheat,
-                RasterizationResolution = 300,
-                Title = "TreeList content"
-            };
+            var mhtOptions = new DevExpress.XtraPrinting.MhtExportOptions();
             DxComponent.FillValuesToObject(mhtOptions, options, out errors);
-
             this.ExportToMht(exportStream, mhtOptions);
         }
         /// <summary>
@@ -4799,16 +4754,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="errors">Out: Chyby</param>
         private void _ExportContentXls(string[] options, System.IO.MemoryStream exportStream, out string errors)
         {
-            var xlsOptions = new DevExpress.XtraPrinting.XlsExportOptions()
-            {
-                ExportMode = DevExpress.XtraPrinting.XlsExportMode.SingleFile,
-                RawDataMode = false,
-                RasterizeImages = true,
-                RasterizationResolution = 300,
-                SheetName = "TreeList content"
-            };
+            var xlsOptions = new DevExpress.XtraPrinting.XlsExportOptions();
             DxComponent.FillValuesToObject(xlsOptions, options, out errors);
-
             this.ExportToXls(exportStream, xlsOptions);
         }
         /// <summary>
@@ -4819,16 +4766,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="errors">Out: Chyby</param>
         private void _ExportContentXlsx(string[] options, System.IO.MemoryStream exportStream, out string errors)
         {
-            var xlsxOptions = new DevExpress.XtraPrinting.XlsxExportOptions()
-            {
-                ExportMode = DevExpress.XtraPrinting.XlsxExportMode.SingleFile,
-                ShowGridLines = true,
-                RasterizeImages = true,
-                RasterizationResolution = 300,
-                SheetName = "TreeList content"
-            };
+            var xlsxOptions = new DevExpress.XtraPrinting.XlsxExportOptions();
             DxComponent.FillValuesToObject(xlsxOptions, options, out errors);
-
             this.ExportToXlsx(exportStream, xlsxOptions);
         }
         /// <summary>
@@ -4839,16 +4778,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="errors">Out: Chyby</param>
         private void _ExportContentDocx(string[] options, System.IO.MemoryStream exportStream, out string errors)
         {
-            var docxOptions = new DevExpress.XtraPrinting.DocxExportOptions()
-            {
-                ExportMode = DevExpress.XtraPrinting.DocxExportMode.SingleFile,
-                TableLayout = true,
-                RasterizeImages = true,
-                KeepRowHeight = true,
-                RasterizationResolution = 300
-            };
+            var docxOptions = new DevExpress.XtraPrinting.DocxExportOptions();
             DxComponent.FillValuesToObject(docxOptions, options, out errors);
-
             this.ExportToDocx(exportStream, docxOptions);
         }
         #endregion
