@@ -8090,6 +8090,270 @@ namespace Noris.Clients.Win.Components.AsolDX
                 return false;
             }
         }
+        public static string GetObjectProperties(object source, ObjectPropertiesOption option, ObjectPropertiesFormat format, int? maxDepth = 7, Func<Type, Boolean> subInstanceFilter = null)
+        {
+            if (source is null) return null;
+
+            var result = new StringBuilder();
+            addTitle(source.GetType());
+
+            var bindings = System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.FlattenHierarchy;
+            var doneTypes = new Dictionary<string, Type>();
+
+            addMembers(source, null, "", 0);
+
+            return result.ToString();
+
+
+            void addMembers(object src, Type srcType, string parentName, int depth)
+            {
+                // Hlídáme Maxdepth:
+                if (maxDepth.HasValue && maxDepth.Value > 0 && depth > maxDepth.Value) return;
+
+                var curType = srcType ?? src?.GetType() ?? null;                         // Primárně mapujeme Type dodaný v parametru, což má být PropertyType = z definice property. Ale pokud není dán (typicky pro Root objekt), pak bereme jeho nativní typ.
+                if (curType is null) return;
+
+                // Jeden typ jen jedenkrát:
+                var curTypeName = curType.FullName;
+                if (doneTypes.ContainsKey(curTypeName)) return;
+                doneTypes.Add(curTypeName, curType);
+
+                var childs = new List<Tuple<object, Type, string>>();                    // Vnořené objekty
+
+                // Properties:
+                if (option.HasFlag(ObjectPropertiesOption.Properties))
+                {
+                    var properties = curType.GetProperties(bindings).ToList();
+                    properties.Sort((a, b) => String.Compare(a.Name, b.Name));
+
+                    foreach (var property in properties)
+                    {
+                        var value = (src is null ? null : property.GetValue(src));
+                        if (isToResult(property.PropertyType, (property.GetMethod != null && property.GetMethod.IsPublic), (property.SetMethod != null && property.SetMethod.IsPublic)))
+                            addToResult(parentName, property.Name, property.PropertyType, value, () => XmlDocumentationHelper.GetMemberDescription(property));
+                        if (isToChilds(property.PropertyType))
+                            childs.Add(new Tuple<object, Type, string>(value, property.PropertyType, parentName + property.Name + "."));
+                    }
+                }
+
+                // Fields:
+                if (option.HasFlag(ObjectPropertiesOption.Fields))
+                {
+                    var fields = curType.GetFields(bindings).ToList();
+                    fields.Sort((a, b) => String.Compare(a.Name, b.Name));
+
+                    foreach (var field in fields)
+                    {
+                        var value = (src is null ? null : field.GetValue(src));
+                        if (isToResult(field.FieldType, true, true))
+                            addToResult(parentName, field.Name, field.FieldType, value, () => XmlDocumentationHelper.GetMemberDescription(field));
+                        if (isToChilds(field.FieldType))
+                            childs.Add(new Tuple<object, Type, string>(value, field.FieldType, parentName + field.Name + "."));
+                    }
+                }
+
+                // Child objects:
+                if (childs.Count > 0)
+                {
+                    childs.Sort((a, b) => String.Compare(a.Item3, b.Item3));             // Setřídíme Childs podle jejich jména; properties + fields dohromady
+                    foreach (var child in childs)
+                        addMembers(child.Item1, child.Item2, child.Item3, depth + 1);
+                }
+            }
+
+            bool isToResult(Type type, bool hasGet, bool hasSet)
+            {
+                if (type is null) return false;
+                if (option.HasFlag(ObjectPropertiesOption.GetAccess) && !hasGet) return false;
+                if (option.HasFlag(ObjectPropertiesOption.SetAccess) && !hasSet) return false;
+
+                if (type.IsEnum) return true;
+
+                var name = type.FullName;
+                switch (name)
+                {
+                    case "System.Boolean":
+
+                    case "System.Byte":
+                    case "System.SByte":
+
+                    case "System.Int16":
+                    case "System.Int32":
+                    case "System.Int64":
+                    case "System.UInt16":
+                    case "System.UInt32":
+                    case "System.UInt64":
+                    case "System.IntPtr":
+                    case "System.UIntPtr":
+
+
+                    case "System.Single":
+                    case "System.Double":
+                    case "System.Decimal":
+
+                    case "System.Char":
+                    case "System.String":
+
+                    case "System.DateOnly":
+                    case "System.DateTime":
+                    case "System.TimeOnly":
+                    case "System.TimeSpan":
+
+                        return true;
+                }
+
+                return true;
+            }
+            bool isToChilds(Type type)
+            {
+                if (type is null) return false;
+                if (!option.HasFlag(ObjectPropertiesOption.SubInstance)) return false;   // SubInstance nechceme
+                if (type.IsEnum) return false;
+                if (String.Equals(type.Namespace, "System")) return false;               // Typy ze základního namespace System neberu...
+
+                switch (type.Namespace)
+                {
+                    case "System.Collections":
+                    case "System.Collections.Generic":
+                        return false;
+                }
+
+                if (subInstanceFilter != null && !subInstanceFilter(type)) return false; // Volající nechce tento typ
+
+                return true;
+            }
+            void addTitle(Type sourceType)
+            {
+                string line;
+
+                // Typ:
+                line = $"Type: {sourceType.FullName}";
+                result.AppendLine(line);
+
+                // TitleRow:
+                line = $"NÁZEV HODNOTY  ||  TYP HODNOTY";
+                if (option.HasFlag(ObjectPropertiesOption.ReportCurrentValue))
+                    line += "  ||  " + "HODNOTA";
+                if (option.HasFlag(ObjectPropertiesOption.ReportAvailableEnums))
+                    line += "  ||  " + "SEZNAM HODNOT";
+                if (option.HasFlag(ObjectPropertiesOption.ReportXmlDescription))
+                    line += "  ||  " + "DOKUMENTACE";
+                result.AppendLine(line);
+            }
+            // Do výstupu vloží řádek za danou hodnotu
+            void addToResult(string parentName, string valueName, Type memberType, object value, Func<string> getDescription)
+            {
+                string objectName = parentName + valueName;
+                string typeName = (String.Equals(memberType.Namespace, "System") ? memberType.Name : memberType.FullName);        // String / DateTime / System.Drawing.Point / DevExpress.XtraPrinting.ExportFormat
+
+                // Hodnota:
+                string valueText = "";
+                if (option.HasFlag(ObjectPropertiesOption.ReportCurrentValue))
+                {
+                    if (value is null)
+                    {
+                        valueText = "NULL";
+                    }
+                    else if (memberType.IsEnum)
+                    {   // Plný název typu je uveden v typeName; pro current hodnotu dáme jen TypeName + ValueName:
+                        valueText = memberType.Name + "." + value.ToString();            // Pro hodnotu 'DevExpress.XtraPrinting.PdfACompatibility.PdfA3a' zde bude 'PdfACompatibility.PdfA3a'
+                    }
+                    else if (value is char chr)
+                    {
+                        valueText = $"'{chr}'";
+                    }
+                    else if (value is string str)
+                    {
+                        valueText = $"\"{str}\"";
+                    }
+                    else
+                    {
+                        valueText = value.ToString();
+                    }
+                }
+
+                // Hodnoty enumu:
+                string enumNames = "";
+                if (option.HasFlag(ObjectPropertiesOption.ReportAvailableEnums) && memberType.IsEnum)
+                {
+                    var names = Enum.GetNames(memberType);
+                    foreach (var name in names)
+                        enumNames += (enumNames.Length == 0 ? "" : ", ") + name;
+                }
+
+                // Intellisence:
+                string xmlDesc = "";
+                if (option.HasFlag(ObjectPropertiesOption.ReportXmlDescription) && memberType.IsEnum)
+                {
+                    xmlDesc = getDescription();
+                }
+
+                // Formát:
+                string line = $"{objectName}  ||  {typeName}";
+
+                if (option.HasFlag(ObjectPropertiesOption.ReportCurrentValue))
+                    line += "  ||  " + valueText;
+                if (option.HasFlag(ObjectPropertiesOption.ReportAvailableEnums) && enumNames.Length > 0)
+                    line += "  ||  " + enumNames;
+                if (option.HasFlag(ObjectPropertiesOption.ReportXmlDescription) && !String.IsNullOrEmpty(xmlDesc))
+                    line += "  ||  " + xmlDesc;
+
+                result.AppendLine(line);
+            }
+        }
+        /// <summary>
+        /// Předvolby pro export struktury objekcu v metodě <see cref="DxComponent.GetObjectProperties(object, ObjectPropertiesOption, ObjectPropertiesFormat, int?, Func{Type, bool})"/>
+        /// </summary>
+        [Flags]
+        public enum ObjectPropertiesOption
+        {
+            /// <summary>
+            /// Procházet i vnořené objekty jiného druhu než základní
+            /// </summary>
+            SubInstance = 0x0001,
+            /// <summary>
+            /// Do výpisu zařadit prvky, které mají GET accessor.<br/>
+            /// Pokud nebude tento flag nastaven, pak do výstupu půjdou i prvky, které nemají GET accessor.
+            /// </summary>
+            GetAccess = 0x0010,
+            /// <summary>
+            /// Do výpisu zařadit prvky, které mají SET accessor<br/>
+            /// Pokud nebude tento flag nastaven, pak do výstupu půjdou i prvky, které nemají SET accessor.
+            /// </summary>
+            SetAccess = 0x0020,
+            /// <summary>
+            /// Do výpisu zařadit prvky, které jsou typu Properties
+            /// </summary>
+            Properties = 0x0040,
+            /// <summary>
+            /// Do výpisu zařadit prvky, které jsou typu Field
+            /// </summary>
+            Fields = 0x0080,
+
+            /// <summary>
+            /// Do výpisu zařadit prvky s typem: Int, Decimal, DateTime, String, Char, Bool, enumy
+            /// </summary>
+            OnlyBasicTypes = 0x0100,
+            /// <summary>
+            /// Do výpisu vložit aktuální hodnotu (defaultní)
+            /// </summary>
+            ReportCurrentValue = 0x1000,
+            /// <summary>
+            /// Do výpisu pro Enumy vložit názvy hodnot enumů
+            /// </summary>
+            ReportAvailableEnums = 0x2000,
+            ReportXmlDescription = 0x4000,
+
+            Default = SubInstance | GetAccess | SetAccess | Properties | Fields | OnlyBasicTypes,
+            DefaultWithValues = Default | ReportCurrentValue | ReportAvailableEnums | ReportXmlDescription
+        }
+        public enum ObjectPropertiesFormat
+        {
+            None,
+            Csv,
+            Html,
+            Wiki
+        }
         #endregion
         #region DxClipboard : obálka nad systémovým clipboardem plus support pro DataExchangeContainer
         /// <summary>
@@ -14084,6 +14348,134 @@ White
         /// </summary>
         private const float _FontMarginB = 13.333f;
         #endregion
+    }
+    #endregion
+    #region class XmlCodeDocumentation
+    /// <summary>
+    /// Přístup do XML intellisence
+    /// </summary>
+    public static class XmlDocumentationHelper
+    {
+        private static Dictionary<string, Dictionary<string, string>> __XmlDocs;
+        /// <summary>
+        /// Vrací Summary popis z XML intellisence souboru k dané Property
+        /// </summary>
+        /// <param name="memberInfo"></param>
+        /// <returns></returns>
+        public static string GetMemberDescription(System.Reflection.PropertyInfo memberInfo)
+        {
+            if (memberInfo is null || memberInfo.DeclaringType is null) return null;
+            return _GetMemberDescription(memberInfo.DeclaringType, "P", memberInfo.Name);
+        }
+        /// <summary>
+        /// Vrací Summary popis z XML intellisence souboru k danému Field
+        /// </summary>
+        /// <param name="memberInfo"></param>
+        /// <returns></returns>
+        public static string GetMemberDescription(System.Reflection.FieldInfo memberInfo)
+        {
+            if (memberInfo is null || memberInfo.DeclaringType is null) return null;
+            return _GetMemberDescription(memberInfo.DeclaringType, "F", memberInfo.Name);
+        }
+        /// <summary>
+        /// Vrací Summary popis z XML intellisence souboru k danému typu, druhu prvku a jménu prvku
+        /// </summary>
+        /// <param name="declaringType"></param>
+        /// <param name="memberCode">"P" = Property, "F" = field, "M" = metoda, "T" = Type</param>
+        /// <param name="memberName"></param>
+        /// <returns></returns>
+        private static string _GetMemberDescription(Type declaringType, string memberCode, string memberName)
+        {
+            if (declaringType is null || String.IsNullOrEmpty(memberName)) return null;
+
+            if (__XmlDocs == null) __XmlDocs = new Dictionary<string, Dictionary<string, string>>();
+
+            var assemblyContent = _GetAssemblyContent(declaringType.Assembly);
+            if (assemblyContent is null) return null;
+
+            var memberKey = _GetMemberXmlName(declaringType, memberCode, memberName);
+            if (assemblyContent.TryGetValue(memberKey, out var memberText)) return memberText;
+
+            return null;
+        }
+        /// <summary>
+        /// Vrací / najde / načte a naplní kompletní popis všech položek XML intellisence z jednoho souboru k dané assembly
+        /// </summary>
+        /// <param name="assembly"></param>
+        /// <returns></returns>
+        private static Dictionary<string, string> _GetAssemblyContent(System.Reflection.Assembly assembly)
+        {
+            Dictionary<string, string> assemblyContent = null;
+
+            var assemblyKey = assembly?.Location;
+            if (String.IsNullOrEmpty(assemblyKey)) return assemblyContent;
+
+            if (!__XmlDocs.TryGetValue(assemblyKey, out assemblyContent))
+            {
+                lock (__XmlDocs)
+                {
+                    if (!__XmlDocs.TryGetValue(assemblyKey, out assemblyContent))
+                    {
+                        assemblyContent = _LoadAssemblyContent(assembly);
+                        __XmlDocs.Add(assemblyKey, assemblyContent);
+                    }
+                }
+            }
+            return assemblyContent;
+        }
+        /// <summary>
+        /// Načte a vrátí kompletní popis všech položek XML intellisence z jednoho souboru k dané assembly
+        /// </summary>
+        /// <param name="assembly"></param>
+        /// <returns></returns>
+        private static Dictionary<string, string> _LoadAssemblyContent(System.Reflection.Assembly assembly)
+        {
+            var docs = new Dictionary<string, string>();
+
+            // Cesta k XML souboru
+            string xmlPath = System.IO.Path.Combine(
+                System.IO.Path.GetDirectoryName(assembly?.Location) ?? "",
+                System.IO.Path.GetFileNameWithoutExtension(assembly?.Location) + ".xml"
+            );
+
+            if (!System.IO.File.Exists(xmlPath))
+                return docs;
+
+            var xmlDoc = new System.Xml.Linq.XDocument();
+            try
+            {
+                xmlDoc = System.Xml.Linq.XDocument.Load(xmlPath);
+
+                // Parsovat všechny member prvky
+                foreach (var member in xmlDoc.Descendants("member"))
+                {
+                    string name = member.Attribute("name")?.Value;
+                    string summary = member.Element("summary")?.Value?.Trim();
+                    if (name != null && summary != null)
+                    {
+                        if (docs.ContainsKey(name))
+                            docs[name] = summary;
+                        else
+                            docs.Add(name, summary);
+                    }
+                }
+            }
+            catch { /* ignorovat chyby */ }
+
+            return docs;
+        }
+        /// <summary>
+        /// Vrátí klíč, který se používá v XML dokumentu pro daný prvek
+        /// </summary>
+        /// <param name="declaringType"></param>
+        /// <param name="memberCode">"P" = Property, "F" = field, "M" = metoda, "T" = Type</param>
+        /// <param name="memberName"></param>
+        /// <returns></returns>
+        private static string _GetMemberXmlName(Type declaringType, string memberCode, string memberName)
+        {
+            // Sestavit member name dle standardu .NET dokumentace
+            return $"{memberCode}:{declaringType.FullName}.{memberName}";
+        }
     }
     #endregion
     #region Obecné enumy

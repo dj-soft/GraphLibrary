@@ -361,6 +361,8 @@ namespace TestDevExpress.Forms
             string exportCsv = "svgimages/export/exporttocsv.svg";
             string exportXls = "svgimages/export/exporttoxlsx.svg";
             string exportDoc = "svgimages/export/exporttodocx.svg";
+            string mapOptions = "svgimages/find/find.svg";
+
 
             var treeExportGroup = new DataRibbonGroup() { GroupText = "Export obsahu" };
             treeExportGroup.Items.Add(new DataRibbonItem() { ItemId = "TreeExport1", ImageName = exportHtm, Text = "Export HTML", Tag = ContentExportType.Html, RibbonStyle = RibbonItemStyles.Large });
@@ -368,6 +370,9 @@ namespace TestDevExpress.Forms
             treeExportGroup.Items.Add(new DataRibbonItem() { ItemId = "TreeExport3", ImageName = exportCsv, Text = "Export CSV", Tag = ContentExportType.Csv, RibbonStyle = RibbonItemStyles.Large });
             treeExportGroup.Items.Add(new DataRibbonItem() { ItemId = "TreeExport4", ImageName = exportXls, Text = "Export Excel", Tag = ContentExportType.Xlsx, RibbonStyle = RibbonItemStyles.Large });
             treeExportGroup.Items.Add(new DataRibbonItem() { ItemId = "TreeExport5", ImageName = exportDoc, Text = "Export Docx", Tag = ContentExportType.Docx, RibbonStyle = RibbonItemStyles.Large });
+
+            treeExportGroup.Items.Add(new DataRibbonItem() { ItemId = "MapExportOptions", ImageName = mapOptions, Text = "Analyzuj Options", ItemIsFirstInGroup = true, RibbonStyle = RibbonItemStyles.Large });
+            
             homePage.Groups.Add(treeExportGroup);
 
             ribbonContent.Pages.Add(homePage);
@@ -389,6 +394,8 @@ namespace TestDevExpress.Forms
                 case "TreeExport3":
                 case "TreeExport4":
                 case "TreeExport5": ExportTree(e.Item.Tag); break;
+
+                case "MapExportOptions": MapExportOptions(); break;
             }
         }
         #endregion
@@ -1911,6 +1918,18 @@ namespace TestDevExpress.Forms
                     case ContentExportType.Jpg: return fileName + ".jpg";
                 }
                 return null;
+            }
+        }
+
+        private void MapExportOptions()
+        {
+            var pdfOptions = new DevExpress.XtraPrinting.PdfExportOptions();
+            var pdfHtml = DxComponent.GetObjectProperties(pdfOptions, DxComponent.ObjectPropertiesOption.DefaultWithValues, DxComponent.ObjectPropertiesFormat.Html, subInstanceFilter: subFilter);
+            string sum = pdfHtml;
+
+            bool subFilter(Type type)
+            {
+                return (type.Namespace.StartsWith("DevExpress"));
             }
         }
         #endregion
