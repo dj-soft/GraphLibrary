@@ -1576,6 +1576,8 @@ namespace DjSoft.Tools.ProgramLauncher
         private Image _LoadImageFromFile(string fileName, int? iconIndex)
         {
             if (String.IsNullOrEmpty(fileName)) return null;
+            fileName = System.Environment.ExpandEnvironmentVariables(fileName);            // %windir%  =>  C:\Windows    atd
+            fileName = System.IO.Path.GetFullPath(fileName);
             var extension = System.IO.Path.GetExtension(fileName).ToLower();
             switch (extension)
             {
@@ -1587,7 +1589,7 @@ namespace DjSoft.Tools.ProgramLauncher
                     return Image.FromFile(fileName);
 
                 case ".ico":
-                    using (var icon = new Icon(fileName))
+                    using (var icon = new Icon(fileName, new Size(48,48)))
                     {
                         return icon.ToBitmap();                      // Vytvoří new instanci = izolovanou od Icon
                     }                                                // Icon lze disposovat
@@ -1631,6 +1633,10 @@ namespace DjSoft.Tools.ProgramLauncher
             __Images.Values.ForEachExec(f => f.TryDispose());
             __Images = null;
         }
+        /// <summary>
+        /// Lokální InMemory cache pro načtené Images.
+        /// Slouží k tomu, aby při rychlém vykreslování Controlu byl konkrétní Image k dispozici ihned.
+        /// </summary>
         private Dictionary<string, Image> __Images;
         #endregion
         #region Vzhled a Layout
