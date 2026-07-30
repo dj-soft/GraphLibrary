@@ -4,7 +4,6 @@
 // is not permitted without valid contract with Asseco Solutions, a. s.
 
 using DevExpress.Utils;
-using DevExpress.Utils.CommonDialogs;
 using DevExpress.Utils.Design;
 using DevExpress.Utils.Svg;
 using DevExpress.XtraEditors;
