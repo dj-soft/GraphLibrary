@@ -393,7 +393,10 @@ namespace TestDevExpress.Forms
                 case "TreeExport2":
                 case "TreeExport3":
                 case "TreeExport4":
-                case "TreeExport5": ExportTree(e.Item.Tag); break;
+                case "TreeExport5":
+                    if (e.Item.Tag is ContentExportType format)
+                        ExportTreeList(format);
+                    break;
 
                 case "MapExportOptions": MapExportOptions(); break;
             }
@@ -1820,35 +1823,41 @@ namespace TestDevExpress.Forms
         protected DxCheckEdit CheckLogToolTipChanges;
         #endregion
         #region Export
-        private void ExportTree(object tag)
+        private void ExportTreeList(ContentExportType format)
         {
-            if (tag is ContentExportType format)
+            var options = getOptions(format);
+            var content = DxTreeList.DxProperties.ExportContent(format, options, out var errors);
+            if (content != null && content.Length > 0)
             {
-                var options = getOptions(format);
-                var content = DxTreeList.DxProperties.ExportContent(format, options, out var errors);
-                if (content != null && content.Length > 0)
+                // Plné jméno pro soubor:
+                var fileName = DxComponent.GetFileNameFrom(null,
+                    null, Environment.SpecialFolder.DesktopDirectory, "DxTreeLists",
+                    "Export-", "yyyy-MM-dd-HH-mm-ss",
+                    null, format);
+
+                if (String.IsNullOrEmpty(fileName)) return;
+
+                if (format == ContentExportType.Html)
+                    fileName = DxComponent.ShowDialogSaveAs(fileName);
+                if (String.IsNullOrEmpty(fileName)) return;
+
+                System.IO.File.WriteAllBytes(fileName, content);
+                if (System.IO.File.Exists(fileName))
                 {
-                    var fileName = getFileName(format);
-                    if (!String.IsNullOrEmpty(fileName))
-                    {
-                        System.IO.File.WriteAllBytes(fileName, content);
-                        if (System.IO.File.Exists(fileName))
-                        {
-                            var response = DxComponent.ShowMessageQuestion($"Obsah TreeListu je uložen do souboru '{fileName}'.\r\n\r\nOtevřít soubor?", "Export", DialogResult.Yes, DialogResult.No);
-                            if (response == DialogResult.Yes)
-                                DxComponent.StartProcess(fileName);
-                        }
-                        else
-                        {
-                            DxComponent.ShowMessageError($"Nepodařilo se uložit data do souboru '{fileName}'.");
-                        }
-                    }
+                    var response = DxComponent.ShowMessageQuestion($"Obsah TreeListu je uložen do souboru '{fileName}'.\r\n\r\nOtevřít soubor?", "Export", DialogResult.Yes, DialogResult.No);
+                    if (response == DialogResult.Yes)
+                        DxComponent.StartProcess(fileName);
                 }
-                else if (errors != null)
+                else
                 {
-                    DxComponent.ShowMessageError(errors);
+                    DxComponent.ShowMessageError($"Nepodařilo se uložit data do souboru '{fileName}'.");
                 }
             }
+            else if (errors != null)
+            {
+                DxComponent.ShowMessageError(errors);
+            }
+            
 
             // Vrátí pole explicitních Options pro daný formát; null je přípustné
             string[] getOptions(ContentExportType format)
@@ -1894,30 +1903,6 @@ namespace TestDevExpress.Forms
             void addOption(List<string> optionList, string key, string value)
             {
                 optionList.Add($"{key}={value}");
-            }
-            // Vrátí nové plné jméno pro exportovaný soubor (adresář = složka na Desktop, jméno = dnešní datum, přípona = dle formátu)
-            string getFileName(ContentExportType format)
-            {
-                var targetPath = System.IO.Path.Combine(System.Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), "DxTreeLists");
-                if (!System.IO.Directory.Exists(targetPath))
-                    System.IO.Directory.CreateDirectory(targetPath);
-
-                string fileName = System.IO.Path.Combine(targetPath, "Export-" + DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss"));
-                switch (format)
-                {
-                    case ContentExportType.Txt: return fileName + ".txt";
-                    case ContentExportType.Csv: return fileName + ".csv";
-                    case ContentExportType.Rtf: return fileName + ".rtf";
-                    case ContentExportType.Pdf: return fileName + ".pdf";
-                    case ContentExportType.Html: return fileName + ".html";
-                    case ContentExportType.Mht: return fileName + ".mht";
-                    case ContentExportType.Xls: return fileName + ".xls";
-                    case ContentExportType.Xlsx: return fileName + ".xlsx";
-                    case ContentExportType.Docx: return fileName + ".docx";
-                    case ContentExportType.Png: return fileName + ".png";
-                    case ContentExportType.Jpg: return fileName + ".jpg";
-                }
-                return null;
             }
         }
 

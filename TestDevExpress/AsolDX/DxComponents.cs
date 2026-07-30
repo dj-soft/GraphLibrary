@@ -3,6 +3,7 @@
 // Redistribution and use in source and binary forms, with or without modification, 
 // is not permitted without valid contract with Asseco Solutions, a. s.
 
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,6 +23,26 @@ using DevExpress.Utils.Svg;
 using DevExpress.Utils.Design;
 using System.Globalization;
 
+
+/*
+using DevExpress.Utils;
+using DevExpress.Utils.Design;
+using DevExpress.Utils.Svg;
+using DevExpress.XtraEditors;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Globalization;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using WSXmlSerializer = Noris.WS.Parser.XmlSerializer;
+*/
 
 // using BAR = DevExpress.XtraBars;
 // using EDI = DevExpress.XtraEditors;
@@ -924,6 +945,170 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (underline) fontStyle |= FontStyle.Underline;
             if (strikeOut) fontStyle |= FontStyle.Strikeout;
             return fontStyle;
+        }
+        /// <summary>
+        /// Kovertuje typ obsahu na odpovídající příponu. Vrácen je text malými písmeny, bez mezer. Bez úvodní tečky.
+        /// </summary>
+        /// <param name="format"></param>
+        /// <returns></returns>
+        public static string ConvertExportType(ContentExportType format)
+        {
+            switch (format)
+            {
+                case ContentExportType.None: return "";
+                case ContentExportType.Txt: return "txt";
+                case ContentExportType.Csv: return "csv";
+                case ContentExportType.Rtf: return "rtf";
+                case ContentExportType.Pdf: return "pdf";
+                case ContentExportType.Html: return "html";
+                case ContentExportType.Mht: return "mht";
+                case ContentExportType.Xls: return "xls";
+                case ContentExportType.Xlsx: return "xlsx";
+                case ContentExportType.Docx: return "docx";
+                case ContentExportType.Png: return "png";
+                case ContentExportType.Jpg: return "jpg";
+            }
+            return "txt";
+        }
+        /// <summary>
+        /// Provede převod daného čísla do jiné znakové soustavy.
+        /// Jiná soustava je daná parametrem <paramref name="otherSystem"/> jako sekvence znaků, nahrazující hodnoty 0 až Nnn. Znak na indexu [0] odpovídá hodnotě 0. Počet znaků definuje číselnou základnu soustavy.
+        /// Pro převod do hexadecimální soustavy stačí zadat "0123456789ABCDEF".
+        /// <para/>
+        /// Defaultní hodnota <paramref name="otherSystem"/> je "abcdefghijklmnopqrstuvwxyz", převádí tedy číslo na sekvenci písmen = pro písmenné suffixy.
+        /// <para/>
+        /// Záporná čísla vrací vždy jako prázdný string (záporné hodnoty si musí ošetřit volající).
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="otherSystem">Sekvence znaků jiného systému.<br/>
+        /// Pro konverzi do desítkové soustavy by zde bylo "0123456789".<br/>
+        /// Pro konverzi do šestnáctkové soustavy se zadává "0123456789ABCDEF" = </param>
+        /// <param name="minResultLength">Minimální délka výstupu; zleva se na ní doplní prvním znakem <paramref name="otherSystem"/></param>
+        /// <param name="prefix">Prefix přidaný před výslednou hodnotu</param>
+        /// <param name="suffix">Suffix přidaný za výslednou hodnotu</param>
+        /// <returns></returns>
+        public static string ConvertToOtherSystem(long value, string otherSystem = null, int? minResultLength = null, string prefix = null, string suffix = null)
+        {
+            if (value < 0) return "";
+            if (otherSystem == null) otherSystem = "abcdefghijklmnopqrstuvwxyz";
+            var chars = otherSystem.ToCharArray();
+            int length = chars.Length;
+            if (length == 0) throw new ArgumentException("ConvertToOtherSystem() error: target system is empty.");
+
+            string result = "";
+            while (true)
+            {   // Pokud na vstupu byla 0, pak na výstupu bude 1x první znak (znak nuly):
+                long number = value % length;
+                result = chars[number].ToString() + result;
+
+                if (value < length) break;
+                value /= length;
+            }
+
+            // Výsledek zarovnat na minimální délku: předsadit tolik znaků [0], kolik znaků v délce result chybí do minResultLength:
+            if (minResultLength.HasValue && minResultLength.Value > 0 && result.Length < minResultLength.Value)
+                result = "".PadLeft(minResultLength.Value - result.Length, chars[0]) + result;               // "8ba"    =>   "08ba"
+
+            // Prefix a suffix:
+            if (!String.IsNullOrEmpty(prefix))
+                result = prefix + result;                                                                    // "08ba"   =>   "0x08ba"
+            if (!String.IsNullOrEmpty(suffix))
+                result = result + suffix;                                                                    // "00100"  =>   "00100b"
+
+            return result;
+        }
+        /// <summary>
+        /// Sekvence znaků pro převod metodou <see cref="ConvertToOtherSystem(long, string, int?, string, string)"/> pro cílovou soustavu Hexadecimal, s velkými písmeny
+        /// </summary>
+        public const string OtherSystemHexadecimal = "0123456789ABCDEF";
+        /// <summary>
+        /// Vrátí platné jméno souboru pro zadané jméno. Zadané jméno je v prvním parametru <paramref name="fileName"/>.
+        /// <para/>
+        /// Pokud zadané jméno neobsahuje adresář, pak je použit defaultní <paramref name="defaultFolder"/>.<br/>
+        /// Pokud <paramref name="defaultFolder"/> je prázdné, najde se systémový adresář pole <paramref name="defaultFolderType"/>, k němuž se přidá podadresář <paramref name="defaultFolderSubdir"/>.<br/>
+        /// Pokud <paramref name="defaultFolderType"/> není zadáno, použije se Temp adresář<br/>
+        /// Bude zajištěno, že výsledný adresář existuje.
+        /// <para/>
+        /// Pokud zadané jméno neobsahuje název souboru, pak je použit defaultní <paramref name="defaultName"/>.<br/>
+        /// K němu se může volitelně podle formátu <paramref name="addDateTimeToDefaultNameFormat"/> přidat aktuální datum a čas.
+        /// <para/>
+        /// Pokud zadané jméno neobsahuje příponu, pak je použita defaultní <paramref name="defaultExtension"/>.<br/>
+        /// Pokud není dodána explicitně, vytvoří se podle <paramref name="defaultExtensionType"/>.
+        /// </summary>
+        /// <param name="fileName">Zvenku zadané jméno: může/nemusí obsahovat adresář, jméno, příponu. Co obsahuje, bude akceptováno beze změn.</param>
+        /// <param name="defaultFolder"></param>
+        /// <param name="defaultFolderType"></param>
+        /// <param name="defaultFolderSubdir"></param>
+        /// <param name="defaultName"></param>
+        /// <param name="addDateTimeToDefaultNameFormat">Formát data a času, který se přidává pouze k defaultnímu jménu <paramref name="defaultName"/>, ale ne k exaktně zadanému jménu v <paramref name="fileName"/>.<br/>
+        /// Jde tedy o formát data a času v metodě <see cref="DateTime.ToString(string)"/>. Typická hodnota je: <c>"yyyy-MM-dd-HH-mm-ss"</c>.</param>
+        /// <param name="defaultExtension"></param>
+        /// <param name="defaultExtensionType"></param>
+        /// <returns></returns>
+        public static string GetFileNameFrom(string fileName, 
+            string defaultFolder = null, Environment.SpecialFolder? defaultFolderType = null, string defaultFolderSubdir = null, 
+            string defaultName = null, string addDateTimeToDefaultNameFormat = null, 
+            string defaultExtension = null, ContentExportType? defaultExtensionType = null)
+        {
+            // Co je zadáno explicitně:
+            string currPath = null;
+            string currName = null;
+            string currExtn = null;
+            if (!String.IsNullOrEmpty(fileName))
+            {
+                currPath = System.IO.Path.GetDirectoryName(fileName);
+                currName = System.IO.Path.GetFileNameWithoutExtension(fileName);
+                currExtn = System.IO.Path.GetExtension(fileName);
+            }
+
+            //  Co není zadáno, to zkusím vytvořit:
+            // Adresář:
+            if (String.IsNullOrEmpty(currPath) && !String.IsNullOrEmpty(defaultFolder))
+                currPath = defaultFolder.Trim();
+            if (String.IsNullOrEmpty(currPath))
+            {
+                if (defaultFolderType.HasValue)
+                    currPath = System.Environment.GetFolderPath(defaultFolderType.Value);
+                else
+                    currPath = System.IO.Path.GetTempPath();
+
+                if (!String.IsNullOrEmpty(defaultFolderSubdir))
+                    currPath = System.IO.Path.Combine(currPath, defaultFolderSubdir.Trim());
+            }
+            // Adresář konkretizovat a vytvořit:
+            currPath = System.Environment.ExpandEnvironmentVariables(currPath);
+            if (!System.IO.Directory.Exists(currPath))
+                System.IO.Directory.CreateDirectory(currPath);
+
+            // Jméno:
+            if (String.IsNullOrEmpty(currName))
+            {
+                if (!String.IsNullOrEmpty(defaultName))
+                    currName = System.IO.Path.GetFileNameWithoutExtension(defaultName.Trim());
+                else
+                    currName = "File~" + ConvertToOtherSystem((new Random()).Next(1000000, 10000000));            // File~arvguj
+
+                if (!String.IsNullOrEmpty(addDateTimeToDefaultNameFormat))
+                    currName += DateTime.Now.ToString(addDateTimeToDefaultNameFormat);
+            }
+
+            // Přípona:
+            if (String.IsNullOrEmpty(currExtn))
+            {
+                if (!String.IsNullOrEmpty(defaultExtension))
+                    currExtn = defaultExtension.Trim();
+                else if (defaultExtensionType.HasValue)
+                    currExtn = ConvertExportType(defaultExtensionType.Value);
+
+                if (String.IsNullOrEmpty(currExtn))
+                    currExtn = "txt";
+                if (!currExtn.StartsWith("."))
+                    currExtn = "." + currExtn;
+            }
+
+            // Hotovo:
+            string resultFile = System.IO.Path.Combine(currPath, currName) + currExtn;
+            return resultFile;
         }
         /// <summary>
         /// Vrátí stringovou reprezentaci zadané klávesy, včetně modifikátorů.
@@ -6917,6 +7102,42 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
 
                 addException(sb, e.InnerException, numb + 1, indent + "  ");
+            }
+        }
+        #endregion
+        #region Systémové dialogy
+        /// <summary>
+        /// Zobrazí dialog SaveAs, vrací zvolené jméno nebo null = Cancel
+        /// </summary>
+        /// <param name="defaultFile"></param>
+        /// <param name="filter"></param>
+        /// <param name="title"></param>
+        /// <param name="overwritePrompt"></param>
+        /// <returns></returns>
+        public static string ShowDialogSaveAs(string defaultFile, string filter = null, string title = null, bool overwritePrompt = false)
+        {
+            using (var dlg = new System.Windows.Forms.SaveFileDialog())
+            {
+                if (!String.IsNullOrEmpty(title)) dlg.Title = title;
+                dlg.OverwritePrompt = overwritePrompt;
+                dlg.Filter = filter;
+                dlg.AutoUpgradeEnabled = true;
+                dlg.CheckFileExists = false;
+                dlg.CheckPathExists = false;
+                dlg.SupportMultiDottedExtensions = true;
+                dlg.RestoreDirectory = true;
+                if (!String.IsNullOrEmpty(defaultFile))
+                {
+                    dlg.InitialDirectory = System.IO.Path.GetDirectoryName(defaultFile);
+                    dlg.FileName = System.IO.Path.GetFileName(defaultFile);
+                    dlg.DefaultExt = System.IO.Path.GetExtension(defaultFile);
+                }
+                dlg.ValidateNames = false;
+                dlg.AddExtension = true;
+                dlg.CreatePrompt = false;
+
+                var result = dlg.ShowDialog(DxComponent.MainForm);
+                return (result == DialogResult.OK ? dlg.FileName : null);
             }
         }
         #endregion
