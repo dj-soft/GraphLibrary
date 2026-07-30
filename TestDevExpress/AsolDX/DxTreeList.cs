@@ -1034,6 +1034,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 return DxTreeProperties.ExportContent(format, exportWithCollapsedNodes, options, out errors);
             }
+            /// <summary>
+            /// Fyzicky aktivuje tento TreeList včetně reaktivace nodu
+            /// </summary>
+            public void SetFocusToList() { DxTreeProperties.SetFocusToList(); }
             #endregion
             #region KeyActions, DataExchange, Drag and Drop
             /// <summary>
@@ -1360,6 +1364,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.KeyUp += _OnKeyUp;
 
             // Nativní eventy:
+            this.GotFocus += _GotFocus;
             this.FocusedColumnChanged += _OnFocusedColumnChanged;
             this.FocusedNodeChanged += _OnFocusedNodeChanged;
             this.SelectionChanged += _OnSelectionChanged;
@@ -1625,6 +1630,32 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         private string __FindNullPrompt;
+
+        // FindPanel a jeho velikost:
+        /// <summary>
+        /// DevExpress si vytváří vlastní FindPanel, my jim dáme náš panel = potomek DevExpress, který si řídí velikost..
+        /// </summary>
+        /// <returns></returns>
+        protected override IFindPanel CreateFindPanelCore()
+        {
+            return new DxFindPanel(this, null);
+//             return base.CreateFindPanelCore();
+        }
+        /// <summary>
+        /// FindPanel s jinou velikostí = menší okraje
+        /// </summary>
+        protected class DxFindPanel : DevExpress.XtraTreeList.FindControl
+        {
+            public DxFindPanel(DevExpress.XtraTreeList.TreeList client, object properties)
+                : base(client, properties)
+            {
+                this.Height = 28;
+                var newPadding = lcGroupMain.Padding;
+                newPadding.Top -= 6;
+                newPadding.Bottom -= 6;
+                lcGroupMain.Padding = new DevExpress.XtraLayout.Utils.Padding(2);
+            }
+        }
         #endregion
         #region Úložiště dat nodů, a třída NodePair
         /// <summary>
@@ -2236,6 +2267,31 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #region Interní události a jejich zpracování : Klávesa, Focus, DoubleClick, Editor, Specifika vykreslení, Expand, 
+        /// <summary>
+        /// Control dostal Focus
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _GotFocus(object sender, EventArgs e)
+        {
+            
+        }
+        /// <summary>
+        /// Fyzicky aktivuje tento TreeList včetně reaktivace nodu
+        /// </summary>
+        protected void SetFocusToList()
+        {
+            var focusedNode = this.FocusedNode;
+            this.FocusedNode = focusedNode;
+
+            this.Focus();
+
+            if (this.Columns.Count > 0)
+            {
+                this.FocusedColumn = this.Columns[0];
+            }
+        }
         /// <summary>
         /// Předtest, zda daná klávesa se má zpracovávat.
         /// </summary>
@@ -3212,11 +3268,20 @@ namespace Noris.Clients.Win.Components.AsolDX
                     var currentFocusedNodeId = owner.FocusedNodeFullId;
                     var currentTopVisibleIndex = owner.TopVisibleNodeIndex;
                     var currentTopVisiblePixel = owner.TopVisibleNodePixel;
+                    var currentHasFocus = owner.HasFocus;
 
                     // Odblokuji Freeze:
                     owner._SilentMode = __SilentMode;
                     owner.EndUnboundLoad();
+
+                    // Vrátím FocusedNode: příkaz EndUnboundLoad() při aktivním Search filtru dost pravděpodobně přeskočil na první Node, který vyhovuje filtru.
+                    // Před EndUnboundLoad() byl FocusedNode na správném místě, ale provedení EndUnboundLoad() ten FocusedNode přemístí (vlastnost DevExpress).
+                    // (jsem ve stavu 'owner.IsLocked = true', takže se nevyvolají eventy o změně FocusedChange a SelectedChange)
+                    owner.FocusedNodeFullId = initialFocusedNodeId;
+
                     ((System.ComponentModel.ISupportInitialize)(owner)).EndInit();
+                    // Totéž po EndInit():
+                    owner.FocusedNodeFullId = initialFocusedNodeId;
 
                     owner.TopVisibleNodeIndex = initialTopVisibleIndex;
                     owner.TopVisibleNodePixel = initialTopVisiblePixel;
@@ -3237,6 +3302,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (!String.Equals(resultFocusedNodeId, initialFocusedNodeId))
                         owner._RunNodeFocusedChanged(owner?.FocusedNodeInfo, owner?.FocusedColumnIndex);
 
+                    if (currentHasFocus)
+                        owner.Focus();
 
                     /*   stav do 2026-07-27:
 
@@ -4746,10 +4813,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             var pdfOptions = new DevExpress.XtraPrinting.PdfExportOptions()
             {
                 ImageQuality = DevExpress.XtraPrinting.PdfJpegImageQuality.High,
-                AdditionalMetadata = "DevExpress.TreeList",
                 RasterizationResolution = 300,
-                PdfACompatibility = DevExpress.XtraPrinting.PdfACompatibility.PdfA3a,
-                PdfUACompatibility = DevExpress.XtraPrinting.PdfUACompatibility.None,
                 ConvertImagesToJpeg = true
             };
             DxComponent.FillValuesToObject(pdfOptions, options, out errors);
@@ -5889,6 +5953,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 return __Owner.ExportContent(format, exportWithCollapsedNodes, options, out errors);
             }
+            /// <summary>
+            /// Fyzicky aktivuje tento TreeList včetně reaktivace nodu
+            /// </summary>
+            public void SetFocusToList() { __Owner.SetFocusToList(); }
             #endregion
             #region KeyActions, DataExchange, Drag and Drop
             /// <summary>

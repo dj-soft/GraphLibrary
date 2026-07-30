@@ -260,9 +260,38 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public static bool IsTerminalServer { get { return Instance._IsTerminalServer; } }
         /// <summary>
-        /// Hlavní okno aplikace, pokud byla aplikace spuštěna pomocí <see cref="ApplicationStart(Type, Image)"/>
+        /// Hlavní okno aplikace, pokud byla aplikace spuštěna pomocí <see cref="ApplicationStart(Type, Image)"/>.
+        /// Pokud je Main okno vytvořeno jinde, lze jej sem setovat.
+        /// Toto okno se používá jako Owner pro dialogová modální okna atd.
         /// </summary>
-        public static Form MainForm { get { return Instance._MainForm; } }
+        public static Form MainForm 
+        {
+            get 
+            {
+                var mainForm = Instance._MainForm;
+                if (mainForm is null)
+                    // Pokud nemám _MainForm exaktně uložen, tak si vhodné okno najdu dynamicky - ale neukládám jej: příště si najdu zase dynamicky:
+                    mainForm = _SearchMainForm();
+                
+                return mainForm;
+            }
+            set { Instance._MainForm = value; }
+        }
+        /// <summary>
+        /// Najde aktuální MainForm = první otevřené okno, které je zobrazeno
+        /// </summary>
+        /// <returns></returns>
+        private static Form _SearchMainForm()
+        {
+            var openForms = Application.OpenForms;
+            var count = openForms.Count;
+            for (int i = 0; i < count; i++)
+            {
+                var form = openForms[i];
+                if (form != null && form.IsHandleCreated && !form.IsDisposed && form.Visible) return form;
+            }
+            return null;
+        }
         /// <summary>
         /// Do daného Controlu nastaví daný Cursor. Zde se provádí konverze z hodnoty Enum na objekt Cursor, na defaultní systémové kurzory z <see cref="Cursors"/>.
         /// </summary>
@@ -1024,13 +1053,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             string currExtn = null;
             if (!String.IsNullOrEmpty(fileName))
             {
-                currPath = System.IO.Path.GetDirectoryName(fileName);
-                currName = System.IO.Path.GetFileNameWithoutExtension(fileName);
-                currExtn = System.IO.Path.GetExtension(fileName);
+                currPath = System.IO.Path.GetDirectoryName(fileName)?.Trim();
+                currName = System.IO.Path.GetFileNameWithoutExtension(fileName)?.Trim();
+                currExtn = System.IO.Path.GetExtension(fileName)?.Trim();
             }
 
             //  Co není zadáno, to zkusím vytvořit:
             // Adresář:
+            var specFldName = "SpecialFolder.";
+            if (!String.IsNullOrEmpty(currPath) && currPath.StartsWith(specFldName) && currPath.Length > specFldName.Length)
+                currPath = getSpecFolder(currPath);
             if (String.IsNullOrEmpty(currPath) && !String.IsNullOrEmpty(defaultFolder))
                 currPath = defaultFolder.Trim();
             if (String.IsNullOrEmpty(currPath))
@@ -1077,6 +1109,27 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Hotovo:
             string resultFile = System.IO.Path.Combine(currPath, currName) + currExtn;
             return resultFile;
+
+
+            // Vyřeší SpecialFolder v adresáři
+            string getSpecFolder(string path)
+            {
+                if (String.IsNullOrEmpty(path)) return null;
+                if (!path.StartsWith(specFldName)) return path;
+
+                // Pokud na vstupu je "SpecialFolder.DesktopDirectory\Nephrite\Výroba",
+                // pak to rozdělím v místě prvního lomítka:
+                //   v pathPart.Item1 = "SpecialFolder.DesktopDirectory"
+                //   v pathPart.Item2 = "Nephrite\Výroba"
+                var pathPart = path.Cut("\\");
+                var specName = pathPart.Item1.Substring(specFldName.Length);        // "SpecialFolder.DesktopDirectory"  =>  "DesktopDirectory"
+                if (!Enum.TryParse<Environment.SpecialFolder>(specName, out var specFold)) return path;   // enum SpecialFolder.DesktopDirectory
+                var specPath = System.Environment.GetFolderPath(specFold);          // "C:\Users\current\Desktop"
+                var resultPath = specPath;
+                if (!String.IsNullOrEmpty(pathPart.Item2))                          // A pokud máme i další část "Nephrite\Výroba" :
+                    resultPath = System.IO.Path.Combine(resultPath, pathPart.Item2);  // souhrn: "C:\Users\current\Desktop\Nephrite\Výroba"
+                return resultPath;
+            }
         }
         /// <summary>
         /// Vrátí stringovou reprezentaci zadané klávesy, včetně modifikátorů.
@@ -6930,6 +6983,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             args.SystemIcon = DialogSystemIcon.Question;
             args.PrepareButtons(buttons);
             args.DefaultResultValue = DialogResult.None;
+            args.Owner = MainForm;
             var result = DialogForm.ShowDialog(args);
             return (result is DialogResult dialogResult ? dialogResult : DialogResult.None);
         }
@@ -6963,6 +7017,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 args.MessageTextContainsHtml = DxComponent.AllowHtmlText(text);
                 args.PrepareButtons(buttons, defaultButton);
             }
+            args.Owner = MainForm;
             var result = DialogForm.ShowDialog(args);
             return result;
         }
@@ -7082,7 +7137,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="title"></param>
         /// <param name="overwritePrompt"></param>
         /// <returns></returns>
-        public static string ShowDialogSaveAs(string defaultFile, string filter = null, string title = null, bool overwritePrompt = false)
+        public static string ShowDialogSaveAs(string defaultFile, string filter = null, string title = null, bool overwritePrompt = true)
         {
             using (var dlg = new System.Windows.Forms.SaveFileDialog())
             {
