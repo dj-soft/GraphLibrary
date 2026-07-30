@@ -3,7 +3,6 @@
 // Redistribution and use in source and binary forms, with or without modification, 
 // is not permitted without valid contract with Asseco Solutions, a. s.
 
-
 using DevExpress.Utils;
 using DevExpress.Utils.CommonDialogs;
 using DevExpress.Utils.Design;
@@ -21,35 +20,6 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using WSXmlSerializer = Noris.WS.Parser.XmlSerializer;
-
-
-/*
-using DevExpress.Utils;
-using DevExpress.Utils.Design;
-using DevExpress.Utils.Svg;
-using DevExpress.XtraEditors;
-using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Globalization;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.ComTypes;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using WSXmlSerializer = Noris.WS.Parser.XmlSerializer;
-*/
-
-// using BAR = DevExpress.XtraBars;
-// using EDI = DevExpress.XtraEditors;
-// using TAB = DevExpress.XtraTab;
-// using GRD = DevExpress.XtraGrid;
-// using CHT = DevExpress.XtraCharts;
-// using RIB = DevExpress.XtraBars.Ribbon;
-// using NOD = DevExpress.XtraTreeList.Nodes;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {

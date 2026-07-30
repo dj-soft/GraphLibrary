@@ -3,7 +3,6 @@
 // Redistribution and use in source and binary forms, with or without modification, 
 // is not permitted without valid contract with Asseco Solutions, a. s.
 
-using DevExpress.Dialogs.Core.Filtering;
 using DevExpress.Utils;
 using DevExpress.Utils.Drawing;
 using DevExpress.Utils.Extensions;

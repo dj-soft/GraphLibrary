@@ -4,8 +4,6 @@
 // is not permitted without valid contract with Asseco Solutions, a. s.
 
 using DevExpress.Utils;
-using DevExpress.Utils.Controls;
-using DevExpress.XtraTreeList;
 using DevExpress.XtraTreeList.Nodes;
 using DevExpress.XtraTreeList.ViewInfo;
 using System;

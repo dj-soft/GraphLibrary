@@ -7,20 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Runtime.InteropServices;
-
-using System.Windows.Forms;
-using System.Drawing;
-
-using DevExpress.Utils;
-using System.Drawing.Drawing2D;
-using DevExpress.Pdf.Native;
-using DevExpress.XtraPdfViewer;
-using DevExpress.XtraEditors;
-using DevExpress.XtraRichEdit.Layout;
-using System.Diagnostics;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
