@@ -3,18 +3,18 @@
 // Redistribution and use in source and binary forms, with or without modification, 
 // is not permitted without valid contract with Asseco Solutions, a. s.
 
+using DevExpress.Utils;
+using DevExpress.Utils.Controls;
+using DevExpress.XtraTreeList;
+using DevExpress.XtraTreeList.Nodes;
+using DevExpress.XtraTreeList.ViewInfo;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
-using System.Drawing;
-using System.Diagnostics;
-
-using DevExpress.Utils;
-using DevExpress.XtraTreeList.Nodes;
-using DevExpress.XtraTreeList.ViewInfo;
-using DevExpress.Utils.Controls;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -1028,12 +1028,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Výstupem je <c>byte[]</c> = obsah souboru.
             /// </summary>
             /// <param name="format">Výstupní formát</param>
+            /// <param name="exportWithCollapsedNodes">Do exportu zařadit všechny Nodes = včetně těch, které jsou v Collapsed parentovi (tzn. provést Expand + Collapse)</param>
             /// <param name="options">Předvolby exportu</param>
             /// <param name="errors">Out: Chyby</param>
             /// <returns></returns>
-            public byte[] ExportContent(ContentExportType format, string[] options, out string errors)
+            public byte[] ExportContent(ContentExportType format, bool exportWithCollapsedNodes, string[] options, out string errors)
             {
-                return DxTreeProperties.ExportContent(format, options, out errors);
+                return DxTreeProperties.ExportContent(format, exportWithCollapsedNodes, options, out errors);
             }
             #endregion
             #region KeyActions, DataExchange, Drag and Drop
@@ -2385,7 +2386,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _OnSelectionChanged(object sender, EventArgs e)
         {
             if (!this.IsLocked)
+            {
                 this._OnSelectedNodesChanged();
+            }
         }
         /// <summary>
         /// Volá se po každé změně stavu Selected.
@@ -4617,10 +4620,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Výstupem je <c>byte[]</c> = obsah souboru.
         /// </summary>
         /// <param name="format">Výstupní formát</param>
+        /// <param name="exportWithCollapsedNodes">Do exportu zařadit všechny Nodes = včetně těch, které jsou v Collapsed parentovi (tzn. provést Expand + Collapse)</param>
         /// <param name="options">Předvolby exportu</param>
         /// <param name="errors">Out: Chyby</param>
         /// <returns></returns>
-        protected byte[] ExportContent(ContentExportType format, string[] options, out string errors)
+        protected byte[] ExportContent(ContentExportType format, bool exportWithCollapsedNodes, string[] options, out string errors)
         {
             byte[] result = null;
             errors = null;
@@ -4631,31 +4635,31 @@ namespace Noris.Clients.Win.Components.AsolDX
                     switch (format)
                     {
                         case ContentExportType.Txt:
-                            _ExportContentTxt(options, exportStream, out errors);
+                            _ExportContentTxt(options, exportWithCollapsedNodes, exportStream, out errors);
                             break;
                         case ContentExportType.Csv:
-                            _ExportContentCsv(options, exportStream, out errors);
+                            _ExportContentCsv(options, exportWithCollapsedNodes, exportStream, out errors);
                             break;
                         case ContentExportType.Rtf:
-                            _ExportContentRtf(options, exportStream, out errors);
+                            _ExportContentRtf(options, exportWithCollapsedNodes, exportStream, out errors);
                             break;
                         case ContentExportType.Pdf:
-                            _ExportContentPdf(options, exportStream, out errors);
+                            _ExportContentPdf(options, exportWithCollapsedNodes, exportStream, out errors);
                             break;
                         case ContentExportType.Html:
-                            _ExportContentHtml(options, exportStream, out errors);
+                            _ExportContentHtml(options, exportWithCollapsedNodes, exportStream, out errors);
                             break;
                         case ContentExportType.Mht:
-                            _ExportContentMht(options, exportStream, out errors);
+                            _ExportContentMht(options, exportWithCollapsedNodes, exportStream, out errors);
                             break;
                         case ContentExportType.Xls:
-                            _ExportContentXls(options, exportStream, out errors);
+                            _ExportContentXls(options, exportWithCollapsedNodes, exportStream, out errors);
                             break;
                         case ContentExportType.Xlsx:
-                            _ExportContentXlsx(options, exportStream, out errors);
+                            _ExportContentXlsx(options, exportWithCollapsedNodes, exportStream, out errors);
                             break;
                         case ContentExportType.Docx:
-                            _ExportContentDocx(options, exportStream, out errors);
+                            _ExportContentDocx(options, exportWithCollapsedNodes, exportStream, out errors);
                             break;
                         default:
                             errors = $"Unsupported export format: '{format}'.";
@@ -4679,108 +4683,232 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Export obsahu do formátu <b>TXT</b>
         /// </summary>
         /// <param name="options"></param>
+        /// <param name="exportWithCollapsedNodes">Do exportu zařadit všechny Nodes = včetně těch, které jsou v Collapsed parentovi (tzn. provést Expand + Collapse)</param>
         /// <param name="exportStream"></param>
         /// <param name="errors">Out: Chyby</param>
-        private void _ExportContentTxt(string[] options, System.IO.MemoryStream exportStream, out string errors)
+        private void _ExportContentTxt(string[] options, bool exportWithCollapsedNodes, System.IO.MemoryStream exportStream, out string errors)
         {
-            var txtOptions = new DevExpress.XtraPrinting.TextExportOptions();
+            var txtOptions = new DevExpress.XtraPrinting.TextExportOptions()
+            {
+                Encoding = Encoding.UTF8,
+                Separator = " ;",
+                TextExportMode = DevExpress.XtraPrinting.TextExportMode.Text,
+                QuoteStringsWithSeparators = false
+            };
+
             DxComponent.FillValuesToObject(txtOptions, options, out errors);
-            this.ExportToText(exportStream, txtOptions);
+            using (new SilentNodeExpander(this, exportWithCollapsedNodes))     // Pokud exportWithCollapsedNodes je true, pak se na začátku provede potichu ExpandAll a na konci pak CollapseRevert
+                this.ExportToText(exportStream, txtOptions);
         }
         /// <summary>
         /// Export obsahu do formátu <b>CSV</b>
         /// </summary>
         /// <param name="options"></param>
+        /// <param name="exportWithCollapsedNodes">Do exportu zařadit všechny Nodes = včetně těch, které jsou v Collapsed parentovi (tzn. provést Expand + Collapse)</param>
         /// <param name="exportStream"></param>
         /// <param name="errors">Out: Chyby</param>
-        private void _ExportContentCsv(string[] options, System.IO.MemoryStream exportStream, out string errors)
+        private void _ExportContentCsv(string[] options, bool exportWithCollapsedNodes, System.IO.MemoryStream exportStream, out string errors)
         {
-            var csvOptions = new DevExpress.XtraPrinting.CsvExportOptions();
+            var csvOptions = new DevExpress.XtraPrinting.CsvExportOptions()
+            {
+                Encoding = Encoding.UTF8,
+                Separator = "\t",
+                SkipEmptyColumns = false,
+                SkipEmptyRows = false,
+                TextExportMode = DevExpress.XtraPrinting.TextExportMode.Text,
+                EncodeExecutableContent = DefaultBoolean.False,
+                QuoteStringsWithSeparators = false
+            };
             DxComponent.FillValuesToObject(csvOptions, options, out errors);
-            this.ExportToCsv(exportStream, csvOptions);
+            using (new SilentNodeExpander(this, exportWithCollapsedNodes))     // Pokud exportWithCollapsedNodes je true, pak se na začátku provede potichu ExpandAll a na konci pak CollapseRevert
+                this.ExportToCsv(exportStream, csvOptions);
         }
         /// <summary>
         /// Export obsahu do formátu <b>RTF</b>
         /// </summary>
         /// <param name="options"></param>
+        /// <param name="exportWithCollapsedNodes">Do exportu zařadit všechny Nodes = včetně těch, které jsou v Collapsed parentovi (tzn. provést Expand + Collapse)</param>
         /// <param name="exportStream"></param>
         /// <param name="errors">Out: Chyby</param>
-        private void _ExportContentRtf(string[] options, System.IO.MemoryStream exportStream, out string errors)
+        private void _ExportContentRtf(string[] options, bool exportWithCollapsedNodes, System.IO.MemoryStream exportStream, out string errors)
         {
             errors = null;
-            this.ExportToRtf(exportStream);
+            using (new SilentNodeExpander(this, exportWithCollapsedNodes))     // Pokud exportWithCollapsedNodes je true, pak se na začátku provede potichu ExpandAll a na konci pak CollapseRevert
+                this.ExportToRtf(exportStream);
         }
         /// <summary>
         /// Export obsahu do formátu <b>PDF</b>
         /// </summary>
         /// <param name="options"></param>
+        /// <param name="exportWithCollapsedNodes">Do exportu zařadit všechny Nodes = včetně těch, které jsou v Collapsed parentovi (tzn. provést Expand + Collapse)</param>
         /// <param name="exportStream"></param>
         /// <param name="errors">Out: Chyby</param>
-        private void _ExportContentPdf(string[] options, System.IO.MemoryStream exportStream, out string errors)
+        private void _ExportContentPdf(string[] options, bool exportWithCollapsedNodes, System.IO.MemoryStream exportStream, out string errors)
         {
-            var pdfOptions = new DevExpress.XtraPrinting.PdfExportOptions();
+            var pdfOptions = new DevExpress.XtraPrinting.PdfExportOptions()
+            {
+                ImageQuality = DevExpress.XtraPrinting.PdfJpegImageQuality.High,
+                AdditionalMetadata = "DevExpress.TreeList",
+                RasterizationResolution = 300,
+                PdfACompatibility = DevExpress.XtraPrinting.PdfACompatibility.PdfA3a,
+                PdfUACompatibility = DevExpress.XtraPrinting.PdfUACompatibility.None,
+                ConvertImagesToJpeg = true
+            };
             DxComponent.FillValuesToObject(pdfOptions, options, out errors);
-            this.ExportToPdf(exportStream, pdfOptions);
+            using (new SilentNodeExpander(this, exportWithCollapsedNodes))     // Pokud exportWithCollapsedNodes je true, pak se na začátku provede potichu ExpandAll a na konci pak CollapseRevert
+                this.ExportToPdf(exportStream, pdfOptions);
         }
         /// <summary>
         /// Export obsahu do formátu <b>HTML</b>
         /// </summary>
         /// <param name="options"></param>
+        /// <param name="exportWithCollapsedNodes">Do exportu zařadit všechny Nodes = včetně těch, které jsou v Collapsed parentovi (tzn. provést Expand + Collapse)</param>
         /// <param name="exportStream"></param>
         /// <param name="errors">Out: Chyby</param>
-        private void _ExportContentHtml(string[] options, System.IO.MemoryStream exportStream, out string errors)
+        private void _ExportContentHtml(string[] options, bool exportWithCollapsedNodes, System.IO.MemoryStream exportStream, out string errors)
         {
-            var htmlOptions = new DevExpress.XtraPrinting.HtmlExportOptions();
+            var htmlOptions = new DevExpress.XtraPrinting.HtmlExportOptions()
+            {
+                ExportMode = DevExpress.XtraPrinting.HtmlExportMode.SingleFile,
+                TableLayout = true,
+                InlineCss = true,
+                EmbedImagesInHTML = true,
+                RasterizationResolution = 300
+            };
             DxComponent.FillValuesToObject(htmlOptions, options, out errors);
-            this.ExportToHtml(exportStream, htmlOptions);
+            using (new SilentNodeExpander(this, exportWithCollapsedNodes))     // Pokud exportWithCollapsedNodes je true, pak se na začátku provede potichu ExpandAll a na konci pak CollapseRevert
+                this.ExportToHtml(exportStream, htmlOptions);
         }
         /// <summary>
         /// Export obsahu do formátu <b>MHT</b>
         /// </summary>
         /// <param name="options"></param>
+        /// <param name="exportWithCollapsedNodes">Do exportu zařadit všechny Nodes = včetně těch, které jsou v Collapsed parentovi (tzn. provést Expand + Collapse)</param>
         /// <param name="exportStream"></param>
         /// <param name="errors">Out: Chyby</param>
-        private void _ExportContentMht(string[] options, System.IO.MemoryStream exportStream, out string errors)
+        private void _ExportContentMht(string[] options, bool exportWithCollapsedNodes, System.IO.MemoryStream exportStream, out string errors)
         {
-            var mhtOptions = new DevExpress.XtraPrinting.MhtExportOptions();
+            var mhtOptions = new DevExpress.XtraPrinting.MhtExportOptions()
+            {
+                ExportMode = DevExpress.XtraPrinting.HtmlExportMode.SingleFile,
+                TableLayout = true,
+                InlineCss = true,
+                RasterizationResolution = 300
+            };
             DxComponent.FillValuesToObject(mhtOptions, options, out errors);
-            this.ExportToMht(exportStream, mhtOptions);
+            using (new SilentNodeExpander(this, exportWithCollapsedNodes))     // Pokud exportWithCollapsedNodes je true, pak se na začátku provede potichu ExpandAll a na konci pak CollapseRevert
+                this.ExportToMht(exportStream, mhtOptions);
         }
         /// <summary>
         /// Export obsahu do formátu <b>XLS</b>
         /// </summary>
         /// <param name="options"></param>
+        /// <param name="exportWithCollapsedNodes">Do exportu zařadit všechny Nodes = včetně těch, které jsou v Collapsed parentovi (tzn. provést Expand + Collapse)</param>
         /// <param name="exportStream"></param>
         /// <param name="errors">Out: Chyby</param>
-        private void _ExportContentXls(string[] options, System.IO.MemoryStream exportStream, out string errors)
+        private void _ExportContentXls(string[] options, bool exportWithCollapsedNodes, System.IO.MemoryStream exportStream, out string errors)
         {
-            var xlsOptions = new DevExpress.XtraPrinting.XlsExportOptions();
+            var xlsOptions = new DevExpress.XtraPrinting.XlsExportOptions()
+            {
+                ExportMode = DevExpress.XtraPrinting.XlsExportMode.SingleFile,
+                RawDataMode = false,
+                RasterizeImages = true,
+                RasterizationResolution = 300
+            };
             DxComponent.FillValuesToObject(xlsOptions, options, out errors);
-            this.ExportToXls(exportStream, xlsOptions);
+            using (new SilentNodeExpander(this, exportWithCollapsedNodes))     // Pokud exportWithCollapsedNodes je true, pak se na začátku provede potichu ExpandAll a na konci pak CollapseRevert
+                this.ExportToXls(exportStream, xlsOptions);
         }
         /// <summary>
         /// Export obsahu do formátu <b>XLSX</b>
         /// </summary>
         /// <param name="options"></param>
+        /// <param name="exportWithCollapsedNodes">Do exportu zařadit všechny Nodes = včetně těch, které jsou v Collapsed parentovi (tzn. provést Expand + Collapse)</param>
         /// <param name="exportStream"></param>
         /// <param name="errors">Out: Chyby</param>
-        private void _ExportContentXlsx(string[] options, System.IO.MemoryStream exportStream, out string errors)
+        private void _ExportContentXlsx(string[] options, bool exportWithCollapsedNodes, System.IO.MemoryStream exportStream, out string errors)
         {
-            var xlsxOptions = new DevExpress.XtraPrinting.XlsxExportOptions();
+            var xlsxOptions = new DevExpress.XtraPrinting.XlsxExportOptions()
+            {
+                ExportMode = DevExpress.XtraPrinting.XlsxExportMode.SingleFile,
+                ShowGridLines = true,
+                RasterizeImages = true,
+                RasterizationResolution = 300
+            };
             DxComponent.FillValuesToObject(xlsxOptions, options, out errors);
-            this.ExportToXlsx(exportStream, xlsxOptions);
+            using (new SilentNodeExpander(this, exportWithCollapsedNodes))     // Pokud exportWithCollapsedNodes je true, pak se na začátku provede potichu ExpandAll a na konci pak CollapseRevert
+                this.ExportToXlsx(exportStream, xlsxOptions);
         }
         /// <summary>
         /// Export obsahu do formátu <b>DOCX</b>
         /// </summary>
         /// <param name="options"></param>
+        /// <param name="exportWithCollapsedNodes">Do exportu zařadit všechny Nodes = včetně těch, které jsou v Collapsed parentovi (tzn. provést Expand + Collapse)</param>
         /// <param name="exportStream"></param>
         /// <param name="errors">Out: Chyby</param>
-        private void _ExportContentDocx(string[] options, System.IO.MemoryStream exportStream, out string errors)
+        private void _ExportContentDocx(string[] options, bool exportWithCollapsedNodes, System.IO.MemoryStream exportStream, out string errors)
         {
-            var docxOptions = new DevExpress.XtraPrinting.DocxExportOptions();
+            var docxOptions = new DevExpress.XtraPrinting.DocxExportOptions()
+            {
+                ExportMode = DevExpress.XtraPrinting.DocxExportMode.SingleFile,
+                TableLayout = true,
+                RasterizeImages = true,
+                KeepRowHeight = true,
+                RasterizationResolution = 300
+            };
             DxComponent.FillValuesToObject(docxOptions, options, out errors);
-            this.ExportToDocx(exportStream, docxOptions);
+            using (new SilentNodeExpander(this, exportWithCollapsedNodes))     // Pokud exportWithCollapsedNodes je true, pak se na začátku provede potichu ExpandAll a na konci pak CollapseRevert
+                this.ExportToDocx(exportStream, docxOptions);
+        }
+        #region class SilentNodeExpander : 
+
+        #endregion
+        /// <summary>
+        /// Třída, která zajistí provedení ExpandAll pro TreeList ve svém konstruktoru, a CollapseRestore v Dispose.
+        /// Po celou dobu je zastaveno vykreslování pomocí BeginUpdate a EndUpdate.
+        /// </summary>
+        private class SilentNodeExpander : IDisposable
+        {
+            public SilentNodeExpander(DxTreeListNative owner, bool expandOnBegin)
+            {
+                __Owner = owner;
+                __ExpandOnBegin = expandOnBegin;
+                _DoExpandAll();
+            }
+            void IDisposable.Dispose()
+            {
+                _DoRestoreCollapseRestore();
+                __Owner = null;
+                __ExpandedNodes = null;
+            }
+            private DxTreeListNative __Owner;
+            private bool __ExpandOnBegin;
+            private bool __OwnerSilentMode;
+            private TreeListNode[] __ExpandedNodes;
+            private void _DoExpandAll()
+            {
+                if (!__ExpandOnBegin) return;
+
+                __OwnerSilentMode = __Owner._SilentMode;
+                __Owner._SilentMode = true;                                    // Zastaví volání externích eventů (typ Expand / Collapse)
+                __Owner.BeginUpdate();                                         // Zastaví překreslování komponenty pro hladký průběh
+
+                __ExpandedNodes = __Owner.Nodes
+                    .Where(n => n.Expanded)
+                    .ToArray();
+
+                __Owner.ExpandAll();
+            }
+            private void _DoRestoreCollapseRestore()
+            {
+                if (!__ExpandOnBegin) return;
+
+                __Owner.CollapseAll();
+                __ExpandedNodes.ForEachExec(n => n.Expand());
+
+                __Owner.EndUpdate();                                           // Povolí překreslování komponenty po dokončení akce
+                __Owner._SilentMode = __OwnerSilentMode;                       // Až od teď se mohou volat eventy (pokud byly aktivní na začátku)
+            }
         }
         #endregion
         #region Obrázky - ImageListy, režim ImageMode, NodeImageType (Png / Svg), NodeImageSize (Small?)
@@ -5755,12 +5883,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Výstupem je <c>byte[]</c> = obsah souboru.
             /// </summary>
             /// <param name="format">Výstupní formát</param>
+            /// <param name="exportWithCollapsedNodes">Do exportu zařadit všechny Nodes = včetně těch, které jsou v Collapsed parentovi (tzn. provést Expand + Collapse)</param>
             /// <param name="options">Předvolby exportu</param>
             /// <param name="errors">Out: Chyby</param>
             /// <returns></returns>
-            public byte[] ExportContent(ContentExportType format, string[] options, out string errors)
+            public byte[] ExportContent(ContentExportType format, bool exportWithCollapsedNodes, string[] options, out string errors)
             {
-                return __Owner.ExportContent(format, options, out errors);
+                return __Owner.ExportContent(format, exportWithCollapsedNodes, options, out errors);
             }
             #endregion
             #region KeyActions, DataExchange, Drag and Drop

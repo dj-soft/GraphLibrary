@@ -1826,7 +1826,7 @@ namespace TestDevExpress.Forms
         private void ExportTreeList(ContentExportType format)
         {
             var options = getOptions(format);
-            var content = DxTreeList.DxProperties.ExportContent(format, options, out var errors);
+            var content = DxTreeList.DxProperties.ExportContent(format, true, options, out var errors);
             if (content != null && content.Length > 0)
             {
                 // Plné jméno pro soubor:
