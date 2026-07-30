@@ -4,24 +4,23 @@
 // is not permitted without valid contract with Asseco Solutions, a. s.
 
 
+using DevExpress.Utils;
+using DevExpress.Utils.CommonDialogs;
+using DevExpress.Utils.Design;
+using DevExpress.Utils.Svg;
+using DevExpress.XtraEditors;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Globalization;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Runtime.InteropServices;
-
 using System.Windows.Forms;
-using System.Drawing;
-
-using DevExpress.Utils;
-using System.Drawing.Drawing2D;
-using DevExpress.XtraEditors;
 using WSXmlSerializer = Noris.WS.Parser.XmlSerializer;
-using DevExpress.Utils.Svg;
-using DevExpress.Utils.Design;
-using System.Globalization;
 
 
 /*
@@ -7119,19 +7118,23 @@ namespace Noris.Clients.Win.Components.AsolDX
             using (var dlg = new System.Windows.Forms.SaveFileDialog())
             {
                 if (!String.IsNullOrEmpty(title)) dlg.Title = title;
-                dlg.OverwritePrompt = overwritePrompt;
-                dlg.Filter = filter;
-                dlg.AutoUpgradeEnabled = true;
-                dlg.CheckFileExists = false;
-                dlg.CheckPathExists = false;
-                dlg.SupportMultiDottedExtensions = true;
                 dlg.RestoreDirectory = true;
                 if (!String.IsNullOrEmpty(defaultFile))
                 {
                     dlg.InitialDirectory = System.IO.Path.GetDirectoryName(defaultFile);
                     dlg.FileName = System.IO.Path.GetFileName(defaultFile);
-                    dlg.DefaultExt = System.IO.Path.GetExtension(defaultFile);
+                    var defaultExt = System.IO.Path.GetExtension(defaultFile);
+                    dlg.DefaultExt = defaultExt;
+                    if (String.IsNullOrEmpty(filter))
+                        filter = $"{defaultExt}|*{defaultExt}|All Files|*.*";            // Implicitní filtr dle vzoru:  "Word Documents|*.docx|Excel Spreadsheets|*.xlsx|All Files|*.*";
                 }
+                dlg.OverwritePrompt = overwritePrompt;
+                dlg.AutoUpgradeEnabled = true;
+                dlg.CheckFileExists = false;
+                dlg.CheckPathExists = false;
+                dlg.SupportMultiDottedExtensions = true;
+                dlg.Filter = filter;
+                dlg.FilterIndex = 1;
                 dlg.ValidateNames = false;
                 dlg.AddExtension = true;
                 dlg.CreatePrompt = false;
