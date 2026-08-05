@@ -82,10 +82,6 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// </summary>
         public virtual int? ImageIndex { get { return __ImageIndex; } set { __ImageIndex = value; } } private int? __ImageIndex;
         /// <summary>
-        /// Data obrázku
-        /// </summary>
-        public virtual byte[] ImageContent { get { return __ImageContent; } set { __ImageContent = value; } } private byte[] __ImageContent;
-        /// <summary>
         /// Prostor pro definiční data tohoto prvku
         /// </summary>
         public object UserData { get; set; }
@@ -364,7 +360,7 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         /// <param name="paintArgs"></param>
         protected void OnPaintImage(ItemPaintArgs paintArgs)
         {
-            var image = App.GetImage(this.ImageName, this.ImageIndex, this.ImageContent);
+            var image = App.GetImage(this.ImageName, this.ImageIndex);
             if (paintArgs.DataLayout.ImageBounds.HasContent && image != null)
             {
                 paintArgs.ImageBounds = paintArgs.DataLayout.ImageBounds.GetBounds(paintArgs.ClientBounds);

@@ -1439,7 +1439,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             if (!String.IsNullOrEmpty(this.Title)) toolTip += this.Title + Environment.NewLine;
             if (!String.IsNullOrEmpty(this.Description)) toolTip += this.Description + Environment.NewLine;
             if (!String.IsNullOrEmpty(this.ToolTipText)) toolTip += this.ToolTipText + Environment.NewLine;
-            var button = new ToolStripButton() { Image = App.GetImage(this.ImageFileName, this.ImageIconIndex, null), ToolTipText = toolTip, Tag = this };
+            var button = new ToolStripButton() { Image = App.GetImage(this.ImageFileName, this.ImageIconIndex), ToolTipText = toolTip, Tag = this };
             button.MouseUp += _ToolButton_MouseUp;
             return button;
         }

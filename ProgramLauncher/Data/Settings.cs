@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Management;
+using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -77,12 +78,13 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         private Settings(string fileName)
         {
-            this.__FileName = fileName;
+            this.FileName = fileName;
         }
         /// <summary>
         /// Soubor, z něhož je Settings načten a kam bude ukládán.
         /// </summary>
-        public string FileName { get { return __FileName; } } private string __FileName;
+        [PersistingEnabled(false)]
+        public string FileName { get { return __FileName; } private set { __FileName = value; } } private string __FileName;
         /// <summary>
         /// Určí a vrátí jméno souboru pro zdejší ukládání dat. Nezajišťuje existenci adresáře ani souboru, to se řeší v <see cref="_Save"/>.
         /// </summary>
@@ -120,7 +122,7 @@ namespace DjSoft.Tools.ProgramLauncher
         private void _RunAfterCreate(string fileName = null)
         {
             __SettingsIsLoaded = true;
-            if (fileName != null) this.__FileName = fileName;
+            if (fileName != null) this.FileName = fileName;
             AfterCreate?.Invoke(this, EventArgs.Empty);
         }
         /// <summary>
@@ -130,7 +132,7 @@ namespace DjSoft.Tools.ProgramLauncher
         private void _RunAfterLoad(string fileName = null)
         {
             __SettingsIsLoaded = true;
-            if (fileName != null) this.__FileName = fileName;
+            if (fileName != null) this.FileName = fileName;
             AfterLoad?.Invoke(this, EventArgs.Empty);
         }
         /// <summary>
@@ -295,7 +297,7 @@ namespace DjSoft.Tools.ProgramLauncher
 
                 _RunBeforeSave();
 
-                string fileName = __FileName;
+                string fileName = this.FileName;
                 if (String.IsNullOrEmpty(fileName)) return;
                 string path = System.IO.Path.GetDirectoryName(fileName);
                 if (String.IsNullOrEmpty(path)) return;

@@ -1511,28 +1511,47 @@ namespace DjSoft.Tools.ProgramLauncher
         #region ImageLibrary
         /// <summary>
         /// Najde a vrátí Image načtený z dodaného souboru.
-        /// Image se nesmí měnit ani Disposovat, používá se opakovaně.
+        /// Vrácený Image se nesmí měnit ani Disposovat, používá se opakovaně.
         /// </summary>
         /// <param name="fileName"></param>
         /// <returns></returns>
         public static Image GetImage(string fileName, int? iconIndex = null)
         {
-            return Current._GetImage(fileName, iconIndex, null);
+            return Current._GetImage(fileName, iconIndex);
         }
         /// <summary>
-        /// Najde a vrátí Image načtený z dodaného obsahu.
-        /// Image se nesmí měnit ani Disposovat, používá se opakovaně.
+        /// Store pro offline kopii Images.
         /// <para/>
-        /// Dodaný <paramref name="fileName"/> nesmí být prázdný - používá se jako jednoznačný klíč pro Image, pod ním je uložen v interní paměti aplikace!
+        /// Autoinicializační static property
         /// </summary>
-        /// <param name="fileName">Jméno souboru s obrázkem (PNG, JPG, BMP), anebo s ikonou (DLL, EXE)</param>
-        /// <param name="iconIndex">Index ikony, pokud soubor odkazuje na DLL/EXE</param>
-        /// <param name="content"></param>
-        /// <returns></returns>
-        public static Image GetImage(string fileName, int? iconIndex, byte[] content)
+        public static ImageStore ImageStore { get { return Current._ImageStore; } }
+        /// <summary>
+        /// Inicializace Images
+        /// </summary>
+        private void _InitImages()
         {
-            return Current._GetImage(fileName, iconIndex, content);
+            __ImageStore = new ImageStore();
         }
+        /// <summary>
+        /// Store pro offline kopii Images.
+        /// <para/>
+        /// Autoinicializační property
+        /// </summary>
+        private ImageStore _ImageStore
+        {
+            get
+            {
+                if (__ImageStore is null)
+                    __ImageStore = new ImageStore();
+                return __ImageStore;
+            }
+        }
+        /// <summary>
+        /// Store pro offline kopii Images.
+        /// <para/>
+        /// Proměnná
+        /// </summary>
+        private ImageStore __ImageStore;
         /// <summary>
         /// Najde / vytvoří a vrátí Image z dané definice.
         /// </summary>
@@ -1540,104 +1559,18 @@ namespace DjSoft.Tools.ProgramLauncher
         /// <param name="iconIndex">Index ikony, pokud soubor odkazuje na DLL/EXE</param>
         /// <param name="content"></param>
         /// <returns></returns>
-        private Image _GetImage(string fileName, int? iconIndex, byte[] content)
+        private Image _GetImage(string fileName, int? iconIndex)
         {
-            if (String.IsNullOrEmpty(fileName)) return null;
-            fileName = fileName.Trim();
-
-            string type = (content is null ? "File" : "Data");
-            string key = _GetImageKey(type, fileName, iconIndex);
-            if (!__Images.TryGetValue(key, out Image image))
-            {
-                try
-                {
-                    if (content != null)
-                    {   // Z obsahu:
-                        using (var stream = new System.IO.MemoryStream(content))
-                            image = Image.FromStream(stream);
-                    }
-                    else if (System.IO.File.Exists(fileName))
-                    {   // Ze souboru:
-                        image = image = _LoadImageFromFile(fileName, iconIndex);
-                    }
-                }
-                catch (Exception) { image = null; }
-                __Images.Add(key, image);
-            }
-            return image;
-        }
-        /// <summary>
-        /// Načte obrázek z daného souboru, případně ikonu 
-        /// </summary>
-        /// <param name="fileName"></param>
-        /// <param name="iconIndex"></param>
-        /// <returns></returns>
-        /// <exception cref="NotImplementedException"></exception>
-        private Image _LoadImageFromFile(string fileName, int? iconIndex)
-        {
-            if (String.IsNullOrEmpty(fileName)) return null;
-            fileName = System.Environment.ExpandEnvironmentVariables(fileName);            // %windir%  =>  C:\Windows    atd
-            fileName = System.IO.Path.GetFullPath(fileName);
-            var extension = System.IO.Path.GetExtension(fileName).ToLower();
-            switch (extension)
-            {
-                case ".png":
-                case ".jpg":
-                case ".jpeg":
-                case ".bmp":
-                case ".gif":
-                    return Image.FromFile(fileName);
-
-                case ".ico":
-                    using (var icon = new Icon(fileName, new Size(48,48)))
-                    {
-                        return icon.ToBitmap();                      // Vytvoří new instanci = izolovanou od Icon
-                    }                                                // Icon lze disposovat
-
-                case ".exe":
-                case ".dll":
-                    if (iconIndex.HasValue)
-                    { }
-                    using (var icon = Icon.ExtractAssociatedIcon(fileName))
-                    {
-                        return icon?.ToBitmap();
-                    }
-            }
-            return null;
-        }
-        /// <summary>
-        /// Vrátí klíč pro Image
-        /// </summary>
-        /// <param name="type"></param>
-        /// <param name="name"></param>
-        /// <param name="iconIndex"></param>
-        /// <returns></returns>
-        private string _GetImageKey(string type, string name, int? iconIndex)
-        {
-            name = name.Trim().ToLower().Replace("\\", "/");
-            if (iconIndex.HasValue) name += $":{iconIndex.Value}";
-            return $"{type}>{name}";
-        }
-        /// <summary>
-        /// Inicializace Images
-        /// </summary>
-        private void _InitImages()
-        {
-            __Images = new Dictionary<string, Image>();
+            return _ImageStore.GetImage(fileName, iconIndex);
         }
         /// <summary>
         /// Dispose Images
         /// </summary>
         private void _DisposeImages()
         {
-            __Images.Values.ForEachExec(f => f.TryDispose());
-            __Images = null;
+            __ImageStore?.Dispose();
+            __ImageStore = null;
         }
-        /// <summary>
-        /// Lokální InMemory cache pro načtené Images.
-        /// Slouží k tomu, aby při rychlém vykreslování Controlu byl konkrétní Image k dispozici ihned.
-        /// </summary>
-        private Dictionary<string, Image> __Images;
         #endregion
         #region Vzhled a Layout
         /// <summary>

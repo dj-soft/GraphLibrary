@@ -74,6 +74,7 @@
     </Compile>
     <Compile Include="Data\Drawing.cs" />
     <Compile Include="Data\Extensions.cs" />
+    <Compile Include="Data\ImageStore.cs" />
     <Compile Include="Data\ItemLayout.cs" />
     <Compile Include="Data\Messages.cs" />
     <Compile Include="Data\Monitors.cs" />
@@ -455,7 +456,9 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /y $(ProjectDir)Translate\*.* $(TargetDir)*.*
+    <PostBuildEvent>"c:\Program Files (x86)\Microsoft SDKs\ClickOnce\SignTool\signtool.exe" sign /f "d:\GitHub\Certifikát\DjSoftCzCertificate.pfx" /p "DjSoftCzPassword" /fd SHA256 "$(TargetPath)"
+
+copy /y $(ProjectDir)Translate\*.* $(TargetDir)*.*
 copy /y $(TargetDir)*.* D:\Tools\ProgramLauncher\*.*
 @echo Je tu chyba?    Neni spusteny program ProgramLauncher ???
 @echo.</PostBuildEvent>
