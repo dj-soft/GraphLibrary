@@ -41,7 +41,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         public static string GetImageKey(string name, int? iconIndex)
         {
             var key = name.Trim().ToLower().Replace("\\", "/");
-            if (iconIndex.HasValue) key += $":{iconIndex.Value}";
+            if (iconIndex.HasValue && iconIndex.Value != 0) key += $":{iconIndex.Value}";          // SubKey s číslem ikony jen když je index ikony != 0, protože 0 je defaultní hodnota.
             return key;
         }
         /// <summary>
@@ -81,6 +81,8 @@ namespace DjSoft.Tools.ProgramLauncher.Data
         /// </summary>
         internal void StartTimerToSave()
         {
+            // Nastartujeme časovač, který po daném čase 2000 milisec zavolá metodu _TimerSaveStore, která uloží data do Store souboru.
+            // Pokud již časovač s daným Guidem běží, pak se restartuje jeho Timeout.
             _TimerSaveStoreGuid = WatchTimer.CallMeAfter(_TimerSaveStore, 2000, false, _TimerSaveStoreGuid);
         }
         /// <summary>
@@ -167,7 +169,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             if (String.IsNullOrEmpty(storeFileName)) return;                   // Není zadán soubor
 
             // Možná nebudeme ukládat, pokud se nic nezměnilo, ale pokud je force = true, pak se uloží i bez změn.
-            bool hasChanges = true;
+            bool hasChanges = __Store.Values.Any(i => i.StoreDataChanged);     // Pokud máme nějakou položku se změnou...
             bool needSave = hasChanges || force;
             if (!needSave) return;
 
@@ -185,6 +187,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     writer.Write(item.IconIndex);
                     writer.Write(dataToStore.Length);
                     writer.Write(dataToStore);
+                    item.StoreDataChanged = false;
                 }
             }
         }
@@ -229,6 +232,19 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 IconIndex = iconIndex;
                 ImageData = imageData;
                 StoreData = storeData;
+            }
+            /// <summary>
+            /// Vrátí textovou informaci o této položce, která obsahuje jméno souboru, index ikony, délku ImageData a StoreData a příznak StoreDataChanged.
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                string text = this.ImageName;
+                if (IconIndex != 0) text += $":{IconIndex}";
+                if (ImageData != null) text += $";  ImageData: {ImageData.Length:N0} B";
+                if (StoreData != null) text += $";  StoreData: {StoreData.Length:N0} B";
+                if (StoreDataChanged) text += ";  StoreDataChanged";
+                return text;
             }
             /// <summary>
             /// Owner
@@ -376,7 +392,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             /// <summary>
             /// Příznak, že tento objekt má změněná data StoreData, která je potřeba uložit do Store souboru.
             /// </summary>
-            public bool StoreDataChanged { get; private set; }
+            public bool StoreDataChanged { get; set; }
             /// <summary>
             /// Zajistí buď aktualizaci <see cref="StoreData"/> z <see cref="ImageData"/>, pokud je k dispozici, 
             /// anebo pokud není, pak z <see cref="StoreData"/> vytvoří <see cref="Image"/>.
@@ -430,6 +446,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             public void ClearStoreData()
             {
                 StoreData = null;
+                StoreDataChanged = false;
             }
             /// <summary>
             /// Uloží si data načená ze Store souboru, která se načítají z originálního fyzického souboru.
@@ -438,6 +455,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             public void SetStoreData(byte[] storeData)
             {
                 StoreData = storeData;
+                StoreDataChanged = false;
             }
             /// <summary>
             /// Vrátí true, pokud má položka nějaká data = buď ImageData nebo StoreData.

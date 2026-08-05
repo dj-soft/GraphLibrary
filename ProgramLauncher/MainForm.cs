@@ -53,6 +53,7 @@ namespace DjSoft.Tools.ProgramLauncher
 
             this.AutoScaleDimensions = new SizeF(6F, 13F);
             this.AutoScaleMode = AutoScaleMode.Font;
+            this.Icon = Properties.Resources.klickety_2_64;
             this.Controls.Add(this._MainContainer);
             this.Controls.Add(this._StatusStrip);
             this.Controls.Add(this._ToolStrip);
