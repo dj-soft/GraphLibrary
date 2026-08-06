@@ -127,6 +127,7 @@
     <None Include="DragDrop\2-IKONY_ALGORITMUS.md" />
     <None Include="DragDrop\3-DRAGDROP_GUIDE.md" />
     <None Include="DragDrop\4-CLIPBOARD_INTEGRATION.md" />
+    <None Include="Properties\DjSoftCzCertificate.pfx" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -456,7 +457,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>"c:\Program Files (x86)\Microsoft SDKs\ClickOnce\SignTool\signtool.exe" sign /f "d:\GitHub\Certifikát\DjSoftCzCertificate.pfx" /p "DjSoftCzPassword" /fd SHA256 "$(TargetPath)"
+    <PostBuildEvent>"c:\Program Files (x86)\Microsoft SDKs\ClickOnce\SignTool\signtool.exe" sign /f "$(ProjectDir)Properties\DjSoftCzCertificate.pfx" /p "DjSoftCzPassword" /fd SHA256 "$(TargetPath)"
 
 copy /y $(ProjectDir)Translate\*.* $(TargetDir)*.*
 copy /y $(TargetDir)*.* D:\Tools\ProgramLauncher\*.*
