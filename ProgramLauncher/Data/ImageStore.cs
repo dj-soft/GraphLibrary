@@ -8,9 +8,9 @@ using System.Text;
 namespace DjSoft.Tools.ProgramLauncher.Data
 {
     /// <summary>
-    /// Třída slouží k uchování dat obrázků v souboru uloženém vedle <see cref="Settings.FileName"/>, 
-    /// do tohoto Store jsou ukládány obrázky, které se fyzicky načetly ze zdrojových souborů.
-    /// Pokud poté zdrojový soubor zmizí (je přemístěn), pak se bude používat jeho offlone kopie z tohoto Store.
+    /// Třída slouží k uchování dat obrázků v souboru uloženém vedle <see cref="Settings.FileName"/>.<br/>
+    /// Do tohoto Store jsou ukládány offline kopie obrázků (ve formě byte[]), které se fyzicky načetly ze zdrojových souborů.<br/>
+    /// Pokud poté zdrojový soubor zmizí (je přemístěn), pak se bude používat jeho offline kopie, uložená právě do tohoto Store.
     /// </summary>
     public class ImageStore : IDisposable
     {
@@ -75,9 +75,12 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             return image;
         }
         #endregion
-        #region Offline store
+        #region Údržba offline store
         /// <summary>
-        /// Zahájí časovač, který po nějakém čase uloží data do Store souboru. Pokud již časovač běží, pak se restartuje jeho Timeout.
+        /// Nastartuje časovač, který po nějakém čase (2 sekundy) uloží data do Store souboru.<br/>
+        /// Pokud již časovač běží, pak se restartuje jeho Timeout.<br/>
+        /// Volá se poté, kdy některá položka <see cref="ImageItem"/> má změněná data <see cref="ImageItem.StoreData"/>, která je potřeba uložit do Store souboru, 
+        /// ale není třeba to provést ihned, protože může dojít i ke změně dalších položek v seznamu.
         /// </summary>
         internal void StartTimerToSave()
         {
@@ -86,13 +89,14 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             _TimerSaveStoreGuid = WatchTimer.CallMeAfter(_TimerSaveStore, 2000, false, _TimerSaveStoreGuid);
         }
         /// <summary>
-        /// Guid našeho časovače. Pokud je null, pak časovač neběží. 
-        /// Pokud není null, pak časovač běží a po nějakém čase zavolá <see cref="_TimerSaveStore"/>.
-        /// Předáním tohoto Guidu do <see cref="WatchTimer.CallMeAfter(Action, int, bool, Guid?)"/> se časovač restartuje a Timeout se začne počítat znovu.
+        /// Guid našeho časovače. Pokud je null, pak časovač neběží.<br/>
+        /// Pokud není null, pak časovač běží a po nějakém čase zavolá <see cref="_TimerSaveStore"/>.<br/>
+        /// Předáním tohoto Guidu do dalšího vyvolání metody <see cref="WatchTimer.CallMeAfter(Action, int, bool, Guid?)"/> se tento konkrétní časovač restartuje a jeho Timeout se začne počítat znovu.
         /// </summary>
         private Guid? _TimerSaveStoreGuid;
         /// <summary>
-        /// Zavolá <see cref="_SaveStore(bool)"/> s force = false, aby se uložila data do Store souboru, protože se změnila.
+        /// Zavolá <see cref="_SaveStore(bool)"/> s force = false, aby se uložila data do Store souboru, protože se změnila.<br/>
+        /// Volá se z časovače, který je nastartován metodou <see cref="StartTimerToSave"/>.
         /// </summary>
         private void _TimerSaveStore()
         {
@@ -265,6 +269,20 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                 __Owner = null;
             }
             /// <summary>
+            /// Zajistí prvotní načtení dat z originálního souboru <see cref="ImageName"/> a uloží je do <see cref="ImageData"/>.
+            /// Pokud jsme to již zkoušeli, pak <see cref="ImageFileChecked"/> je true a znovu se to nezkouší.
+            /// </summary>
+            public void CheckImage()
+            {
+                // Celou tuto akci provedu pro tuto jednu instanci jen jedenkrát, a to v okamžiku, kdy je třeba poprvé získat její Image.
+                // Pokud se to již dříve zkoušelo, pak se to znovu nezkouší.
+                if (this.ImageFileChecked) return;
+                this.ImageFileChecked = true;
+
+                _TryLoadLocalFile();                                 // Zkusíme najít vstupní soubor a načíst jeho Image
+                _TrySolveStoreData();                                // a) V případě potřeby uložíme Image ze souboru do Store;  b) pokud jsme Image ze souboru nenačetli, pak z StoreData vytvoříme záložní Image.
+            }
+            /// <summary>
             /// Plný náze souboru
             /// </summary>
             public string ImageName { get; private set; }
@@ -288,19 +306,6 @@ namespace DjSoft.Tools.ProgramLauncher.Data
             /// Pokud jsme to zkusili, ale soubor neexistuje, pak zde je true a v datech <see cref="ImageData"/> je null.
             /// </summary>
             public bool ImageFileChecked { get; private set; }
-            /// <summary>
-            /// Zajistí prvotní načtení dat z originálního souboru <see cref="ImageName"/> a uloží je do <see cref="ImageData"/>.
-            /// Pokud jsme to již zkoušeli, pak <see cref="ImageFileChecked"/> je true a znovu se to nezkouší.
-            /// </summary>
-            public void CheckImage()
-            {
-                // Ceou tuto akci provedu pro jednu tuto instanci jen jedenkrát, až bude třeba získat její Image. Pokud se to již zkoušelo, pak se to znovu nezkouší.
-                if (this.ImageFileChecked) return;
-                this.ImageFileChecked = true;
-
-                _TryLoadLocalFile();
-                _TrySolveStoreData();
-            }
             /// <summary>
             /// Zkusí načíst lokální soubor s obrázkem, pokud existuje. Pokud neexistuje, pak nenačte nic.
             /// </summary>
@@ -343,7 +348,7 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     case ".jpeg":
                     case ".bmp":
                     case ".gif":
-                        // Soubor načtu do byte[] content; z nějk vytvořím Stream a z něj Image.
+                        // Soubor načtu do byte[] content; z něj pak vytvořím Stream a z něj Image.
                         // Tak mám: jedno čtení souboru, a dva potřebné výstupy:
                         this.ImageData = System.IO.File.ReadAllBytes(imageName);
                         using (var imageStream = new System.IO.MemoryStream(this.ImageData))
@@ -351,13 +356,11 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                         break;
 
                     case ".ico":
-                        // Tady nechci do content načítat obsah souboru, prtože to je ikona.
-                        // Radši v něm budu mít Bitmapu PNG:
+                        // Tady nechci do content načítat obsah souboru, protože to je ikona.
+                        // Načtu ikonu, a z ní pak vytvořím výslednou Bitmapu a z ní pak byte[]:
                         using (var icon = new Icon(imageName, new Size(48, 48)))
                         {
-                            var bitmap = icon.ToBitmap();                                // Vytvoří new instanci Image = izolovanou od Icon
-                            this.Image = bitmap;
-                            this.ImageData = storeIconToImageContent(bitmap);
+                            processIcon(icon);
                         }                                                                // Icon lze disposovat
                         break;
 
@@ -365,14 +368,18 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                     case ".dll":
                         using (var icon = Icon.ExtractAssociatedIcon(imageName))
                         {
-                            var bitmap = icon.ToBitmap();                                // Vytvoří new instanci Image = izolovanou od Icon
-                            this.Image = bitmap;
-                            this.ImageData = storeIconToImageContent(bitmap);
+                            processIcon(icon);
                         }                                                                // Icon lze disposovat
                         break;
                 }
 
-
+                // Z dodané Icon vytvoří Bitmap, tu uloží do Image a uloží jako PNG byte[], a uloží do ImageData
+                void processIcon(Icon icon)
+                {
+                    var bitmap = icon.ToBitmap();                                        // Vytvoří new instanci Bitmap (Image) = izolovanou od Icon
+                    this.Image = bitmap;
+                    this.ImageData = storeIconToImageContent(bitmap);
+                }
                 // Dodanou Bitmapu převede na PNG a uloží do byte[] content a vrátí. Výsledek se použije pro ImageStore.
                 byte[] storeIconToImageContent(Bitmap bitmap)
                 {
@@ -407,10 +414,10 @@ namespace DjSoft.Tools.ProgramLauncher.Data
                         this.StoreDataChanged = true;
                         this.__Owner?.StartTimerToSave();
                     }
-                    // Víc řešit nmusíme, protože máme aktuální ImageData a z ní se vytvořil Image.
+                    // Víc řešit nemusíme, protože máme aktuální ImageData a z ní se vytvořil Image.
                 }
                 else if (this.StoreData != null)
-                {   // Nemáme ImageData, ale máme StoreData, pak z ní vytvoříme v podstatě záložní Image:
+                {   // Nemáme získaná ImageData z originálního souboru, ale máme uložená offline StoreData, pak z ní vytvoříme v podstatě záložní Image:
                     try
                     {
                         using (var imageStream = new System.IO.MemoryStream(this.StoreData))
