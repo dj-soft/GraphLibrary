@@ -393,7 +393,7 @@ Help => {App.Messages.HelpInfoHelp}{eol}
         private ToolStripButton _ToolEditButton;
         private ToolStripButton _ToolMessageSyncButton;
         #endregion
-        #region ToolStrip Drag & Drop (user toolbar reorder)     AI
+        #region ToolStrip Drag & Drop (user toolbar reorder)     &    AI
         /// <summary>
         /// Inicializace pro Drag and Drop z ToolStripu (přesouvání uživatelských prvků)
         /// </summary>
@@ -415,6 +415,7 @@ Help => {App.Messages.HelpInfoHelp}{eol}
             toolButtonItem.MouseUp += _UserToolItem_MouseUp;
         }
         /// <summary>
+        /// Event MouseDown na ToolStripItemu, který reprezentuje uživatelský button (User = true), který dovolujeme Drag amd Drop přemístit.<br/>
         /// Připraví si podklady pro proces DragAndDrop, pokud je stisknuto levé tlačítko myši nad ToolStripItemem. Pokud je stisknuto jiné tlačítko myši, pak se DragAndDrop nepovolí.
         /// </summary>
         /// <param name="sender"></param>
@@ -422,7 +423,7 @@ Help => {App.Messages.HelpInfoHelp}{eol}
         private void _UserToolItem_MouseDown(object sender, MouseEventArgs e)
         {
             if (e.Button != MouseButtons.Left) return;
-            if (_UserToolItems == null || _UserToolItems.Count <= 1) return; // don't start when no user buttons
+            if (!_DragDropIsEnabled) return; // don't start when no user buttons
 
             // Musí to být ToolStripItem:
             var item = sender as ToolStripItem;
@@ -433,6 +434,12 @@ Help => {App.Messages.HelpInfoHelp}{eol}
             if (userToolItems == null) return;
             _UserToolItem_DragPrepare(userToolItems, e);
         }
+        /// <summary>
+        /// Event MouseMove na ToolStripItemu, který reprezentuje uživatelský button (User = true), který dovolujeme Drag amd Drop přemístit.<br/>
+        /// Zde řešíme, zda se má zahájit proces DragAndDrop (pokud myš opustila DragBeginArea).
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _UserToolItem_MouseMove(object sender, MouseEventArgs e)
         {
             if (_DragDropToolItem is null || !_DragDropBeginArea.HasValue) return;
@@ -459,6 +466,7 @@ Help => {App.Messages.HelpInfoHelp}{eol}
             }
         }
         /// <summary>
+        /// Event MouseUp na ToolStripItemu, který reprezentuje uživatelský button (User = true), který dovolujeme Drag amd Drop přemístit.<br/>
         /// Zvednutí tlačítka myši ruší přípravu pro proces DragAndDrop, pokud ještě nezačal. 
         /// Pokud DragAndDrop již běží, pak tento event nepřichází.
         /// </summary>
@@ -480,49 +488,107 @@ Help => {App.Messages.HelpInfoHelp}{eol}
 
             _DragDropToolItem = button;
             _DragDropBeginArea = new Rectangle(dragCenter.X - dragSize.Width / 2, dragCenter.Y - dragSize.Height / 2, dragSize.Width, dragSize.Height);
+
+            var appItems = new List<Tuple<int, Rectangle, ToolStripItem, ApplicationData>>();
+            int count = _ToolStrip.Items.Count;
+            for (int i = 0; i < count; i++)
+            {
+                ToolStripItem item = _ToolStrip.Items[i];
+                if (item.Visible && item.Tag is ApplicationData appData)
+                {
+                    appItems.Add(new Tuple<int, Rectangle, ToolStripItem, ApplicationData>(i, item.Bounds, item, appData));
+                }
+            }
+            // Prvky setřídíme podle souřadnice X a uložíme:
+            appItems.Sort((a, b) => a.Item2.X.CompareTo(b.Item2.X));
+            _DragDropAppItems = appItems;
         }
         /// <summary>
-        /// Zruší platnost dat pro proces Drag and Drop, který byl připraven v <see cref="_UserToolItem_DragPrepare(ToolStripItem, MouseEventArgs)"/>."/>
+        /// Event DragOver na ToolStrip liště = tímto umožňujeme přemístit uživatelský button (User = true) na jinou pozici.
         /// </summary>
-        private void _UserToolItem_DragReset()
-        {
-            _DragDropToolItem = null;
-            _DragDropBeginArea = null;
-        }
-
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _ToolStrip_DragOver(object sender, DragEventArgs e)
         {
-            if (_DragDropToolItem == null)
+            // Pokud není určen přemísťovaný prvek anebo nejsou User prvky (nebo je jen jeden, a ten nemá smysl přemístit):  rušíme Drag Drop akci:
+            if (_DragDropToolItem is null || !_DragDropIsEnabled || _DragDropAppItems is null || _DragDropAppItems.Count == 0)
             {
                 e.Effect = DragDropEffects.None; 
-                _RemoveInsertionMarker(); 
                 _UserToolItem_DragReset();
                 return;
             }
 
-            Point client = _ToolStrip.PointToClient(new Point(e.X, e.Y));
-            var hitItem = _ToolStrip.GetItemAt(client);
 
-            if (_UserToolItems == null || _UserToolItems.Count <= 1) { e.Effect = DragDropEffects.None; _RemoveInsertionMarker(); return; }
-
-            int userIndex = -1;
-            if (hitItem != null)
-                userIndex = _UserToolItems.IndexOf(hitItem);
-
-            if (userIndex <= 0)
-                _DragInsertUserIndex = 1; // before first user item
-            else
-                _DragInsertUserIndex = userIndex; // before hit user item
-
+            Point client = _ToolStrip.PointToClient(new Point(e.X, e.Y));      // Souřadnice myši vůči buttonům
+            searchIndex(client.X);                                             // Určíme Index InsertionMarkeru vůči UserButtonům v poli _DragDropAppItems
+            showMarker();                                                      // Zobrazíme InsertionMarker před prvkem na indexu _DragTargetInsertUserIndex (anebo za posledním UserButtonem):
             e.Effect = DragDropEffects.Move;
-            _ShowInsertionMarkerAtUserIndex(_DragInsertUserIndex);
-        }
 
+
+            // Najde hodnotu cílového indexu pro DragDrop: 0 = před první prvek, 1 = před druhý prvek, (Count) = za poslední prvek
+            void searchIndex(int x)
+            {
+                int idx = 0;
+                var items = _DragDropAppItems;
+                for (int i = 0; i < items.Count; i++)
+                {
+                    var item = items[i];
+                    var center = item.Item2.X + item.Item2.Width / 2;          // Souřadnice X středu tohoto prvku
+                    if (x < center) break;
+                    idx += 1;
+                }
+                _DragTargetInsertUserIndex = idx;
+            }
+
+            void showMarker()
+            {
+                if (_ToolButtonInsertionMarker is null)
+                    createInsertionMarker();
+
+                // Pokud InsertionMarker je umístěn na tom indexu, kam jej chceme umístit nyní, pak nebudeme nic dělat:
+                if (_DragCurrentInsertUserIndex.HasValue && _DragCurrentInsertUserIndex.Value == _DragTargetInsertUserIndex)
+                    return;
+
+                // Pokud InsertionMarker je někde umístěn, pak jej odebereme, protože jej chceme mít na jiné pozici než aktuálně je:
+                if (_ToolButtonInsertionMarker != null && _ToolStrip.Items.Contains(_ToolButtonInsertionMarker))
+                    _ToolStrip.Items.Remove(_ToolButtonInsertionMarker);
+
+                // Určíme cílový index pro InsertionMarker = index reálného ToolStripButtonu, před který insertujeme InsertionMarker  (-1 = přidat na konec):
+                var insertionIndex = (_DragTargetInsertUserIndex < _DragDropAppItems.Count ?
+                    _ToolStrip.Items.IndexOf(_DragDropAppItems[_DragTargetInsertUserIndex].Item3)
+                    : -1);
+
+                if (insertionIndex >= 0)
+                    _ToolStrip.Items.Insert(insertionIndex, _ToolButtonInsertionMarker);
+                else
+                    _ToolStrip.Items.Add(_ToolButtonInsertionMarker);
+
+
+                // Uložíme si aktuální index InsertionMarker (index v rámci UserButtonů):
+                _DragCurrentInsertUserIndex = _DragTargetInsertUserIndex;
+            }
+            // Vytvoří a uloží new instanci prvku "Insertionmarker", ale nikam ji nevkládá
+            void createInsertionMarker()
+            {
+                var item = new ToolStripLabel();
+                item.AutoSize = false;
+                item.Width = 3;
+                item.BackColor = Color.DarkRed;
+                item.Margin = new Padding(0);
+                _ToolButtonInsertionMarker = item;
+                _DragCurrentInsertUserIndex = null;
+            }
+        }
+        /// <summary>
+        /// Event DragDrop na ToolStrip liště = tímto umožňujeme přemístit uživatelský button (User = true) na jinou pozici.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _ToolStrip_DragDrop(object sender, DragEventArgs e)
         {
             if (_DragDropToolItem == null) return;
             var draggedApp = _DragDropToolItem.Tag as Data.ApplicationData;
-            if (draggedApp == null) { _DragDropToolItem = null; _RemoveInsertionMarker(); return; }
+            if (draggedApp == null) { _UserToolItem_DragReset(); return; }
 
             // push current PageSet into UndoRedo as a step
             try
@@ -532,11 +598,15 @@ Help => {App.Messages.HelpInfoHelp}{eol}
             }
             catch { /* ignore undo failure */ }
 
-            // recompute toolbar application ordering
+            // Tady nejde o fyzické přemístění toho aktivního prvku v poli _PageSet.ToolbarApplications, ale jen o správnou změnu hodnoty pořadí ToolBarOrder!
+            // Přičemž: pole _PageSet.ToolbarApplications je vždy vráceno setříděné podle této hodnoty, a nelze jej setovat!
+            //   Toto pole obsahuje všechny prvky ze všech stránek, které mají nastaveno pořadí v Toolbaru.
+            // Takže řešení: aktuální stav pole si dáme do izolovaného Listu, náš prvek odebereme, vložíme na požadovaný index,
+            //   a pak postupně nastavíme všem prvkům jednoduše a sekvenčně postupné pořadí počínaje od 1:
             var apps = _PageSet.ToolbarApplications.ToList();
-            apps.RemoveAll(a => object.ReferenceEquals(a, draggedApp));
+            apps.RemoveAll(a => Object.ReferenceEquals(a, draggedApp));
 
-            int insertPos = Math.Max(0, _DragInsertUserIndex - 1);
+            int insertPos = Math.Max(0, _DragTargetInsertUserIndex - 1);
             if (insertPos > apps.Count) insertPos = apps.Count;
             apps.Insert(insertPos, draggedApp);
 
@@ -546,71 +616,41 @@ Help => {App.Messages.HelpInfoHelp}{eol}
             // mark settings changed (do NOT call SaveNow)
             App.Settings.SetChanged();
 
-            // refresh toolbar UI
+            // refresh toolbar UI = odebrat vše a přidat v aktuálním pořadí:
             _UserToolClear();
             _UserToolFill();
 
-            _DragDropToolItem = null;
-            _RemoveInsertionMarker();
+            _UserToolItem_DragReset();
         }
-
+        /// <summary>
+        /// Event DragLeave na ToolStrip liště = tímto umožňujeme přemístit uživatelský button (User = true) na jinou pozici.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _ToolStrip_DragLeave(object sender, EventArgs e)
         {
             _DragDropToolItem = null;
-            _RemoveInsertionMarker();
+            _UserToolItem_DragReset();
         }
-
-        private void _ShowInsertionMarkerAtUserIndex(int userIndex)
-        {
-            if (_UserToolItems == null || _UserToolItems.Count == 0) return;
-
-            if (_ToolButtonInsertionMarker == null)
-            {
-                var m = new ToolStripLabel();
-                m.AutoSize = false;
-                m.Width = 3;
-                m.BackColor = Color.DarkRed;
-                m.Margin = new Padding(0);
-                _ToolButtonInsertionMarker = m;
-            }
-
-            int insertInItemsIndex = -1;
-            if (userIndex <= 0)
-            {
-                insertInItemsIndex = _ToolStrip.Items.IndexOf(_UserToolItems[0]);
-                if (insertInItemsIndex < 0) insertInItemsIndex = _ToolStrip.Items.Count;
-            }
-            else if (userIndex < _UserToolItems.Count)
-            {
-                var referenceItem = _UserToolItems[userIndex];
-                insertInItemsIndex = _ToolStrip.Items.IndexOf(referenceItem);
-                if (insertInItemsIndex < 0) insertInItemsIndex = _ToolStrip.Items.Count;
-            }
-            else
-            {
-                insertInItemsIndex = _ToolStrip.Items.IndexOf(_UserToolItems[_UserToolItems.Count - 1]);
-                if (insertInItemsIndex < 0) insertInItemsIndex = _ToolStrip.Items.Count;
-                else insertInItemsIndex++;
-            }
-
-            int currentMarkerIndex = (_ToolButtonInsertionMarker != null ? _ToolStrip.Items.IndexOf(_ToolButtonInsertionMarker) : -1);
-            if (currentMarkerIndex == insertInItemsIndex) return;
-
-            if (currentMarkerIndex >= 0)
-                _ToolStrip.Items.Remove(_ToolButtonInsertionMarker);
-
-            if (insertInItemsIndex >= 0 && insertInItemsIndex <= _ToolStrip.Items.Count)
-                _ToolStrip.Items.Insert(insertInItemsIndex, _ToolButtonInsertionMarker);
-        }
-
-        private void _RemoveInsertionMarker()
+        /// <summary>
+        /// Odebere z fyzického Toolbaru vizuální indikátor pro DragAndDrop <see cref="_ToolButtonInsertionMarker"/> (červenou svislou čáru mezi ToolButtony), pokud je zobrazen.
+        /// Zruší platnost dat pro proces Drag and Drop, který byl připraven v <see cref="_UserToolItem_DragPrepare(ToolStripItem, MouseEventArgs)"/>."/>
+        /// </summary>
+        private void _UserToolItem_DragReset()
         {
             if (_ToolButtonInsertionMarker != null && _ToolStrip.Items.Contains(_ToolButtonInsertionMarker))
-            {
                 _ToolStrip.Items.Remove(_ToolButtonInsertionMarker);
-            }
-        }
 
+            _DragDropToolItem = null;
+            _DragDropBeginArea = null;
+            _DragDropAppItems = null;
+            _DragTargetInsertUserIndex = 0;
+            _DragCurrentInsertUserIndex = null;
+        }
+        /// <summary>
+        /// Obsahuje true, pokud je dostupný proces DragDrop v Toolbaru pro User buttony
+        /// </summary>
+        private bool _DragDropIsEnabled { get {return (_UserToolItems != null && _UserToolItems.Count > 1); } }
         /// <summary>
         /// Prvek ToolStripItem, který je právě přetahován. Může být null, pokud není žádný prvek přetahován.
         /// </summary>
@@ -620,15 +660,22 @@ Help => {App.Messages.HelpInfoHelp}{eol}
         /// </summary>
         private Rectangle? _DragDropBeginArea;
         /// <summary>
-        /// Index v poli _UserToolItems, kam se má vložit přetahovaný button. 0 = separator, 1 = před první user button, 2 = před druhý user button, ...
+        /// Index v poli <see cref="_UserToolItems"/>, kam se má vložit InsertionMarker = přetahovaný button. 0 = separator, 1 = před první user button, 2 = před druhý user button, ...
         /// </summary>
-        private int _DragInsertUserIndex;
+        private int _DragTargetInsertUserIndex;
+        /// <summary>
+        /// Index v poli <see cref="_UserToolItems"/>, kde aktuálně je vložen InsertionMarker. 0 = separator, 1 = před první user button, 2 = před druhý user button, ...
+        /// </summary>
+        private int? _DragCurrentInsertUserIndex;
         /// <summary>
         /// Fyzický prvek ToolBaru, který se zobrazuje jako červená svislá čára mezi ToolButtony, 
         /// pro vizuální indikaci, kam se má vložit přetahovaný button.
         /// </summary>
         private ToolStripItem _ToolButtonInsertionMarker;
-
+        /// <summary>
+        /// Pole obsahující ToolItemy v okamžiku MouseDown, jejich index v <see cref="_ToolStrip"/>, souřadnice, button, aplikační data.
+        /// </summary>
+        private List<Tuple<int, Rectangle, ToolStripItem, ApplicationData>> _DragDropAppItems;
         #endregion
         #region ToolBar uživatelem deklarovaný
         /// <summary>
@@ -1164,6 +1211,7 @@ Help => {App.Messages.HelpInfoHelp}{eol}
         private ToolStripStatusLabel _StatusCurrentItemLabel;
         #endregion
     }
+    #region class IntegrityToys ... specifický export z Excelu do HTML do blogu
     internal class IntegrityToys
     {
         public static void Run()
@@ -1655,4 +1703,5 @@ Help => {App.Messages.HelpInfoHelp}{eol}
             return text;
         }
     }
+    #endregion
 }
