@@ -1262,6 +1262,34 @@ namespace DjSoft.Tools.ProgramLauncher
             return false;
         }
         /// <summary>
+        /// Metoda najde a vrátí první index v dané kolekci, na kterém se nachází prvek vyhovující danému filtru.. Vrací true = nalezeno.
+        /// Pokud kolekce je prázdná, vrací false.
+        /// Pokud filtr je null a kolekce není prázdná, pak vrátí první prvek.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="items"></param>
+        /// <param name="filter"></param>
+        /// <param name="found"></param>
+        /// <returns></returns>
+        public static bool TryFindFirstIndex<T>(this IEnumerable<T> items, Predicate<T> filter, out int? index)
+        {
+            int idx = 0;
+            if (!items.IsEmpty())
+            {
+                foreach (var item in items)
+                {
+                    if (filter is null || filter(item))
+                    {
+                        index = idx;
+                        return true;
+                    }
+                    idx++;
+                }
+            }
+            index = null;
+            return false;
+        }
+        /// <summary>
         /// Z this kolekce vytvoří Dictionary s klíčem vybraným z prvku pomocí dodaného <paramref name="keySelector"/>.
         /// Pokud bude <paramref name="ignoreDuplicity"/> = true, pak případné duplicitní prvky budou ignorovány.
         /// </summary>
@@ -1460,6 +1488,38 @@ namespace DjSoft.Tools.ProgramLauncher
                     return toRemove;
                 });
             }
+        }
+        /// <summary>
+        /// Zajistí v rámci this Listu (<paramref name="list"/>) přesunutí prvku z indexu <paramref name="sourceIndex"/> na nový index <paramref name="targetIndex"/>.
+        /// Pokud se bude jednat o stejný index, nic neprovede. Stejně tak pokud list je null.
+        /// Pokud bude dán index mimo rozsah prvků, vezme se nejbližší krajní pozice.
+        /// Pokud <paramref name="targetIndex"/> bude za koncem listu, bude prvek přesunut na poslední pozici = za poslední prvek.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="list"></param>
+        /// <param name="sourceIndex"></param>
+        /// <param name="targetIndex"></param>
+        public static bool MoveItem<T>(this List<T> list, int sourceIndex, int targetIndex)
+        {
+            if (list is null) return false;
+            int count = list.Count;
+            sourceIndex = ((sourceIndex < 0) ? 0 : (sourceIndex >= count ? (count - 1) : sourceIndex));                // sourceIndex ukazuje na existující prvek;
+            targetIndex = ((targetIndex < 0) ? 0 : (targetIndex > count ? count : targetIndex));                       // targetIndex ukazuje na existující prvek nebo za poslední prvek
+
+            if (sourceIndex == targetIndex || (sourceIndex == (count - 1) && targetIndex == count)) return false;      // Pokud nejde o reálnou změnu, pak nic neděláme.
+
+            bool atEnd = (targetIndex == count);
+
+            var movedItem = list[sourceIndex];
+            list.RemoveAt(sourceIndex);
+            if (atEnd)
+                list.Add(movedItem);
+            else if (targetIndex < sourceIndex)
+                list.Insert(targetIndex, movedItem);
+            else
+                list.Insert(targetIndex - 1, movedItem);
+
+            return true;
         }
         #endregion
         #region Drobnosti
