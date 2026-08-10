@@ -27,16 +27,22 @@ namespace DjSoft.Tools.ProgramLauncher
         /// </summary>
         public MainForm()
         {
-            InitializeMainForm();
-            InitializeToolBar();
-            InitializePagesPanel();
-            InitializeApplicationPanel();
-            InitializeStatusBar();
-            InitializeAppearance();
+            _InitializeMainForm();
+            _InitializeToolBar();
+            _InitializeStatusBar();
+            _InitializePagesPanel();
+            _InitializeApplicationPanel();
+            _InitializeUndoRedo();
+
+            _InitializeAppearance();
+            _RefreshToolbarTexts();
+            _ToolMessageSyncRefresh();
+
+            _InitializeMainFormDone();
 
             ReloadPages();
         }
-        private void InitializeMainForm()
+        private void _InitializeMainForm()
         {
             this.Visible = false;
 
@@ -59,7 +65,9 @@ namespace DjSoft.Tools.ProgramLauncher
             this.Controls.Add(this._ToolStrip);
             this.Name = "MainForm";
             this.Text = App.Messages.TrayIconText;
-
+        }
+        private void _InitializeMainFormDone()
+        {
             ((System.ComponentModel.ISupportInitialize)(this._MainContainer)).EndInit();
             this._MainContainer.ResumeLayout(false);
             this._ToolStrip.ResumeLayout(false);
@@ -178,7 +186,7 @@ Help => {App.Messages.HelpInfoHelp}{eol}
         /// <summary>
         /// Inicializace vzhledu a Settings a ukládání a tak
         /// </summary>
-        private void InitializeAppearance()
+        private void _InitializeAppearance()
         {
             App.MainForm = this;
             this.SettingsName = "MainForm";                                    // Zajistí ukládání a restore pozice tohoto okna
@@ -233,7 +241,7 @@ Help => {App.Messages.HelpInfoHelp}{eol}
         /// <exception cref="NotImplementedException"></exception>
         private void CurrentLanguageChanged(object sender, EventArgs e)
         {
-            RefreshToolbarTexts();
+            _RefreshToolbarTexts();
             RefreshStatusBarTexts();
         }
         /// <summary>
@@ -272,37 +280,27 @@ Help => {App.Messages.HelpInfoHelp}{eol}
         /// <summary>
         /// Inicializuje obsah Toolbaru
         /// </summary>
-        private void InitializeToolBar()
+        private void _InitializeToolBar()
         {
-            this._ToolAppearanceButton = addButton(Properties.Resources.system_settings_2_48, _ToolAppearanceButton_Click);
-            this._ToolSettingsButton = addButton(Properties.Resources.system_settings_48, _ToolSettingsButton_Click);
-            this._ToolUndoButton = addButton(Properties.Resources.edit_undo_3_48, _ToolUndoButton_Click);
-            this._ToolApplyButton = addButton(Properties.Resources.dialog_ok_apply_2_48, _ToolApplyButton_Click);
-            this._ToolRedoButton = addButton(Properties.Resources.edit_redo_3_48, _ToolRedoButton_Click);
-            this._ToolPreferenceButton = addButton(Properties.Resources.system_run_6_48, _ToolPreferenceButton_Click);
-            this._ToolEditButton = addButton(Properties.Resources.edit_6_48, _ToolEditButton_Click);
-            this._ToolMessageSyncButton = addButton(Properties.Resources.edit_text_frame_update_48, _ToolMessageSyncButton_Click);
+            this._ToolAppearanceButton = _CreateButton(Properties.Resources.system_settings_2_48, this._ToolStrip.Items, 52, _ToolAppearanceButton_Click);
+            this._ToolSettingsButton = _CreateButton(Properties.Resources.system_settings_48, this._ToolStrip.Items, 52, _ToolSettingsButton_Click);
+            this._ToolPreferenceButton = _CreateButton(Properties.Resources.system_run_6_48, this._ToolStrip.Items, 52, _ToolPreferenceButton_Click);
+            this._ToolEditButton = _CreateButton(Properties.Resources.edit_6_48, this._ToolStrip.Items, 52, _ToolEditButton_Click);
 
+            this._ToolAppearanceButton.Visible = false;
             this._ToolPreferenceButton.Visible = false;
             this._ToolEditButton.Visible = false;
-            _ToolMessageSyncRefresh();
-
-            App.UndoRedo.CurrentStateChanged += _UndoRedoCurrentStateChanged;
-            App.UndoRedo.CatchCurrentRedoData += _UndoRedoCatchCurrentRedoData;
-            RefreshToolbarUndoRedoState();
-            RefreshToolbarTexts();
 
             _UserToolInit();
-
             _DragDropInit();
-
-            ToolStripButton addButton(Image image, EventHandler onClick)
-            {
-                var button = new ToolStripButton() { DisplayStyle = ToolStripItemDisplayStyle.Image, Image = image, Size = new Size(52, 52), AutoToolTip = true };
-                button.Click += onClick;
-                this._ToolStrip.Items.Add(button);
-                return button;
-            }
+        }
+        private ToolStripButton _CreateButton(Image image, ToolStripItemCollection toolItems, int size, EventHandler onClick, ToolStripItemAlignment? alignment = null)
+        {
+            var button = new ToolStripButton() { DisplayStyle = ToolStripItemDisplayStyle.Image, Image = image, Size = new Size(size, size), AutoToolTip = true };
+            button.Click += onClick;
+            if (alignment.HasValue) button.Alignment = alignment.Value;
+            toolItems.Add(button);
+            return button;
         }
         /// <summary>
         /// Po jakékoli změně stavu kontejneru UndoRedo
@@ -312,7 +310,7 @@ Help => {App.Messages.HelpInfoHelp}{eol}
         /// <summary>
         /// Aktualizuje texty na prvcích Toolbaru 
         /// </summary>
-        private void RefreshToolbarTexts()
+        private void _RefreshToolbarTexts()
         {
             this._ToolAppearanceButton.ToolTipText = App.Messages.ToolStripButtonAppearanceToolTip;
             this._ToolSettingsButton.ToolTipText = App.Messages.ToolStripButtonSettingsToolTip;
@@ -386,9 +384,6 @@ Help => {App.Messages.HelpInfoHelp}{eol}
         }
         private ToolStripButton _ToolAppearanceButton;
         private ToolStripButton _ToolSettingsButton;
-        private ToolStripButton _ToolUndoButton;
-        private ToolStripButton _ToolApplyButton;
-        private ToolStripButton _ToolRedoButton;
         private ToolStripButton _ToolPreferenceButton;
         private ToolStripButton _ToolEditButton;
         private ToolStripButton _ToolMessageSyncButton;
@@ -824,6 +819,17 @@ Help => {App.Messages.HelpInfoHelp}{eol}
         private List<ToolStripItem> _UserToolItems;
         #endregion
         #region Undo a Redo
+
+        private void _InitializeUndoRedo()
+        {
+            this._ToolUndoButton = _CreateButton(Properties.Resources.edit_undo_3_48, this._StatusStrip.Items, 20, _ToolUndoButton_Click, ToolStripItemAlignment.Right);
+            this._ToolApplyButton = _CreateButton(Properties.Resources.dialog_ok_apply_2_48, this._StatusStrip.Items, 20, _ToolApplyButton_Click, ToolStripItemAlignment.Right);
+            this._ToolRedoButton = _CreateButton(Properties.Resources.edit_redo_3_48, this._StatusStrip.Items, 20, _ToolRedoButton_Click, ToolStripItemAlignment.Right);
+
+            App.UndoRedo.CurrentStateChanged += _UndoRedoCurrentStateChanged;
+            App.UndoRedo.CatchCurrentRedoData += _UndoRedoCatchCurrentRedoData;
+            _RefreshToolbarUndoRedoState();
+        }
         /// <summary>
         /// Událost volaná po změně hodnoty v Settings.PageSet.
         /// Provedeme přenačtení obsahu stránek.
@@ -842,7 +848,7 @@ Help => {App.Messages.HelpInfoHelp}{eol}
         /// <param name="e"></param>
         private void _UndoRedoCurrentStateChanged(object sender, EventArgs e)
         {
-            RefreshToolbarUndoRedoState();
+            _RefreshToolbarUndoRedoState();
         }
         /// <summary>
         /// Po kliknutí na tlačítko Toolbaru: UNDO
@@ -900,11 +906,16 @@ Help => {App.Messages.HelpInfoHelp}{eol}
         /// <summary>
         /// Aktualizuje Enabled buttonu Undo a Redo a Apply, podle stavu kontejneru
         /// </summary>
-        private void RefreshToolbarUndoRedoState()
+        private void _RefreshToolbarUndoRedoState()
         {
             var canUndo = App.UndoRedo.CanUndo;
             var canRedo = App.UndoRedo.CanRedo;
             var canAny = (canUndo || canRedo);
+
+            canUndo = false;
+            canRedo = false;
+            canAny = (canUndo || canRedo);
+
             this._ToolUndoButton.Enabled = canUndo;
             this._ToolApplyButton.Enabled = canAny;
             this._ToolRedoButton.Enabled = canRedo;
@@ -912,12 +923,15 @@ Help => {App.Messages.HelpInfoHelp}{eol}
             this._ToolApplyButton.Visible = canAny;
             this._ToolRedoButton.Visible = canAny;
         }
+        private ToolStripButton _ToolUndoButton;
+        private ToolStripButton _ToolApplyButton;
+        private ToolStripButton _ToolRedoButton;
         #endregion
         #region PagesPanel
         /// <summary>
         /// Inicializace datového panelu Grupy (TabHeader vlevo)
         /// </summary>
-        private void InitializePagesPanel()
+        private void _InitializePagesPanel()
         {
             var pagesPanel = new Components.InteractiveGraphicsControl();
             pagesPanel.Dock = DockStyle.Fill;
@@ -1087,7 +1101,7 @@ Help => {App.Messages.HelpInfoHelp}{eol}
         /// <summary>
         /// Inicializace datového panelu Aplikace (ikony v hlavní ploše)
         /// </summary>
-        private void InitializeApplicationPanel()
+        private void _InitializeApplicationPanel()
         {
             var applicationsPanel = new Components.InteractiveGraphicsControl();
             applicationsPanel.Dock = DockStyle.Fill;
@@ -1194,45 +1208,49 @@ Help => {App.Messages.HelpInfoHelp}{eol}
         /// <summary>
         /// Inicializuje obsah Statusbaru
         /// </summary>
-        private void InitializeStatusBar()
+        private void _InitializeStatusBar()
         {
             this._StatusStrip.Height = 30;
             this._StatusStrip.ImageScalingSize = new Size(20, 20);
             this._StatusStrip.RenderMode = ToolStripRenderMode.Professional;
             this._StatusStrip.AutoSize = false;
 
-            this._StatusVersionLabel = createLabel(120, false, Properties.Resources.amp_01_20);
-            this._StatusStrip.Items.Add(this._StatusVersionLabel);
+            this._StatusVersionLabel = _CreateToolLabel(120, false, Properties.Resources.amp_01_20, this._StatusStrip.Items);
             this.__StatusLabelVersion = new StatusInfo(this._StatusVersionLabel);
 
-            this._StatusDataLabel = createLabel(160, false);
-            this._StatusStrip.Items.Add(this._StatusDataLabel);
+            this._StatusDataLabel = _CreateToolLabel(160, false, null, this._StatusStrip.Items);
             this.__StatusLabelData = new StatusInfo(this._StatusDataLabel);
 
-            this._StatusCurrentItemLabel = createLabel(600, true);
-            this._StatusStrip.Items.Add(this._StatusCurrentItemLabel);
+            this._StatusCurrentItemLabel = _CreateToolLabel(300, true, null, this._StatusStrip.Items);
             this.__StatusLabelApplication = new StatusInfo(this._StatusCurrentItemLabel);
 
-
-            // Vytvoří a vrátí label do statusbaru
-            ToolStripStatusLabel createLabel(int width, bool spring, Image image = null)
+            this._ToolMessageSyncButton = _CreateButton(Properties.Resources.edit_text_frame_update_48, this._StatusStrip.Items, 20, _ToolMessageSyncButton_Click, ToolStripItemAlignment.Right);
+        }
+        /// <summary>
+        /// Vytvoří a vrátí <see cref="ToolStripStatusLabel"/>
+        /// </summary>
+        /// <param name="width"></param>
+        /// <param name="spring"></param>
+        /// <param name="image"></param>
+        /// <returns></returns>
+        private ToolStripStatusLabel _CreateToolLabel(int width, bool spring, Image image, ToolStripItemCollection items, ToolStripStatusLabelBorderSides? borderSides = null)
+        {
+            var label = new ToolStripStatusLabel()
             {
-                var label = new ToolStripStatusLabel()
-                { 
-                    Spring = spring,
-                    AutoSize = false, 
-                    Width = width,
-                    Text = "", 
-                    Image = image,
-                    ImageScaling = ToolStripItemImageScaling.None,
-                    ImageAlign = ContentAlignment.MiddleLeft,
-                    TextAlign = ContentAlignment.MiddleLeft, 
-                    TextImageRelation = TextImageRelation.ImageBeforeText,
-                    BorderSides = (spring ? ToolStripStatusLabelBorderSides.None : ToolStripStatusLabelBorderSides.Right),
-                    Padding = new Padding(2) 
-                };
-                return label;
-            }
+                Spring = spring,
+                AutoSize = false,
+                Width = width,
+                Text = "",
+                Image = image,
+                ImageScaling = ToolStripItemImageScaling.None,
+                ImageAlign = ContentAlignment.MiddleLeft,
+                TextAlign = ContentAlignment.MiddleLeft,
+                TextImageRelation = TextImageRelation.ImageBeforeText,
+                Padding = new Padding(2)
+            };
+            label.BorderSides = borderSides ?? ToolStripStatusLabelBorderSides.Right;
+            items.Add(label);
+            return label;
         }
         /// <summary>
         /// Aktualizuje texty do StatusBaru
