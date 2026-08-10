@@ -1,0 +1,28 @@
+-- Vytvořit certifikát:
+-- Powershell jako správce:
+$cert = New-SelfSignedCertificate -Type CodeSigning -Subject "CN=DjSoftCzCertificate" -FriendlyName "DjSoftCzDevelopmentCertificate" -NotAfter (Get-Date).AddYears(5) -CertStoreLocation "Cert:\CurrentUser\My"
+
+-- tady jej pomocí managera   certmgr.msc    zkopírovat z "Osobní" do "Kořenové důvěryhodné"
+
+-- Poté jej opatřit heslem (Powershell):
+$pwd = ConvertTo-SecureString "DjSoftCzPassword" -AsPlainText -Force
+
+-- A vyexportovat do souboru (Powershell):
+Export-PfxCertificate -Cert $cert -FilePath "d:\GitHub\Certifikát\DjSoftCzCertificate.pfx" -Password $pwd
+
+
+-- vznikne soubor s certifikátem a heslem
+d:\GitHub\Certifikát\DjSoftCzCertificate.pfx
+Jméno		DjSoftCzCertificate
+Heslo		DjSoftCzPassword
+
+
+-- Pak do VisualStudio : Projekt csproj   PostBuild:
+"c:\Program Files (x86)\Microsoft SDKs\ClickOnce\SignTool\signtool.exe" sign /f "d:\GitHub\Certifikát\DjSoftCzCertificate.pfx" /p "DjSoftCzPassword" /fd SHA256 "$(TargetPath)"
+
+-- anebo s parametrem /tr   pro neomezené časové razítko výsledné aplikace:
+"c:\Program Files (x86)\Microsoft SDKs\ClickOnce\SignTool\signtool.exe" sign /f "d:\GitHub\Certifikát\DjSoftCzCertificate.pfx" /p "DjSoftCzPassword" /tr http://digicert.com /fd SHA256 "$(TargetPath)"
+
+
+-- Po přenosu na jiný počítač se musí vzít lokální certifikát   "d:\GitHub\Certifikát\DjSoftCzCertificate.pfx"   a na cílovém PC naimportovat jako certifikát do složky   "Důvěryhodné kořenové certifikační úřady"
+
