@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -1220,6 +1221,7 @@ Help => {App.Messages.HelpInfoHelp}{eol}
 
             this._StatusVersionLabel = _CreateToolLabel(120, false, Properties.Resources.amp_01_20, this._StatusStrip.Items);
             this._StatusVersionLabel.ToolTipText = getAppInfo();
+            this._StatusVersionLabel.Click += _StatusVersionLabel_Click;
             this.__StatusLabelVersion = new StatusInfo(this._StatusVersionLabel);
 
             this._StatusDataLabel = _CreateToolLabel(160, false, null, this._StatusStrip.Items);
@@ -1233,11 +1235,12 @@ Help => {App.Messages.HelpInfoHelp}{eol}
             string getAppInfo()
             {
                 string text = "";
-
+                string prefix = "";
                 try
                 {
                     var version = Application.ProductVersion;
-                    text += $"Version: {version}\r\n";
+                    text += $"{prefix}Version: {version}";
+                    prefix = "\r\n";
                 }
                 catch { }
 
@@ -1245,14 +1248,32 @@ Help => {App.Messages.HelpInfoHelp}{eol}
                 {
                     var appFile = Application.ExecutablePath;
                     var fileInfo = new System.IO.FileInfo(appFile);
-                    text += $"Application: {fileInfo.Name}\r\n" +
-                            $"BuildDate:  {fileInfo.LastWriteTime}";
+                    text += $"{prefix}Application: {fileInfo.Name}";
+                    prefix = "\r\n";
+                    text += $"{prefix}BuildDate:  {fileInfo.LastWriteTime}";
+                    prefix = "\r\n";
+                    text += $"{prefix}Directory:  {fileInfo.Directory}";
+                    prefix = "\r\n";
                 }
                 catch { }
 
-                return text;
+                var settings = App.Settings.FileName;
+                text += $"{prefix}Settings: {settings}";
+                prefix = "\r\n";
 
+                return text;
             }
+        }
+        /// <summary>
+        /// Kliknutí na StatusVersion zkopíruje ToolTip do Clipboardu (jsou tam zajímavé údaje)
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _StatusVersionLabel_Click(object sender, EventArgs e)
+        {
+            var info = _StatusVersionLabel.ToolTipText;
+            Clipboard.SetText(info);
+            App.ShowMessage("Informace jsou v Clipboardu...", MessageBoxIcon.Information);
         }
         /// <summary>
         /// Vytvoří a vrátí <see cref="ToolStripStatusLabel"/>
