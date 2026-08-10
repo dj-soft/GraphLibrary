@@ -819,7 +819,6 @@ Help => {App.Messages.HelpInfoHelp}{eol}
         private List<ToolStripItem> _UserToolItems;
         #endregion
         #region Undo a Redo
-
         private void _InitializeUndoRedo()
         {
             this._ToolUndoButton = _CreateButton(Properties.Resources.edit_undo_3_48, this._StatusStrip.Items, 20, _ToolUndoButton_Click, ToolStripItemAlignment.Right);
@@ -912,6 +911,9 @@ Help => {App.Messages.HelpInfoHelp}{eol}
             var canRedo = App.UndoRedo.CanRedo;
             var canAny = (canUndo || canRedo);
 
+            // Špatně chodí Undo a Redo pro hodnoty ApplicationData.ToolBarOrder !!!
+            // Undo a Redo někdy ztratí vazbu z ApplicationData na její ParentPage, a dochází k Null reference chybě.
+            // Undo a Redo dočasně zrušíme:
             canUndo = false;
             canRedo = false;
             canAny = (canUndo || canRedo);
@@ -1214,8 +1216,10 @@ Help => {App.Messages.HelpInfoHelp}{eol}
             this._StatusStrip.ImageScalingSize = new Size(20, 20);
             this._StatusStrip.RenderMode = ToolStripRenderMode.Professional;
             this._StatusStrip.AutoSize = false;
+            this._StatusStrip.ShowItemToolTips = true;
 
             this._StatusVersionLabel = _CreateToolLabel(120, false, Properties.Resources.amp_01_20, this._StatusStrip.Items);
+            this._StatusVersionLabel.ToolTipText = getAppInfo();
             this.__StatusLabelVersion = new StatusInfo(this._StatusVersionLabel);
 
             this._StatusDataLabel = _CreateToolLabel(160, false, null, this._StatusStrip.Items);
@@ -1225,6 +1229,30 @@ Help => {App.Messages.HelpInfoHelp}{eol}
             this.__StatusLabelApplication = new StatusInfo(this._StatusCurrentItemLabel);
 
             this._ToolMessageSyncButton = _CreateButton(Properties.Resources.edit_text_frame_update_48, this._StatusStrip.Items, 20, _ToolMessageSyncButton_Click, ToolStripItemAlignment.Right);
+
+            string getAppInfo()
+            {
+                string text = "";
+
+                try
+                {
+                    var version = Application.ProductVersion;
+                    text += $"Version: {version}\r\n";
+                }
+                catch { }
+
+                try
+                {
+                    var appFile = Application.ExecutablePath;
+                    var fileInfo = new System.IO.FileInfo(appFile);
+                    text += $"Application: {fileInfo.Name}\r\n" +
+                            $"BuildDate:  {fileInfo.LastWriteTime}";
+                }
+                catch { }
+
+                return text;
+
+            }
         }
         /// <summary>
         /// Vytvoří a vrátí <see cref="ToolStripStatusLabel"/>
