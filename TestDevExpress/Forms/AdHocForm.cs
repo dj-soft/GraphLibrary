@@ -2,17 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using Noris.Clients.Win.Components.AsolDX;
+using System.Data;
+using System.Data.SqlClient;
 using System.Drawing;
+using System.Windows.Forms;
+
+using Noris.Clients.Win.Components.AsolDX;
 using TestDevExpress.Components;
-using Noris.Clients.Win.Components;
-using DevExpress.XtraRichEdit.Layout;
-using DevExpress.PivotGrid.OLAP.Mdx;
-using DevExpress.Utils.DirectXPaint;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using DevExpress.XtraBars.Docking2010.DragEngine;
 
 namespace TestDevExpress.Forms
 {
@@ -21,20 +17,70 @@ namespace TestDevExpress.Forms
     {
         protected override void DxMainContentPrepare()
         {
-            this.Text = "AdHoc test TreeListu a ikon";
-
             base.DxMainContentPrepare();
 
-            PrepareTreeList();
+            // PrepareTreeList();
+            PrepareSqlButtons();
         }
         protected override void DxMainContentDoLayout(bool isSizeChanged)
         {
-            DoLayoutTreeList();
+            // DoLayoutTreeList();
         }
+
+        #region SQL testy
+        protected void PrepareSqlButtons()
+        {
+            DxComponent.CreateDxSimpleButton(25, 16, 200, 38, this.DxMainPanel, "SELECT holý", _SqlButtonsClick, tag: 0);
+            DxComponent.CreateDxSimpleButton(250, 16, 200, 38, this.DxMainPanel, "SELECT s parametry", _SqlButtonsClick, tag: 1);
+        }
+        private void _SqlButtonsClick(object sender, EventArgs e)
+        {
+            if (sender is Control control && control.Tag is int variant)
+                _SqlTest(variant);
+        }
+        private void _SqlTest(int variant)
+        {
+            string connStr = "Server=JANACEKDA-PC\\SQL2022;Database=DjDev99;User Id=netuser;Password=;Encrypt=False;";      // Trusted_Connection=True;
+            string query = "SELECT top 100 cislo_subjektu,reference_subjektu,nazev_subjektu,ico,dic,ulice,misto,psc FROM lcs.organizace WHERE cislo_poradace = 50 and misto like '%praha%' ORDER BY nazev_subjektu";
+
+            if (variant == 1)
+            {
+                query = query
+                    .Replace(" 50 ", " @fld ")
+                    .Replace("  '%praha%'  ", " @naz ");
+
+            }
+
+            DataTable table = new DataTable();
+
+            using (SqlConnection conn = new SqlConnection(connStr))
+            {
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    if (variant == 1)
+                    {   // Přidání bezpečného parametru
+                        cmd.Parameters.AddWithValue("@fld", 50);
+                        cmd.Parameters.AddWithValue("@naz", "%brno%");
+                    }
+
+                    using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
+                    {
+                        // Otevření připojení a naplnění DataTable
+                        adapter.Fill(table);
+                    }
+                }
+            }
+        }
+        private DxSimpleButton _SqlButton1;
+        private DxSimpleButton _SqlButton2;
+        private DxSimpleButton _SqlButton3;
+        #endregion
+
 
         #region TreeList
         protected void PrepareTreeList()
         {
+            this.Text = "AdHoc test TreeListu a ikon";
             TreeList = new DevExpress.XtraTreeList.TreeList() { Bounds = new Rectangle(12, 12, 350, 480) };
             PrepareTreeListProperties();
             PrepareTreeListNodes();
@@ -168,7 +214,6 @@ namespace TestDevExpress.Forms
         }
         DevExpress.XtraTreeList.TreeList TreeList;
         #endregion
-
         #region Ikony: druhy ikon, seznam názvů podle druhů, generátor ikony, barvy, stylu
         /// <summary>
         /// Vrátí náhodný Main obrázek z dané sady <paramref name="imageSet"/>.
