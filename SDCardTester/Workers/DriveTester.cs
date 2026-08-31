@@ -7,12 +7,12 @@ using System.Windows.Forms;
 using System.ComponentModel;
 using System.Drawing;
 
-namespace DjSoft.Tools.SDCardTester
+namespace DjSoft.Tools.SDCardTester.Workers
 {
     /// <summary>
     /// Tester zápisu a čtení na disk
     /// </summary>
-    public class DriveTester : DriveWorker
+    public class DriveTester : BackWorker<System.IO.DriveInfo>
     {
         #region Konstrukce a public rozhraní
         /// <summary>
@@ -21,6 +21,15 @@ namespace DjSoft.Tools.SDCardTester
         public DriveTester()
         {
             InitStopwatch();
+        }
+        /// <summary>
+        /// Vrátí true, pokud dodaný Target je Ready pro akci
+        /// </summary>
+        /// <param name="target"></param>
+        /// <returns></returns>
+        protected override bool TargetIsReady(System.IO.DriveInfo target)
+        {
+            return target != null && target.IsReady;
         }
         /// <summary>
         /// Požádá o provedení testu zápisu a čtení daného disku
@@ -198,8 +207,8 @@ namespace DjSoft.Tools.SDCardTester
             // Na otestování disku 8TB při využití jednoho adresáře připouštíme nejvýše 4096 souborů;
             // Nejprve vepíšeme 512 souborů o velikosti 4096 B = 2 MB (2 097 152 B);
             // Zbývajících 3584 souborů bude mít velikost (celková velikost disku / 3584) zarovnáno na 4KB bloky, pro 8TB disk tedy velikost = 2 454 265 856 = 2.5 GB
-            long totalSize = Drive.TotalSize;
-            this.TestSizeTotal = Drive.AvailableFreeSpace - GetReserveSpace(Drive.TotalSize);
+            long totalSize = Target.TotalSize;
+            this.TestSizeTotal = Target.AvailableFreeSpace - GetReserveSpace(Target.TotalSize);
             this.TestSizeProcessed = 0L;
             this.TestSizeProcessedDone = 0L;
             long longFilesLength = totalSize / LongFilesMaxCount;                        // Délka velkého souboru tak, aby jich v jednom adresáři na prázdném disku bylo celkem max 4096 souborů
@@ -373,7 +382,7 @@ namespace DjSoft.Tools.SDCardTester
         protected bool CanWriteFile(long requestedLength, out long acceptedLength)
         {
             acceptedLength = 0L;
-            System.IO.DriveInfo driveInfo = new System.IO.DriveInfo(Drive.Name);         // Refresh
+            System.IO.DriveInfo driveInfo = new System.IO.DriveInfo(Target.Name);         // Refresh
             long available = driveInfo.AvailableFreeSpace;
             long reserve = GetReserveSpace(driveInfo.TotalSize);
             long smallest = ShortFilesLength;
@@ -419,7 +428,7 @@ namespace DjSoft.Tools.SDCardTester
 
             try
             {
-                var testFiles = GetTestFiles(this.Drive, null);
+                var testFiles = GetTestFiles(this.Target, null);
                 if (testFiles.Length == 0) return;
 
                 this.TestSizeTotal = testFiles.Select(fi => fi.Length).Sum();
@@ -575,7 +584,7 @@ namespace DjSoft.Tools.SDCardTester
             try
             {
                 Stack<DirectoryContent> directories = new Stack<DirectoryContent>();
-                directories.Push(new DirectoryContent(this.Drive.RootDirectory));
+                directories.Push(new DirectoryContent(this.Target.RootDirectory));
                 while (directories.Count > 0)
                 {
                     if (Stopping) break;
@@ -770,7 +779,7 @@ namespace DjSoft.Tools.SDCardTester
         /// </summary>
         private void PrepareFileGroups()
         {
-            var drive = Drive;
+            var drive = Target;
             var analyseCriteria = (Actions == TestAction.SaveTestData || Actions == TestAction.ReadTestData) ? DriveAnalyser.AnalyseCriteriaType.TestFiles :
                                   (Actions == TestAction.ReadContent) ? DriveAnalyser.AnalyseCriteriaType.ReadContent : DriveAnalyser.AnalyseCriteriaType.Default;
 
@@ -952,7 +961,7 @@ namespace DjSoft.Tools.SDCardTester
         /// <returns></returns>
         protected string GetTestDirectory(bool canCreate)
         {
-            string dirName = System.IO.Path.Combine(this.Drive.RootDirectory.FullName, TestDirectory);
+            string dirName = System.IO.Path.Combine(this.Target.RootDirectory.FullName, TestDirectory);
             var dirInfo = new System.IO.DirectoryInfo(dirName);
             try
             {

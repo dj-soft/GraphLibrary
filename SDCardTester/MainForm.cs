@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using DjSoft.Tools.SDCardTester.Workers;
 
 namespace DjSoft.Tools.SDCardTester
 {
@@ -277,7 +278,7 @@ namespace DjSoft.Tools.SDCardTester
         /// <param name="e"></param>
         private void ToolActionRescueButton_Click(object sender, EventArgs e)
         {
-
+            this.RunFileRescue();
         }
         /// <summary>
         /// Požadavek na start zápisu testovacích dat na disk
@@ -827,7 +828,29 @@ namespace DjSoft.Tools.SDCardTester
         private List<Tuple<DriveAnalyser.FileGroup, DriveAnalyseGroupControl>> _DriveAnalyserGroups;
         #endregion
         #region Akce: Záchrana souboru
+        private void RunFileRescue()
+        {
+            ResultsInfoPanelClear();
 
+            var inputInfo = new FileRescueInputInfo() { };
+            ShowControls(ActionState.FileRescue, true);
+
+            _FileRescuer = new FileRescue();
+            _FileRescuer.WorkingStep += _FileRescuer_WorkingStep;
+            _FileRescuer.WorkingDone += _FileRescuer_WorkingDone;
+            _FileRescuer.Start(inputInfo);
+        }
+
+        private void _FileRescuer_WorkingStep(object sender, EventArgs e)
+        {
+        }
+        private void _FileRescuer_WorkingDone(object sender, EventArgs e)
+        {
+            _FileRescuer = null;
+            ShowControls(ActionState.Dialog, false);
+        }
+
+        private FileRescue _FileRescuer;
         #endregion
         #region Akce: Zápis a čtení testovacích dat na disk
         /// <summary>
@@ -959,7 +982,7 @@ namespace DjSoft.Tools.SDCardTester
                 _TaskProgressState = (!hasError ? ThumbnailProgressState.Normal : ThumbnailProgressState.Error);
 
                 // TaskBar: Titulek aplikace = "SD Card tester H: 58%"
-                string drive = driveTester.Drive.Name.Substring(0, 1).ToUpper();
+                string drive = driveTester.Target.Name.Substring(0, 1).ToUpper();
                 string appName = (testPhase == DriveTester.TestPhase.SaveShortFile || testPhase == DriveTester.TestPhase.SaveLongFile ? "SD Card Write" :
                                  (testPhase == DriveTester.TestPhase.ReadShortFile || testPhase == DriveTester.TestPhase.ReadLongFile ? "SD Card Verify" :
                                  (testPhase == DriveTester.TestPhase.ReadAnyContent ? "SD Card Read" : "")));

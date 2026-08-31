@@ -6,18 +6,18 @@ using System.Threading.Tasks;
 using System.Drawing;
 using System.Windows.Forms;
 
-namespace DjSoft.Tools.SDCardTester
+namespace DjSoft.Tools.SDCardTester.Workers
 {
     /// <summary>
     /// Bázová třída pro konkrétní pracovní třídy
     /// </summary>
-    public abstract class DriveWorker
+    public abstract class BackWorker<TTarget> where TTarget : class
     {
         #region Konstrukce a public rozhraní
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DriveWorker()
+        public BackWorker()
         {
             InitStopwatch();
             InitState();
@@ -30,16 +30,16 @@ namespace DjSoft.Tools.SDCardTester
         /// <summary>
         /// Požádá o zahájení akce na pozadí
         /// </summary>
-        /// <param name="drive"></param>
-        /// <param name="action">Akce volaná ještě před startem </param>
-        protected void StartAction(System.IO.DriveInfo drive, Action action = null)
+        /// <param name="target"></param>
+        /// <param name="prepareAction">Akce volaná ještě před startem </param>
+        protected void StartAction(TTarget target, Action prepareAction = null)
         {
-            if (drive != null && drive.IsReady && !Working)
+            if (target != null && TargetIsReady(target) && !Working)
             {
-                action?.Invoke();
+                prepareAction?.Invoke();
 
                 __State = RunState.Run;
-                Drive = drive;
+                Target = target;
                 Task.Factory.StartNew(Run);
             }
             else
@@ -47,6 +47,12 @@ namespace DjSoft.Tools.SDCardTester
                 CallWorkingDone();
             }
         }
+        /// <summary>
+        /// Vrátí true, pokud dodaný Target je Ready pro akci
+        /// </summary>
+        /// <param name="target"></param>
+        /// <returns></returns>
+        protected abstract bool TargetIsReady(TTarget target);
         /// <summary>
         /// Inicializace stavu
         /// </summary>
@@ -67,9 +73,9 @@ namespace DjSoft.Tools.SDCardTester
             this.State = state;
         }
         /// <summary>
-        /// Zpracovávaný disk
+        /// Zpracovávaný disk / soubor / jiný cíl
         /// </summary>
-        public System.IO.DriveInfo Drive { get; protected set; }
+        public TTarget Target { get; protected set; }
         /// <summary>
         /// Stav běhu
         /// </summary>

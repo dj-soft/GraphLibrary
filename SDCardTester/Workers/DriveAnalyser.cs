@@ -6,13 +6,14 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.ComponentModel;
+using System.IO;
 
-namespace DjSoft.Tools.SDCardTester
+namespace DjSoft.Tools.SDCardTester.Workers
 {
     /// <summary>
     /// Analyzer stavu disku
     /// </summary>
-    public class DriveAnalyser : DriveWorker
+    public class DriveAnalyser : BackWorker<System.IO.DriveInfo>
     {
         #region Konstrukce a základní data
         /// <summary>
@@ -21,6 +22,15 @@ namespace DjSoft.Tools.SDCardTester
         protected override void InitData()
         {
             this.InitGroups();
+        }
+        /// <summary>
+        /// Vrátí true, pokud dodaný Target je Ready pro akci
+        /// </summary>
+        /// <param name="target"></param>
+        /// <returns></returns>
+        protected override bool TargetIsReady(System.IO.DriveInfo target)
+        {
+            return target != null && target.IsReady;
         }
         #endregion
         #region Základní zmapování obsahu souboru a převod na FileGroup
@@ -119,7 +129,7 @@ namespace DjSoft.Tools.SDCardTester
             this.AnalyseDirectoriesDone = 0;
             this.AnalyseDirectoriesQueue = 0;
 
-            var root = Drive;
+            var root = Target;
             _GroupRemaining.SizeTotalBase = (root.TotalSize - root.TotalFreeSpace);
             CallTestStep(true, 1);
 
@@ -176,7 +186,7 @@ namespace DjSoft.Tools.SDCardTester
             }
         }
         /// <summary>
-        /// Vyvolá událost <see cref="DriveWorker.WorkingStep"/>, pokud je odpovídající čas
+        /// Vyvolá událost <see cref="BackWorker.WorkingStep"/>, pokud je odpovídající čas
         /// </summary>
         /// <param name="force"></param>
         /// <param name="queueCount"></param>
