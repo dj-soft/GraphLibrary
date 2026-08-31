@@ -50,12 +50,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DriveAnalyser.cs" />
-    <Compile Include="DriveInfo.cs">
+    <Compile Include="Workers\DriveAnalyser.cs" />
+    <Compile Include="Components\DriveInfo.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="DriveTester.cs" />
-    <Compile Include="DriveWorker.cs" />
+    <Compile Include="Workers\DriveTester.cs" />
+    <Compile Include="Workers\DriveWorker.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
@@ -65,7 +65,7 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="LinearMapControl.cs">
+    <Compile Include="Components\LinearMapControl.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="RunPauseStop.cs">
@@ -85,6 +85,7 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <None Include="Properties\DjSoftCzCertificate.pfx" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -124,6 +125,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="media-flash-smartmedia_mount.ico" />
+    <Content Include="pic\document-import-48.png" />
     <None Include="pic\32px\media-floppy-3.5_mount-2-32.png" />
     <None Include="pic\32px\document-revert-4-32.png" />
     <None Include="pic\32px\drive-removable-media-usb-pendrive-32.png" />
@@ -143,8 +145,13 @@
     <None Include="pic\media-playback-pause-2.png" />
     <None Include="pic\dialog-ok-apply-2-16.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="pic\48px\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /y $(TargetDir)*.* D:\Tools\SdCardTester\*.*</PostBuildEvent>
+    <PostBuildEvent>"c:\Program Files (x86)\Microsoft SDKs\ClickOnce\SignTool\signtool.exe" sign /f "$(ProjectDir)Properties\DjSoftCzCertificate.pfx" /p "DjSoftCzPassword" /fd SHA256 "$(TargetPath)"
+
+copy /y $(TargetDir)*.* D:\Tools\SdCardTester\*.*</PostBuildEvent>
   </PropertyGroup>
 </Project>

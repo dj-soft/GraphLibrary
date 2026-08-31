@@ -199,4 +199,58 @@
   <data name="media_floppy_3_5_mount_2_32" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\pic\32px\media-floppy-3.5_mount-2-32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="system-search-3-64" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\64px\system-search-3-64.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="system-search-4-48" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\48px\system-search-4-48.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document-import-48" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\48px\document-import-48.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document-preview-48" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\48px\document-preview-48.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="drive-removable-media-2-48" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\48px\drive-removable-media-2-48.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="drive-removable-media-3-48" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\48px\drive-removable-media-3-48.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="drive-removable-media-usb-pendrive-48" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\48px\drive-removable-media-usb-pendrive-48.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="help-2-48" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\48px\help-2-48.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="media-flash-48" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\48px\media-flash-48.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="media-flash-smart-media-48" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\48px\media-flash-smart-media-48.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="media-flash-usbpendrive-48" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\48px\media-flash-usbpendrive-48.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="media-playback-pause-3-48" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\48px\media-playback-pause-3-48.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="media-playback-start-3-48" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\48px\media-playback-start-3-48.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="media-playback-stop-3-48" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\48px\media-playback-stop-3-48.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="system-search-4-48b" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\48px\system-search-4-48.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="view-refresh-4-48" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\48px\view-refresh-4-48.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="view-statistics-48" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\48px\view-statistics-48.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="zoom-2-48" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\48px\zoom-2-48.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
 </root>

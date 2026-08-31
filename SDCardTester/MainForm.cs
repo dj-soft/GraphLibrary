@@ -19,12 +19,23 @@ namespace DjSoft.Tools.SDCardTester
         public MainForm()
         {
             InitializeComponent();
+            ToolbarInitialize();
             InitializeProgress();
             InitContent();
-            VisualMapPanelInit();
+            VisualMapInitialize();
             ShowProperties();
             InitEvents();
+            ResumeLayouts();
             ShowControls(ActionState.Dialog, true);
+        }
+        private void ResumeLayouts()
+        {
+            this.ToolBar.ResumeLayout(false);
+            this.ToolBar.PerformLayout();
+            this.UserPanel.ResumeLayout(false);
+            this.ResultsInfoPanel.ResumeLayout(false);
+            this.ResumeLayout(false);
+            this.PerformLayout();
         }
         private void InitContent()
         {
@@ -32,20 +43,6 @@ namespace DjSoft.Tools.SDCardTester
         }
         private void InitEvents()
         {
-            this.ToolDriveCombo.SelectedIndexChanged += ToolDriveCombo_SelectedIndexChanged;
-            this.ToolDriveTypeFlashButton.Click += ToolDriveTypeFlashButton_Click;
-            this.ToolDriveTypeAllButton.Click += ToolDriveTypeAllButton_Click;
-            this.ToolDriveRefreshButton.Click += ToolDriveRefreshButton_Click;
-
-            this.ToolActionAnalyseButton.Click += ToolActionAnalyseButton_Click;
-            this.ToolActionWriteDataButton.Click += ToolActionWriteDataButton_Click;
-            this.ToolActionReadDataButton.Click += ToolActionReadDataButton_Click;
-            this.ToolActionReadAnyButton.Click += ToolActionReadAnyButton_Click;
-
-            this.ToolFlowControlPauseButton.Click += ToolFlowControlPauseButton_Click;
-            this.ToolFlowControlStopButton.Click += ToolFlowControlStopButton_Click;
-            this.ToolFlowControlRunButton.Click += ToolFlowControlRunButton_Click;
-
             this.LinearMapControl.ActiveItemChanged += VisualPanel_ActiveItemChanged;
             this.ClientSizeChanged += _ClientSizeChanged;
             this.DoLayout();
@@ -77,299 +74,112 @@ namespace DjSoft.Tools.SDCardTester
         }
         private Font __ToolFontRegular;
         #endregion
-        #region Windows Taskbar Progress
+        #region Toolbar: vytvoření, základní obsluha událostí
         /// <summary>
-        /// Inicializace komponenty pro zobrazení progresu v Taskbaru Windows
+        /// Vytvoří obsah Toolbaru
         /// </summary>
-        private void InitializeProgress()
+        protected void ToolbarInitialize()
         {
-            __TaskProgress = new TaskProgress(this);
-            __TaskProgress.ProgressMaximum = 500;
-            /*  Použití je jednoduché:
-            var rand = new Random();
-            var next = rand.Next(30);
-            __TaskProgress.ProgressState = (next < 10 ? ThumbnailProgressState.Normal : next < 20 ? ThumbnailProgressState.Error : ThumbnailProgressState.Paused);
-            __TaskProgress.ProgressValue = rand.Next(0, 100);
-            */
-            this.__AppTitleTextStandard = this.Text;
-            this.__AppTitleTextCurrent = null;
-        }
-        protected override void WndProc(ref Message m)
-        {
-            __TaskProgress.FormWndProc(ref m);
-            base.WndProc(ref m);
-        }
-        /// <summary>
-        /// Hodnota progresu.
-        /// Musí být v rozsahu 1 a více.
-        /// Pokud bude setována hodnota nižší, než je aktuální <see cref="_TaskProgressValue"/>, tak bude <see cref="_TaskProgressValue"/> snížena na toto nově zadané maximum.
-        /// </summary>
-        private int _TaskProgressMaximum { get { return __TaskProgress.ProgressMaximum; } set { __TaskProgress.ProgressMaximum = value; } }
-        /// <summary>
-        /// Hodnota progresu.
-        /// Musí být v rozsahu 0 až <see cref="ProgressMaximum"/>.
-        /// </summary>
-        private int _TaskProgressValue { get { return __TaskProgress.ProgressValue; } set { __TaskProgress.ProgressValue = value; } }
-        /// <summary>
-        /// Status progresu = odpovídá barvě
-        /// </summary>
-        private ThumbnailProgressState _TaskProgressState { get { return __TaskProgress.ProgressState; } set { __TaskProgress.ProgressState = value; } }
-        /// <summary>
-        /// Komponenta pro zobrazení progresu v Taskbaru Windows
-        /// </summary>
-        private TaskProgress __TaskProgress;
-        #endregion
-        #region Layout
-        /// <summary>
-        /// Změna velikosti upraví Layout
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ClientSizeChanged(object sender, EventArgs e)
-        {
-            this.DoLayout();
-        }
-        /// <summary>
-        /// Upraví Layout formu
-        /// </summary>
-        private void DoLayout()
-        {
-            if (this.UserPanel is null || this.DriveInfoPanel is null || this.ResultsInfoPanel is null) return;
+            this.ToolBar.ImageScalingSize = new System.Drawing.Size(48, 48);
+            this.ToolBar.Location = new System.Drawing.Point(0, 0);
+            this.ToolBar.Name = "ToolBar";
+            this.ToolBar.Size = new System.Drawing.Size(1015, 39);
+            this.ToolBar.TabIndex = 2;
+            this.ToolBar.Text = "";
 
-            // Layout se týká pouze levého panelu: this.UserPanel
-            // Obsahuje prvky: DriveInfoPanel, ResultsInfoPanel
-            var clientSize = this.UserPanel.ClientSize;
-            int width = clientSize.Width - 6;
-            int height = clientSize.Height - 6;
-            int mx = 3;
-            int my = 3;
-            int x = mx;
-            int y = my;
+            createLabel(this.ToolBar.Items, "Disk:", 38, out var _);
+            createCombo(this.ToolBar.Items, ToolDriveCombo_SelectedIndexChanged, 300, out ToolDriveCombo, "");
 
-            this.DriveInfoPanel.Bounds = new Rectangle(x, y, width, height);
-            this.ResultsInfoPanel.Bounds = new Rectangle(x, y, width, height);
-        }
-        #endregion
-        #region Aktuální stav okna a zobrazení odpovídajících controlů podle tohoto aktuálního stavu
-        /// <summary>
-        /// Zobrazí controly vhodné pro daný stav okna.
-        /// Lze volat z Working threadů.
-        /// </summary>
-        /// <param name="state"></param>
-        protected void ShowControls(ActionState state, bool withDataPanel)
-        {
-            if (this.InvokeRequired)
-                this.BeginInvoke(new Action<ActionState, bool>(ShowControls), state, withDataPanel);
-            else
+            createDropDownButton(this.ToolBar.Items, "Nabízené typy disků", Properties.Resources.drive_removable_media_usb_pendrive_48, 45, out ToolDriveTypeButton, "Volba nabídky disků: výměnné nebo všechny?");
+            createMenuItem(ToolDriveTypeButton.DropDownItems, "Jen vyměnitelné disky", Properties.Resources.drive_removable_media_usb_pendrive_32, ToolDriveTypeFlashButton_Click, 205, out ToolDriveTypeFlashButton, "Jen vyměnitelné disky");
+            createMenuItem(ToolDriveTypeButton.DropDownItems, "Všechny disky", Properties.Resources.drive_raid_32, ToolDriveTypeAllButton_Click, 205, out ToolDriveTypeAllButton, "Všechny disky");
+
+            createButton(this.ToolBar.Items, "Refresh", Properties.Resources.view_refresh_4_48, ToolDriveRefreshButton_Click, 36, out ToolDriveRefreshButton, "Refresh a zobrazení základních dat o disku v panelu vlevo");
+            
+            createSeparator(this.ToolBar.Items, out var _);
+            createButton(this.ToolBar.Items, "Analýza", Properties.Resources.view_statistics_48, ToolActionAnalyseButton_Click, 84, out ToolActionAnalyseButton, "Analýza obsahu disku z hlediska typu dat");
+            createButton(this.ToolBar.Items, "Záchrana", Properties.Resources.help_2_48, ToolActionRescueButton_Click, 84, out ToolActionRescueButton, "Pokusí se z jednoho souboru zachránit, co se dá");
+
+            createSeparator(this.ToolBar.Items, out var _);
+            createButton(this.ToolBar.Items, "Čitelnost", Properties.Resources.system_search_4_48, ToolActionReadAnyButton_Click, 90, out ToolActionReadAnyButton, "Prověří čitelnost každého souboru, nejen testovacího");
+            createButton(this.ToolBar.Items, "Zápis", Properties.Resources.document_import_48, ToolActionWriteDataButton_Click, 88, out ToolActionWriteDataButton, "Zápis testovacích dat na disk");
+            createButton(this.ToolBar.Items, "Kontrola", Properties.Resources.document_preview_48, ToolActionReadDataButton_Click, 88, out ToolActionReadDataButton, "Kontrola testovacích dat - shodnost obsahu");
+
+            createSeparator(this.ToolBar.Items, out ToolFlowControlSeparator);
+            createButton(this.ToolBar.Items, "Run", Properties.Resources.media_playback_start_3_48, ToolFlowControlRunButton_Click, 36, out ToolFlowControlRunButton, "Pokračuje v pozastavené akci");
+            createButton(this.ToolBar.Items, "Pauza", Properties.Resources.media_playback_pause_3_48, ToolFlowControlPauseButton_Click, 36, out ToolFlowControlPauseButton, "Pozastaví běžící akci, bude možno v ní pokračovat");
+            createButton(this.ToolBar.Items, "Stop", Properties.Resources.media_playback_stop_3_48, ToolFlowControlStopButton_Click, 36, out ToolFlowControlStopButton, "Zruší běžící akci a vrátí okno do výchozího stavu");
+
+            void createSeparator(ToolStripItemCollection items, out ToolStripSeparator item)
             {
-                bool oldStateWorking = isWorkingState(CurrentState);
-                bool newStateDialog = (state == ActionState.Dialog);
-                bool newStateWorking = isWorkingState(state);
-
-                ToolDriveCombo.Enabled = newStateDialog;
-                ToolDriveTypeButton.Enabled = newStateDialog;
-                ToolDriveTypeFlashButton.Enabled = newStateDialog;
-                ToolDriveTypeAllButton.Enabled = newStateDialog;
-                ToolDriveRefreshButton.Enabled = newStateDialog;
-
-                if (withDataPanel)
+                item = new ToolStripSeparator()
                 {
-                    DriveInfoPanel.Visible = newStateDialog;
-                    ResultsInfoPanel.Visible = newStateWorking;
-                    CurrentDataPanelState = state;
-                }
-
-                this.ToolActionAnalyseButton.Enabled = newStateDialog;
-                this.ToolActionWriteDataButton.Enabled = newStateDialog;
-                this.ToolActionReadDataButton.Enabled = newStateDialog;
-                this.ToolActionReadAnyButton.Enabled = newStateDialog;
-
-                this.ToolFlowControlPauseButton.Visible = newStateWorking;
-                this.ToolFlowControlStopButton.Visible = newStateWorking;
-                this.ToolFlowControlRunButton.Visible = newStateWorking;
-                this.ToolFlowControlSeparator.Visible = newStateWorking;
-
-                // Pokud nyní ZAČÍNÁ stav Working, pak nastavíme RunState na Run = ikonky v Toolbaru:
-                if (!oldStateWorking && newStateWorking)
+                };
+                items?.Add(item);
+            }
+            void createLabel(ToolStripItemCollection items, string text, int width, out ToolStripLabel item)
+            {
+                item = new ToolStripLabel()
                 {
-                    this.RunState = RunState.Run;
-                    _TaskProgressState = ThumbnailProgressState.Normal;
-                }
-
-                // Pokud nyní KONČÍ stav Working, pak vrátíme titulek okna na standardní:
-                if (oldStateWorking && !newStateWorking)
+                    Text = text,
+                    Size = new Size(width, 36)
+                };
+                items?.Add(item);
+            }
+            void createButton(ToolStripItemCollection items, string text, Image image, EventHandler click, int width, out ToolStripButton item, string toolTip)
+            {
+                item = new ToolStripButton()
                 {
-                    this.AppTitleTextCurrent = this.__AppTitleTextStandard;
-                    _TaskProgressState = ThumbnailProgressState.NoProgress;
-                }
-
-                CurrentState = state;
+                    DisplayStyle = ToolStripItemDisplayStyle.Image,
+                    Text = text,
+                    Image = image,
+                    ImageTransparentColor = System.Drawing.Color.Magenta,
+                    ToolTipText = toolTip,
+                    Size = new Size(width, 36)
+                };
+                item.Click += click;
+                items?.Add(item);
             }
-
-            bool isWorkingState(ActionState testState)
+            void createDropDownButton(ToolStripItemCollection items, string text, Image image, int width, out ToolStripDropDownButton item, string toolTip)
             {
-                return (testState == ActionState.AnalyseContent || testState == ActionState.TestSave || testState == ActionState.TestRead || testState == ActionState.ContentRead);
-            }
-        }
-        /// <summary>
-        /// Zobrazí správně Enabled pro buttony skupiny FlowControl pro zadaný stav.
-        /// </summary>
-        /// <param name="runState"></param>
-        protected void ShowFlowButtonsEnabled(RunState runState)
-        {
-            if (this.InvokeRequired)
-                this.BeginInvoke(new Action<RunState>(ShowFlowButtonsEnabled), runState);
-            else
-            {
-                this.ToolFlowControlPauseButton.Enabled = (runState == RunState.Run);
-                this.ToolFlowControlStopButton.Enabled = (runState == RunState.Run || runState == RunState.Pause);
-                this.ToolFlowControlRunButton.Enabled = (runState == RunState.Pause);
-
-            }
-        }
-        /// <summary>
-        /// Aktuální stav okna
-        /// </summary>
-        protected ActionState CurrentState;
-        /// <summary>
-        /// Aktuální stav panelu = který datový panel zůstal být vidět po doběhnutí akce
-        /// </summary>
-        protected ActionState CurrentDataPanelState;
-        /// <summary>
-        /// Stav okna podle aktuální akce
-        /// </summary>
-        protected enum ActionState
-        {
-            /// <summary>
-            /// Stav "Dialog"
-            /// </summary>
-            Dialog,
-            /// <summary>
-            /// Analyzuje se obsah disku
-            /// </summary>
-            AnalyseContent,
-            /// <summary>
-            /// Zapisují se testovací data
-            /// </summary>
-            TestSave,
-            /// <summary>
-            /// Čtou se testovací data
-            /// </summary>
-            TestRead,
-            /// <summary>
-            /// Čtou se jakákoli data
-            /// </summary>
-            ContentRead
-        }
-        /// <summary>
-        /// Smaže prvky <see cref="WorkingResultControl"/> z panelu informací <see cref="ResultsInfoPanel"/>
-        /// </summary>
-        private void ResultsInfoPanelClear()
-        {
-            for (int i = ResultsInfoPanel.Controls.Count - 1; i >= 0; i--)
-            {
-                var control = ResultsInfoPanel.Controls[i];
-                if (control is WorkingResultControl)
+                item = new ToolStripDropDownButton()
                 {
-                    ResultsInfoPanel.Controls.RemoveAt(i);
-                    control.Dispose();
-                }
+                    DisplayStyle = ToolStripItemDisplayStyle.Image,
+                    Text = text,
+                    Image = image,
+                    ImageTransparentColor = System.Drawing.Color.Magenta,
+                    ToolTipText = toolTip,
+                    Size = new Size(width, 36)
+                };
+                items?.Add(item);
             }
-        }
-        #endregion
-        #region Spolupráce s vizualizačním panelem
-        /// <summary>
-        /// Inicializace vizuálního controlu
-        /// </summary>
-        private void VisualMapPanelInit()
-        {
-            Skin.Palette = Skin.PaletteType.Light;
-        }
-        /// <summary>
-        /// Po změně aktivního prvku ve vizuálním panelu
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void VisualPanel_ActiveItemChanged(object sender, EventArgs e)
-        {
-            switch (CurrentDataPanelState)
+            void createCombo(ToolStripItemCollection items, EventHandler indexChanged, int width, out ToolStripComboBox item, string toolTip)
             {
-                case ActionState.AnalyseContent:
-                    AnalyseActiveItemChanged(this.LinearMapControl.ActiveItem);
-                    break;
-                default:
-                    break;
+                item = new ToolStripComboBox()
+                {
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    ToolTipText = toolTip,
+                    Size = new Size(width, 39)
+                };
+                item.SelectedIndexChanged += indexChanged;
+                items?.Add(item);
+            }
+            void createMenuItem(ToolStripItemCollection items, string text, Image image, EventHandler click, int width, out ToolStripMenuItem item, string toolTip)
+            {
+                item = new ToolStripMenuItem()
+                {
+                    DisplayStyle = ToolStripItemDisplayStyle.ImageAndText,
+                    Text = text,
+                    Image = image,
+                    ImageTransparentColor = System.Drawing.Color.Magenta,
+                    ToolTipText = toolTip,
+                    Size = new Size(width, 36)
+                };
+                item.Click += click;
+                items?.Add(item);
             }
         }
-        /// <summary>
-        /// Do mapy <see cref="LinearMapControl"/> načte a vepíše základní informace o daném disku <paramref name="drive"/> (velikost, obsazenost, testovací data).
-        /// </summary>
-        /// <param name="drive"></param>
-        private void VisualMapPanelFillBasicData(System.IO.DriveInfo drive)
-        {
-            var fileGroups = DriveAnalyser.GetFileGroupsForDrive(drive, DriveAnalyser.AnalyseCriteriaType.Default, out long totalSize);
-            VisualMapPanelFillData(fileGroups, totalSize);
-        }
-        /// <summary>
-        /// Do mapy <see cref="LinearMapControl"/> vloží prvky popisující stav obsazení disku podle dodaných <see cref="DriveAnalyser.FileGroup"/>.
-        /// </summary>
-        /// <param name="fileGroups"></param>
-        private void VisualMapPanelFillData(IEnumerable<DriveAnalyser.FileGroup> fileGroups, long? totalSize = null)
-        {
-            var items = new List<LinearMapControl.Item>();
-            if (fileGroups != null)
-                items.AddRange(fileGroups.Select(g => new LinearMapControl.Item(g.SizeTotal, g.Color, null, g)));
-
-            if (totalSize.HasValue)
-                VisualMapPanelSetupHeight(totalSize.Value, false);
-
-            this.LinearMapControl.Items = items;
-            this.LinearMapControl.Refresh();
-        }
-        /// <summary>
-        /// Do mapy <see cref="LinearMapControl"/> vloží prvky popisující stav obsazení disku podle dodaných <see cref="DriveAnalyser.FileGroup"/>.
-        /// </summary>
-        /// <param name="fileGroups"></param>
-        private void VisualMapPanelSetupHeight(long totalSize, bool refresh)
-        {
-            this.LinearMapControl.LineHeight = GetLineHeight(totalSize);
-            this.LinearMapControl.TotalLength = totalSize;
-
-            if (refresh)
-                this.LinearMapControl.Refresh();
-        }
-        /// <summary>
-        /// Vrátí výšku jedné vizuální linky pro danou velikost disku: menší disk = vyšší linky, velký disk = malé linky (víc se tam toho vejde)
-        /// </summary>
-        /// <param name="totalSize"></param>
-        /// <returns></returns>
-        protected int GetLineHeight(long totalSize)
-        {
-            long sizeMB = totalSize / 1048576L;
-            long sizeGB = sizeMB / 1024L;
-            long sizeTB = sizeGB / 1024L;
-            if (sizeMB <= 256L) return 24;                 // Obstarožní média
-            if (sizeMB <= 512L) return 22;
-            if (sizeMB <= 1024L) return 21;
-            if (sizeGB <= 2L) return 20;                   // SD karty
-            if (sizeGB <= 4L) return 19;
-            if (sizeGB <= 8L) return 18;
-            if (sizeGB <= 16L) return 17;
-            if (sizeGB <= 32L) return 16;
-            if (sizeGB <= 64L) return 15;
-            if (sizeGB <= 128L) return 14;                 // SSD disky
-            if (sizeGB <= 256L) return 13;
-            if (sizeGB <= 512L) return 12;
-            if (sizeGB <= 1024L) return 11;
-            if (sizeTB <= 2L) return 10;                   // Velkoplotnové disky
-            if (sizeTB <= 4L) return 9;
-            if (sizeTB <= 8L) return 8;
-            if (sizeTB <= 16L) return 7;
-            if (sizeTB <= 32L) return 6;
-            return 5;
-        }
-        #endregion
-        #region Obsluha Toolbaru - volba Drive a jeho Refresh, DriveType
+        #region Obsluha Toolbaru - eventhandlery: volba Drive a jeho Refresh, DriveType
         /// <summary>
         /// Inicializace dat pro zobrazení disků
         /// </summary>
@@ -449,14 +259,349 @@ namespace DjSoft.Tools.SDCardTester
         private void ToolDriveRefreshButton_Click(object sender, EventArgs e)
         {
             FillDrives();
-            //ShowProperties();
+            //  ShowProperties();
         }
+        /// <summary>
+        /// Kliknutí na button Analýza stavu disku
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ToolActionAnalyseButton_Click(object sender, EventArgs e)
+        {
+            RunDriveAnalyse();
+        }
+        /// <summary>
+        /// Kliknutí na button Záchrana souboru
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ToolActionRescueButton_Click(object sender, EventArgs e)
+        {
+
+        }
+        /// <summary>
+        /// Požadavek na start zápisu testovacích dat na disk
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ToolActionWriteDataButton_Click(object sender, EventArgs e)
+        {
+            RunDriveTest(ActionState.TestSave);
+            ShowControls(ActionState.TestSave, true);
+        }
+        /// <summary>
+        /// Požadavek na start čtení testovacích dat z disku
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ToolActionReadDataButton_Click(object sender, EventArgs e)
+        {
+            RunDriveTest(ActionState.TestRead);
+            ShowControls(ActionState.TestRead, true);
+        }
+        /// <summary>
+        /// Požadavek na start čtení jakýchkoli dat z disku
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ToolActionReadAnyButton_Click(object sender, EventArgs e)
+        {
+            RunDriveTest(ActionState.ContentRead);
+            ShowControls(ActionState.ContentRead, true);
+        }
+
         /// <summary>Image odpovídající typu disku Only Removable</summary>
         private Image _ImageDriveTypeFlash { get { return this.ToolDriveTypeFlashButton.Image; } }
         /// <summary>Image odpovídající typu disku All drives</summary>
         private Image _ImageDriveTypeAll { get { return this.ToolDriveTypeAllButton.Image; } }
         /// <summary>Hodnota pro <see cref="IsOnlyRemovable"/></summary>
         private bool __IsOnlyRemovable;
+        #endregion
+        #region Proměnné pro ToolBarItemy
+        private System.Windows.Forms.ToolStrip ToolBar;
+        private System.Windows.Forms.ToolStripComboBox ToolDriveCombo;
+        private System.Windows.Forms.ToolStripDropDownButton ToolDriveTypeButton;
+        private System.Windows.Forms.ToolStripMenuItem ToolDriveTypeFlashButton;
+        private System.Windows.Forms.ToolStripMenuItem ToolDriveTypeAllButton;
+        private System.Windows.Forms.ToolStripButton ToolDriveRefreshButton;
+        private System.Windows.Forms.ToolStripButton ToolActionAnalyseButton;
+        private System.Windows.Forms.ToolStripButton ToolActionRescueButton;
+        private System.Windows.Forms.ToolStripButton ToolActionWriteDataButton;
+        private System.Windows.Forms.ToolStripButton ToolActionReadDataButton;
+        private System.Windows.Forms.ToolStripButton ToolActionReadAnyButton;
+        private System.Windows.Forms.ToolStripSeparator ToolFlowControlSeparator;
+        private System.Windows.Forms.ToolStripButton ToolFlowControlRunButton;
+        private System.Windows.Forms.ToolStripButton ToolFlowControlPauseButton;
+        private System.Windows.Forms.ToolStripButton ToolFlowControlStopButton;
+
+        #endregion
+        #endregion
+        #region Layout
+        /// <summary>
+        /// Změna velikosti upraví Layout
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ClientSizeChanged(object sender, EventArgs e)
+        {
+            this.DoLayout();
+        }
+        /// <summary>
+        /// Upraví Layout formu
+        /// </summary>
+        private void DoLayout()
+        {
+            if (this.UserPanel is null || this.DriveInfoPanel is null || this.ResultsInfoPanel is null) return;
+
+            // Layout se týká pouze levého panelu: this.UserPanel
+            // Obsahuje prvky: DriveInfoPanel, ResultsInfoPanel
+            var clientSize = this.UserPanel.ClientSize;
+            int width = clientSize.Width - 6;
+            int height = clientSize.Height - 6;
+            int mx = 3;
+            int my = 3;
+            int x = mx;
+            int y = my;
+
+            this.DriveInfoPanel.Bounds = new Rectangle(x, y, width, height);
+            this.ResultsInfoPanel.Bounds = new Rectangle(x, y, width, height);
+        }
+        #endregion
+        #region Aktuální stav okna a zobrazení odpovídajících controlů podle tohoto aktuálního stavu
+        /// <summary>
+        /// Zobrazí controly vhodné pro daný stav okna.
+        /// Lze volat z Working threadů.
+        /// </summary>
+        /// <param name="actionState"></param>
+        protected void ShowControls(ActionState actionState, bool withDataPanel)
+        {
+            if (this.InvokeRequired)
+                this.BeginInvoke(new Action(() => action(actionState, withDataPanel)));
+            else
+                action(actionState, withDataPanel);
+
+
+            // Akce v GUI threadu
+            void action(ActionState state, bool withPanel)
+            {
+                bool oldStateWorking = isWorkingState(CurrentState);
+                bool newStateDialog = (state == ActionState.Dialog);
+                bool newStateWorking = isWorkingState(state);
+
+                ToolDriveCombo.Enabled = newStateDialog;
+                ToolDriveTypeButton.Enabled = newStateDialog;
+                ToolDriveTypeFlashButton.Enabled = newStateDialog;
+                ToolDriveTypeAllButton.Enabled = newStateDialog;
+                ToolDriveRefreshButton.Enabled = newStateDialog;
+
+                if (withPanel)
+                {
+                    DriveInfoPanel.Visible = newStateDialog;
+                    ResultsInfoPanel.Visible = newStateWorking;
+                    CurrentDataPanelState = state;
+                }
+
+                this.ToolActionAnalyseButton.Enabled = newStateDialog;
+                this.ToolActionRescueButton.Enabled = newStateDialog;
+                this.ToolActionReadAnyButton.Enabled = newStateDialog;
+                this.ToolActionWriteDataButton.Enabled = newStateDialog;
+                this.ToolActionReadDataButton.Enabled = newStateDialog;
+
+                this.ToolFlowControlPauseButton.Visible = newStateWorking;
+                this.ToolFlowControlStopButton.Visible = newStateWorking;
+                this.ToolFlowControlRunButton.Visible = newStateWorking;
+                this.ToolFlowControlSeparator.Visible = newStateWorking;
+
+                // Pokud nyní ZAČÍNÁ stav Working, pak nastavíme RunState na Run = ikonky v Toolbaru:
+                if (!oldStateWorking && newStateWorking)
+                {
+                    this.RunState = RunState.Run;
+                    _TaskProgressState = ThumbnailProgressState.Normal;
+                }
+
+                // Pokud nyní KONČÍ stav Working, pak vrátíme titulek okna na standardní:
+                if (oldStateWorking && !newStateWorking)
+                {
+                    this.AppTitleTextCurrent = this.__AppTitleTextStandard;
+                    _TaskProgressState = ThumbnailProgressState.NoProgress;
+                }
+
+                CurrentState = state;
+            }
+            // Vrací true, pokud daný stav je nějaký pracovní
+            bool isWorkingState(ActionState state)
+            {
+                return (state == ActionState.AnalyseContent || state == ActionState.TestSave || state == ActionState.TestRead || state == ActionState.ContentRead || state == ActionState.FileRescue);
+            }
+        }
+        /// <summary>
+        /// Zobrazí správně Enabled pro buttony skupiny FlowControl pro zadaný stav.
+        /// </summary>
+        /// <param name="runState"></param>
+        protected void ShowFlowButtonsEnabled(RunState runState)
+        {
+            if (this.InvokeRequired)
+                this.BeginInvoke(new Action(() => action(RunState)));
+            else
+                action(runState);
+
+
+            // Akce v GUI threadu
+            void action(RunState state)
+            {
+                this.ToolFlowControlPauseButton.Enabled = (state == RunState.Run);
+                this.ToolFlowControlStopButton.Enabled = (state == RunState.Run || state == RunState.Pause);
+                this.ToolFlowControlRunButton.Enabled = (state == RunState.Pause);
+            }
+        }
+        /// <summary>
+        /// Aktuální stav okna
+        /// </summary>
+        protected ActionState CurrentState;
+        /// <summary>
+        /// Aktuální stav panelu = který datový panel zůstal být vidět po doběhnutí akce
+        /// </summary>
+        protected ActionState CurrentDataPanelState;
+        /// <summary>
+        /// Stav okna podle aktuální akce
+        /// </summary>
+        protected enum ActionState
+        {
+            /// <summary>
+            /// Stav "Dialog"
+            /// </summary>
+            Dialog,
+            /// <summary>
+            /// Analyzuje se obsah disku
+            /// </summary>
+            AnalyseContent,
+            /// <summary>
+            /// Zapisují se testovací data
+            /// </summary>
+            TestSave,
+            /// <summary>
+            /// Čtou se testovací data
+            /// </summary>
+            TestRead,
+            /// <summary>
+            /// Čtou se jakákoli data
+            /// </summary>
+            ContentRead,
+            /// <summary>
+            /// Zachraňují se data
+            /// </summary>
+            FileRescue
+        }
+        /// <summary>
+        /// Smaže prvky <see cref="WorkingResultControl"/> z panelu informací <see cref="ResultsInfoPanel"/>
+        /// </summary>
+        private void ResultsInfoPanelClear()
+        {
+            for (int i = ResultsInfoPanel.Controls.Count - 1; i >= 0; i--)
+            {
+                var control = ResultsInfoPanel.Controls[i];
+                if (control is WorkingResultControl)
+                {
+                    ResultsInfoPanel.Controls.RemoveAt(i);
+                    control.Dispose();
+                }
+            }
+        }
+        #endregion
+        #region LinearMapControl: vizualizační panel detailního obsahu
+        private void VisualMapInitialize()
+        {
+            Skin.Palette = Skin.PaletteType.Light;
+
+            this.LinearMapControl.BackColor = System.Drawing.Color.Snow;
+            this.LinearMapControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.LinearMapControl.Location = new System.Drawing.Point(251, 39);
+            this.LinearMapControl.Size = new System.Drawing.Size(764, 740);
+            this.LinearMapControl.TabIndex = 1;
+        }
+        /// <summary>
+        /// Po změně aktivního prvku ve vizuálním panelu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void VisualPanel_ActiveItemChanged(object sender, EventArgs e)
+        {
+            switch (CurrentDataPanelState)
+            {
+                case ActionState.AnalyseContent:
+                    AnalyseActiveItemChanged(this.LinearMapControl.ActiveItem);
+                    break;
+                default:
+                    break;
+            }
+        }
+        /// <summary>
+        /// Do mapy <see cref="LinearMapControl"/> načte a vepíše základní informace o daném disku <paramref name="drive"/> (velikost, obsazenost, testovací data).
+        /// </summary>
+        /// <param name="drive"></param>
+        private void VisualMapPanelFillBasicData(System.IO.DriveInfo drive)
+        {
+            var fileGroups = DriveAnalyser.GetFileGroupsForDrive(drive, DriveAnalyser.AnalyseCriteriaType.Default, out long totalSize);
+            VisualMapFillFromFileGroups(fileGroups, totalSize);
+        }
+        /// <summary>
+        /// Do mapy <see cref="LinearMapControl"/> vloží prvky popisující stav obsazení disku podle dodaných <see cref="DriveAnalyser.FileGroup"/>.
+        /// </summary>
+        /// <param name="fileGroups"></param>
+        private void VisualMapFillFromFileGroups(IEnumerable<DriveAnalyser.FileGroup> fileGroups, long? totalSize = null)
+        {
+            var items = new List<LinearMapControl.Item>();
+            if (fileGroups != null)
+                items.AddRange(fileGroups.Select(g => new LinearMapControl.Item(g.SizeTotal, g.Color, null, g)));
+
+            if (totalSize.HasValue)
+                VisualMapPanelSetupHeight(totalSize.Value, false);
+
+            this.LinearMapControl.Items = items;
+            this.LinearMapControl.Refresh();
+        }
+        /// <summary>
+        /// Do mapy <see cref="LinearMapControl"/> vloží prvky popisující stav obsazení disku podle dodaných <see cref="DriveAnalyser.FileGroup"/>.
+        /// </summary>
+        /// <param name="fileGroups"></param>
+        private void VisualMapPanelSetupHeight(long totalSize, bool refresh)
+        {
+            this.LinearMapControl.LineHeight = GetLineHeight(totalSize);
+            this.LinearMapControl.TotalLength = totalSize;
+
+            if (refresh)
+                this.LinearMapControl.Refresh();
+        }
+        /// <summary>
+        /// Vrátí výšku jedné vizuální linky pro danou velikost disku: menší disk = vyšší linky, velký disk = malé linky (víc se tam toho vejde)
+        /// </summary>
+        /// <param name="totalSize"></param>
+        /// <returns></returns>
+        protected int GetLineHeight(long totalSize)
+        {
+            long sizeMB = totalSize / 1048576L;
+            long sizeGB = sizeMB / 1024L;
+            long sizeTB = sizeGB / 1024L;
+            if (sizeMB <= 256L) return 24;                 // Obstarožní média
+            if (sizeMB <= 512L) return 22;
+            if (sizeMB <= 1024L) return 21;
+            if (sizeGB <= 2L) return 20;                   // SD karty
+            if (sizeGB <= 4L) return 19;
+            if (sizeGB <= 8L) return 18;
+            if (sizeGB <= 16L) return 17;
+            if (sizeGB <= 32L) return 16;
+            if (sizeGB <= 64L) return 15;
+            if (sizeGB <= 128L) return 14;                 // SSD disky
+            if (sizeGB <= 256L) return 13;
+            if (sizeGB <= 512L) return 12;
+            if (sizeGB <= 1024L) return 11;
+            if (sizeTB <= 2L) return 10;                   // Velkoplotnové disky
+            if (sizeTB <= 4L) return 9;
+            if (sizeTB <= 8L) return 8;
+            if (sizeTB <= 16L) return 7;
+            if (sizeTB <= 32L) return 6;
+            return 5;
+        }
         #endregion
         #region Načtení a zobrazení seznamu Drives a detailních vlastností o zvoleném disku, včetně mapy
         /// <summary>
@@ -532,16 +677,6 @@ namespace DjSoft.Tools.SDCardTester
         }
         #endregion
         #region Akce: Analýza obsahu disku
-        /// <summary>
-        /// Kliknutí na button Analýza stavu disku
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void ToolActionAnalyseButton_Click(object sender, EventArgs e)
-        {
-            // media-floppy-3.5_mount-2-32.png
-            RunDriveAnalyse();
-        }
         /// <summary>
         /// Požadavek na start analýzy
         /// </summary>
@@ -651,7 +786,7 @@ namespace DjSoft.Tools.SDCardTester
         /// <param name="driveAnalyser"></param>
         private void VisualMapPanelFillData(DriveAnalyser driveAnalyser)
         {
-            VisualMapPanelFillData(driveAnalyser.FileGroups);
+            VisualMapFillFromFileGroups(driveAnalyser.FileGroups);
         }
         /// <summary>
         /// Volá se po aktivaci daného (nebo žádného) prvku - pohybem myší nad mapou.
@@ -691,39 +826,10 @@ namespace DjSoft.Tools.SDCardTester
         /// </summary>
         private List<Tuple<DriveAnalyser.FileGroup, DriveAnalyseGroupControl>> _DriveAnalyserGroups;
         #endregion
+        #region Akce: Záchrana souboru
+
+        #endregion
         #region Akce: Zápis a čtení testovacích dat na disk
-        /// <summary>
-        /// Požadavek na start zápisu testovacích dat na disk
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void ToolActionWriteDataButton_Click(object sender, EventArgs e)
-        {
-            // image : media-floppy-3.5_mount-2-32         document_save_4_32
-            RunDriveTest(ActionState.TestSave);
-            ShowControls(ActionState.TestSave, true);
-        }
-        /// <summary>
-        /// Požadavek na start čtení testovacích dat z disku
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void ToolActionReadDataButton_Click(object sender, EventArgs e)
-        {
-            // image : document-revert-4-32                document_preview_32
-            RunDriveTest(ActionState.TestRead);
-            ShowControls(ActionState.TestRead, true);
-        }
-        /// <summary>
-        /// Požadavek na start čtení jakýchkoli dat z disku
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void ToolActionReadAnyButton_Click(object sender, EventArgs e)
-        {
-            RunDriveTest(ActionState.ContentRead);
-            ShowControls(ActionState.ContentRead, true);
-        }
         /// <summary>
         /// Požadavek na start zápisu / čtení dat z disku
         /// </summary>
@@ -779,17 +885,22 @@ namespace DjSoft.Tools.SDCardTester
         /// </summary>
         private void DriveTesterRefresh()
         {
-            if (_DriveTester is null) return;
+            var driveTester = _DriveTester;
+            if (driveTester is null) return;
 
             if (this.InvokeRequired)
-                this.BeginInvoke(new Action(DriveTesterRefresh));
+                this.BeginInvoke(new Action(() => action(driveTester)));
             else
+                action(driveTester);
+
+
+            // Akce v GUI threadu
+            void action(DriveTester tester)
             {
-                var driveTester = _DriveTester;
-                if (driveTester != null)
+                if (tester != null)
                 {
-                    ResultsInfoPanelFillData(driveTester);
-                    VisualPanelFillData(driveTester);
+                    ResultsInfoPanelFillData(tester);
+                    VisualMapFillFromDriveTester(tester);
                 }
             }
         }
@@ -847,7 +958,7 @@ namespace DjSoft.Tools.SDCardTester
                 bool hasError = (driveTester.TimeInfoSaveShort.ErrorBytes > 0 || driveTester.TimeInfoSaveLong.ErrorBytes > 0 || driveTester.TimeInfoReadShort.ErrorBytes > 0 || driveTester.TimeInfoReadLong.ErrorBytes > 0);
                 _TaskProgressState = (!hasError ? ThumbnailProgressState.Normal : ThumbnailProgressState.Error);
 
-                // Titulek aplikace = "SD Card tester H: 58%"
+                // TaskBar: Titulek aplikace = "SD Card tester H: 58%"
                 string drive = driveTester.Drive.Name.Substring(0, 1).ToUpper();
                 string appName = (testPhase == DriveTester.TestPhase.SaveShortFile || testPhase == DriveTester.TestPhase.SaveLongFile ? "SD Card Write" :
                                  (testPhase == DriveTester.TestPhase.ReadShortFile || testPhase == DriveTester.TestPhase.ReadLongFile ? "SD Card Verify" :
@@ -886,11 +997,11 @@ namespace DjSoft.Tools.SDCardTester
         /// Do mapy <see cref="LinearMapControl"/> vloží prvky pocházející ze skupin z testeru
         /// </summary>
         /// <param name="driveAnalyser"></param>
-        private void VisualPanelFillData(DriveTester driveTester)
+        private void VisualMapFillFromDriveTester(DriveTester driveTester)
         {
             var fileGroups = driveTester.FileGroups;
             var totalSize = driveTester.TotalSize;
-            VisualMapPanelFillData(fileGroups, totalSize);
+            VisualMapFillFromFileGroups(fileGroups, totalSize);
         }
         /// <summary>
         /// Instance testeru
@@ -942,6 +1053,48 @@ namespace DjSoft.Tools.SDCardTester
         {
             RunState = RunState.Run;
         }
+        #endregion
+        #region Windows Taskbar Progress
+        /// <summary>
+        /// Inicializace komponenty pro zobrazení progresu v Taskbaru Windows
+        /// </summary>
+        private void InitializeProgress()
+        {
+            __TaskProgress = new TaskProgress(this);
+            __TaskProgress.ProgressMaximum = 500;
+            /*  Použití je jednoduché:
+            var rand = new Random();
+            var next = rand.Next(30);
+            __TaskProgress.ProgressState = (next < 10 ? ThumbnailProgressState.Normal : next < 20 ? ThumbnailProgressState.Error : ThumbnailProgressState.Paused);
+            __TaskProgress.ProgressValue = rand.Next(0, 100);
+            */
+            this.__AppTitleTextStandard = this.Text;
+            this.__AppTitleTextCurrent = null;
+        }
+        protected override void WndProc(ref Message m)
+        {
+            __TaskProgress.FormWndProc(ref m);
+            base.WndProc(ref m);
+        }
+        /// <summary>
+        /// Hodnota progresu.
+        /// Musí být v rozsahu 1 a více.
+        /// Pokud bude setována hodnota nižší, než je aktuální <see cref="_TaskProgressValue"/>, tak bude <see cref="_TaskProgressValue"/> snížena na toto nově zadané maximum.
+        /// </summary>
+        private int _TaskProgressMaximum { get { return __TaskProgress.ProgressMaximum; } set { __TaskProgress.ProgressMaximum = value; } }
+        /// <summary>
+        /// Hodnota progresu.
+        /// Musí být v rozsahu 0 až <see cref="ProgressMaximum"/>.
+        /// </summary>
+        private int _TaskProgressValue { get { return __TaskProgress.ProgressValue; } set { __TaskProgress.ProgressValue = value; } }
+        /// <summary>
+        /// Status progresu = odpovídá barvě
+        /// </summary>
+        private ThumbnailProgressState _TaskProgressState { get { return __TaskProgress.ProgressState; } set { __TaskProgress.ProgressState = value; } }
+        /// <summary>
+        /// Komponenta pro zobrazení progresu v Taskbaru Windows
+        /// </summary>
+        private TaskProgress __TaskProgress;
         #endregion
     }
 }
