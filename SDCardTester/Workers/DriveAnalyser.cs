@@ -252,8 +252,9 @@ namespace DjSoft.Tools.SDCardTester.Workers
         /// Jedna skupina souborů. Má více přípon, ale všechny přípony reprezentují jeden druh souborů.
         /// Skupina určuje pořadí ve vizualizaci a barvu, sumarizuje počet a velikost souborů.
         /// </summary>
-        public class FileGroup : IFileGroup
+        public class FileGroup : IFileGroup, ILinearMapControlItem
         {
+            #region Konstruktory
             /// <summary>
             /// Vrátí sadu skupin
             /// </summary>
@@ -322,6 +323,8 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 string totalLength = SizeTotal.ToString("### ### ### ### ##0").Trim();
                 return $"Group: {Name}; Files: {filesCount}; TotalLength: {totalLength}";
             }
+            #endregion
+            #region Public data
             /// <summary>
             /// Pořadí grupy v grafice
             /// </summary>
@@ -434,7 +437,8 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// Celková délka souborů v této grupě, aktuální hodnota
             /// </summary>
             public long SizeTotal { get { return SizeTotalBase + SizeTotalDelta; } }
-
+            #endregion
+            #region IFileGroup
             void IFileGroup.Reset()
             {
                 FilesCountBase = 0;
@@ -462,7 +466,22 @@ namespace DjSoft.Tools.SDCardTester.Workers
             long IFileGroup.SizeTotalDelta { get { return SizeTotalDelta; } set { SizeTotalDelta = value; } }
             int IFileGroup.FilesCount { get { return FilesCount; } }
             long IFileGroup.TotalLength { get { return SizeTotal; } }
-
+            #endregion
+            #region ILinearMapControlItem
+            /// <summary>
+            /// Délka dat v tomto prvku
+            /// </summary>
+            long ILinearMapControlItem.Length { get { return this.SizeTotal; } }
+            /// <summary>
+            /// Barva prvku
+            /// </summary>
+            Color? ILinearMapControlItem.Color { get { return this.Color; } }
+            /// <summary>
+            /// Text do ToolTipu
+            /// </summary>
+            string ILinearMapControlItem.Text { get { return this.Name; } }
+            #endregion
+            #region Konstanty
             /// <summary>
             /// Kód skupiny testovacích souborů, které jsou aktuálně načítány
             /// </summary>
@@ -479,6 +498,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// Kód skupiny jakýchkoli souborů, které jsou čteny bez kontroly
             /// </summary>
             public const string CODE_ANY_FILE = "ANY_FILE";
+            #endregion
         }
         /// <summary>
         /// Interface pro interní přístup na data grupy

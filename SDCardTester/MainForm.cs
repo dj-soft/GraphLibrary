@@ -23,7 +23,7 @@ namespace DjSoft.Tools.SDCardTester
             ToolbarInitialize();
             InitializeProgress();
             InitContent();
-            VisualMapInitialize();
+            _VisualMapInitialize();
             ShowProperties();
             InitEvents();
             ResumeLayouts();
@@ -44,7 +44,7 @@ namespace DjSoft.Tools.SDCardTester
         }
         private void InitEvents()
         {
-            this.LinearMapControl.ActiveItemChanged += VisualPanel_ActiveItemChanged;
+            this.LinearMapControl.ActiveItemChanged += _VisualPanel_ActiveItemChanged;
             this.ClientSizeChanged += _ClientSizeChanged;
             this.DoLayout();
         }
@@ -510,7 +510,7 @@ namespace DjSoft.Tools.SDCardTester
         }
         #endregion
         #region LinearMapControl: vizualizační panel detailního obsahu
-        private void VisualMapInitialize()
+        private void _VisualMapInitialize()
         {
             Skin.Palette = Skin.PaletteType.Light;
 
@@ -525,7 +525,7 @@ namespace DjSoft.Tools.SDCardTester
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void VisualPanel_ActiveItemChanged(object sender, EventArgs e)
+        private void _VisualPanel_ActiveItemChanged(object sender, EventArgs e)
         {
             switch (CurrentDataPanelState)
             {
@@ -540,32 +540,28 @@ namespace DjSoft.Tools.SDCardTester
         /// Do mapy <see cref="LinearMapControl"/> načte a vepíše základní informace o daném disku <paramref name="drive"/> (velikost, obsazenost, testovací data).
         /// </summary>
         /// <param name="drive"></param>
-        private void VisualMapPanelFillBasicData(System.IO.DriveInfo drive)
+        private void _VisualMapPanelFillBasicData(System.IO.DriveInfo drive)
         {
             var fileGroups = DriveAnalyser.GetFileGroupsForDrive(drive, DriveAnalyser.AnalyseCriteriaType.Default, out long totalSize);
-            VisualMapFillFromFileGroups(fileGroups, totalSize);
+            _VisualMapFillFromItems(fileGroups, totalSize);
         }
         /// <summary>
-        /// Do mapy <see cref="LinearMapControl"/> vloží prvky popisující stav obsazení disku podle dodaných <see cref="DriveAnalyser.FileGroup"/>.
+        /// Do mapy <see cref="LinearMapControl"/> vloží prvky mapy dle <paramref name="mapItems"/>. Volitelně nastaví <paramref name="totalSize"/>.
         /// </summary>
-        /// <param name="fileGroups"></param>
-        private void VisualMapFillFromFileGroups(IEnumerable<DriveAnalyser.FileGroup> fileGroups, long? totalSize = null)
+        /// <param name="mapItems"></param>
+        private void _VisualMapFillFromItems(IEnumerable<ILinearMapControlItem> mapItems, long? totalSize = null)
         {
-            var items = new List<LinearMapControl.Item>();
-            if (fileGroups != null)
-                items.AddRange(fileGroups.Select(g => new LinearMapControl.Item(g.SizeTotal, g.Color, null, g)));
-
             if (totalSize.HasValue)
-                VisualMapPanelSetupHeight(totalSize.Value, false);
+                _VisualMapPanelSetupHeight(totalSize.Value, false);
 
-            this.LinearMapControl.Items = items;
+            this.LinearMapControl.MapItems = mapItems;
             this.LinearMapControl.Refresh();
         }
         /// <summary>
         /// Do mapy <see cref="LinearMapControl"/> vloží prvky popisující stav obsazení disku podle dodaných <see cref="DriveAnalyser.FileGroup"/>.
         /// </summary>
         /// <param name="fileGroups"></param>
-        private void VisualMapPanelSetupHeight(long totalSize, bool refresh)
+        private void _VisualMapPanelSetupHeight(long totalSize, bool refresh)
         {
             this.LinearMapControl.LineHeight = GetLineHeight(totalSize);
             this.LinearMapControl.TotalLength = totalSize;
@@ -674,7 +670,7 @@ namespace DjSoft.Tools.SDCardTester
             if (selectedDrive != null) selectedDrive = new System.IO.DriveInfo(selectedDrive.Name);     // = refresh
 
             this.DriveInfoPanel.ShowProperties(selectedDrive);
-            VisualMapPanelFillBasicData(selectedDrive);
+            _VisualMapPanelFillBasicData(selectedDrive);
         }
         #endregion
         #region Akce: Analýza obsahu disku
@@ -687,9 +683,9 @@ namespace DjSoft.Tools.SDCardTester
             ShowControls(ActionState.AnalyseContent, true);
 
             DriveAnalyser driveAnalyser = new DriveAnalyser();
-            AnalyseInfoPanelPrepare(driveAnalyser);
+            _AnalyseSummaryPanelPrepare(driveAnalyser);
             driveAnalyser.WorkingStep += DriveAnalyser_AnalyseStep;
-            driveAnalyser.WorkingDone += DriveAnalyser_AnalyseDone;
+            driveAnalyser.WorkingDone += _DriveAnalyser_AnalyseDone;
             _DriveAnalyser = driveAnalyser;
             driveAnalyser.Start(this.SelectedDrive);
         }
@@ -710,16 +706,16 @@ namespace DjSoft.Tools.SDCardTester
         /// <param name="e"></param>
         private void DriveAnalyser_AnalyseStep(object sender, EventArgs e)
         {
-            DriveAnalyserRefresh();
+            _DriveAnalyserRefresh();
         }
         /// <summary>
         /// Analyzer skončil svoji činnost
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void DriveAnalyser_AnalyseDone(object sender, EventArgs e)
+        private void _DriveAnalyser_AnalyseDone(object sender, EventArgs e)
         {
-            DriveAnalyserRefresh();
+            _DriveAnalyserRefresh();
             _DriveAnalyser = null;
             // grupy si ponechám:   _DriveAnalyserGroups = null;
             ShowControls(ActionState.Dialog, false);
@@ -727,27 +723,28 @@ namespace DjSoft.Tools.SDCardTester
         /// <summary>
         /// Zajistí refresh dat po jednom každém postupném kroku analyzeru
         /// </summary>
-        private void DriveAnalyserRefresh()
+        private void _DriveAnalyserRefresh()
         {
-            if (_DriveAnalyser is null) return;
+            var driveAnalyser = _DriveAnalyser;
+            if (driveAnalyser is null) return;
 
             if (this.InvokeRequired)
-                this.BeginInvoke(new Action(DriveAnalyserRefresh));
+                this.BeginInvoke(new Action(() => action(driveAnalyser)));
             else
+                action(driveAnalyser);
+
+            // Akce v GUI threadu
+            void action(DriveAnalyser analyser)
             {
-                DriveAnalyser driveAnalyser = _DriveAnalyser;
-                if (driveAnalyser != null)
-                {
-                    ResultsInfoPanelFillData(driveAnalyser);
-                    VisualMapPanelFillData(driveAnalyser);
-                }
+                _ResultsInfoPanelFillFromAnalyser(analyser);
+                _VisualMapFillFromItems(driveAnalyser.FileGroups);
             }
         }
         /// <summary>
         /// Do prvků v panelu informací <see cref="ResultsInfoPanel"/> vygeneruje prvky <see cref="DriveAnalyseGroupControl"/> pro zobrazování dat skupin z analyzeru
         /// </summary>
         /// <param name="driveAnalyser"></param>
-        private void AnalyseInfoPanelPrepare(DriveAnalyser driveAnalyser)
+        private void _AnalyseSummaryPanelPrepare(DriveAnalyser driveAnalyser)
         {
             var analyserGroups = new List<Tuple<DriveAnalyser.FileGroup, DriveAnalyseGroupControl>>();
             var groups = driveAnalyser.FileGroups;
@@ -769,7 +766,7 @@ namespace DjSoft.Tools.SDCardTester
         /// Do prvků v panelu informací <see cref="ResultsInfoPanel"/> aktualizuje hodnoty v controlech <see cref="DriveAnalyseGroupControl"/> z dat skupin z analyzeru
         /// </summary>
         /// <param name="driveAnalyser"></param>
-        private void ResultsInfoPanelFillData(DriveAnalyser driveAnalyser)
+        private void _ResultsInfoPanelFillFromAnalyser(DriveAnalyser driveAnalyser)
         {
             var analyserGroups = _DriveAnalyserGroups;
             if (analyserGroups is null || analyserGroups.Count == 0) return;
@@ -782,26 +779,18 @@ namespace DjSoft.Tools.SDCardTester
             }
         }
         /// <summary>
-        /// Do mapy <see cref="LinearMapControl"/> vloží prvky pocházející ze skupin z analyzeru z <paramref name="driveAnalyser"/> : <see cref="DriveAnalyser.FileGroups"/>
-        /// </summary>
-        /// <param name="driveAnalyser"></param>
-        private void VisualMapPanelFillData(DriveAnalyser driveAnalyser)
-        {
-            VisualMapFillFromFileGroups(driveAnalyser.FileGroups);
-        }
-        /// <summary>
         /// Volá se po aktivaci daného (nebo žádného) prvku - pohybem myší nad mapou.
-        /// Vstupní prvek je <see cref="LinearMapControl.Item"/> = prvek, který byl vložen do vizuální mapy. 
-        /// Tento prvek byl vytvořen v metodě <see cref="VisualMapPanelFillData(DriveAnalyser)"/>, 
-        /// a ve své property <see cref="LinearMapControl.Item.Data"/> by měl obsahovat grupu z analyzeru <see cref="DriveAnalyser.FileGroup"/>.
+        /// Vstupní prvek je <see cref="ILinearMapControlItem"/> = prvek, který byl vložen do vizuální mapy do <see cref="LinearMapControl.MapItems"/>. 
+        /// Tento prvek byl vytvořen v metodě <see cref="_VisualMapFillFromItems(IEnumerable{ILinearMapControlItem}, long?)"/>, 
+        /// a mělo by jít o ve své property <see cref="LinearMapControl.Item.Data"/> by měl obsahovat grupu z analyzeru <see cref="DriveAnalyser.FileGroup"/>.
         /// Tutéž grupu najdeme v panelu <see cref="ResultsInfoPanel"/> = tam se zobrazují jednotlivé skupiny souborů a jejich sumární hodnota, a tam bych rád zvýraznil grupu, která je aktivní v mapě.
         /// Grupu najdu v prvku v poli <see cref="_DriveAnalyserGroups"/>, kde je umístěna v Item1. 
         /// Tam pak jako párovou Item2 najdu instanci vizuálního controlu <see cref="DriveAnalyseGroupControl"/>.
         /// </summary>
         /// <param name="activeItem"></param>
-        private void AnalyseActiveItemChanged(LinearMapControl.Item activeItem)
+        private void AnalyseActiveItemChanged(ILinearMapControlItem activeItem)
         {
-            var activeGroup = activeItem?.Data as DriveAnalyser.FileGroup;
+            var activeGroup = activeItem as DriveAnalyser.FileGroup;
             var lastActivePanel = _DriveAnalyserGroups?.FirstOrDefault(t => t.Item2.IsActive)?.Item2;
             var currActivePanel = _DriveAnalyserGroups?.FirstOrDefault(t => Object.ReferenceEquals(t.Item1, activeGroup))?.Item2;
 
@@ -812,7 +801,7 @@ namespace DjSoft.Tools.SDCardTester
                 lastActivePanel = null;
             }
 
-            if (currActivePanel != null && (currActivePanel is null || (!Object.ReferenceEquals(currActivePanel, lastActivePanel))))
+            if (currActivePanel != null && (lastActivePanel is null || (!Object.ReferenceEquals(currActivePanel, lastActivePanel))))
             {
                 currActivePanel.IsActive = true;
                 currActivePanel.Refresh();
@@ -832,17 +821,24 @@ namespace DjSoft.Tools.SDCardTester
         {
             ResultsInfoPanelClear();
 
-            var inputInfo = new FileRescueInputInfo() { };
+            var inputInfo = new FileRescueInputInfo() 
+            {
+                InputFileNames = @"f:\Filmy\US Fantasy X\Lesbian.Vampire.Killers.2009.1080p.BLURAY.REMUX.mkv",
+                OutputFilesPath = @"G:\Cdisk\FileRescueTestTarget",
+            };
             ShowControls(ActionState.FileRescue, true);
 
-            _FileRescuer = new FileRescue();
-            _FileRescuer.WorkingStep += _FileRescuer_WorkingStep;
-            _FileRescuer.WorkingDone += _FileRescuer_WorkingDone;
-            _FileRescuer.Start(inputInfo);
+            var fileRescuer = new FileRescue();
+            fileRescuer.WorkingStep += _FileRescuer_WorkingStep;
+            fileRescuer.WorkingDone += _FileRescuer_WorkingDone;
+            _FileRescuer = fileRescuer;
+            fileRescuer.Start(inputInfo);
         }
 
         private void _FileRescuer_WorkingStep(object sender, EventArgs e)
         {
+            var fileRescuer = _FileRescuer;
+            if (fileRescuer is null) return;
         }
         private void _FileRescuer_WorkingDone(object sender, EventArgs e)
         {
@@ -1024,7 +1020,7 @@ namespace DjSoft.Tools.SDCardTester
         {
             var fileGroups = driveTester.FileGroups;
             var totalSize = driveTester.TotalSize;
-            VisualMapFillFromFileGroups(fileGroups, totalSize);
+            _VisualMapFillFromItems(fileGroups, totalSize);
         }
         /// <summary>
         /// Instance testeru

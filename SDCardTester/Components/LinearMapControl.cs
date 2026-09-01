@@ -26,23 +26,19 @@ namespace DjSoft.Tools.SDCardTester
             this.MouseInit();
         }
         /// <summary>
-        /// Seznam prvků. Není null. Setováním null se zde vytvoří new prázdná instance.
+        /// Seznam prvků. Lze setovat pole čehokoliv, co implementuje rozhraní <see cref="ILinearMapControlItem"/>.
         /// <para/>
-        /// Po změně hodnoty je třeba volat <see cref="Refresh"/>, stejně tak po změnách dat v prvcích. Samo se nerefreshuje.
+        /// Po změně (setování) hodnoty je třeba volat <see cref="Refresh"/>, stejně tak po změnách dat v prvcích. Samo se nerefreshuje.
         /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public List<Item> Items 
+        public IEnumerable<ILinearMapControlItem> MapItems
         {
-            get
-            {
-                if (_Items is null) _Items = new List<Item>();
-                return _Items;
-            }
-            set { _Items = value; }
+            get { return __MapItems; }
+            set { __MapItems = value; }
         }
-        private List<Item> _Items;
+        private IEnumerable<ILinearMapControlItem> __MapItems;
         /// <summary>
-        /// Celková délka dat, na kterou je prvek dimenzován. Do této délky se promítají prvky v <see cref="Items"/>. 
+        /// Celková délka dat, na kterou je prvek dimenzován. Do této délky se promítají prvky v <see cref="MapItems"/>. 
         /// Pokud je tam větší obsah, pak nadbytečný je ignorován. Pokud je tam méně, pak nevyužitá délka je prázdná.
         /// <para/>
         /// Po změně hodnoty je třeba volat <see cref="Refresh"/>. Samo se nerefreshuje.
@@ -62,7 +58,7 @@ namespace DjSoft.Tools.SDCardTester
         }
         private int _LineHeight = 8;
         #endregion
-        #region Pohyb myši a detekce prvku Item pod myší
+        #region Pohyb myši a detekce prvku MapItem pod myší
         /// <summary>
         /// Inicializace eventů myši
         /// </summary>
@@ -98,7 +94,7 @@ namespace DjSoft.Tools.SDCardTester
         /// <param name="point"></param>
         private void DetectActiveItem(Point point)
         {
-            Item item = null;
+            ILinearMapControlItem item = null;
             var lines = this.Lines;
             if (lines != null)
             {
@@ -106,22 +102,22 @@ namespace DjSoft.Tools.SDCardTester
                 if (line != null)
                     item = line.GetItemAtPoint(point);
             }
-            if (!Object.ReferenceEquals(item, _ActiveItem))
+            if (!Object.ReferenceEquals(item, __ActiveItem))
                 CallActiveItemChanged(item);
         }
         /// <summary>
         /// Aktivní prvek = nad tímto prvkem je myš. Při změně je volána událost <see cref="ActiveItemChanged"/>.
         /// </summary>
-        public Item ActiveItem { get { return _ActiveItem; } }
-        private Item _ActiveItem;
+        public ILinearMapControlItem ActiveItem { get { return __ActiveItem; } }
+        private ILinearMapControlItem __ActiveItem;
         /// <summary>
         /// Uloží dodaný prvek jako aktivní = do <see cref="ActiveItem"/>.
         /// Vyvolá metodu <see cref="OnActiveItemChanged"/> a událost <see cref="ActiveItemChanged"/>.
         /// </summary>
         /// <param name="activeItem"></param>
-        private void CallActiveItemChanged(Item activeItem)
+        private void CallActiveItemChanged(ILinearMapControlItem activeItem)
         {
-            _ActiveItem = activeItem;
+            __ActiveItem = activeItem;
             OnActiveItemChanged();
             ActiveItemChanged?.Invoke(this, EventArgs.Empty);
         }
@@ -204,38 +200,42 @@ namespace DjSoft.Tools.SDCardTester
                 int linesCount = lines.Count;
                 int pixelLength = lines[linesCount - 1].PixelEnd;
 
-                var items = this.Items;
+                var mapItems = this.MapItems;
                 long startPos = 0L;
                 long totalLength = this.TotalLength;
-                foreach (var item in items)
+
+                if (mapItems != null)
                 {
-                    if (startPos >= totalLength) break;                            // Prvek (jeho počátek) se nachází za pozicí konce prostoru => aktuální prvek ani následující prvky už není kam kreslit.
-
-                    var itemLength = item.Length;
-                    if (itemLength <= 0L) continue;                                // Prvek nemá reálnou velikost, nebude vidět
-
-                    decimal relativeBegin = getRelativePosition(startPos);         // Relativní pozice počátku v rozsahu 0 - 1
-                    startPos += itemLength;
-                    decimal relativeEnd = getRelativePosition(startPos);           // Relativní pozice konce v rozsahu 0 - 1
-
-                    if (!item.Color.HasValue) continue;                            // Prvek bez barvy není vidět
-
-                    // Aktuální prvek se může nacházet na jednom, dvou i více grafických řádcích:
-                    //  například: začíná v 30% řádku 2, řádek 2 obsazuje do konce, poté obsazuje celé řádky 3 a 4, a končí na řádku 5 na jeho 80%:
-                    //  anebo začíná na 75% řádku 2 a končí na 10% řádku 3
-                    //  anebo se nachází na řádku 6 v jeho rozmezí 25% - 35%:
-                    LinePointInfo begin = getLinePoint(relativeBegin, true);
-                    LinePointInfo end = getLinePoint(relativeEnd, false);
-                    if (begin is null || end is null) continue;
-
-                    for (int index = begin.LineIndex; index <= end.LineIndex; index++)
+                    foreach (var mapItem in mapItems)
                     {
-                        var lineInfo = lines[index];
-                        Rectangle? bounds = lineInfo.GetInnerBounds(begin, end);
-                        if (bounds.HasValue)
+                        if (startPos >= totalLength) break;                              // Prvek (jeho počátek) se nachází za pozicí konce prostoru => aktuální prvek ani následující prvky už není kam kreslit.
+
+                        var itemLength = mapItem.Length;
+                        if (itemLength <= 0L) continue;                                  // Prvek nemá reálnou velikost, nebude vidět
+
+                        decimal relativeBegin = getRelativePosition(startPos);           // Relativní pozice počátku v rozsahu 0 - 1
+                        startPos += itemLength;
+                        decimal relativeEnd = getRelativePosition(startPos);             // Relativní pozice konce v rozsahu 0 - 1
+
+                        if (!mapItem.Color.HasValue) continue;                           // Prvek bez barvy není vidět
+
+                        // Aktuální prvek se může nacházet na jednom, dvou i více grafických řádcích:
+                        //  například: začíná v 30% řádku 2, řádek 2 obsazuje do konce, poté obsazuje celé řádky 3 a 4, a končí na řádku 5 na jeho 80%:
+                        //  anebo začíná na 75% řádku 2 a končí na 10% řádku 3
+                        //  anebo se nachází na řádku 6 v jeho rozmezí 25% - 35%:
+                        LinePointInfo begin = getLinePoint(relativeBegin, true);
+                        LinePointInfo end = getLinePoint(relativeEnd, false);
+                        if (begin is null || end is null) continue;
+
+                        for (int index = begin.LineIndex; index <= end.LineIndex; index++)
                         {
-                            Painter.PaintBar3D(e.Graphics, item.Color.Value, bounds.Value);
-                            lineInfo.AddPart(item, bounds.Value);
+                            var lineInfo = lines[index];
+                            Rectangle? bounds = lineInfo.GetInnerBounds(begin, end);
+                            if (bounds.HasValue)
+                            {
+                                Painter.PaintBar3D(e.Graphics, mapItem.Color.Value, bounds.Value);
+                                lineInfo.AddPart(mapItem, bounds.Value);
+                            }
                         }
                     }
                 }
@@ -274,10 +274,10 @@ namespace DjSoft.Tools.SDCardTester
         protected List<LineInfo> Lines;
         #endregion
         #region Sub classes a interface
-        public class Item
+        public class Itemxx
         {
-            public Item() { }
-            public Item(long length, Color? color, string text = null, object data = null)
+            public Itemxx() { }
+            public Itemxx(long length, Color? color, string text = null, object data = null)
             {
                 Length = length;
                 Color = color;
@@ -322,7 +322,7 @@ namespace DjSoft.Tools.SDCardTester
                 this.Index = index;
                 this.PixelBegin = pixelBegin;
                 this.Bounds = bounds;
-                this._Parts = new List<Tuple<Rectangle, Item>>();
+                this.__Parts = new List<Tuple<Rectangle, ILinearMapControlItem>>();
             }
             public override string ToString()
             {
@@ -372,11 +372,11 @@ namespace DjSoft.Tools.SDCardTester
             /// </summary>
             /// <param name="point"></param>
             /// <returns></returns>
-            public Item GetItemAtPoint(Point point)
+            public ILinearMapControlItem GetItemAtPoint(Point point)
             {
-                Item item = null;
-                if (_Parts != null)
-                    item = _Parts.FirstOrDefault(t => t.Item1.Contains(point))?.Item2;
+                ILinearMapControlItem item = null;
+                if (__Parts != null)
+                    item = __Parts.FirstOrDefault(t => t.Item1.Contains(point))?.Item2;
                 return item;
             }
             /// <summary>
@@ -399,21 +399,21 @@ namespace DjSoft.Tools.SDCardTester
             /// </summary>
             public void ClearParts()
             {
-                this._Parts.Clear();
+                this.__Parts.Clear();
             }
             /// <summary>
             /// Přidá do evidence přiřazení souřadnic a prvku zobrazeném na té souřadnici
             /// </summary>
             /// <param name="item"></param>
             /// <param name="bounds"></param>
-            public void AddPart(Item item, Rectangle bounds)
+            public void AddPart(ILinearMapControlItem item, Rectangle bounds)
             {
-                this._Parts.Add(new Tuple<Rectangle, Item>(bounds, item));
+                this.__Parts.Add(new Tuple<Rectangle, ILinearMapControlItem>(bounds, item));
             }
             /// <summary>
-            /// Částice
+            /// Částice = jednotlivé prvky, nacházející se na tomto řádku, a jejich souřadnice. Vykresluje se v pořadí, jak jsou v seznamu.
             /// </summary>
-            private List<Tuple<Rectangle, Item>> _Parts;
+            private List<Tuple<Rectangle, ILinearMapControlItem>> __Parts;
         }
         /// <summary>
         /// Definice pozice v řádku
@@ -443,5 +443,23 @@ namespace DjSoft.Tools.SDCardTester
             public int RelativePoint { get; private set; }
         }
         #endregion
+    }
+    /// <summary>
+    /// Předpis pro data jednotlivého prvku, zobrazovaná v <see cref="LinearMapControl"/>
+    /// </summary>
+    public interface ILinearMapControlItem
+    {
+        /// <summary>
+        /// Délka dat v tomto prvku
+        /// </summary>
+        long Length { get; }
+        /// <summary>
+        /// Barva prvku
+        /// </summary>
+        Color? Color { get; }
+        /// <summary>
+        /// Text do ToolTipu
+        /// </summary>
+        string Text { get; }
     }
 }
