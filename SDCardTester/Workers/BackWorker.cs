@@ -143,7 +143,8 @@ namespace DjSoft.Tools.SDCardTester.Workers
         /// </summary>
         public TimeSpan WorkingStepTime { get; set; }
         /// <summary>
-        /// Vrátí true, pokud je vhodné volat <see cref="CallWorkingStep"/>
+        /// Vrátí true, pokud je vhodné volat <see cref="CallWorkingStep"/>.
+        /// To je tehdy, když od posledního volání uplynul čas alespoň <see cref="WorkingStepTime"/>. Pokud je parametr force = true, pak se vrátí true vždy.
         /// </summary>
         /// <param name="force"></param>
         protected bool CanCallWorkingStep(bool force)

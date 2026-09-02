@@ -101,14 +101,47 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 return;
             }
 
+            // Stav "zmapováno" a event CallWorkingStep():
 
+            // Pokud najdeme Output soubor, pak jsme s kopírováním začali už dříve. Zkusíme k němu najít log soubor a podle něj se rozhodneme, zda a odkud a jak pokračovat.
+            // Pokud Log soubor obsahuje "Hotovo OK", pak je záchrana dokončena a pro daný soubor nic neděláme.
+            _PrepareLogFile(fileInfo);
+
+
+            // Nyní máme načten Log soubor, anebo jej máme nově vytvořený, tak s jeho pomocí budeme postupně kopírovat zdrojový soubor do cíle - kopírujeme dosud chybějící neznámé bloky,
+            // a později se pokusíme zkopírovat i chybové bloky:
+
+        }
+        private void _PrepareLogFile(SingleFileInfo fileInfo)
+        {
+            if (File.Exists(fileInfo.DestinationLog))
+            {
+                // Log soubor existuje, načteme jej a podle jeho obsahu se rozhodneme, zda pokračovat, anebo je záchrana dokončena.
+                var logLines = File.ReadAllLines(fileInfo.DestinationLog);
+                if (logLines.Length > 0 && logLines[0].Contains("Hotovo OK"))
+                {
+                    fileInfo.Success = true;
+                    return;
+                }
+            }
+            else
+            {
+                // Log soubor neexistuje, vytvoříme jej s úvodními informacemi.
+                using (var logWriter = new StreamWriter(fileInfo.DestinationLog, false))
+                {
+                    logWriter.WriteLine($"Záchrana souboru: {fileInfo.SourceFile}");
+                    logWriter.WriteLine($"Cílový soubor: {fileInfo.DestinationFile}");
+                    logWriter.WriteLine($"Datum zahájení: {DateTime.Now}");
+                    logWriter.WriteLine("Stav: Zahájeno");
+                }
+            }
         }
         #endregion
         #region Pracovní třídy: SingleFileInfo, SingleLogInfo
         /// <summary>
         /// Třída obsahující základní data o jednom souboru k záchraně, včetně parametrů pro kopírování a výsledku operace.
         /// </summary>
-        private class SingleFileInfo
+        internal class SingleFileInfo
         {
             /// <summary>
             /// Konstruktor, nastaví defaultní hodnoty parametrů pro kopírování a inicializuje stav výsledku.
@@ -155,6 +188,113 @@ namespace DjSoft.Tools.SDCardTester.Workers
             public bool Success { get; set; }
             public string ErrorMessage { get; set; }
         }
+
+        internal class SingleLogInfo
+        {
+            /// <summary>
+            /// Vstupní zdrojový soubor k záchraně.
+            /// </summary>
+            public string SourceFile { get; private set; }
+            /// <summary>
+            /// Cílový soubor pro uložení toho, co lze uložit
+            /// </summary>
+            public string DestinationFile { get; private set; }
+            /// <summary>
+            /// Cílový soubor pro uložení logu záchrany.
+            /// </summary>
+            public string DestinationLog { get; set; }
+            /// <summary>
+            /// Délka vstupního souboru <see cref="SourceFile"/>
+            /// </summary>
+            public long FileLength { get; private set; }
+            public long BlockLength { get; private set; }
+            public System.Collections.SortedList<long, SingleBlockInfo> BlockMap { get; private set; }
+
+            public SingleLogInfo(string sourceFile, string destinationFile, string destinationLog, long blockLength)
+            {
+                SourceFile = sourceFile;
+                DestinationFile = destinationFile;
+                DestinationLog = destinationLog;
+                BlockLength = blockLength;
+                BlockMap = new System.Collections.SortedList<long, SingleBlockInfo>();
+                this.LoadLogFile();
+            }
+
+            private void LoadLogFile()
+            {
+                if (File.Exists(DestinationLog))
+                {
+                    using (var logReader = new StreamReader(DestinationLog))
+                    {
+                        string line;
+                        while ((line = logReader.ReadLine()) != null)
+                        {
+                            if (line.StartsWith("Záchrana souboru:"))
+                            {
+                                SourceFile = line.Substring(17).Trim();
+                            }
+                            else if (line.StartsWith("Cílový soubor:"))
+                            {
+                                DestinationFile = line.Substring(15).Trim();
+                            }
+                            else if (line.StartsWith("Datum zahájení:"))
+                            {
+                                // Můžeme načíst datum zahájení, pokud je potřeba
+                            }
+                            else if (line.StartsWith("Stav:"))
+                            {
+                                // Můžeme načíst stav, pokud je potřeba
+                            }
+                        }
+                    }
+
+
+                    var logLines = File.ReadAllLines(DestinationLog);
+                    foreach (var line in logLines)
+                    {
+                        if (line.StartsWith("Block:"))
+                        {
+                            var parts = line.Substring(6).Split(',');
+                            if (parts.Length == 3)
+                            {
+                                long blockStart = long.Parse(parts[0]);
+                                long blockLength = long.Parse(parts[1]);
+                                bool isErrorBlock = bool.Parse(parts[2]);
+                                BlockMap[blockStart] = new SingleBlockInfo()
+                                {
+                                    BlockStart = blockStart,
+                                    BlockLength = blockLength,
+                                    IsErrorBlock = isErrorBlock
+                                };
+                            }
+                        }
+                    }
+                }
+
+            }
+            private void SaveLogFile()
+            {
+                using (var logWriter = new StreamWriter(DestinationLog, false))
+                {
+                    logWriter.WriteLine($"Záchrana souboru: {SourceFile}");
+                    logWriter.WriteLine($"Cílový soubor: {DestinationFile}");
+                    logWriter.WriteLine($"Datum zahájení: {DateTime.Now}");
+                    logWriter.WriteLine("Stav: Zahájeno");
+                    foreach (var block in BlockMap.Values)
+                    {
+                        logWriter.WriteLine($"Block:{block.BlockStart},{block.BlockLength},{block.IsErrorBlock}");
+                    }
+                }
+            }
+        }
+
+        internal class SingleBlockInfo
+        {
+            public long BlockStart { get; set; }
+            public long BlockLength { get; set; }
+            public bool IsErrorBlock { get; set; }
+        }
+
         #endregion
         #region Win32 API deklarace + konstanty
         // Win32 API deklarace
