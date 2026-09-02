@@ -50,6 +50,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Application\App.cs" />
     <Compile Include="Workers\DriveAnalyser.cs" />
     <Compile Include="Components\DriveInfo.cs">
       <SubType>Component</SubType>
@@ -57,10 +58,10 @@
     <Compile Include="Workers\DriveTester.cs" />
     <Compile Include="Workers\BackWorker.cs" />
     <Compile Include="Helpers.cs" />
-    <Compile Include="MainForm.cs">
+    <Compile Include="Forms\MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="MainForm.Designer.cs">
+    <Compile Include="Forms\MainForm.Designer.cs">
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Program.cs" />
@@ -68,12 +69,12 @@
     <Compile Include="Components\LinearMapControl.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="RunPauseStop.cs">
+    <Compile Include="Components\RunPauseStop.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="TaskProgress.cs" />
+    <Compile Include="Components\TaskProgress.cs" />
     <Compile Include="Workers\FileRescue.cs" />
-    <EmbeddedResource Include="MainForm.resx">
+    <EmbeddedResource Include="Forms\MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">

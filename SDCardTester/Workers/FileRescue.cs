@@ -50,6 +50,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 catch (Exception exc)
                 {
                     fileInfo.ErrorMessage = exc.ToString();
+                    App.ShowError(fileInfo.ErrorMessage, "Chyba při zpracování souboru");
                 }
             }
             CallWorkingDone();
@@ -94,22 +95,25 @@ namespace DjSoft.Tools.SDCardTester.Workers
         /// <param name="fileInfo"></param>
         private void _RunSingleFile(SingleFileInfo fileInfo)
         {
-            fileInfo.SourceFileInfo = new FileInfo(fileInfo.SourceFile);
-            if (!fileInfo.SourceFileInfo.Exists)
-            {
-                fileInfo.ErrorMessage = $"Soubor '{fileInfo.SourceFile}' neexistuje.";
-                return;
-            }
+            __CurrentFile = fileInfo;
+            __CurrentFile.CheckFile();
+            this.CallWorkingStep();
+            if (this.__CurrentFile.SourceFileStatus == FileStatus.NotExists) return;
 
-            // Stav "zmapováno" a event CallWorkingStep():
+            __CurrentFile.LoadLog();
+            this.CallWorkingStep();
+
+            this._RunCopySingleFile();
 
             // Pokud najdeme Output soubor, pak jsme s kopírováním začali už dříve. Zkusíme k němu najít log soubor a podle něj se rozhodneme, zda a odkud a jak pokračovat.
             // Pokud Log soubor obsahuje "Hotovo OK", pak je záchrana dokončena a pro daný soubor nic neděláme.
-            _PrepareLogFile(fileInfo);
-
-
+           
             // Nyní máme načten Log soubor, anebo jej máme nově vytvořený, tak s jeho pomocí budeme postupně kopírovat zdrojový soubor do cíle - kopírujeme dosud chybějící neznámé bloky,
             // a později se pokusíme zkopírovat i chybové bloky:
+
+        }
+        private void _RunCopySingleFile()
+        {
 
         }
         private void _PrepareLogFile(SingleFileInfo fileInfo)
@@ -136,6 +140,22 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 }
             }
         }
+        private SingleFileInfo __CurrentFile;
+        private SingleLogInfo __CurrentLog;
+        
+        /// <summary>
+        /// Stavy práce na jednom souboru
+        /// </summary>
+        public enum FileStatus
+        {
+            None,
+            NotExists,
+            SourceFileExists,
+            LogPrepared,
+            LogLoaded,
+            Copying,
+            Finished
+        }
         #endregion
         #region Pracovní třídy: SingleFileInfo, SingleLogInfo
         /// <summary>
@@ -154,6 +174,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 AbortAfterContinueErrors = 1024;
                 Success = false;
                 ErrorMessage = null;
+                SourceFileStatus = FileStatus.None;
             }
             /// <summary>
             /// Vizualizace objektu, vrací název zdrojového souboru.
@@ -170,7 +191,15 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// <summary>
             /// Info o zdrojovém souboru.
             /// </summary>
-            public FileInfo SourceFileInfo
+            public FileInfo SourceFileInfo { get; private set; }
+            /// <summary>
+            /// Délka vstupního souboru <see cref="SourceFile"/>, pokud existuje, jinak null.
+            /// </summary>
+            public long? SourceFileLength { get { return (SourceFileInfo != null && SourceFileInfo.Exists) ? (long?)SourceFileInfo.Length : (long?)null; } }
+            /// <summary>
+            /// Stav práce na souboru.
+            /// </summary>
+            public FileStatus SourceFileStatus { get; private set; }
             /// <summary>
             /// Cílový soubor pro uložení toho, co lze uložit
             /// </summary>
@@ -187,38 +216,69 @@ namespace DjSoft.Tools.SDCardTester.Workers
 
             public bool Success { get; set; }
             public string ErrorMessage { get; set; }
-        }
 
+            public SingleLogInfo CurrentLog { get; private set; }
+            /// <summary>
+            /// Zkontroluje existenci zdrojového souboru a nastaví <see cref="SourceFileStatus"/> na <see cref="FileStatus.SourceFileExists"/> nebo <see cref="FileStatus.NotExists"/>.
+            /// </summary>
+            public void CheckFile()
+            {
+                SourceFileInfo = new FileInfo(SourceFile);
+                SourceFileStatus = (SourceFileInfo.Exists) ? FileStatus.SourceFileExists : FileStatus.NotExists;
+            }
+            /// <summary>
+            /// Zajistí vytvoření a načtení obsahu logu o souboru
+            /// </summary>
+            public void LoadLog()
+            {
+                CurrentLog = new SingleLogInfo(this);
+                SourceFileStatus = CurrentLog.DestinationLogExists ? FileStatus.LogLoaded : FileStatus.LogPrepared;
+            }
+        }
+        /// <summary>
+        /// Informace o stavu záchrany jednoho souboru, včetně mapy bloků a jejich stavu.
+        /// </summary>
         internal class SingleLogInfo
         {
             /// <summary>
+            /// Konstruktor
+            /// </summary>
+            public SingleLogInfo(SingleFileInfo fileInfo)
+            {
+                __FileInfo = fileInfo;
+                BlockLength = fileInfo.FastCopyBlockSize;
+                BlockMap = new System.Collections.Generic.SortedList<long, SingleBlockInfo>();
+                this.LoadLogFile();
+            }
+            private SingleFileInfo __FileInfo;
+            /// <summary>
             /// Vstupní zdrojový soubor k záchraně.
             /// </summary>
-            public string SourceFile { get; private set; }
+            public string SourceFile { get { return __FileInfo.SourceFile; } }
             /// <summary>
             /// Cílový soubor pro uložení toho, co lze uložit
             /// </summary>
-            public string DestinationFile { get; private set; }
+            public string DestinationFile { get { return __FileInfo.DestinationFile; } }
             /// <summary>
             /// Cílový soubor pro uložení logu záchrany.
             /// </summary>
-            public string DestinationLog { get; set; }
+            public string DestinationLog { get { return __FileInfo.DestinationLog; } }
+            /// <summary>
+            /// Cílový soubor pro uložení logu existuje?
+            /// </summary>
+            public bool DestinationLogExists { get; private set; }
             /// <summary>
             /// Délka vstupního souboru <see cref="SourceFile"/>
             /// </summary>
-            public long FileLength { get; private set; }
+            public long? SourceFileLength { get { return __FileInfo.SourceFileLength; } }
+            /// <summary>
+            /// Délka standardního bloku pro kopírování, podle které se vytváří mapování bloků v <see cref="BlockMap"/>.
+            /// </summary>
             public long BlockLength { get; private set; }
-            public System.Collections.SortedList<long, SingleBlockInfo> BlockMap { get; private set; }
-
-            public SingleLogInfo(string sourceFile, string destinationFile, string destinationLog, long blockLength)
-            {
-                SourceFile = sourceFile;
-                DestinationFile = destinationFile;
-                DestinationLog = destinationLog;
-                BlockLength = blockLength;
-                BlockMap = new System.Collections.SortedList<long, SingleBlockInfo>();
-                this.LoadLogFile();
-            }
+            /// <summary>
+            /// Bloky souboru, kde klíčem je počáteční offset bloku a hodnotou je informace o daném bloku <see cref="SingleBlockInfo"/>.
+            /// </summary>
+            public System.Collections.Generic.SortedList<long, SingleBlockInfo> BlockMap { get; private set; }
 
             private void LoadLogFile()
             {
@@ -229,6 +289,8 @@ namespace DjSoft.Tools.SDCardTester.Workers
                         string line;
                         while ((line = logReader.ReadLine()) != null)
                         {
+
+
                             if (line.StartsWith("Záchrana souboru:"))
                             {
                                 SourceFile = line.Substring(17).Trim();
