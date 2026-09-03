@@ -240,29 +240,46 @@ namespace DjSoft.Tools.SDCardTester.Workers
         /// </summary>
         internal class SingleLogInfo
         {
+            #region Data celého logu
             /// <summary>
             /// Konstruktor
             /// </summary>
             public SingleLogInfo(SingleFileInfo fileInfo)
             {
-                __FileInfo = fileInfo;
+                FileInfo = fileInfo;
                 BlockLength = fileInfo.FastCopyBlockSize;
-                BlockMap = new System.Collections.Generic.SortedList<long, SingleBlockInfo>();
+                BlockMap = new Dictionary<long, SingleBlockInfo>();
                 this.LoadLogFile();
             }
-            private SingleFileInfo __FileInfo;
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                var statistic = this.Statistic;
+                return $"File: {SourceFile}; Length: {SourceFileLength:3} B; Processed: {statistic.TotalBlocksSize:3} B; WithErrors: {statistic.BadBlocksSize:3} B";
+            }
+            /// <summary>
+            /// Zámek, který zajišťuje, že při současném přístupu z více threadů se log soubor ukládá bezpečně a nedojde k poškození dat.
+            /// </summary>
+            private object __LogSaveLock = new object();
+            /// <summary>
+            /// Informace o zdrojovém souboru.
+            /// </summary>
+            public SingleFileInfo FileInfo { get; private set; }
             /// <summary>
             /// Vstupní zdrojový soubor k záchraně.
             /// </summary>
-            public string SourceFile { get { return __FileInfo.SourceFile; } }
+            public string SourceFile { get { return FileInfo.SourceFile; } }
             /// <summary>
             /// Cílový soubor pro uložení toho, co lze uložit
             /// </summary>
-            public string DestinationFile { get { return __FileInfo.DestinationFile; } }
+            public string DestinationFile { get { return FileInfo.DestinationFile; } }
             /// <summary>
             /// Cílový soubor pro uložení logu záchrany.
             /// </summary>
-            public string DestinationLog { get { return __FileInfo.DestinationLog; } }
+            public string DestinationLog { get { return FileInfo.DestinationLog; } }
             /// <summary>
             /// Cílový soubor pro uložení logu existuje?
             /// </summary>
@@ -270,7 +287,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// <summary>
             /// Délka vstupního souboru <see cref="SourceFile"/>
             /// </summary>
-            public long? SourceFileLength { get { return __FileInfo.SourceFileLength; } }
+            public long? SourceFileLength { get { return FileInfo.SourceFileLength; } }
             /// <summary>
             /// Délka standardního bloku pro kopírování, podle které se vytváří mapování bloků v <see cref="BlockMap"/>.
             /// </summary>
@@ -278,83 +295,289 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// <summary>
             /// Bloky souboru, kde klíčem je počáteční offset bloku a hodnotou je informace o daném bloku <see cref="SingleBlockInfo"/>.
             /// </summary>
-            public System.Collections.Generic.SortedList<long, SingleBlockInfo> BlockMap { get; private set; }
+            public System.Collections.Generic.Dictionary<long, SingleBlockInfo> BlockMap { get; private set; }
+            #endregion
+            #region Statistika
+            public StatisticInfo Statistic
+            {
+                get
+                {
+                    var statistic = new StatisticInfo(SourceFileLength ?? 0L);
+                    var blocks = BlockMap.Values;
+                    foreach ( var block in blocks )
+                        statistic.AddBlock( block );
 
+                    return statistic;
+                }
+            }
+            public class StatisticInfo
+            {
+                public StatisticInfo(long fileSize)
+                {
+                    this.FileSize = fileSize;
+                }
+                public void AddBlock(SingleBlockInfo block)
+                {
+                    TotalBlocks++;
+                    TotalBlocksSize += block.BlockLength;
+                    
+                    if (block.IsErrorBlock)
+                    {
+                        this.BadBlocks++;
+                        this.BadBlocksSize += block.BlockLength;
+                    }
+                }
+                public long FileSize { get; private set; }
+                public int TotalBlocks { get; private set; }
+                public long TotalBlocksSize { get; private set; }
+                public int BadBlocks { get; private set; }
+                public long BadBlocksSize { get; private set; }
+            }
+            #endregion
+
+            #region Ukládání a načítání dat logu
+            /// <summary>
+            /// Uloží Log do souboru <see cref="DestinationLog"/>. Pokud soubor existuje, přepíše jej.
+            /// </summary>
+            public void SaveLogFile()
+            {
+                // Toto může chvilku trvat...:
+                var blocks = BlockMap.Values.ToList();
+                blocks.Sort((a, b) => a.BlockStart.CompareTo(b.BlockStart));
+                var totalBlocksSize = blocks.Sum(b => b.BlockLength);
+                var badBlocks = blocks.Where(b => b.IsErrorBlock).ToList();
+                var badBlocksSize = badBlocks.Sum(b => b.BlockLength);
+
+                // Zápis jen z jednoho threadu:
+                lock (__LogSaveLock)
+                {
+                    string delim = DELIMITER_HEADER;
+                    using (var logWriter = new StreamWriter(DestinationLog, false))
+                    {
+                        logWriter.WriteLine("#############################################################################################");
+                        logWriter.WriteLine($"SourceFile:       {delim}{SourceFile}");
+                        logWriter.WriteLine($"DestinationFile:  {delim}{DestinationFile}");
+                        logWriter.WriteLine($"FileLength:       {delim}{SourceFileLength}B");
+                        logWriter.WriteLine($"ProcessedSize:    {delim}{totalBlocksSize}B");
+                        logWriter.WriteLine($"BadBlocksCount:   {delim}{badBlocks.Count}");
+                        logWriter.WriteLine($"BadBlockSize:     {delim}{badBlocksSize}B");
+
+                        if (badBlocks.Count > 0)
+                        {
+                            logWriter.WriteLine("#############################################################################################");
+                            logWriter.WriteLine($"BadBlocks:");
+                            foreach (var badBlock in badBlocks)
+                                logWriter.WriteLine(badBlock.GetLineToLog());
+                        }
+
+
+                        logWriter.WriteLine("#############################################################################################");
+                        logWriter.WriteLine($"Blocks:");
+                        foreach (var block in blocks)
+                            logWriter.WriteLine(block.GetLineToLog());
+
+                        logWriter.WriteLine("#############################################################################################");
+
+                        logWriter.Flush();
+                        logWriter.Close();
+                    }
+                }
+            }
+            /// <summary>
+            /// Načte data ze souboru <see cref="DestinationLog"/> a naplní mapu bloků <see cref="BlockMap"/> podle obsahu logu. Pokud soubor neexistuje, vytvoří prázdnou mapu bloků.
+            /// </summary>
             private void LoadLogFile()
             {
                 if (File.Exists(DestinationLog))
                 {
+                    string delim = DELIMITER_HEADER;
+                    var state = LogFilePartType.None;
                     using (var logReader = new StreamReader(DestinationLog))
                     {
                         string line;
                         while ((line = logReader.ReadLine()) != null)
                         {
+                            var text = line.Trim();
 
+                            if (text.StartsWith("#######"))
+                            {   // Oddělovač částí resetuje stav, následně budeme teprve detekovat, co obsahuje:
+                                state = LogFilePartType.None;
+                                continue;
+                            }
 
-                            if (line.StartsWith("Záchrana souboru:"))
+                            if ((state == LogFilePartType.None || state == LogFilePartType.Header) && text.Contains(delim))
                             {
-                                SourceFile = line.Substring(17).Trim();
-                            }
-                            else if (line.StartsWith("Cílový soubor:"))
-                            {
-                                DestinationFile = line.Substring(15).Trim();
-                            }
-                            else if (line.StartsWith("Datum zahájení:"))
-                            {
-                                // Můžeme načíst datum zahájení, pokud je potřeba
-                            }
-                            else if (line.StartsWith("Stav:"))
-                            {
-                                // Můžeme načíst stav, pokud je potřeba
-                            }
-                        }
-                    }
+                                state = LogFilePartType.Header;
+                                var headerParts = text.Split(new string[] { delim }, StringSplitOptions.None);
+                                var headerCount = headerParts.Length;
+                                var headerName = headerParts[0].Trim();
 
+                                /* Takto lze načíst data, která uchovává log soubor v hlavičce, a jsou primárně daná Logem, a nikoli Souborem:
+                                if (headerCount == 2 && headerName == "SourceFile:")
+                                    SourceFile = headerParts[1].Trim();
+                                else if (headerCount == 2 && headerName == "DestinationFile:")
+                                    DestinationFile = headerParts[1].Trim();
+                                */
 
-                    var logLines = File.ReadAllLines(DestinationLog);
-                    foreach (var line in logLines)
-                    {
-                        if (line.StartsWith("Block:"))
-                        {
-                            var parts = line.Substring(6).Split(',');
-                            if (parts.Length == 3)
-                            {
-                                long blockStart = long.Parse(parts[0]);
-                                long blockLength = long.Parse(parts[1]);
-                                bool isErrorBlock = bool.Parse(parts[2]);
-                                BlockMap[blockStart] = new SingleBlockInfo()
-                                {
-                                    BlockStart = blockStart,
-                                    BlockLength = blockLength,
-                                    IsErrorBlock = isErrorBlock
-                                };
+                                // Header obsahuje i další informace, které jsou primárně určeny pro lidského čtenáře (ProcessedSize, BadBlocksCount, BadBlockSize).
+                                continue;
+                            }
+
+                            if ((state == LogFilePartType.None) && text == "BadBlocks:")
+                            {   // Pokud nyní narazíme na text "BadBlocks:", pak přejdeme do stavu BadBlocks a následující blok nebudeme načítat. BadBlocks jsou součástí všech bloků.
+                                state = LogFilePartType.BadBlocks;
+                                continue;
+                            }
+
+                            if ((state == LogFilePartType.None) && text == "Blocks:")
+                            {   // Pokud nyní narazíme na text "Blocks:", pak přejdeme do stavu AllBocks a následně budeme načítat jednotlivé bloky:
+                                state = LogFilePartType.AllBocks;
+                                continue;
+                            }
+
+                            if (state == LogFilePartType.BadBlocks)
+                            {   // Bloky chybových bloků jsou součástí všech bloků, takže je zde nebudeme načítat:
+                                continue;
+                            }
+
+                            if (state == LogFilePartType.AllBocks)
+                            {   // Načítáme jednotlivé bloky a ukládáme je do mapy <see cref="BlockMap"/>:
+                                var blockInfo = SingleBlockInfo.FromLogLine(line);
+                                if (blockInfo != null)
+                                {   // Akceptujeme jen první výskyt bloku s daným počátečním offsetem, pokud by se v logu vyskytl duplicitně:
+                                    // V Dictionary smí být pouze 1x
+                                    var blockStart = blockInfo.BlockStart;
+                                    if (!BlockMap.ContainsKey(blockStart))
+                                        BlockMap.Add(blockStart, blockInfo);
+                                }
+                                continue;
                             }
                         }
                     }
                 }
-
             }
-            private void SaveLogFile()
+            /// <summary>
+            /// Odstavec v načítaném souboru logu, který určuje, co se v něm nachází. Podle toho se rozhodujeme, zda a jak jej načítat.
+            /// </summary>
+            private enum LogFilePartType
             {
-                using (var logWriter = new StreamWriter(DestinationLog, false))
-                {
-                    logWriter.WriteLine($"Záchrana souboru: {SourceFile}");
-                    logWriter.WriteLine($"Cílový soubor: {DestinationFile}");
-                    logWriter.WriteLine($"Datum zahájení: {DateTime.Now}");
-                    logWriter.WriteLine("Stav: Zahájeno");
-                    foreach (var block in BlockMap.Values)
-                    {
-                        logWriter.WriteLine($"Block:{block.BlockStart},{block.BlockLength},{block.IsErrorBlock}");
-                    }
-                }
+                None,
+                Header,
+                BadBlocks,
+                AllBocks
             }
+            private const string DELIMITER_HEADER = "\t";
+            #endregion
         }
-
+        /// <summary>
+        /// Data o jednom kopírovaném bloku souboru, včetně jeho stavu a počtu pokusů o znovunačtení.
+        /// </summary>
         internal class SingleBlockInfo
         {
+            #region Data bloku
+            public override string ToString()
+            {
+                return $"Start: {BlockStart:3}; Length: {BlockLength:3}";
+            }
+            /// <summary>
+            /// Adresa začátku bloku v souboru, offset od začátku souboru.
+            /// </summary>
             public long BlockStart { get; set; }
+            /// <summary>
+            /// Délka bloku. Pokud je blok OK, pak má standardní délku <see cref="SingleFileInfo.FastCopyBlockSize"/>, pokud je blok chybový, pak může být kratší.
+            /// </summary>
             public long BlockLength { get; set; }
-            public bool IsErrorBlock { get; set; }
+            /// <summary>
+            /// Počet pokusů o znovunačtení po chybě = počet pokusů o čtení, které skončily chybou. Pokud je blok OK, pak je 0, pokud je blok chybový, pak je větší než 0.
+            /// </summary>
+            public int ReReadCount { get; set; }
+            /// <summary>
+            /// Stav bloku, zda je OK, nebo obsahuje chyby. Pokud je blok OK, pak je <see cref="ReReadCount"/> 0, pokud je blok chybový, pak je <see cref="ReReadCount"/> větší než 0.
+            /// </summary>
+            public BlockStatus Status { get; set; }
+            /// <summary>
+            /// Obsahuje true, pokud <see cref="Status"/> obsahuje nějakou chybu.
+            /// </summary>
+            public bool IsErrorBlock { get { var st = this.Status; return (st == SingleBlockInfo.BlockStatus.WithError || st == SingleBlockInfo.BlockStatus.ErrorAborted || st == SingleBlockInfo.BlockStatus.ErrorCopied); } }
+            /// <summary>
+            /// Stav bloku
+            /// </summary>
+            public enum BlockStatus
+            {
+                /// <summary>
+                /// Blok je v neznámém stavu, nebyl dosud zpracován.
+                /// Počitadlo <see cref="SingleBlockInfo.ReReadCount"/> je 0.
+                /// </summary>
+                None,
+                /// <summary>
+                /// Blok byl úspěšně zkopírován, bez chyb, je OK.
+                /// Počitadlo <see cref="SingleBlockInfo.ReReadCount"/> je 0.
+                /// </summary>
+                OK,
+                /// <summary>
+                /// Blok hlásí chyby, dosud nebyl úspěšně zkopírován, proběhne další pokus.
+                /// Počitadlo <see cref="SingleBlockInfo.ReReadCount"/> obsahuje počet pokusů. které skončily chybou.
+                /// </summary>
+                WithError,
+                /// <summary>
+                /// Blok obsahuje chyby, ale byl přeskočen a záchrana pokračuje na dalším bloku.
+                /// Počitadlo <see cref="SingleBlockInfo.ReReadCount"/> obsahuje počet pokusů. které skončily chybou. Po posledním z nich byl blok trvale abortován.
+                /// </summary>
+                ErrorAborted,
+                /// <summary>
+                /// Blok obsahuje chyby, ale po několika pokusech byl úspěšně zkopírován a záchrana pokračuje na dalším bloku.
+                /// Počitadlo <see cref="SingleBlockInfo.ReReadCount"/> obsahuje počet pokusů. které skončily chybou, před tím než se jej podařilo zkopírovat.
+                /// </summary>
+                ErrorCopied
+            }
+            #endregion
+            #region Serializace a deserializace do logového souboru
+            /// <summary>
+            /// Vytvoří nový blok z dat v dodané řádce. Anebo vrátí null.
+            /// Zdejší data do řádku formátuje reverzní metoda <see cref="GetLineToLog()"/>.
+            /// </summary>
+            /// <param name="line"></param>
+            /// <returns></returns>
+            public static SingleBlockInfo FromLogLine(string line)
+            {
+                if (String.IsNullOrWhiteSpace(line)) return null;
+                var d = DELIMITER_ITEMS;
+                var parts = line.Split(new string[] { d }, StringSplitOptions.None);
+                var count = parts.Length;
+
+                long? blockStart = null;
+                long? blockLength = null;
+                int? reReadCount = null;
+                BlockStatus? status = null;
+
+                if (count >= 1 && Int64.TryParse(parts[0], out long start) && start >= 0L) blockStart = start;
+                if (count >= 2 && Int64.TryParse(parts[1], out long length) && length >= 0L) blockLength = length;
+                if (count >= 3 && Int32.TryParse(parts[2], out int rrCnt) && rrCnt >= 0) reReadCount = rrCnt;
+                if (count >= 4 && Enum.TryParse<BlockStatus>(parts[3], out var stt)) status = stt;
+
+                var hasData = blockStart.HasValue && blockLength.HasValue && reReadCount.HasValue && status.HasValue;
+                if (!hasData) return null;
+
+                return new SingleBlockInfo()
+                {
+                    BlockStart = blockStart.Value,
+                    BlockLength = blockLength.Value,
+                    ReReadCount = reReadCount.Value,
+                    Status = status.Value
+                };
+            }
+            /// <summary>
+            /// Vrátí řádek, který lze uložit do logového souboru.
+            /// Reverzní metoda je <see cref="FromLogLine(string)"/>.
+            /// </summary>
+            /// <returns></returns>
+            public string GetLineToLog()
+            {
+                var d = DELIMITER_ITEMS;
+                return $"{BlockStart}{d}{BlockLength}{d}{ReReadCount}{d}{Status}";
+            }
+            private const string DELIMITER_ITEMS = ";";
+            #endregion
         }
 
         #endregion
