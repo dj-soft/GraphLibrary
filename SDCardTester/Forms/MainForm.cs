@@ -834,6 +834,16 @@ namespace DjSoft.Tools.SDCardTester
             _FileRescuer = fileRescuer;
             fileRescuer.Start(inputInfo);
         }
+        /// <summary>
+        /// Požadavek na zastavení běhu
+        /// </summary>
+        private void RunPauseStopFileRescue(RunState state)
+        {
+            if (_FileRescuer != null)
+                _FileRescuer?.ChangeState(state);
+            else
+                ShowControls(ActionState.Dialog, false);
+        }
 
         private void _FileRescuer_WorkingStep(object sender, EventArgs e)
         {

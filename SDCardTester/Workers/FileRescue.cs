@@ -40,6 +40,8 @@ namespace DjSoft.Tools.SDCardTester.Workers
         /// </summary>
         protected override void Run()
         {
+            if (Stopping) return;
+
             _PrepareResults();
             foreach (var fileInfo in __Files)
             {
@@ -95,13 +97,18 @@ namespace DjSoft.Tools.SDCardTester.Workers
         /// <param name="fileInfo"></param>
         private void _RunSingleFile(SingleFileInfo fileInfo)
         {
+            if (Stopping) return;
+
             __CurrentFile = fileInfo;
             __CurrentFile.CheckFile();
             this.CallWorkingStep();
             if (this.__CurrentFile.SourceFileStatus == FileStatus.NotExists) return;
+            if (Stopping) return;
 
             __CurrentFile.LoadLog();
+            __CurrentLog = __CurrentFile.CurrentLog;
             this.CallWorkingStep();
+            if (Stopping) return;
 
             this._RunCopySingleFile();
 
@@ -114,29 +121,15 @@ namespace DjSoft.Tools.SDCardTester.Workers
         }
         private void _RunCopySingleFile()
         {
+            if (Stopping) return;
 
-        }
-        private void _PrepareLogFile(SingleFileInfo fileInfo)
-        {
-            if (File.Exists(fileInfo.DestinationLog))
+            // using otevři soubory
             {
-                // Log soubor existuje, načteme jej a podle jeho obsahu se rozhodneme, zda pokračovat, anebo je záchrana dokončena.
-                var logLines = File.ReadAllLines(fileInfo.DestinationLog);
-                if (logLines.Length > 0 && logLines[0].Contains("Hotovo OK"))
+                // while true
                 {
-                    fileInfo.Success = true;
-                    return;
-                }
-            }
-            else
-            {
-                // Log soubor neexistuje, vytvoříme jej s úvodními informacemi.
-                using (var logWriter = new StreamWriter(fileInfo.DestinationLog, false))
-                {
-                    logWriter.WriteLine($"Záchrana souboru: {fileInfo.SourceFile}");
-                    logWriter.WriteLine($"Cílový soubor: {fileInfo.DestinationFile}");
-                    logWriter.WriteLine($"Datum zahájení: {DateTime.Now}");
-                    logWriter.WriteLine("Stav: Zahájeno");
+                    if (Stopping) return;
+                    var workBlock = __CurrentLog.GetNextWorkBlock();
+                    if (workBlock is null) break;
                 }
             }
         }
@@ -216,7 +209,9 @@ namespace DjSoft.Tools.SDCardTester.Workers
 
             public bool Success { get; set; }
             public string ErrorMessage { get; set; }
-
+            /// <summary>
+            /// Aktuálně načtený LOG
+            /// </summary>
             public SingleLogInfo CurrentLog { get; private set; }
             /// <summary>
             /// Zkontroluje existenci zdrojového souboru a nastaví <see cref="SourceFileStatus"/> na <see cref="FileStatus.SourceFileExists"/> nebo <see cref="FileStatus.NotExists"/>.
@@ -334,7 +329,6 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 public long BadBlocksSize { get; private set; }
             }
             #endregion
-
             #region Ukládání a načítání dat logu
             /// <summary>
             /// Uloží Log do souboru <see cref="DestinationLog"/>. Pokud soubor existuje, přepíše jej.
@@ -399,65 +393,65 @@ namespace DjSoft.Tools.SDCardTester.Workers
                         {
                             var text = line.Trim();
 
+                            // Řádek typicky ###################################################################### je oddělovačem odstavců:
                             if (text.StartsWith("#######"))
                             {   // Oddělovač částí resetuje stav, následně budeme teprve detekovat, co obsahuje:
                                 state = LogFilePartType.None;
                                 continue;
                             }
 
-                            if ((state == LogFilePartType.None || state == LogFilePartType.Header) && text.Contains(delim))
+                            // Detekce: Pokud jsme na začátku odstavce a nevíme, co bude obsahovat, tak zkusíme detekovat obsah:
+                            if (state == LogFilePartType.None)
                             {
-                                state = LogFilePartType.Header;
-                                var headerParts = text.Split(new string[] { delim }, StringSplitOptions.None);
-                                var headerCount = headerParts.Length;
-                                var headerName = headerParts[0].Trim();
-
-                                /* Takto lze načíst data, která uchovává log soubor v hlavičce, a jsou primárně daná Logem, a nikoli Souborem:
-                                if (headerCount == 2 && headerName == "SourceFile:")
-                                    SourceFile = headerParts[1].Trim();
-                                else if (headerCount == 2 && headerName == "DestinationFile:")
-                                    DestinationFile = headerParts[1].Trim();
-                                */
-
-                                // Header obsahuje i další informace, které jsou primárně určeny pro lidského čtenáře (ProcessedSize, BadBlocksCount, BadBlockSize).
-                                continue;
+                                if (text.Contains(delim)) state = LogFilePartType.Header;                         // Tento odstavec pokračuje dál a zpracuje i svůj první řádek
+                                if (text == "BadBlocks:") { state = LogFilePartType.BadBlocks; continue; }        // Tento odstavec nezpracovává svůj vlastní řádek titulku
+                                if (text == "Blocks:") { state = LogFilePartType.AllBocks; continue; }            // Tento odstavec nezpracovává svůj vlastní řádek titulku
                             }
 
-                            if ((state == LogFilePartType.None) && text == "BadBlocks:")
-                            {   // Pokud nyní narazíme na text "BadBlocks:", pak přejdeme do stavu BadBlocks a následující blok nebudeme načítat. BadBlocks jsou součástí všech bloků.
-                                state = LogFilePartType.BadBlocks;
-                                continue;
-                            }
+                            // Obsah načítaných bloků:
+                            switch (state)
+                            {
+                                case LogFilePartType.Header:
+                                    // Načítáme záhlaví, které obsahuje řádky typicky: "Jméno      :TAB hodnota
+                                    var headerParts = text.Split(new string[] { delim }, StringSplitOptions.None);
+                                    var headerCount = headerParts.Length;
+                                    var headerName = headerParts[0].Trim();
 
-                            if ((state == LogFilePartType.None) && text == "Blocks:")
-                            {   // Pokud nyní narazíme na text "Blocks:", pak přejdeme do stavu AllBocks a následně budeme načítat jednotlivé bloky:
-                                state = LogFilePartType.AllBocks;
-                                continue;
-                            }
+                                    /* Takto lze načíst data, která uchovává log soubor v hlavičce, a jsou primárně daná Logem, a nikoli Souborem:
+                                    if (headerCount == 2 && headerName == "SourceFile:")
+                                        SourceFile = headerParts[1].Trim();
+                                    else if (headerCount == 2 && headerName == "DestinationFile:")
+                                        DestinationFile = headerParts[1].Trim();
+                                    */
 
-                            if (state == LogFilePartType.BadBlocks)
-                            {   // Bloky chybových bloků jsou součástí všech bloků, takže je zde nebudeme načítat:
-                                continue;
-                            }
+                                    // Header obsahuje i další informace, které jsou primárně určeny pro lidského čtenáře (ProcessedSize, BadBlocksCount, BadBlockSize).
+                                    break;
 
-                            if (state == LogFilePartType.AllBocks)
-                            {   // Načítáme jednotlivé bloky a ukládáme je do mapy <see cref="BlockMap"/>:
-                                var blockInfo = SingleBlockInfo.FromLogLine(line);
-                                if (blockInfo != null)
-                                {   // Akceptujeme jen první výskyt bloku s daným počátečním offsetem, pokud by se v logu vyskytl duplicitně:
-                                    // V Dictionary smí být pouze 1x
-                                    var blockStart = blockInfo.BlockStart;
-                                    if (!BlockMap.ContainsKey(blockStart))
-                                        BlockMap.Add(blockStart, blockInfo);
-                                }
-                                continue;
+                                case LogFilePartType.BadBlocks:
+                                    // BadBlocks jsou do Logu vypisovány jen informativně pro uživatele, ale jsou standardně obsaženy v následné sekci AllBlocks:
+                                    break;
+
+                                case LogFilePartType.AllBocks:
+                                    // Načítáme řádek obshaující jednotlivé bloky:
+                                    var blockInfo = SingleBlockInfo.FromLogLine(line);
+                                    if (blockInfo != null)
+                                    {   // Akceptujeme jen první výskyt bloku s daným počátečním offsetem!
+                                        // Pokud by se v logu vyskytl duplicitně, tak ten následující ignorujeme.
+                                        // V Dictionary smí být pouze 1x, takže do záznamu se měl dostat jen jedinkrát.
+                                        var blockStart = blockInfo.BlockStart;
+                                        if (!BlockMap.ContainsKey(blockStart))
+                                            BlockMap.Add(blockStart, blockInfo);
+                                    }
+                                    break;
+
+                                // Jiné bloky nenačítáme...
                             }
                         }
                     }
                 }
             }
             /// <summary>
-            /// Odstavec v načítaném souboru logu, který určuje, co se v něm nachází. Podle toho se rozhodujeme, zda a jak jej načítat.
+            /// Typ odstavce v načítaném souboru logu, který určuje, co se v něm nachází. Podle toho se rozhodujeme, zda a jak jej načítat.
             /// </summary>
             private enum LogFilePartType
             {
@@ -466,6 +460,9 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 BadBlocks,
                 AllBocks
             }
+            /// <summary>
+            /// Oddělovač v hlavičce: název hodnoty od vlastní hodnoty
+            /// </summary>
             private const string DELIMITER_HEADER = "\t";
             #endregion
         }
@@ -475,6 +472,10 @@ namespace DjSoft.Tools.SDCardTester.Workers
         internal class SingleBlockInfo
         {
             #region Data bloku
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
             public override string ToString()
             {
                 return $"Start: {BlockStart:3}; Length: {BlockLength:3}";
@@ -488,11 +489,11 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// </summary>
             public long BlockLength { get; set; }
             /// <summary>
-            /// Počet pokusů o znovunačtení po chybě = počet pokusů o čtení, které skončily chybou. Pokud je blok OK, pak je 0, pokud je blok chybový, pak je větší než 0.
+            /// Počet pokusů o znovunačtení po chybě = počet pokusů o čtení, které skončily chybou. Pokud je blok OK, pak je == 0, pokud je blok chybový, pak je větší než 0.
             /// </summary>
             public int ReReadCount { get; set; }
             /// <summary>
-            /// Stav bloku, zda je OK, nebo obsahuje chyby. Pokud je blok OK, pak je <see cref="ReReadCount"/> 0, pokud je blok chybový, pak je <see cref="ReReadCount"/> větší než 0.
+            /// Stav bloku, zda je OK, nebo obsahuje chyby. Pokud je blok OK, pak je <see cref="ReReadCount"/> == 0, pokud je blok chybový, pak je <see cref="ReReadCount"/> větší než 0.
             /// </summary>
             public BlockStatus Status { get; set; }
             /// <summary>
@@ -533,6 +534,16 @@ namespace DjSoft.Tools.SDCardTester.Workers
             #endregion
             #region Serializace a deserializace do logového souboru
             /// <summary>
+            /// Vrátí řádek, který lze uložit do logového souboru.
+            /// Reverzní metoda je <see cref="FromLogLine(string)"/>.
+            /// </summary>
+            /// <returns></returns>
+            public string GetLineToLog()
+            {
+                var d = DELIMITER_ITEMS;
+                return $"{BlockStart}{d}{BlockLength}{d}{ReReadCount}{d}{Status}";
+            }
+            /// <summary>
             /// Vytvoří nový blok z dat v dodané řádce. Anebo vrátí null.
             /// Zdejší data do řádku formátuje reverzní metoda <see cref="GetLineToLog()"/>.
             /// </summary>
@@ -565,16 +576,6 @@ namespace DjSoft.Tools.SDCardTester.Workers
                     ReReadCount = reReadCount.Value,
                     Status = status.Value
                 };
-            }
-            /// <summary>
-            /// Vrátí řádek, který lze uložit do logového souboru.
-            /// Reverzní metoda je <see cref="FromLogLine(string)"/>.
-            /// </summary>
-            /// <returns></returns>
-            public string GetLineToLog()
-            {
-                var d = DELIMITER_ITEMS;
-                return $"{BlockStart}{d}{BlockLength}{d}{ReReadCount}{d}{Status}";
             }
             private const string DELIMITER_ITEMS = ";";
             #endregion
