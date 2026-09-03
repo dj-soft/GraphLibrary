@@ -133,6 +133,87 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 }
             }
         }
+
+        /*
+      private void _CopyFastNet()
+        {
+            try
+            {
+                FileCopierRequest request = this.Request;
+                var sourceFile = request.SourceFile;
+                var targetFile = request.DestinationFile;
+                var fastBlockSize = request.FastCopyBlockSize;
+
+                using (var sourceStream = System.IO.File.Open(sourceFile, FileMode.Open, FileAccess.Read, FileShare.Read))                 // System.IO.File.OpenRead(sourceFile))
+                using (var targetStream = System.IO.File.Open(targetFile, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read))        // System.IO.File.OpenWrite(targetFile))
+                {
+                    // sourceStream.ReadTimeout = 400;
+                    _CallProgress(ProgressStateType.Begin);
+                    long position = this.ContentMap.StartPositionFastCopy;
+                    long unsavedLength = 0L;
+                    while (true)
+                    {
+                        // _CallProgressStep(getInfo(offset + _BlockSizeDefault, length), offset, 0);
+                        var size = _CopyFastNetBlock(sourceStream, targetStream, position, fastBlockSize, ref unsavedLength);
+                        if (size == 0 || CancelProcess) break;
+                        position += size;
+                    }
+                    targetStream.Flush();
+                    this.ContentMap.FlushMetadata();
+                    _CallProgress(ProgressStateType.End);
+                }
+            }
+            catch (Exception exc)
+            {
+            }
+        }
+        private int _CopyFastNetBlock(FileStream sourceStream, FileStream targetStream, long position, int fastBlockSize, ref long unsavedLength)
+        {
+            var bufferSize = this.ContentMap.GetRealBufferSize(position, fastBlockSize);
+            if (bufferSize <= 0L) return 0;
+            _CallProgress(ProgressStateType.Read, position, bufferSize);
+
+            int processSize = 0;
+            try
+            {
+                var buffer = new byte[bufferSize];
+                _ResetTime();
+                sourceStream.Seek(position, SeekOrigin.Begin);
+                processSize = sourceStream.Read(buffer, 0, fastBlockSize);
+                if (processSize > 0)
+                {
+                    targetStream.Seek(position, SeekOrigin.Begin);
+                    targetStream.Write(buffer, 0, processSize);
+                    unsavedLength += processSize;
+                }
+                this.ContentMap.AddBlock(position, processSize, BlockStateType.ContainsData, _TimeMilisec);
+                _CallProgress(ProgressStateType.Written, position, bufferSize);
+            }
+            catch (Exception exc)
+            {
+                _CallProgress(ProgressStateType.Error, position, bufferSize, 1, exc.Message, true);
+                // Do target vepíšu blok délky 'bufferSize' od pozice 'position' obsahující 0:
+                processSize = bufferSize;
+                var emptyBuffer = new byte[processSize];
+                Array.Clear(emptyBuffer, 0, emptyBuffer.Length);
+                targetStream.Seek(position, SeekOrigin.Begin);
+                targetStream.Write(emptyBuffer, 0, processSize);
+                unsavedLength += processSize;
+                this.ContentMap.AddBlock(position, bufferSize, BlockStateType.ContainsError, _TimeMilisec);
+            }
+
+            if (unsavedLength >= 1048576L)
+            {
+                _CallProgress(ProgressStateType.Flush);
+                targetStream.Flush();
+                this.ContentMap.FlushMetadata();
+                unsavedLength = 0L;
+            }
+
+            return processSize;
+        }
+
+        */
         private SingleFileInfo __CurrentFile;
         private SingleLogInfo __CurrentLog;
         
