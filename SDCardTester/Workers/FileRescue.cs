@@ -1,12 +1,14 @@
-﻿using System;
+﻿using Microsoft.Win32.SafeHandles;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Runtime.InteropServices;
-using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
+using static DjSoft.Tools.SDCardTester.Workers.FileRescue;
 
 namespace DjSoft.Tools.SDCardTester.Workers
 {
@@ -63,7 +65,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
             }
             finally
             {
-                _DestroyWrittingThread();
+                _WrittingThreadRequest(new WritterRequestInfo(WritterRequestType.EndThread));
                 CallWorkingDone();
             }
         }
@@ -107,47 +109,123 @@ namespace DjSoft.Tools.SDCardTester.Workers
         /// <param name="fileInfo"></param>
         private void _RunSingleFile(SingleFileInfo fileInfo)
         {
-            if (Stopping) return;
+            var isPrepared = _PrepareSingleFile(fileInfo);
+            if (!isPrepared) return;
 
-            __CurrentFile = fileInfo;
-            __CurrentFile.CheckFile();
-            this.CallWorkingStep();
-            if (this.__CurrentFile.SourceFileStatus == FileStatus.NotExists) return;
-            if (Stopping) return;
-
-            __CurrentFile.LoadLog();
-            __CurrentLog = __CurrentFile.CurrentLog;
-            this.CallWorkingStep();
-            if (Stopping) return;
-
-            this._RunCopySingleFile();
+            this._CopySingleFile();
 
             // Pokud najdeme Output soubor, pak jsme s kopírováním začali už dříve. Zkusíme k němu najít log soubor a podle něj se rozhodneme, zda a odkud a jak pokračovat.
             // Pokud Log soubor obsahuje "Hotovo OK", pak je záchrana dokončena a pro daný soubor nic neděláme.
-           
+
             // Nyní máme načten Log soubor, anebo jej máme nově vytvořený, tak s jeho pomocí budeme postupně kopírovat zdrojový soubor do cíle - kopírujeme dosud chybějící neznámé bloky,
             // a později se pokusíme zkopírovat i chybové bloky:
 
         }
-        private void _RunCopySingleFile()
+        /// <summary>
+        /// Provede přípravu struktur pro kopírování, ale nekopíruje
+        /// </summary>
+        /// <param name="fileInfo"></param>
+        /// <returns></returns>
+        private bool _PrepareSingleFile(SingleFileInfo fileInfo)
+        {
+            if (Stopping) return false;
+
+            __CurrentFile = fileInfo;
+            __CurrentFile.CheckFile();
+            this.CallWorkingStep();
+            if (this.__CurrentFile.SourceFileStatus == FileStatus.NotExists) return false;
+            if (Stopping) return false;
+
+            __CurrentFile.LoadLog();
+            __CurrentLog = __CurrentFile.CurrentLog;
+            this.CallWorkingStep();
+            if (Stopping) return false;
+
+            return true;
+        }
+        /// <summary>
+        /// Provede kopírování jednoho souboru, data jsou připravena
+        /// </summary>
+        private void _CopySingleFile()
         {
             if (Stopping) return;
 
-            // using otevři soubory
+            var currentBlock = this.__CurrentLog.GetFirstBlock();
+            if (currentBlock is null) return;
+
+            FileStream sourceStream = null;
+            try
             {
-                // while true
+                sourceStream = System.IO.File.Open(this.__CurrentFile.SourceFile, FileMode.Open, FileAccess.Read, FileShare.Read);
+                _WrittingThreadRequest(new WritterRequestInfo(WritterRequestType.OpenWritterStream, this.__CurrentFile.DestinationFile));
+             
+                while (currentBlock != null)
                 {
-                    if (Stopping) return;
-                    var workBlock = __CurrentLog.GetNextWorkBlock();
-                    if (workBlock is null) break;
-
-                    // Načti v tomto vláknu
-
-                    // Načtená data zabal do balíčku a pošli k zápisu do _WrittingThread:
-                    //  Tato metoda může počkat, než se předešlý balíček douloží...
-
+                    var success = _RunCopySingleBlock(sourceStream, currentBlock);
+                    this.__CurrentLog.SaveBlockResult(currentBlock, success);
+                    this.CallWorkingStepWhenTime();
+                    if (Stopping) break;
+                    currentBlock = this.__CurrentLog.GetNextBlock();
                 }
             }
+            catch (Exception ex) 
+            {
+                this.__CurrentLog.SaveException(ex);
+            }
+            finally
+            {
+                _WrittingThreadRequest(new WritterRequestInfo(WritterRequestType.CloseWritterStream));
+                sourceStream.Close();
+                sourceStream.Dispose();
+                sourceStream = null;
+                this.__CurrentLog.SaveLogFile();
+            }
+        }
+        /// <summary>
+        /// Zajistí kopírování jednoho bloku
+        /// </summary>
+        /// <param name="sourceStream"></param>
+        /// <param name="currentBlock"></param>
+        /// <returns></returns>
+        private CopyBlockResult _RunCopySingleBlock(FileStream sourceStream, SingleBlockInfo currentBlock)
+        {
+            var result = CopyBlockResult.None;
+            var buffer = new byte[currentBlock.BlockLength];
+
+            try
+            {
+                sourceStream.Seek(currentBlock.BlockStart, SeekOrigin.Begin);
+                currentBlock.ContentLength = sourceStream.Read(buffer, 0, currentBlock.BlockLength);
+                if (currentBlock.ContentLength > 0)
+                {
+                    currentBlock.Content = buffer;
+                    _WrittingThreadRequest(new WritterRequestInfo(WritterRequestType.WriteBlock, currentBlock));
+                    result = CopyBlockResult.Success;
+                }
+                else
+                {
+                    result = CopyBlockResult.Empty;
+                }
+            }
+            catch (Exception ex)
+            {
+                Array.Clear(buffer, 0, buffer.Length);
+                currentBlock.Content = buffer;
+                currentBlock.ContentLength = currentBlock.Content.Length;
+                _WrittingThreadRequest(new WritterRequestInfo(WritterRequestType.WriteBlock, currentBlock));
+                result = CopyBlockResult.Error;
+            }
+            return result;
+        }
+        /// <summary>
+        /// Výsledek kopírování jednoho bloku
+        /// </summary>
+        internal enum CopyBlockResult
+        {
+            None,
+            Success,
+            Empty,
+            Error
         }
 
         /*
@@ -247,9 +325,72 @@ namespace DjSoft.Tools.SDCardTester.Workers
             Finished
         }
         #endregion
+        #region class WritterRequest : třída, která přináší další úkol z threadu Work do threadu Writter
+        internal class WritterRequestInfo
+        {
+            public WritterRequestInfo(WritterRequestType requestType)
+            {
+                this.RequestType = requestType;
+            }
+            public WritterRequestInfo(WritterRequestType requestType, string writeFileName)
+            {
+                this.RequestType = requestType;
+                this.WriteFileName = writeFileName;
+            }
+            public WritterRequestInfo(WritterRequestType requestType, SingleBlockInfo writeBlock)
+            {
+                this.RequestType = requestType;
+                this.WriteBlock = writeBlock;
+            }
+            public override string ToString()
+            {
+                return this.RequestType.ToString();
+            }
+            /// <summary>
+            /// Co je po nás požadováno
+            /// </summary>
+            public WritterRequestType RequestType { get; private set; }
+            /// <summary>
+            /// Název souboru pro zápis
+            /// </summary>
+            public string WriteFileName { get; private set; }
+            /// <summary>
+            /// Data
+            /// </summary>
+            public SingleBlockInfo WriteBlock { get; private set; }
+        }
+        internal enum WritterRequestType
+        {
+            /// <summary>
+            /// Neurčeno
+            /// </summary>
+            None,
+            /// <summary>
+            /// Otevři stream pro zápis do výstupního souboru
+            /// </summary>
+            OpenWritterStream,
+            /// <summary>
+            /// Zapis blok, je dodán v requestu
+            /// </summary>
+            WriteBlock,
+            /// <summary>
+            /// Zavři stream pro zápis do výstupního souboru
+            /// </summary>
+            CloseWritterStream,
+            /// <summary>
+            /// Ukonči svůj thread
+            /// </summary>
+            EndThread
+        }
+        #endregion
         #region Zápis do cílového souboru běží v jiném threadu
+        /// <summary>
+        /// Připraví thread Writter pro zápis na pozadí, připraví semafory pro jeho řízení, spustí jeho smyčku.
+        /// Volá se z threadu Work.
+        /// </summary>
         private void _PrepareWrittingThread()
         {
+            __WritterCurrentRequest = null;
             __WrittingSemaphoreStart = new System.Threading.AutoResetEvent(false);
             __WrittingSemaphoreDone = new System.Threading.AutoResetEvent(false);
             __WrittingThread = new Thread(_WrittingThreadStart);
@@ -257,16 +398,114 @@ namespace DjSoft.Tools.SDCardTester.Workers
             __WrittingThread.IsBackground = true;
             __WrittingThread.Start();
         }
+        /// <summary>
+        /// Předá požadavek ke zpracování do threadu Writter.
+        /// Volá se výhradně z threadu Work. Nebude tedy současně voláno z více threadů.
+        /// </summary>
+        private bool _WrittingThreadRequest(WritterRequestInfo request)
+        {
+            var timeEnd = DateTime.UtcNow.AddSeconds(60);
+            while (__WritterCurrentRequest != null)
+            {   // Pokud thread Writter aktuálně zpracovává nějaký požadavek, tak počkáme (max 1 minutu):
+                if (DateTime.UtcNow > timeEnd) return false;
+                // Počkáme u semaforu, až Writter dokončí aktuální operaci:
+                //  Když skončí, tak nuluje __WritterCurrentRequest a aktivuje semafor __WrittingSemaphoreDone
+                //  a my otestujeme (__WritterCurrentRequest != null) a opustíme smyčku while:
+                __WrittingSemaphoreDone.WaitOne(250);
+                if (IsStoped) return false;
+            }
+
+            // Writter aktuálně nic neprovádí (nikdo jiný sem __WritterCurrentRequest nevloží) = má čas na další request:
+            // Uložíme request a rozsvítíme jeho semafor Start  __WrittingSemaphoreStart:
+            __WritterCurrentRequest = request;
+            __WrittingSemaphoreStart.Set();
+            return true;
+        }
+        /// <summary>
+        /// Vstupní bod a komplexní smyčka threadu Writter.
+        /// </summary>
         private void _WrittingThreadStart()
-        { }
-        private void _DestroyWrittingThread()
-        { }
+        {
+            while (true)
+            {
+                // Počkáme, až dostaneme požadavek:
+                var request = waitForRequest();
+                if (request is null) break;
+
+                __WritterProcessedRequest = request;
+                switch (request.RequestType)
+                {
+                    case WritterRequestType.OpenWritterStream:
+                        __WrittingStream = System.IO.File.Open(request.WriteFileName, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);        // System.IO.File.OpenWrite(targetFile))
+                        __WrittingStreamUnflushedBytes = 0;
+                        break;
+                    case WritterRequestType.WriteBlock:
+                        __WrittingStream.Seek(request.WriteBlock.BlockStart, SeekOrigin.Begin);
+                        __WrittingStream.Write(request.WriteBlock.Content, 0, request.WriteBlock.Content.Length);
+                        __WrittingStreamUnflushedBytes += request.WriteBlock.Content.Length;
+                        if (__WrittingStreamUnflushedBytes >= 1048576L)
+                        {
+                            __WrittingStream.Flush();
+                            __WrittingStreamUnflushedBytes = 0;
+                        }
+                        break;
+                    case WritterRequestType.CloseWritterStream:
+                        __WrittingStream.Flush();
+                        __WrittingStream.Close();
+                        __WrittingStream.Dispose();
+                        __WrittingStream = null;
+                        break;
+                }
+                __WritterProcessedRequest = null;
+
+                // Máme volno pro další požadavek:
+                __WritterCurrentRequest = null;
+                __WrittingSemaphoreDone.Set();
+            }
+
+            // Vrátí nově dodaný Request do __WritterCurrentRequest
+            WritterRequestInfo waitForRequest()
+            {
+                while (true)
+                {
+                    var request = __WritterCurrentRequest;
+                    if (request != null) return request;
+                    if (IsStoped) return null;
+                    __WrittingSemaphoreStart.WaitOne(250);
+                }
+            }
+        }
+        /// <summary>
+        /// Instance threadu Writter
+        /// </summary>
         private Thread __WrittingThread;
-        
+        /// <summary>
+        /// Stream pro zápis do cílového souboru, který je otevřený a zapisuje se do něj (pracuje se s ním) z threadu Writter
+        /// </summary>
+        private FileStream __WrittingStream;
+        /// <summary>
+        /// Počet byte, které nejsou fyzicky zapsané (Flush) do __WrittingStream
+        /// </summary>
+        private int __WrittingStreamUnflushedBytes;
+        /// <summary>
+        /// Nově požadovaný request - který byl právě doručen, null když nic neděláme...
+        /// </summary>
+        private WritterRequestInfo __WritterCurrentRequest;
+        /// <summary>
+        /// Aktuálně zpracovávaný request, null když nic neděláme...
+        /// </summary>
+        private WritterRequestInfo __WritterProcessedRequest;
+        /// <summary>
+        /// Semafor, který se rozsvítí z threadu Work do threadu Writter tehdy, když přijde nová práce.
+        /// </summary>
         private System.Threading.AutoResetEvent __WrittingSemaphoreStart;
+        /// <summary>
+        /// Semafor, který se rozsvítí z threadu Writter do threadu Work tehdy, když Writter dokončil práci a může přijmout nová data.
+        /// U tohoto semaforu čeká thread Work s novým Requestem, než se uvolní thread Writter, který pak může zpracovat tento Request.
+        /// </summary>
         private System.Threading.AutoResetEvent __WrittingSemaphoreDone;
         #endregion
-        #region Pracovní třídy: SingleFileInfo, SingleLogInfo
+        #region Pracovní třídy: SingleFileInfo, SingleLogInfo, WritterRequestType
         /// <summary>
         /// Třída obsahující základní data o jednom souboru k záchraně, včetně parametrů pro kopírování a výsledku operace.
         /// </summary>
@@ -407,6 +646,49 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// Bloky souboru, kde klíčem je počáteční offset bloku a hodnotou je informace o daném bloku <see cref="SingleBlockInfo"/>.
             /// </summary>
             public System.Collections.Generic.Dictionary<long, SingleBlockInfo> BlockMap { get; private set; }
+            #endregion
+            #region Správa bloků
+            internal SingleBlockInfo GetFirstBlock()
+            {
+                if (BlockMap.Count == 0) return null;
+                var firstKey = BlockMap.Keys.Min();
+                return BlockMap[firstKey];
+            }
+            internal void SaveBlockResult(SingleBlockInfo block, CopyBlockResult result)
+            {
+                if (block == null) return;
+                switch (result)
+                {
+                    case CopyBlockResult.None:
+                        break;
+                    case CopyBlockResult.Success:
+                        block.IsErrorBlock = false;
+                        break;
+                    case CopyBlockResult.Empty:
+                        block.IsErrorBlock = false;
+                        break;
+                    case CopyBlockResult.Error:
+                        block.IsErrorBlock = true;
+                        break;
+                }
+            }
+            internal SingleBlockInfo GetNextBlock()
+            {
+                if (BlockMap.Count == 0) return null;
+                var currentBlock = BlockMap.Values.FirstOrDefault(b => b.IsCurrent);
+                if (currentBlock == null) return null;
+                var nextKey = BlockMap.Keys.Where(k => k > currentBlock.BlockStart).OrderBy(k => k).FirstOrDefault();
+                if (nextKey == 0 && !BlockMap.ContainsKey(nextKey)) return null;
+                currentBlock.IsCurrent = false;
+                var nextBlock = BlockMap[nextKey];
+                nextBlock.IsCurrent = true;
+                return nextBlock;
+            }
+            internal void SaveException(Exception ex)
+            {
+                // Zde můžeme uložit informace o výjimce do logu, pokud je to potřeba.
+                // Například můžeme přidat záznam do BlockMap s informací o chybě.
+            }
             #endregion
             #region Statistika
             public StatisticInfo Statistic
@@ -603,7 +885,15 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// <summary>
             /// Délka bloku. Pokud je blok OK, pak má standardní délku <see cref="SingleFileInfo.FastCopyBlockSize"/>, pokud je blok chybový, pak může být kratší.
             /// </summary>
-            public long BlockLength { get; set; }
+            public int BlockLength { get; set; }
+            /// <summary>
+            /// Binární obsah bloku: je naplněn po načtení, použit pro zápis, a po zápisu je nulován.
+            /// </summary>
+            public byte[] Content { get; set; }
+            /// <summary>
+            /// Reálně načtená délka dat, přičemž požadovaná délka byla = <see cref="BlockLength"/>
+            /// </summary>
+            public int ContentLength { get; set; }
             /// <summary>
             /// Počet pokusů o znovunačtení po chybě = počet pokusů o čtení, které skončily chybou. Pokud je blok OK, pak je == 0, pokud je blok chybový, pak je větší než 0.
             /// </summary>
@@ -673,12 +963,12 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 var count = parts.Length;
 
                 long? blockStart = null;
-                long? blockLength = null;
+                int? blockLength = null;
                 int? reReadCount = null;
                 BlockStatus? status = null;
 
                 if (count >= 1 && Int64.TryParse(parts[0], out long start) && start >= 0L) blockStart = start;
-                if (count >= 2 && Int64.TryParse(parts[1], out long length) && length >= 0L) blockLength = length;
+                if (count >= 2 && Int32.TryParse(parts[1], out int length) && length >= 0) blockLength = length;
                 if (count >= 3 && Int32.TryParse(parts[2], out int rrCnt) && rrCnt >= 0) reReadCount = rrCnt;
                 if (count >= 4 && Enum.TryParse<BlockStatus>(parts[3], out var stt)) status = stt;
 

@@ -139,6 +139,10 @@ namespace DjSoft.Tools.SDCardTester.Workers
             }
         }
         /// <summary>
+        /// Obsahuje true, pokud je požadován Stop. Nečeká, okamžitě vrací výsledek.
+        /// </summary>
+        public bool IsStoped { get { return __State == RunState.Stop; } }
+        /// <summary>
         /// Časový interval, po jehož uplynutí se může opakovaně volat událost <see cref="WorkingStep"/>.
         /// </summary>
         public TimeSpan WorkingStepTime { get; set; }
@@ -147,7 +151,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
         /// To je tehdy, když od posledního volání uplynul čas alespoň <see cref="WorkingStepTime"/>. Pokud je parametr force = true, pak se vrátí true vždy.
         /// </summary>
         /// <param name="force"></param>
-        protected bool CanCallWorkingStep(bool force)
+        protected bool CanCallWorkingStep(bool force = false)
         {
             if (force) return true;
             var nowTime = DateTime.Now;
@@ -159,6 +163,14 @@ namespace DjSoft.Tools.SDCardTester.Workers
         /// Čas posledního hlášení změny
         /// </summary>
         protected DateTime? LastStepTime { get; set; }
+        /// <summary>
+        /// Vyvolá událost <see cref="WorkingStep"/>, pokud je na to vhodný čas = viz metoda <see cref="CanCallWorkingStep(bool)"/>.
+        /// </summary>
+        protected void CallWorkingStepWhenTime(bool force = false)
+        {
+            if (CanCallWorkingStep(force))
+                CallWorkingStep();
+        }
         /// <summary>
         /// Vyvolá událost <see cref="WorkingStep"/>
         /// </summary>
