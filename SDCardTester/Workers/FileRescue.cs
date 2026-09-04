@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 using System.IO;
+using System.Threading;
 
 namespace DjSoft.Tools.SDCardTester.Workers
 {
@@ -42,20 +43,29 @@ namespace DjSoft.Tools.SDCardTester.Workers
         {
             if (Stopping) return;
 
+            _PrepareWrittingThread();
             _PrepareResults();
-            foreach (var fileInfo in __Files)
+            try
             {
-                try
+                foreach (var fileInfo in __Files)
                 {
-                    _RunSingleFile(fileInfo);
-                }
-                catch (Exception exc)
-                {
-                    fileInfo.ErrorMessage = exc.ToString();
-                    App.ShowError(fileInfo.ErrorMessage, "Chyba při zpracování souboru");
+                    try
+                    {
+                        _RunSingleFile(fileInfo);
+                    }
+                    catch (Exception exc)
+                    {
+                        fileInfo.ErrorMessage = exc.ToString();
+                        App.ShowError(fileInfo.ErrorMessage, "Chyba při zpracování souboru");
+                    }
+                    if (Stopping) break;
                 }
             }
-            CallWorkingDone();
+            finally
+            {
+                _DestroyWrittingThread();
+                CallWorkingDone();
+            }
         }
         /// <summary>
         /// Příprava seznamu souborů k záchraně = pole <see cref="__Files"/>
@@ -130,6 +140,12 @@ namespace DjSoft.Tools.SDCardTester.Workers
                     if (Stopping) return;
                     var workBlock = __CurrentLog.GetNextWorkBlock();
                     if (workBlock is null) break;
+
+                    // Načti v tomto vláknu
+
+                    // Načtená data zabal do balíčku a pošli k zápisu do _WrittingThread:
+                    //  Tato metoda může počkat, než se předešlý balíček douloží...
+
                 }
             }
         }
@@ -230,6 +246,25 @@ namespace DjSoft.Tools.SDCardTester.Workers
             Copying,
             Finished
         }
+        #endregion
+        #region Zápis do cílového souboru běží v jiném threadu
+        private void _PrepareWrittingThread()
+        {
+            __WrittingSemaphoreStart = new System.Threading.AutoResetEvent(false);
+            __WrittingSemaphoreDone = new System.Threading.AutoResetEvent(false);
+            __WrittingThread = new Thread(_WrittingThreadStart);
+            __WrittingThread.Name = "WrittingThread";
+            __WrittingThread.IsBackground = true;
+            __WrittingThread.Start();
+        }
+        private void _WrittingThreadStart()
+        { }
+        private void _DestroyWrittingThread()
+        { }
+        private Thread __WrittingThread;
+        
+        private System.Threading.AutoResetEvent __WrittingSemaphoreStart;
+        private System.Threading.AutoResetEvent __WrittingSemaphoreDone;
         #endregion
         #region Pracovní třídy: SingleFileInfo, SingleLogInfo
         /// <summary>
