@@ -140,6 +140,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
         }
         /// <summary>
         /// Obsahuje true, pokud je požadován Stop. Nečeká, okamžitě vrací výsledek.
+        /// Tato proměnnná tedy neřeší stav Pauza = pokud je požadována Pauza, tak vrací false a ten, kdo se dotazuje, pracuje nadále.
         /// </summary>
         public bool IsStoped { get { return __State == RunState.Stop; } }
         /// <summary>
