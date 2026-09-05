@@ -701,9 +701,10 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 if (lastBlock.BlockEnd < fileLength)
                     return createNewBlock(lastBlock.BlockEnd);
 
-                // d) Pokud poslední blok v evidenci je i poslední blok souboru, pak hledám chybné bloky od začátku
+                // d) Pokud poslední blok v evidenci je i poslední blok souboru, pak nyní vyhledám chybné bloky od začátku bloku:
 
 
+                System.Diagnostics.Debugger.Break();
 
                 return null;
 
@@ -725,10 +726,15 @@ namespace DjSoft.Tools.SDCardTester.Workers
 
                     var end = start + blockLength;                                       // Konec bloku = Zadaný Start + standardní délka bloku
                     if (end > fileLength) end = fileLength;                              // Pokud konec bloku > Konec souboru, pak Konec bloku = Konec souboru
-                    var length = end - start;                                            // Reálná validní Délka bloku
-                    return (length <= 0 ? 0 : length)
+                    long length = end - start;                                            // Reálná validní Délka bloku
+                    return (length <= 0L ? 0 : (length > 65536L ? 65536 : (int)length));
                 }
             }
+            /// <summary>
+            /// Uloží do daného bloku výsledný stav po dokončení jeho kopírování.
+            /// </summary>
+            /// <param name="block"></param>
+            /// <param name="result"></param>
             internal void StoreBlockResult(SingleBlockInfo block, CopyBlockResult result)
             {
                 if (block == null) return;
@@ -751,8 +757,13 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 block.Content = null;
                 this.UnsavedChangesCount++;
             }
+            /// <summary>
+            /// Vrátí další blok ke zpracování = volá se až poté, kdy byl vydán první blok metodou <see cref="GetFirstBlock()"/>.
+            /// </summary>
+            /// <returns></returns>
             internal SingleBlockInfo GetNextBlock()
             {
+                /*
                 if (Blocks.Count == 0) return null;
                 var currentBlock = Blocks.Values.FirstOrDefault(b => b.IsCurrent);
                 if (currentBlock == null) return null;
@@ -762,6 +773,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 var nextBlock = Blocks[nextKey];
                 nextBlock.IsCurrent = true;
                 return nextBlock;
+                */
             }
             internal void SaveException(Exception ex)
             {
@@ -771,9 +783,17 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// <summary>
             /// Setřídí bloky podle pozice <see cref="SingleBlockInfo.BlockStart"/>
             /// </summary>
-            internal void BlocksSort()
+            private void BlocksSort()
             {
-                this.Blocks.Sort((a, b) => a.BlockStart.CompareTo(b.BlockStart));
+                BlocksSort(this.Blocks);
+            }
+            /// <summary>
+            /// Setřídí bloky podle pozice <see cref="SingleBlockInfo.BlockStart"/>
+            /// </summary>
+            private static void BlocksSort(List<SingleBlockInfo> blocks)
+            {
+                if (blocks != null && blocks.Count > 1)
+                    blocks.Sort((a, b) => a.BlockStart.CompareTo(b.BlockStart));
             }
             /// <summary>
             /// Počet změn (nový/změněný blok), které byly zaznamenány od posledního Load nebo Save
@@ -792,34 +812,49 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// <summary>
             /// Statistická data
             /// </summary>
-            public StatisticInfo Statistic
+            public StatisticInfo Statistic { get { return GetStatistic(this.SourceFileLength, this.Blocks); } }
+            /// <summary>
+            /// Z dodaných bloků spočítá statistiku
+            /// </summary>
+            /// <param name="blocks"></param>
+            /// <returns></returns>
+            private static StatisticInfo GetStatistic(long? fileLength, IEnumerable<SingleBlockInfo> blocks)
             {
-                get
+                var statistic = new StatisticInfo(fileLength ?? 0L);
+                if (blocks != null)
                 {
-                    var statistic = new StatisticInfo(SourceFileLength ?? 0L);
-                    foreach (var block in Blocks)
+                    foreach (var block in blocks)
                         statistic.AddBlock(block);
-                    return statistic;
                 }
+                return statistic;
             }
             #endregion
             #region Ukládání a načítání dat logu
-            public void SaveLogFileAsync()
+            /// <summary>
+            /// Uloží Log do souboru <see cref="DestinationLog"/>. Pokud soubor existuje, přepíše jej. Asynchronní metoda.
+            /// </summary>
+            public async Task SaveLogFileAsync()
             {
-                lock (__LogSaveLock)
+                try
                 {
-                    SaveLogFile();
+                    await Task.Run(() => SaveLogFile());
+                }
+                catch (Exception ex)
+                {
+                    try { SaveException(ex); } catch { /* ignore logging failure */ }
+                    throw;
                 }
             }
             /// <summary>
-            /// Uloží Log do souboru <see cref="DestinationLog"/>. Pokud soubor existuje, přepíše jej.
+            /// Uloží Log do souboru <see cref="DestinationLog"/>. Pokud soubor existuje, přepíše jej. Synchronní metoda.
             /// </summary>
             public void SaveLogFile()
             {
                 // Toto může chvilku trvat...:
-                BlocksSort();
-                var statistic = Statistic;
-                var blocks = Blocks;
+                var blocks = Blocks.ToList();                                  // Oddělený List, a následně pracuji jen s ním
+                UnsavedChangesCount = 0;                                       // V tuto chvíli jsem převzal data
+                var statistic = GetStatistic(this.SourceFileLength, blocks);
+                BlocksSort(blocks);
                 var badBlocks = blocks.Where(b => b.IsErrorBlock).ToList();
 
                 // Zápis jen z jednoho threadu:
@@ -845,7 +880,6 @@ namespace DjSoft.Tools.SDCardTester.Workers
                                 logWriter.WriteLine(badBlock.GetLineToLog());
                         }
 
-
                         logWriter.WriteLine("#############################################################################################");
                         logWriter.WriteLine($"Blocks:");
                         foreach (var block in blocks)
@@ -856,7 +890,6 @@ namespace DjSoft.Tools.SDCardTester.Workers
                         logWriter.Flush();
                         logWriter.Close();
                     }
-                    UnsavedChangesCount = 0;
                 }
             }
             /// <summary>
@@ -1044,7 +1077,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// </summary>
             /// <param name="blockStart"></param>
             /// <param name="blockLength"></param>
-            public SingleBlockInfo(long blockStart int blockLength)
+            public SingleBlockInfo(long blockStart, int blockLength)
             {
                 this.Status = BlockStatus.None;
                 this.BlockStart = blockStart;
