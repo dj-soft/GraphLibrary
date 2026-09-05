@@ -162,8 +162,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
              
                 while (currentBlock != null)
                 {
-                    var success = _RunCopySingleBlock(sourceStream, currentBlock);
-                    this.__CurrentLog.StoreBlockResult(currentBlock, success);
+                    _CopySingleBlock(sourceStream, currentBlock);
                     if (this.__CurrentLog.NeedSave)
                         this.__CurrentLog.SaveLogFileAsync();
                     this.CallWorkingStepWhenTime();
@@ -190,7 +189,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
         /// <param name="sourceStream"></param>
         /// <param name="currentBlock"></param>
         /// <returns></returns>
-        private CopyBlockResult _RunCopySingleBlock(FileStream sourceStream, SingleBlockInfo currentBlock)
+        private void _CopySingleBlock(FileStream sourceStream, SingleBlockInfo currentBlock)
         {
             var result = CopyBlockResult.None;
             var buffer = new byte[currentBlock.BlockLength];
@@ -202,7 +201,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 if (currentBlock.ContentLength > 0)
                 {
                     currentBlock.Content = buffer;
-                    _WrittingThreadRequest(new WritterRequestInfo(WritterRequestType.WriteBlock, currentBlock));
+                    _WrittingThreadRequest(new WritterRequestInfo(WritterRequestType.WriteDataBlock, currentBlock));
                     result = CopyBlockResult.Success;
                 }
                 else
@@ -215,10 +214,11 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 Array.Clear(buffer, 0, buffer.Length);
                 currentBlock.Content = buffer;
                 currentBlock.ContentLength = currentBlock.Content.Length;
-                _WrittingThreadRequest(new WritterRequestInfo(WritterRequestType.WriteBlock, currentBlock));
+                _WrittingThreadRequest(new WritterRequestInfo(WritterRequestType.WriteVoidBlock, currentBlock));
                 result = CopyBlockResult.Error;
             }
-            return result;
+            currentBlock.StoreBlockResultRead(result);
+            this.__CurrentLog.AddUnsavedChange();
         }
         /// <summary>
         /// Výsledek kopírování jednoho bloku
@@ -373,9 +373,13 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// </summary>
             OpenWritterStream,
             /// <summary>
-            /// Zapis blok, je dodán v requestu
+            /// Zapiš blok s reálnými daty, data jsou dodána v requestu
             /// </summary>
-            WriteBlock,
+            WriteDataBlock,
+            /// <summary>
+            /// Zapiš blok s Void daty, data jsou dodána v requestu
+            /// </summary>
+            WriteVoidBlock,
             /// <summary>
             /// Zavři stream pro zápis do výstupního souboru
             /// </summary>
@@ -452,7 +456,8 @@ namespace DjSoft.Tools.SDCardTester.Workers
                         __WrittingStream = System.IO.File.Open(request.WriteFileName, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);        // System.IO.File.OpenWrite(targetFile))
                         __WrittingStreamUnflushedBytes = 0;
                         break;
-                    case WritterRequestType.WriteBlock:
+                    case WritterRequestType.WriteDataBlock:
+                    case WritterRequestType.WriteVoidBlock:
                         __WrittingStream.Seek(request.WriteBlock.BlockStart, SeekOrigin.Begin);
                         __WrittingStream.Write(request.WriteBlock.Content, 0, request.WriteBlock.Content.Length);
                         __WrittingStreamUnflushedBytes += request.WriteBlock.Content.Length;
@@ -461,6 +466,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
                             __WrittingStream.Flush();
                             __WrittingStreamUnflushedBytes = 0;
                         }
+                        request.WriteBlock.Content = null;
                         break;
                     case WritterRequestType.CloseWritterStream:
                         __WrittingStream.Flush();
@@ -714,7 +720,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 {
                     var length = getValidLength(start);                                  // Validní délka pro daný start_ reflektuje standardní BlockLength, ošetřuje jej na celkovou délku souboru SourceFileLength
                     if (length <= 0) return null;
-                    var block = new SingleBlockInfo(0L, getValidLength(0L));
+                    var block = new SingleBlockInfo(start, length);
                     this.CurrentBlockIndex = this.Blocks.Count;                          // Index prvku, který za chvilku přidám, bude == aktuální Count (prvek bude poslední v Listu)
                     this.Blocks.Add(block);
                     return block;
@@ -731,30 +737,12 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 }
             }
             /// <summary>
-            /// Uloží do daného bloku výsledný stav po dokončení jeho kopírování.
+            /// Přičte si jednu neuloženou změnu
             /// </summary>
             /// <param name="block"></param>
             /// <param name="result"></param>
-            internal void StoreBlockResult(SingleBlockInfo block, CopyBlockResult result)
+            internal void AddUnsavedChange()
             {
-                if (block == null) return;
-                switch (result)
-                {
-                    case CopyBlockResult.None:
-                        break;
-                    case CopyBlockResult.Empty:
-                        block.Status = SingleBlockInfo.BlockStatus.OK;
-                        break;
-                    case CopyBlockResult.Success:
-                        block.Status = (block.ReReadCount == 0 ? SingleBlockInfo.BlockStatus.OK : SingleBlockInfo.BlockStatus.OKAfterErrors);
-                        break;
-                    case CopyBlockResult.Error:
-                        // Skončili jsme s chybou: 
-                        block.ReReadCount++;
-                        block.Status = (block.ReReadCount < 3 ? SingleBlockInfo.BlockStatus.WithError : SingleBlockInfo.BlockStatus.ErrorAborted);
-                        break;
-                }
-                block.Content = null;
                 this.UnsavedChangesCount++;
             }
             /// <summary>
@@ -763,6 +751,9 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// <returns></returns>
             internal SingleBlockInfo GetNextBlock()
             {
+                return null;
+
+
                 /*
                 if (Blocks.Count == 0) return null;
                 var currentBlock = Blocks.Values.FirstOrDefault(b => b.IsCurrent);
@@ -866,11 +857,11 @@ namespace DjSoft.Tools.SDCardTester.Workers
                         logWriter.WriteLine("#############################################################################################");
                         logWriter.WriteLine($"SourceFile:       {delim}{SourceFile}");
                         logWriter.WriteLine($"DestinationFile:  {delim}{DestinationFile}");
-                        logWriter.WriteLine($"FileLength:       {delim}{statistic.FileSize}B");
-                        logWriter.WriteLine($"ProcessedSize:    {delim}{statistic.TotalBlocksSize}B");
-                        logWriter.WriteLine($"ProcessedPercent: {delim}{statistic.TotalBlocksPercent}%");
-                        logWriter.WriteLine($"BadBlocksCount:   {delim}{statistic.BadBlocksCount}");
-                        logWriter.WriteLine($"BadBlockSize:     {delim}{statistic.BadBlocksSize}B");
+                        logWriter.WriteLine($"FileLength:       {delim}{statistic.FileSize:N0} B");
+                        logWriter.WriteLine($"ProcessedSize:    {delim}{statistic.TotalBlocksSize:N0} B");
+                        logWriter.WriteLine($"ProcessedPercent: {delim}{statistic.TotalBlocksPercent} %");
+                        logWriter.WriteLine($"BadBlocksCount:   {delim}{statistic.BadBlocksCount:N0}");
+                        logWriter.WriteLine($"BadBlockSize:     {delim}{statistic.BadBlocksSize:N0} B");
 
                         if (badBlocks.Count > 0)
                         {
@@ -1089,7 +1080,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// <returns></returns>
             public override string ToString()
             {
-                return $"Start: {BlockStart:3}; Length: {BlockLength:3}";
+                return $"Start: {BlockStart:N0}; Length: {BlockLength:N0}";
             }
             /// <summary>
             /// Adresa začátku bloku v souboru, offset od začátku souboru.
@@ -1123,6 +1114,31 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// Obsahuje true, pokud <see cref="Status"/> obsahuje nějakou chybu.
             /// </summary>
             public bool IsErrorBlock { get { var st = this.Status; return (st == SingleBlockInfo.BlockStatus.WithError || st == SingleBlockInfo.BlockStatus.ErrorAborted || st == SingleBlockInfo.BlockStatus.OKAfterErrors); } }
+            /// <summary>
+            /// Uloží do daného bloku výsledný stav po dokončení jeho čtení
+            /// </summary>
+            /// <param name="block"></param>
+            /// <param name="result"></param>
+            public void StoreBlockResultRead(CopyBlockResult result)
+            {
+                switch (result)
+                {
+                    case CopyBlockResult.None:
+                        break;
+                    case CopyBlockResult.Empty:
+                        this.Status = SingleBlockInfo.BlockStatus.OK;
+                        break;
+                    case CopyBlockResult.Success:
+                        this.Status = (this.ReReadCount == 0 ? SingleBlockInfo.BlockStatus.OK : SingleBlockInfo.BlockStatus.OKAfterErrors);
+                        break;
+                    case CopyBlockResult.Error:
+                        // Skončili jsme s chybou: 
+                        this.ReReadCount++;
+                        this.Status = (this.ReReadCount < 3 ? SingleBlockInfo.BlockStatus.WithError : SingleBlockInfo.BlockStatus.ErrorAborted);
+                        break;
+                }
+            }
+
             /// <summary>
             /// Stav bloku
             /// </summary>
