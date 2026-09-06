@@ -823,7 +823,7 @@ namespace DjSoft.Tools.SDCardTester
 
             var inputInfo = new FileRescueInputInfo() 
             {
-                InputFileNames = @"f:\Filmy\US Fantasy X\Lesbian.Vampire.Killers.2009.1080p.BLURAY.REMUX.mkv",
+                InputFileNames = @"f:\Filmy\Proxima (2019) Eva Green - jen testovací.mkv",
                 OutputFilesPath = @"G:\Cdisk\FileRescueTestTarget",
             };
             ShowControls(ActionState.FileRescue, true);

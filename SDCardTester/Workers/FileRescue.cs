@@ -210,7 +210,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 }
             }
             catch (Exception ex)
-            {
+            {   // Toto je chyba při čtení bloku ze zdroje => tpt 
                 Array.Clear(buffer, 0, buffer.Length);
                 currentBlock.Content = buffer;
                 currentBlock.ContentLength = currentBlock.Content.Length;
@@ -737,15 +737,6 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 }
             }
             /// <summary>
-            /// Přičte si jednu neuloženou změnu
-            /// </summary>
-            /// <param name="block"></param>
-            /// <param name="result"></param>
-            internal void AddUnsavedChange()
-            {
-                this.UnsavedChangesCount++;
-            }
-            /// <summary>
             /// Vrátí další blok ke zpracování = volá se až poté, kdy byl vydán první blok metodou <see cref="GetFirstBlock()"/>.
             /// </summary>
             /// <returns></returns>
@@ -771,6 +762,16 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 // Zde můžeme uložit informace o výjimce do logu, pokud je to potřeba.
                 // Například můžeme přidat záznam do BlockMap s informací o chybě.
             }
+
+            /// <summary>
+            /// Úroveň chyb, které řešíme.
+            /// <para/>
+            /// Po zahájení kopírování nejprve kopírujeme dosud nezkopírované chyby, <see cref="ErrorLevelProcess"/> je null.<br/>
+            /// Pokud při kopírování bloku dojde k chybě, zvýší se počet <see cref="SingleBlockInfo.ErrorsCount"/>
+            /// Jakmile dojdeme s kopírováním do konce (tedy nelze najít blok, který by dosud nebyl kopírován), 
+            /// </summary>
+            internal int? ErrorLevelProcess { get; private set; }
+
             /// <summary>
             /// Setřídí bloky podle pozice <see cref="SingleBlockInfo.BlockStart"/>
             /// </summary>
@@ -785,6 +786,17 @@ namespace DjSoft.Tools.SDCardTester.Workers
             {
                 if (blocks != null && blocks.Count > 1)
                     blocks.Sort((a, b) => a.BlockStart.CompareTo(b.BlockStart));
+            }
+            /// <summary>
+            /// Přičte si jednu neuloženou změnu do <see cref="UnsavedChangesCount"/>.
+            /// <para/>
+            /// Až ten počet dosáhne nebo překročí <see cref="TresholdSaveOnChanges"/>, pak bude <see cref="NeedSave"/> = true a bude vhodné zavolat <see cref="SaveLogFileAsync"/>.
+            /// </summary>
+            /// <param name="block"></param>
+            /// <param name="result"></param>
+            internal void AddUnsavedChange()
+            {
+                this.UnsavedChangesCount++;
             }
             /// <summary>
             /// Počet změn (nový/změněný blok), které byly zaznamenány od posledního Load nebo Save
@@ -1103,11 +1115,19 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// </summary>
             public int ContentLength { get; set; }
             /// <summary>
-            /// Počet pokusů o znovunačtení po chybě = počet pokusů o čtení, které skončily chybou. Pokud je blok OK, pak je == 0, pokud je blok chybový, pak je větší než 0.
+            /// Počet chyb při pokusech o čtení.
+            /// <para/>
+            /// Při vytvoření nového bloku je zde 0.<br/>
+            /// Pokud při kopírování dojde k chybě, zdejší hodnota se navýší o 1.<br/>
+            /// Následně se pokusíme blok zkopírovat opakovaně (nikoli ihned po sobě), a při dalších chybách tuto hodnotu navyšujeme o +1.<br/>
             /// </summary>
-            public int ReReadCount { get; set; }
+            public int ErrorsCount { get; set; }
             /// <summary>
-            /// Stav bloku, zda je OK, nebo obsahuje chyby. Pokud je blok OK, pak je <see cref="ReReadCount"/> == 0, pokud je blok chybový, pak je <see cref="ReReadCount"/> větší než 0.
+            /// 3 = Nejvyšší počet chyb, po kterých blok odepíšeme jako nečitelný (3x a dost!)
+            /// </summary>
+            public int MaxErrorsCount { get { return 3; } }
+            /// <summary>
+            /// Stav bloku, zda je OK, nebo obsahuje chyby. Pokud je blok OK, pak je <see cref="ErrorsCount"/> == 0, pokud je blok chybový, pak je <see cref="ErrorsCount"/> větší než 0.
             /// </summary>
             public BlockStatus Status { get; set; }
             /// <summary>
@@ -1129,16 +1149,15 @@ namespace DjSoft.Tools.SDCardTester.Workers
                         this.Status = SingleBlockInfo.BlockStatus.OK;
                         break;
                     case CopyBlockResult.Success:
-                        this.Status = (this.ReReadCount == 0 ? SingleBlockInfo.BlockStatus.OK : SingleBlockInfo.BlockStatus.OKAfterErrors);
+                        this.Status = (this.ErrorsCount == 0 ? SingleBlockInfo.BlockStatus.OK : SingleBlockInfo.BlockStatus.OKAfterErrors);
                         break;
                     case CopyBlockResult.Error:
                         // Skončili jsme s chybou: 
-                        this.ReReadCount++;
-                        this.Status = (this.ReReadCount < 3 ? SingleBlockInfo.BlockStatus.WithError : SingleBlockInfo.BlockStatus.ErrorAborted);
+                        this.ErrorsCount++;
+                        this.Status = (this.ErrorsCount < MaxErrorsCount ? SingleBlockInfo.BlockStatus.WithError : SingleBlockInfo.BlockStatus.ErrorAborted);
                         break;
                 }
             }
-
             /// <summary>
             /// Stav bloku
             /// </summary>
@@ -1146,27 +1165,27 @@ namespace DjSoft.Tools.SDCardTester.Workers
             {
                 /// <summary>
                 /// Blok je v neznámém stavu, nebyl dosud zpracován.
-                /// Počitadlo <see cref="SingleBlockInfo.ReReadCount"/> je 0.
+                /// Počitadlo <see cref="SingleBlockInfo.ErrorsCount"/> je 0.
                 /// </summary>
                 None,
                 /// <summary>
                 /// Blok byl úspěšně zkopírován, bez chyb, je OK.
-                /// Počitadlo <see cref="SingleBlockInfo.ReReadCount"/> je 0.
+                /// Počitadlo <see cref="SingleBlockInfo.ErrorsCount"/> je 0.
                 /// </summary>
                 OK,
                 /// <summary>
                 /// Blok obsahuje chyby, ale po několika pokusech byl úspěšně zkopírován a záchrana pokračuje na dalším bloku.
-                /// Počitadlo <see cref="SingleBlockInfo.ReReadCount"/> obsahuje počet pokusů. které skončily chybou, před tím než se jej podařilo zkopírovat.
+                /// Počitadlo <see cref="SingleBlockInfo.ErrorsCount"/> obsahuje počet pokusů. které skončily chybou, před tím než se jej podařilo zkopírovat.
                 /// </summary>
                 OKAfterErrors,
                 /// <summary>
                 /// Blok hlásí chyby: dosud nebyl úspěšně zkopírován. Ještě proběhne další pokus.
-                /// Počitadlo <see cref="SingleBlockInfo.ReReadCount"/> obsahuje počet pokusů, které skončily chybou.
+                /// Počitadlo <see cref="SingleBlockInfo.ErrorsCount"/> obsahuje počet pokusů, které skončily chybou.
                 /// </summary>
                 WithError,
                 /// <summary>
                 /// Blok obsahuje chyby, a další pokusy o záchranu byly zrušeny. Blok byl přeskočen a záchrana pokračuje na dalším bloku.
-                /// Počitadlo <see cref="SingleBlockInfo.ReReadCount"/> obsahuje počet pokusů. které skončily chybou. Po posledním z nich byl blok trvale abortován.
+                /// Počitadlo <see cref="SingleBlockInfo.ErrorsCount"/> obsahuje počet pokusů. které skončily chybou. Po posledním z nich byl blok trvale abortován.
                 /// </summary>
                 ErrorAborted,
             }
@@ -1180,7 +1199,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
             public string GetLineToLog()
             {
                 var d = DELIMITER_ITEMS;
-                return $"{BlockStart}{d}{BlockLength}{d}{ReReadCount}{d}{Status}";
+                return $"{BlockStart}{d}{BlockLength}{d}{ErrorsCount}{d}{Status}";
             }
             /// <summary>
             /// Vytvoří nový blok z dat v dodané řádce. Anebo vrátí null.
@@ -1212,7 +1231,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 {
                     BlockStart = blockStart.Value,
                     BlockLength = blockLength.Value,
-                    ReReadCount = reReadCount.Value,
+                    ErrorsCount = reReadCount.Value,
                     Status = status.Value
                 };
             }
