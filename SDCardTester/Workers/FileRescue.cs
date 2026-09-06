@@ -66,7 +66,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
             }
             finally
             {
-                _WrittingThreadRequest(new WritterRequestInfo(WritterRequestType.EndThread));
+                _WrittingThreadAddRequest(new WritterRequestInfo(WritterRequestType.EndThread));
                 CallWorkingDone();
             }
         }
@@ -149,24 +149,23 @@ namespace DjSoft.Tools.SDCardTester.Workers
         /// </summary>
         private void _CopySingleFile()
         {
-            if (Stopping) return;
+            if (Stopping) return;                                              // Uživatel chce skončit a nastavil Stop = true
 
-            var currentBlock = this.__CurrentLog.GetFirstBlock();
+            var currentBlock = this.__CurrentLog.GetFirstBlock();              // Získáme data o prvním bloku ke kopírování. K tomu máme Log, k tomu nepotřebujeme otevírat SourceStream.
             if (currentBlock is null) return;
 
             FileStream sourceStream = null;
             try
             {
                 sourceStream = System.IO.File.Open(this.__CurrentFile.SourceFile, FileMode.Open, FileAccess.Read, FileShare.Read);
-                _WrittingThreadRequest(new WritterRequestInfo(WritterRequestType.OpenWritterStream, this.__CurrentFile.DestinationFile));
+                _WrittingThreadAddRequest(new WritterRequestInfo(WritterRequestType.OpenWritterStream, this.__CurrentFile.DestinationFile));
              
                 while (currentBlock != null)
                 {
                     _CopySingleBlock(sourceStream, currentBlock);
-                    if (this.__CurrentLog.NeedSave)
-                        this.__CurrentLog.SaveLogFileAsync();
                     this.CallWorkingStepWhenTime();
-                    if (Stopping) break;
+                    if (Stopping) break;                                       // Uživatel chce skončit a nastavil Stop = true
+                    if (__WrittingStreamAbort) break;                          // Ve Write streamu došlo k chybě => končíme jeden soubor
                     currentBlock = this.__CurrentLog.GetNextBlock();
                 }
             }
@@ -179,9 +178,18 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 sourceStream.Close();
                 sourceStream.Dispose();
                 sourceStream = null;
-                _WrittingThreadRequest(new WritterRequestInfo(WritterRequestType.CloseWritterStream));
+                _WrittingThreadAddRequest(new WritterRequestInfo(WritterRequestType.CloseWritterStream));    // Pokud ve WriteStreamu došlo k chybě, pak tady se WriteThread vyčistí a připraví na nový request OpenStream
                 this.__CurrentLog.SaveLogFile();
             }
+
+
+
+
+            // App.ShowError
+
+
+
+
         }
         /// <summary>
         /// Zajistí kopírování jednoho bloku
@@ -192,16 +200,17 @@ namespace DjSoft.Tools.SDCardTester.Workers
         private void _CopySingleBlock(FileStream sourceStream, SingleBlockInfo currentBlock)
         {
             var result = CopyBlockResult.None;
-            var buffer = new byte[currentBlock.BlockLength];
-
+            var buffer = new byte[currentBlock.BlockLength];                   // BlockLength je skutečně platná délka i u posledního bloku, protože je určená mj. délkou vstupního souboru.
             try
             {
                 sourceStream.Seek(currentBlock.BlockStart, SeekOrigin.Begin);
-                currentBlock.ContentLength = sourceStream.Read(buffer, 0, currentBlock.BlockLength);
+                currentBlock.ReadTimeBegin = this.CurrentTime;
+                currentBlock.ContentLength = sourceStream.Read(buffer, 0, currentBlock.BlockLength);         // Tady probíhá čtení vstupního souboru..
+                currentBlock.StoreReadTime(this.GetSeconds(currentBlock.ReadTimeBegin), false);
                 if (currentBlock.ContentLength > 0)
                 {
                     currentBlock.Content = buffer;
-                    _WrittingThreadRequest(new WritterRequestInfo(WritterRequestType.WriteDataBlock, currentBlock));
+                    _WrittingThreadAddRequest(new WritterRequestInfo(WritterRequestType.WriteDataBlock, currentBlock));
                     result = CopyBlockResult.Success;
                 }
                 else
@@ -210,15 +219,21 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 }
             }
             catch (Exception ex)
-            {   // Toto je chyba při čtení bloku ze zdroje => tpt 
+            {   // Toto je chyba při čtení bloku ze zdroje => tuto chybu zaznamenám do bloku, ale nezrušíme celé kopírování
+                //   = toto je smysl celého tohoto procesu !!!!
+                currentBlock.StoreReadTime(this.GetSeconds(currentBlock.ReadTimeBegin), true);
                 Array.Clear(buffer, 0, buffer.Length);
                 currentBlock.Content = buffer;
                 currentBlock.ContentLength = currentBlock.Content.Length;
-                _WrittingThreadRequest(new WritterRequestInfo(WritterRequestType.WriteVoidBlock, currentBlock));
+                _WrittingThreadAddRequest(new WritterRequestInfo(WritterRequestType.WriteVoidBlock, currentBlock));
                 result = CopyBlockResult.Error;
             }
             currentBlock.StoreBlockResultRead(result);
+
+            // Aktualizace Logu, případně i na disk:
             this.__CurrentLog.AddUnsavedChange();
+            if (this.__CurrentLog.NeedSave)
+                this.__CurrentLog.SaveLogFileAsync();
         }
         /// <summary>
         /// Výsledek kopírování jednoho bloku
@@ -313,7 +328,6 @@ namespace DjSoft.Tools.SDCardTester.Workers
         */
         private SingleFileInfo __CurrentFile;
         private SingleLogInfo __CurrentLog;
-        
         /// <summary>
         /// Stavy práce na jednom souboru
         /// </summary>
@@ -411,7 +425,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
         /// Předá požadavek ke zpracování do threadu Writter.
         /// Volá se výhradně z threadu Work. Nebude tedy současně voláno z více threadů.
         /// </summary>
-        private bool _WrittingThreadRequest(WritterRequestInfo request)
+        private bool _WrittingThreadAddRequest(WritterRequestInfo request)
         {
             var timeEnd = DateTime.UtcNow.AddSeconds(60);
             while (__WritterCurrentRequest != null)
@@ -453,26 +467,14 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 switch (request.RequestType)
                 {
                     case WritterRequestType.OpenWritterStream:
-                        __WrittingStream = System.IO.File.Open(request.WriteFileName, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);        // System.IO.File.OpenWrite(targetFile))
-                        __WrittingStreamUnflushedBytes = 0;
+                        doOpenStream(request);
                         break;
                     case WritterRequestType.WriteDataBlock:
                     case WritterRequestType.WriteVoidBlock:
-                        __WrittingStream.Seek(request.WriteBlock.BlockStart, SeekOrigin.Begin);
-                        __WrittingStream.Write(request.WriteBlock.Content, 0, request.WriteBlock.Content.Length);
-                        __WrittingStreamUnflushedBytes += request.WriteBlock.Content.Length;
-                        if (__WrittingStreamUnflushedBytes >= 1048576L)
-                        {
-                            __WrittingStream.Flush();
-                            __WrittingStreamUnflushedBytes = 0;
-                        }
-                        request.WriteBlock.Content = null;
+                        doWriteBlock(request);
                         break;
                     case WritterRequestType.CloseWritterStream:
-                        __WrittingStream.Flush();
-                        __WrittingStream.Close();
-                        __WrittingStream.Dispose();
-                        __WrittingStream = null;
+                        doCloseStream(request);
                         break;
                     case WritterRequestType.EndThread:
                         __WritterIsEndingThread = true;
@@ -498,6 +500,71 @@ namespace DjSoft.Tools.SDCardTester.Workers
                     __WrittingSemaphoreStart.WaitOne(250);
                 }
             }
+            // Otevře zápis do souboru skrze __WrittingStream
+            void doOpenStream(WritterRequestInfo openRequest)
+            {
+                __WrittingStreamAbort = false;
+                try
+                {
+                    __WrittingStream = System.IO.File.Open(openRequest.WriteFileName, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);        // System.IO.File.OpenWrite(targetFile))
+                    __WrittingStreamUnflushedBytes = 0;
+                }
+                catch (Exception e)
+                {
+                    __WrittingStreamAbort = true;
+                    __WrittingStream = null;
+                }
+            }
+            // Vepíše do __WrittingStream blok s daty
+            void doWriteBlock(WritterRequestInfo writeRequest)
+            {
+                if (__WrittingStreamAbort) return;
+                
+                var writeBlock = writeRequest.WriteBlock;
+                try
+                {
+                    writeBlock.WriteTimeBegin = this.CurrentTime;
+                    __WrittingStream.Seek(writeBlock.BlockStart, SeekOrigin.Begin);
+                    __WrittingStream.Write(writeBlock.Content, 0, writeBlock.Content.Length);
+                    writeBlock.StoreWriteTime(writeBlock.WriteTimeBegin, false);
+                    __WrittingStreamUnflushedBytes += writeBlock.Content.Length;
+                    if (__WrittingStreamUnflushedBytes >= 1048576L)
+                    {
+                        __WrittingStream.Flush();
+                        __WrittingStreamUnflushedBytes = 0;
+                    }
+                }
+                catch (Exception e)
+                {
+                    writeBlock.StoreWriteTime(writeBlock.WriteTimeBegin, true);
+                    doCloseStream(writeRequest);                               // Tady se zavře stream, ale neměníme __WrittingStreamAbort
+                    __WrittingStreamAbort = true;                              // Ale my jsme našli chybu při Write, tak musíme oznámit, že v souboru je chyba
+                }
+                finally
+                {
+                    writeBlock.Content = null;
+                }
+            }
+            // Ukončí zápis do __WrittingStream
+            void doCloseStream(WritterRequestInfo closeRequest)
+            {
+                if (__WrittingStream != null)
+                {
+                    try
+                    {
+                        __WrittingStream.Flush();
+                        __WrittingStream.Close();
+                        __WrittingStream.Dispose();
+                    }
+                    catch (Exception e)
+                    { }
+                    __WrittingStream = null;
+                }
+
+                // Pokud zavíráme stream na explicitní požadavek, pak zrušíme červenou vlajku __WrittingStreamAbort 
+                if (closeRequest != null && closeRequest.RequestType == WritterRequestType.CloseWritterStream)
+                    __WrittingStreamAbort = false;
+            }
         }
         /// <summary>
         /// Instance threadu Writter
@@ -511,6 +578,14 @@ namespace DjSoft.Tools.SDCardTester.Workers
         /// Počet byte, které nejsou fyzicky zapsané (Flush) do __WrittingStream
         /// </summary>
         private int __WrittingStreamUnflushedBytes;
+        /// <summary>
+        /// Aktuální WriteStream má chybu a je nepoužitelný!<br/>
+        /// Bude nastaveno na true po chybě ve Write streamu.<br/>
+        /// Procedura kopírování jednoho souboru, jakmile detekuje zdejší true, tak zajistí ukončení práce na jednom souboru, <br/>
+        /// protože <see cref="__WrittingThread"/> od této chvíle nebude akceptovat další požadavky na zápis do streamu.<br/>
+        /// Stream je po chybě zavřen a zahozen.
+        /// </summary>
+        private bool __WrittingStreamAbort;
         /// <summary>
         /// Nově požadovaný request - který byl právě doručen, null když nic neděláme...
         /// </summary>
@@ -689,52 +764,35 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// <returns></returns>
             internal SingleBlockInfo GetFirstBlock()
             {
+                // Začínáme číst ty bloky, které nemají chybu = tedy ty, které jsme dosud nečetli:
+                this.ErrorLevelProcess = 0;
+
                 var fileLength = SourceFileLength ?? 0L;
                 if (fileLength <= 0L) return null;
 
                 var count = this.Blocks.Count;
-                var blockLength = this.BlockLength;
 
                 // Čím začneme:
                 // a) Dosud nemám žádný blok => založím první a vrátím jej:
                 if (count == 0)
-                    return createNewBlock(0L);
+                    return CreateNewBlock(0L);
+
+                // Jakmile už v soupisu bloků máme několik bloků, jde o kontinuální oblast dosud čtených bloků = které jsou buď přečtené a v pořádku, anebo byly čtené a mají chybu.
+                // V této fázi neřeším chybové bloky, ale najdu místo (pozici ve vstupním souboru), kde jsme posledně skončili s procesem kopírování, a pokusíme se pokračovat následující pozicí:
 
                 // b) Najdu poslední blok v evidenci (neřeším stav) a ověřím, zda za ním ještě je prostor v souboru:
                 var lastBlock = this.Blocks[count - 1];
 
                 // c) Pokud za posledním blokem ještě je nějaké místo ke zpracování, tak vytvořím next blok za posledním blokem (hlídám přitom délku souboru):
                 if (lastBlock.BlockEnd < fileLength)
-                    return createNewBlock(lastBlock.BlockEnd);
+                    return CreateNewBlock(lastBlock.BlockEnd);
 
-                // d) Pokud poslední blok v evidenci je i poslední blok souboru, pak nyní vyhledám chybné bloky od začátku bloku:
-
-
-                System.Diagnostics.Debugger.Break();
-
-                return null;
-
-
-                // Vrátí new blok, pro danou pozici Start, který přidá na konec soupisu Blocks:
-                SingleBlockInfo createNewBlock(long start)
-                {
-                    var length = getValidLength(start);                                  // Validní délka pro daný start_ reflektuje standardní BlockLength, ošetřuje jej na celkovou délku souboru SourceFileLength
-                    if (length <= 0) return null;
-                    var block = new SingleBlockInfo(start, length);
-                    this.CurrentBlockIndex = this.Blocks.Count;                          // Index prvku, který za chvilku přidám, bude == aktuální Count (prvek bude poslední v Listu)
-                    this.Blocks.Add(block);
-                    return block;
-                }
-                // Vrátí platnou délku pro blok, který začíná na dané pozici
-                int getValidLength(long start)
-                {
-                    if (start >= fileLength) return 0;
-
-                    var end = start + blockLength;                                       // Konec bloku = Zadaný Start + standardní délka bloku
-                    if (end > fileLength) end = fileLength;                              // Pokud konec bloku > Konec souboru, pak Konec bloku = Konec souboru
-                    long length = end - start;                                            // Reálná validní Délka bloku
-                    return (length <= 0L ? 0 : (length > 65536L ? 65536 : (int)length));
-                }
+                // d) Pokud poslední blok v evidenci je i poslední blok souboru,
+                //   tak jsme zjevně už skončili s první fází, kdy kopírujeme "čisté bloky" = bezchybné, 
+                //   tedy nyní už vyhledám chybné bloky, od začátku bloku, od nejmenšího počtu chyb:
+                this.ErrorLevelProcess = 1;
+                this.CurrentBlockIndex = null;
+                return GetNextBlock();
             }
             /// <summary>
             /// Vrátí další blok ke zpracování = volá se až poté, kdy byl vydán první blok metodou <see cref="GetFirstBlock()"/>.
@@ -742,27 +800,95 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// <returns></returns>
             internal SingleBlockInfo GetNextBlock()
             {
-                return null;
+                var fileLength = SourceFileLength ?? 0L;
+                if (fileLength <= 0L) return null;
 
+                var count = this.Blocks.Count;
+                var blockLength = this.BlockLength;
 
-                /*
-                if (Blocks.Count == 0) return null;
-                var currentBlock = Blocks.Values.FirstOrDefault(b => b.IsCurrent);
-                if (currentBlock == null) return null;
-                var nextKey = Blocks.Keys.Where(k => k > currentBlock.BlockStart).OrderBy(k => k).FirstOrDefault();
-                if (nextKey == 0 && !Blocks.ContainsKey(nextKey)) return null;
-                currentBlock.IsCurrent = false;
-                var nextBlock = Blocks[nextKey];
-                nextBlock.IsCurrent = true;
-                return nextBlock;
-                */
+                // Vyhledáme nejbližší blok za indexem CurrentBlockIndex (anebo od indexu 0, když CurrentBlockIndex = null),
+                // který má ErrorsCount == this.ErrorLevelProcess:
+                int currentIndex = (this.CurrentBlockIndex.HasValue ? (this.CurrentBlockIndex.Value + 1) : 0);
+                int searchErrorLevel = this.ErrorLevelProcess;
+                while (true)
+                {
+                    // 1) Pokud na pozici [currentIndex] není přítomen blok:
+                    if (currentIndex >= count)
+                    {   // Tedy currentIndex ukazuje za poslední existující prvek Blocks:
+                        // 1a) Pokud existující blok na poslední existující pozici má (BlockEnd < fileLength), pak se za poslední blok ještě vejde další blok:
+                        var currentBlockEnd = (count > 0 ? this.Blocks[count - 1].BlockEnd : 0L);  // BlockEnd z posledního bloku; nebo 0 pokud dosud není
+                        var nextBlockLength = this.GetValidLength(ref currentBlockEnd);            // Kolik místa je za posledním blokem?
+                        if (nextBlockLength > 0)
+                            return CreateNewBlock(currentBlockEnd);                                // Vytvoří new blok, začínající na dané pozici 'currentBlockEnd', s odpovídající délkou; přidá do Blocks, vepíše jeho index do CurrentBlockIndex, a vrátí jej.
+
+                        // 1b) Za poslední blok se už nevejde žádný další blok (=aktuální poslední blok skutečně končí na konci souboru) = už máme všechny bloky:
+                        // Tak se tedy vrátíme na začátek (currentIndex = 0), a budeme hledat bloky počínaje od indexu 0, ale s ErrorLevelProcess +1 :
+                        this.CurrentBlockIndex = null;
+                        currentIndex = 0;
+
+                        this.ErrorLevelProcess = this.ErrorLevelProcess + 1;
+                        searchErrorLevel = this.ErrorLevelProcess;
+                        if (searchErrorLevel > SingleLogInfo.MaxErrorsCount) return null;          // Další ErrorLevelProcess už se nezpracovává...
+                    }
+
+                    // Tady jsme v situaci, kdy currentIndex ukazuje na reálný prvek, který máme prověřit.
+                    // Pokud prvek není hotov, a jeho ErrorsCount == searchErrorLevel, pak jej vrátíme; jinak hledáme další...
+                    while (currentIndex < count)
+                    {
+                        var currentBlock = this.Blocks[currentIndex];
+                        if (!currentBlock.IsDone && currentBlock.ErrorsCount == searchErrorLevel)
+                        {
+                            this.CurrentBlockIndex = currentIndex;
+                            return currentBlock;
+                        }
+                        currentIndex++;
+                    }
+                }
+            }
+            /// <summary>
+            /// Vrátí new blok, pro danou pozici Start, který přidá na konec soupisu do Listu <see cref="Blocks"/>.
+            /// Pokud pro danou pozici <paramref name="start"/> a délku souboru <see cref="SourceFileLength"/> není třeba žádný blok, vrátí null.
+            /// <para/>
+            /// Pokud vytvoří new blok, pak jej přidá (na konec) do pole <see cref="Blocks"/>, a do <see cref="CurrentBlockIndex"/> vepíše jeho index.
+            /// </summary>
+            /// <param name="start"></param>
+            /// <returns></returns>
+            private SingleBlockInfo CreateNewBlock(long start)
+            {
+                var length = GetValidLength(ref start);                                  // ref Validní pozice Start; vrátí Validní délka pro daný start: reflektuje standardní BlockLength, ošetřuje jej na celkovou délku souboru SourceFileLength
+                if (length <= 0) return null;
+
+                var block = new SingleBlockInfo(start, length);
+                lock (this.Blocks)
+                {
+                    this.CurrentBlockIndex = this.Blocks.Count;                          // Index prvku, který za chvilku přidám, bude == aktuální Count (prvek bude poslední v Listu)
+                    this.Blocks.Add(block);
+                }
+                return block;
+            }
+            /// <summary>
+            /// Vrátí validní délku bloku, pokud bude začínat na dané pozici <paramref name="start"/>. Tuto pozici validuje s ohledem na rozsah 0 ÷ <see cref="SourceFileLength"/>.
+            /// </summary>
+            /// <param name="start"></param>
+            /// <returns></returns>
+            private int GetValidLength(ref long start)
+            {
+                var fileLength = SourceFileLength ?? 0L;
+                start = (start < 0L ? 0L : (start > fileLength ? fileLength : start));   // Validní pozice Start
+
+                if (start >= fileLength) return 0;                                       // Pro danou pozici Start a délku souboru není třeba vytvářet žádný blok
+
+                var blockLength = this.BlockLength;
+                var end = start + blockLength;                                           // Konec bloku = Zadaný Start + standardní délka bloku
+                if (end > fileLength) end = fileLength;                                  // Pokud konec bloku > Konec souboru, pak Konec bloku = Konec souboru
+                long length = end - start;                                               // Reálná validní Délka bloku
+                return (length <= 0L ? 0 : (length > 65536L ? 65536 : (int)length));
             }
             internal void SaveException(Exception ex)
             {
                 // Zde můžeme uložit informace o výjimce do logu, pokud je to potřeba.
                 // Například můžeme přidat záznam do BlockMap s informací o chybě.
             }
-
             /// <summary>
             /// Úroveň chyb, které řešíme.
             /// <para/>
@@ -770,8 +896,11 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// Pokud při kopírování bloku dojde k chybě, zvýší se počet <see cref="SingleBlockInfo.ErrorsCount"/>
             /// Jakmile dojdeme s kopírováním do konce (tedy nelze najít blok, který by dosud nebyl kopírován), 
             /// </summary>
-            internal int? ErrorLevelProcess { get; private set; }
-
+            internal int ErrorLevelProcess { get; private set; }
+            /// <summary>
+            /// 3 = Nejvyšší počet chyb, po kterých blok odepíšeme jako nečitelný (3x a dost!)
+            /// </summary>
+            public static int MaxErrorsCount { get { return 3; } }
             /// <summary>
             /// Setřídí bloky podle pozice <see cref="SingleBlockInfo.BlockStart"/>
             /// </summary>
@@ -838,6 +967,8 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// </summary>
             public async Task SaveLogFileAsync()
             {
+                if (SaveLogProcessing) return;
+
                 try
                 {
                     await Task.Run(() => SaveLogFile());
@@ -853,48 +984,70 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// </summary>
             public void SaveLogFile()
             {
-                // Toto může chvilku trvat...:
-                var blocks = Blocks.ToList();                                  // Oddělený List, a následně pracuji jen s ním
-                UnsavedChangesCount = 0;                                       // V tuto chvíli jsem převzal data
-                var statistic = GetStatistic(this.SourceFileLength, blocks);
-                BlocksSort(blocks);
-                var badBlocks = blocks.Where(b => b.IsErrorBlock).ToList();
-
-                // Zápis jen z jednoho threadu:
-                lock (__LogSaveLock)
+                if (SaveLogProcessing) return;
+                try
                 {
-                    string delim = DELIMITER_HEADER;
-                    using (var logWriter = new StreamWriter(DestinationLog, false))
-                    {
-                        logWriter.WriteLine("#############################################################################################");
-                        logWriter.WriteLine($"SourceFile:       {delim}{SourceFile}");
-                        logWriter.WriteLine($"DestinationFile:  {delim}{DestinationFile}");
-                        logWriter.WriteLine($"FileLength:       {delim}{statistic.FileSize:N0} B");
-                        logWriter.WriteLine($"ProcessedSize:    {delim}{statistic.TotalBlocksSize:N0} B");
-                        logWriter.WriteLine($"ProcessedPercent: {delim}{statistic.TotalBlocksPercent} %");
-                        logWriter.WriteLine($"BadBlocksCount:   {delim}{statistic.BadBlocksCount:N0}");
-                        logWriter.WriteLine($"BadBlockSize:     {delim}{statistic.BadBlocksSize:N0} B");
+                    SaveLogProcessing = true;
+                    doSaveLog();
+                }
+                finally
+                {
+                    SaveLogProcessing = false;
+                }
 
-                        if (badBlocks.Count > 0)
+                void doSaveLog()
+                {
+                    // Toto může chvilku trvat...:
+                    List<SingleBlockInfo> blocks = null;
+                    lock (this.Blocks)
+                    {   // Zámek je nutný proto, že do pole Block mohu přidávat prvky v jiném threadu...
+                        blocks = Blocks.ToList();                                            // Oddělený List, a následně pracuji jen s ním
+                        UnsavedChangesCount = 0;                                             // V tuto chvíli jsem převzal data
+                    }
+                    var statistic = GetStatistic(this.SourceFileLength, blocks);
+                    BlocksSort(blocks);
+                    var badBlocks = blocks.Where(b => b.IsErrorBlock).ToList();
+
+                    // Zápis jen z jednoho threadu:
+                    lock (__LogSaveLock)
+                    {
+                        string delim = DELIMITER_HEADER;
+                        using (var logWriter = new StreamWriter(DestinationLog, false))
                         {
                             logWriter.WriteLine("#############################################################################################");
-                            logWriter.WriteLine($"BadBlocks:");
-                            foreach (var badBlock in badBlocks)
-                                logWriter.WriteLine(badBlock.GetLineToLog());
+                            logWriter.WriteLine($"SourceFile:       {delim}{SourceFile}");
+                            logWriter.WriteLine($"DestinationFile:  {delim}{DestinationFile}");
+                            logWriter.WriteLine($"FileLength:       {delim}{statistic.FileSize:N0} B");
+                            logWriter.WriteLine($"ProcessedSize:    {delim}{statistic.TotalBlocksSize:N0} B");
+                            logWriter.WriteLine($"ProcessedPercent: {delim}{statistic.TotalBlocksPercent} %");
+                            logWriter.WriteLine($"BadBlocksCount:   {delim}{statistic.BadBlocksCount:N0}");
+                            logWriter.WriteLine($"BadBlockSize:     {delim}{statistic.BadBlocksSize:N0} B");
+
+                            if (badBlocks.Count > 0)
+                            {
+                                logWriter.WriteLine("#############################################################################################");
+                                logWriter.WriteLine($"BadBlocks:");
+                                foreach (var badBlock in badBlocks)
+                                    logWriter.WriteLine(badBlock.GetLineToLog());
+                            }
+
+                            logWriter.WriteLine("#############################################################################################");
+                            logWriter.WriteLine($"Blocks:");
+                            foreach (var block in blocks)
+                                logWriter.WriteLine(block.GetLineToLog());
+
+                            logWriter.WriteLine("#############################################################################################");
+
+                            logWriter.Flush();
+                            logWriter.Close();
                         }
-
-                        logWriter.WriteLine("#############################################################################################");
-                        logWriter.WriteLine($"Blocks:");
-                        foreach (var block in blocks)
-                            logWriter.WriteLine(block.GetLineToLog());
-
-                        logWriter.WriteLine("#############################################################################################");
-
-                        logWriter.Flush();
-                        logWriter.Close();
                     }
                 }
             }
+            /// <summary>
+            /// Obsahuje true v době, kdy probíhá zápis logu
+            /// </summary>
+            private bool SaveLogProcessing;
             /// <summary>
             /// Načte data ze souboru <see cref="DestinationLog"/> a naplní mapu bloků <see cref="Blocks"/> podle obsahu logu. Pokud soubor neexistuje, vytvoří prázdnou mapu bloků.
             /// </summary>
@@ -1067,7 +1220,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
         /// </summary>
         internal class SingleBlockInfo
         {
-            #region Data bloku
+            #region Konstruktor
             /// <summary>
             /// Konstruktor
             /// </summary>
@@ -1094,6 +1247,8 @@ namespace DjSoft.Tools.SDCardTester.Workers
             {
                 return $"Start: {BlockStart:N0}; Length: {BlockLength:N0}";
             }
+            #endregion
+            #region Data bloku: Start, Length, End
             /// <summary>
             /// Adresa začátku bloku v souboru, offset od začátku souboru.
             /// </summary>
@@ -1106,6 +1261,8 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// Adresa prvního byte za tímto blokem = <see cref="BlockStart"/> + <see cref="BlockLength"/>.
             /// </summary>
             public long BlockEnd { get { return this.BlockStart + this.BlockLength; } }
+            #endregion
+            #region Byte[] Content
             /// <summary>
             /// Binární obsah bloku: je naplněn po načtení, použit pro zápis, a po zápisu je nulován.
             /// </summary>
@@ -1114,6 +1271,8 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// Reálně načtená délka dat, přičemž požadovaná délka byla = <see cref="BlockLength"/>
             /// </summary>
             public int ContentLength { get; set; }
+            #endregion
+            #region Chyby: počet, stav, příznak
             /// <summary>
             /// Počet chyb při pokusech o čtení.
             /// <para/>
@@ -1123,13 +1282,13 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// </summary>
             public int ErrorsCount { get; set; }
             /// <summary>
-            /// 3 = Nejvyšší počet chyb, po kterých blok odepíšeme jako nečitelný (3x a dost!)
-            /// </summary>
-            public int MaxErrorsCount { get { return 3; } }
-            /// <summary>
             /// Stav bloku, zda je OK, nebo obsahuje chyby. Pokud je blok OK, pak je <see cref="ErrorsCount"/> == 0, pokud je blok chybový, pak je <see cref="ErrorsCount"/> větší než 0.
             /// </summary>
             public BlockStatus Status { get; set; }
+            /// <summary>
+            /// Obsahuje true, pokud <see cref="Status"/> říká, že blok je nějakým způsobem dokončen (OK, OK po chybě, Chyba a Abort)
+            /// </summary>
+            public bool IsDone { get { var st = this.Status; return (st == SingleBlockInfo.BlockStatus.OK || st == SingleBlockInfo.BlockStatus.OKAfterErrors || st == SingleBlockInfo.BlockStatus.ErrorAborted); } }
             /// <summary>
             /// Obsahuje true, pokud <see cref="Status"/> obsahuje nějakou chybu.
             /// </summary>
@@ -1154,7 +1313,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
                     case CopyBlockResult.Error:
                         // Skončili jsme s chybou: 
                         this.ErrorsCount++;
-                        this.Status = (this.ErrorsCount < MaxErrorsCount ? SingleBlockInfo.BlockStatus.WithError : SingleBlockInfo.BlockStatus.ErrorAborted);
+                        this.Status = (this.ErrorsCount < SingleLogInfo.MaxErrorsCount ? SingleBlockInfo.BlockStatus.WithError : SingleBlockInfo.BlockStatus.ErrorAborted);
                         break;
                 }
             }
@@ -1190,6 +1349,19 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 ErrorAborted,
             }
             #endregion
+            #region Časomíra
+            public long ReadTimeBegin { get; set; }
+            public void StoreReadTime(decimal seconds, bool isError)
+            {
+
+            }
+            public long WriteTimeBegin { get; set; }
+            public void StoreWriteTime(decimal seconds, bool isError)
+            {
+
+            }
+            #endregion
+
             #region Serializace a deserializace do logového souboru
             /// <summary>
             /// Vrátí řádek, který lze uložit do logového souboru.
