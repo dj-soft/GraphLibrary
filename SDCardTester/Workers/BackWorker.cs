@@ -155,10 +155,9 @@ namespace DjSoft.Tools.SDCardTester.Workers
         protected bool CanCallWorkingStep(bool force = false)
         {
             if (force) return true;
-            var nowTime = DateTime.Now;
             var lastTime = LastStepTime;
             var stepTime = WorkingStepTime;
-            return (!lastTime.HasValue || stepTime.TotalMilliseconds <= 0d || (lastTime.HasValue && ((TimeSpan)(nowTime - lastTime.Value) >= stepTime)));
+            return (!lastTime.HasValue || stepTime.TotalMilliseconds <= 0d || (lastTime.HasValue && ((TimeSpan)(DateTime.Now - lastTime.Value) >= stepTime)));
         }
         /// <summary>
         /// Čas posledního hlášení změny

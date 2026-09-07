@@ -94,6 +94,14 @@ namespace DjSoft.Tools.SDCardTester.Workers
                         DestinationFile = System.IO.Path.Combine(outputPath, fileName),
                         DestinationLog = System.IO.Path.Combine(outputPath, fileLog)
                     };
+                    fileInfo.SimulatedErrors = new Tuple<long, int>[]
+                    {
+                        new Tuple<long, int>(12345678, 3),
+                        new Tuple<long, int>(123456789, 1),
+                        new Tuple<long, int>(456789123, 2),
+                        new Tuple<long, int>(789456123, 99),
+                        new Tuple<long, int>(654987321, 3)
+                    };
                     __Files.Add(fileInfo);
                 }
             }
@@ -164,22 +172,11 @@ namespace DjSoft.Tools.SDCardTester.Workers
              
                 while (currentBlock != null)
                 {
-                    if (currentBlock.BlockEnd > fileLength)
-                    {
-                        int _ = 0;
-                    }
-
                     _CopySingleBlock(sourceStream, currentBlock);
                     this.CallWorkingStepWhenTime();
                     if (Stopping) break;                                       // Uživatel chce skončit a nastavil Stop = true
                     if (__WrittingStreamAbort) break;                          // Ve Write streamu došlo k chybě => končíme jeden soubor
                     currentBlock = this.__CurrentLog.GetNextBlock();
-
-                    if (currentBlock is null)
-                    {
-                        int _ = 0;
-                    }
-
                 }
             }
             catch (Exception ex) 
@@ -217,6 +214,8 @@ namespace DjSoft.Tools.SDCardTester.Workers
             var buffer = new byte[currentBlock.BlockLength];                   // BlockLength je skutečně platná délka i u posledního bloku, protože je určená mj. délkou vstupního souboru.
             try
             {
+                simulateError(currentBlock);
+
                 sourceStream.Seek(currentBlock.BlockStart, SeekOrigin.Begin);
                 currentBlock.ReadTimeBegin = this.CurrentTime;
                 currentBlock.ContentLength = sourceStream.Read(buffer, 0, currentBlock.BlockLength);         // Tady probíhá čtení vstupního souboru..
@@ -248,6 +247,24 @@ namespace DjSoft.Tools.SDCardTester.Workers
             this.__CurrentLog.AddUnsavedChange();
             if (this.__CurrentLog.NeedSave)
                 this.__CurrentLog.SaveLogFileAsync();
+
+
+            void simulateError(SingleBlockInfo block)
+            {
+                var simErrors = this.__CurrentFile.SimulatedErrors;
+                if (simErrors is null) return;
+
+                // Najdu definici simulované chyby, která je definovaná právě pro ten blok, který nyní řešíme:
+                var simError = simErrors.FirstOrDefault(s => block.BlockStart <= s.Item1 && block.BlockEnd > s.Item1);
+                if (simError is null) return;
+
+                // Hodnota simulované chyby (Item2) určuje, na kolikátý pokus se chybu podaří přečíst.
+                // Například: Item2 = 2 => chybu vyhodíme, pokud this.__CurrentLog.ErrorLevelProcess bude 0 a 1, ale až bude this.__CurrentLog.ErrorLevelProcess == 2, tak chybu nevyhodíme.
+                if (this.__CurrentLog.ErrorLevelProcess >= simError.Item2) return;
+
+                // Vyhodíme chybu, která simuluje chybu čtení:
+                throw new System.IO.IOException($"Došlo k simulované chybě ve vstupním souboru: pozice {simError.Item1:N0}; ErrorLevel: {simError.Item2}.");
+            }
         }
         /// <summary>
         /// Výsledek kopírování jednoho bloku
@@ -633,8 +650,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// </summary>
             public SingleFileInfo()
             {
-                FastCopyBlockSize = 16384;
-                BufferSize = 4096;
+                FastCopyBlockSize = CommonSegmentLengthHdd;
                 SkipOnError = 512;
                 AbortAfterContinueErrors = 1024;
                 Success = false;
@@ -673,14 +689,33 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// Cílový soubor pro uložení logu záchrany.
             /// </summary>
             public string DestinationLog { get; set; }
-
+            /// <summary>
+            /// Velikost výchozího bloku
+            /// <para/>
+            /// Doporučení od AI<br/>
+            /// •	HDD (sequential): 64 KB – 1 MB, doporučené výchozí: 256 KB<br/>
+            /// •	SSD (sequential): 64 KB – 1 MB, doporučené výchozí: 256 KB<br/>
+            /// •	SD karta přes USB: 32 KB – 256 KB, doporučené výchozí: 64 KB<br/>
+            /// Krátké vysvětlení a tipy<br/>
+            /// •	Základní pravidlo: používejte násobky fyzického sektoru (obvykle 4096 B nebo 512 B). To zajišťuje lepší zarovnání a výkon, zvlášť při NoBuffering/unbuffered I/O.<br/>
+            /// •	Velké sekvenční přenosy: větší buffery snižují režii (méně syscalů) a často zvýší propustnost. Ale nad určitou velikost (řád MB) už nárůst výkonu zpravidla stagnuje.<br/>
+            /// •	Náhodný přístup: menší bloky (4 KB–64 KB) jsou obvykle lepší, protože velké bloky způsobí zbytečné čtení/zápis.<br/>
+            /// •	SD přes USB: záleží na USB–SD bridge a kartě; mnoho řadičů má lepší výkon při ~64 KB blokách.<br/>
+            /// •	.NET tipy: při velkým souborech používejte FileOptions.SequentialScan a async I/O (ReadAsync/WriteAsync) nebo FileStream s dostatečným bufferem. Pokud použijete unbuffered/WriteThrough, dodržujte zarovnání bufferů na sektor a velikost v násobcích sektoru.<br/>
+            /// •	Měřit vždy: otestujte několik hodnot (např. 64 KB, 256 KB, 1 MB) a změřte průtok a CPU — výsledky se liší podle hardware/firmware/USB řadiče.<br/>
+            /// Krátké doporučení k testování<br/>
+            /// •	Vyzkoušejte 64 KB, 256 KB, 1 MB; měřte MB/s a CPU. Vyberte nejmenší buffer, který dává maximální/saturovaný propustnost bez neúměrného CPU použití.
+            /// </summary>
             public int FastCopyBlockSize { get; set; }
-            public int BufferSize { get; set; }
             public int SkipOnError { get; set; }
             public int AbortAfterContinueErrors { get; set; }
 
             public bool Success { get; set; }
             public string ErrorMessage { get; set; }
+            /// <summary>
+            /// Simulované chyby: Item1 = byte s chybou; Item2 = na kolikátý pokus bude správně bezchybně přečtena (0 = není chyba, ... 99 = nikdy)
+            /// </summary>
+            public Tuple<long, int>[] SimulatedErrors { get; set; }
             /// <summary>
             /// Aktuálně načtený LOG
             /// </summary>
@@ -716,8 +751,9 @@ namespace DjSoft.Tools.SDCardTester.Workers
             public SingleLogInfo(SingleFileInfo fileInfo)
             {
                 FileInfo = fileInfo;
-                var length = 4096 * (fileInfo.FastCopyBlockSize / 4096);                           // Délka bloku standardní
-                BlockLength = (length < 4096 ? 4096 : (length > 32768 ? 32768 : length));          // Do rozmezí 4 ÷ 32KB
+                var segmentStep = CommonSegmentLengthMin;
+                var length = segmentStep * (fileInfo.FastCopyBlockSize / segmentStep);                                                                              // Délka bloku standardní
+                BlockLength = (length < CommonSegmentLengthMin ? CommonSegmentLengthMin : (length > CommonSegmentLengthMax ? CommonSegmentLengthMax : length));     // Do rozmezí Min-Max
                 Blocks = new List<SingleBlockInfo>();
                 this.LoadLogFile();
             }
@@ -904,7 +940,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 var end = start + blockLength;                                           // Konec bloku = Zadaný Start + standardní délka bloku
                 if (end > fileLength) end = fileLength;                                  // Pokud konec bloku > Konec souboru, pak Konec bloku = Konec souboru
                 long length = end - start;                                               // Reálná validní Délka bloku
-                return (length <= 0L ? 0 : (length > 65536L ? 65536 : (int)length));
+                return (length <= 0L ? 0 : (length > CommonSegmentLengthMax ? CommonSegmentLengthMax : (int)length));
             }
             internal void SaveException(Exception ex)
             {
@@ -1507,6 +1543,12 @@ namespace DjSoft.Tools.SDCardTester.Workers
 
         // Seek mode
         private const uint FILE_BEGIN = 0;
+        #endregion
+        #region Společné konstanty
+        internal const int CommonSegmentLengthHdd = 128 * 1024;
+        internal const int CommonSegmentLengthUsb = 32 * 1024;
+        internal const int CommonSegmentLengthMin = 4 * 1024;
+        internal const int CommonSegmentLengthMax = 1024 * 1024;
         #endregion
     }
     #region Podklady pro práci = Args
