@@ -827,7 +827,7 @@ namespace DjSoft.Tools.SDCardTester
                 OutputFilesPath = @"G:\Cdisk\FileRescueTestTarget",
             };
             ShowControls(ActionState.FileRescue, true);
-
+            
             var fileRescuer = new FileRescue();
             fileRescuer.WorkingStep += _FileRescuer_WorkingStep;
             fileRescuer.WorkingDone += _FileRescuer_WorkingDone;

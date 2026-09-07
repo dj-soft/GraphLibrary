@@ -151,8 +151,10 @@ namespace DjSoft.Tools.SDCardTester.Workers
         {
             if (Stopping) return;                                              // Uživatel chce skončit a nastavil Stop = true
 
+            var fileLength = this.__CurrentFile?.SourceFileLength ?? 0L;
             var currentBlock = this.__CurrentLog.GetFirstBlock();              // Získáme data o prvním bloku ke kopírování. K tomu máme Log, k tomu nepotřebujeme otevírat SourceStream.
             if (currentBlock is null) return;
+            this.__CurrentLog.StartTime = this.CurrentTime;
 
             FileStream sourceStream = null;
             try
@@ -162,11 +164,22 @@ namespace DjSoft.Tools.SDCardTester.Workers
              
                 while (currentBlock != null)
                 {
+                    if (currentBlock.BlockEnd > fileLength)
+                    {
+                        int _ = 0;
+                    }
+
                     _CopySingleBlock(sourceStream, currentBlock);
                     this.CallWorkingStepWhenTime();
                     if (Stopping) break;                                       // Uživatel chce skončit a nastavil Stop = true
                     if (__WrittingStreamAbort) break;                          // Ve Write streamu došlo k chybě => končíme jeden soubor
                     currentBlock = this.__CurrentLog.GetNextBlock();
+
+                    if (currentBlock is null)
+                    {
+                        int _ = 0;
+                    }
+
                 }
             }
             catch (Exception ex) 
@@ -179,7 +192,8 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 sourceStream.Dispose();
                 sourceStream = null;
                 _WrittingThreadAddRequest(new WritterRequestInfo(WritterRequestType.CloseWritterStream));    // Pokud ve WriteStreamu došlo k chybě, pak tady se WriteThread vyčistí a připraví na nový request OpenStream
-                this.__CurrentLog.SaveLogFile();
+                this.__CurrentLog.TotalTime = this.GetSeconds(this.__CurrentLog.StartTime);
+                this.__CurrentLog.SaveLogFile(true);
             }
 
 
@@ -756,6 +770,14 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// Index prvku v poli <see cref="Blocks"/>, který se právě zpracovává
             /// </summary>
             public int? CurrentBlockIndex { get; private set; }
+            /// <summary>
+            /// Čas počátku, Ticks
+            /// </summary>
+            public long StartTime { get; set; }
+            /// <summary>
+            /// Čas trvání, sekundy
+            /// </summary>
+            public decimal TotalTime { get; set; }
             #endregion
             #region Správa bloků - řízení procesu kopírování ve smyslu toho, co se bude kopírovat 
             /// <summary>
@@ -971,7 +993,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
 
                 try
                 {
-                    await Task.Run(() => SaveLogFile());
+                    await Task.Run(() => SaveLogFile(false));
                 }
                 catch (Exception ex)
                 {
@@ -982,9 +1004,21 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// <summary>
             /// Uloží Log do souboru <see cref="DestinationLog"/>. Pokud soubor existuje, přepíše jej. Synchronní metoda.
             /// </summary>
-            public void SaveLogFile()
+            public void SaveLogFile(bool isFinal)
             {
+                // Pokud nejsem Final, a aktuálně probíhá zápis, tak tento nový požadavek ignoruji. Finální požadavek ale neignoruji!
+                if (!isFinal && SaveLogProcessing) return;
+
+                // Počkám na dokončení předchozího zápisu (to jen když jsem Final):
+                var end = DateTime.Now.AddSeconds(5);
+                while (SaveLogProcessing && DateTime.Now < end)                // Čekám nejvýše 5 sekund
+                {
+                    Thread.Sleep(150);                                         // Testuji vždy po 150 milisec, tady nebudu řešit semafor = jde jen o jediný poslední zápis logu
+                }
                 if (SaveLogProcessing) return;
+
+
+                // Zápis do logu je označen hodnotou SaveLogProcessing = true:
                 try
                 {
                     SaveLogProcessing = true;
@@ -1005,7 +1039,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
                         UnsavedChangesCount = 0;                                             // V tuto chvíli jsem převzal data
                     }
                     var statistic = GetStatistic(this.SourceFileLength, blocks);
-                    BlocksSort(blocks);
+                    // BlocksSort(blocks);
                     var badBlocks = blocks.Where(b => b.IsErrorBlock).ToList();
 
                     // Zápis jen z jednoho threadu:
@@ -1022,6 +1056,8 @@ namespace DjSoft.Tools.SDCardTester.Workers
                             logWriter.WriteLine($"ProcessedPercent: {delim}{statistic.TotalBlocksPercent} %");
                             logWriter.WriteLine($"BadBlocksCount:   {delim}{statistic.BadBlocksCount:N0}");
                             logWriter.WriteLine($"BadBlockSize:     {delim}{statistic.BadBlocksSize:N0} B");
+                            if (isFinal)
+                            logWriter.WriteLine($"TotalCopyTime:    {delim}{this.TotalTime} sec");
 
                             if (badBlocks.Count > 0)
                             {
@@ -1036,7 +1072,8 @@ namespace DjSoft.Tools.SDCardTester.Workers
                             foreach (var block in blocks)
                                 logWriter.WriteLine(block.GetLineToLog());
 
-                            logWriter.WriteLine("#############################################################################################");
+                            if (isFinal)
+                                logWriter.WriteLine("#############################################################################################");
 
                             logWriter.Flush();
                             logWriter.Close();
