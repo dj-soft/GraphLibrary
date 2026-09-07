@@ -870,6 +870,9 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 int searchErrorLevel = this.ErrorLevelProcess;
                 while (true)
                 {
+                    searchErrorLevel = this.ErrorLevelProcess;
+                    if (searchErrorLevel > SingleLogInfo.MaxErrorsCount) return null;             // Další ErrorLevelProcess už se nezpracovává...
+
                     // 1) Pokud na pozici [currentIndex] není přítomen blok:
                     if (currentIndex >= count)
                     {   // Tedy currentIndex ukazuje za poslední existující prvek Blocks:
@@ -884,23 +887,34 @@ namespace DjSoft.Tools.SDCardTester.Workers
                         this.CurrentBlockIndex = null;
                         currentIndex = 0;
 
-                        this.ErrorLevelProcess = this.ErrorLevelProcess + 1;
-                        searchErrorLevel = this.ErrorLevelProcess;
-                        if (searchErrorLevel > SingleLogInfo.MaxErrorsCount) return null;          // Další ErrorLevelProcess už se nezpracovává...
+                        this.ErrorLevelProcess++;
+                        continue;
                     }
 
-                    // Tady jsme v situaci, kdy currentIndex ukazuje na reálný prvek, který máme prověřit.
+                    // Tady jsme v situaci, kdy currentIndex ukazuje na některý reálný prvek, který máme prověřit.
+                    // Reálný = už jsme jej zkusili kopírovat: zkontrolujeme, v jakém je stavu.
                     // Pokud prvek není hotov, a jeho ErrorsCount == searchErrorLevel, pak jej vrátíme; jinak hledáme další...
+                    //   Proč rovnost (ErrorsCount == searchErrorLevel) ? Protože po první chybě (ErrorLevel = 1) v prvku 005 nebudeme řešit opakování čtení prvku 005 (to by byla ErrorLevel = 2),
+                    //   ale najdeme prvek 055 s ErrorsCount == 1 a ten zkusíme...
                     while (currentIndex < count)
                     {
                         var currentBlock = this.Blocks[currentIndex];
-                        if (!currentBlock.IsDone && currentBlock.ErrorsCount == searchErrorLevel)
+                        if (!currentBlock.IsDone)
                         {
-                            this.CurrentBlockIndex = currentIndex;
-                            return currentBlock;
+                            if (currentBlock.ErrorsCount == searchErrorLevel)
+                            {
+                                this.CurrentBlockIndex = currentIndex;
+                                return currentBlock;
+                            }
                         }
                         currentIndex++;
                     }
+
+                    // V hledané ErrorLevel jsme už nic nenašli...
+                    // Jdeme na další ErrorLevel = zkusíme načíst nehotové prvky, které měly chybu:
+                    this.CurrentBlockIndex = null;
+                    currentIndex = 0;
+                    this.ErrorLevelProcess++;
                 }
             }
             /// <summary>
