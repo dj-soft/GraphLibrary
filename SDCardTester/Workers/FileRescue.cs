@@ -100,7 +100,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
                         new Tuple<long, int>(123456789, 1),
                         new Tuple<long, int>(456789123, 2),
                         new Tuple<long, int>(789456123, 99),
-                        new Tuple<long, int>(654987321, 3)
+                        new Tuple<long, int>(654987321, 1)
                     };
                     __Files.Add(fileInfo);
                 }
@@ -738,569 +738,6 @@ namespace DjSoft.Tools.SDCardTester.Workers
             }
         }
         #endregion
-        #region class SingleLogInfo : Informace o stavu záchrany jednoho souboru, včetně mapy bloků a jejich stavu. Řídící prvek pro řešení toho, co bude kopírováno.
-        /// <summary>
-        /// Informace o stavu záchrany jednoho souboru, včetně mapy bloků a jejich stavu. Řídící prvek pro řešení toho, co bude kopírováno.
-        /// </summary>
-        internal class SingleLogInfo
-        {
-            #region Data celého logu
-            /// <summary>
-            /// Konstruktor
-            /// </summary>
-            public SingleLogInfo(SingleFileInfo fileInfo)
-            {
-                FileInfo = fileInfo;
-                var segmentStep = CommonSegmentLengthMin;
-                var length = segmentStep * (fileInfo.FastCopyBlockSize / segmentStep);                                                                              // Délka bloku standardní
-                BlockLength = (length < CommonSegmentLengthMin ? CommonSegmentLengthMin : (length > CommonSegmentLengthMax ? CommonSegmentLengthMax : length));     // Do rozmezí Min-Max
-                Blocks = new List<SingleBlockInfo>();
-                this.LoadLogFile();
-            }
-            /// <summary>
-            /// Vizualizace
-            /// </summary>
-            /// <returns></returns>
-            public override string ToString()
-            {
-                var statistic = this.Statistic;
-                return $"File: {SourceFile}; Length: {SourceFileLength:3} B; Processed: {statistic.TotalBlocksSize:3} B; WithErrors: {statistic.BadBlocksSize:3} B";
-            }
-            /// <summary>
-            /// Zámek, který zajišťuje, že při současném přístupu z více threadů se log soubor ukládá bezpečně a nedojde k poškození dat.
-            /// </summary>
-            private object __LogSaveLock = new object();
-            /// <summary>
-            /// Informace o zdrojovém souboru.
-            /// </summary>
-            public SingleFileInfo FileInfo { get; private set; }
-            /// <summary>
-            /// Vstupní zdrojový soubor k záchraně.
-            /// </summary>
-            public string SourceFile { get { return FileInfo.SourceFile; } }
-            /// <summary>
-            /// Cílový soubor pro uložení toho, co lze uložit
-            /// </summary>
-            public string DestinationFile { get { return FileInfo.DestinationFile; } }
-            /// <summary>
-            /// Cílový soubor pro uložení logu záchrany.
-            /// </summary>
-            public string DestinationLog { get { return FileInfo.DestinationLog; } }
-            /// <summary>
-            /// Cílový soubor pro uložení logu existuje?
-            /// </summary>
-            public bool DestinationLogExists { get; private set; }
-            /// <summary>
-            /// Délka vstupního souboru <see cref="SourceFile"/>
-            /// </summary>
-            public long? SourceFileLength { get { return FileInfo?.SourceFileLength; } }
-            /// <summary>
-            /// Délka standardního bloku pro kopírování, podle které se vytváří mapování bloků v <see cref="Blocks"/>.
-            /// </summary>
-            public int BlockLength { get; private set; }
-            /// <summary>
-            /// Bloky souboru, kde klíčem je počáteční offset bloku a hodnotou je informace o daném bloku <see cref="SingleBlockInfo"/>.
-            /// </summary>
-            public List<SingleBlockInfo> Blocks { get; private set; }
-            /// <summary>
-            /// Index prvku v poli <see cref="Blocks"/>, který se právě zpracovává
-            /// </summary>
-            public int? CurrentBlockIndex { get; private set; }
-            /// <summary>
-            /// Čas počátku, Ticks
-            /// </summary>
-            public long StartTime { get; set; }
-            /// <summary>
-            /// Čas trvání, sekundy
-            /// </summary>
-            public decimal TotalTime { get; set; }
-            #endregion
-            #region Správa bloků - řízení procesu kopírování ve smyslu toho, co se bude kopírovat 
-            /// <summary>
-            /// Vrátí první blok, který se bude kopírovat.
-            /// </summary>
-            /// <returns></returns>
-            internal SingleBlockInfo GetFirstBlock()
-            {
-                // Začínáme číst ty bloky, které nemají chybu = tedy ty, které jsme dosud nečetli:
-                this.ErrorLevelProcess = 0;
-
-                var fileLength = SourceFileLength ?? 0L;
-                if (fileLength <= 0L) return null;
-
-                var count = this.Blocks.Count;
-
-                // Čím začneme:
-                // a) Dosud nemám žádný blok => založím první a vrátím jej:
-                if (count == 0)
-                    return CreateNewBlock(0L);
-
-                // Jakmile už v soupisu bloků máme několik bloků, jde o kontinuální oblast dosud čtených bloků = které jsou buď přečtené a v pořádku, anebo byly čtené a mají chybu.
-                // V této fázi neřeším chybové bloky, ale najdu místo (pozici ve vstupním souboru), kde jsme posledně skončili s procesem kopírování, a pokusíme se pokračovat následující pozicí:
-
-                // b) Najdu poslední blok v evidenci (neřeším stav) a ověřím, zda za ním ještě je prostor v souboru:
-                var lastBlock = this.Blocks[count - 1];
-
-                // c) Pokud za posledním blokem ještě je nějaké místo ke zpracování, tak vytvořím next blok za posledním blokem (hlídám přitom délku souboru):
-                if (lastBlock.BlockEnd < fileLength)
-                    return CreateNewBlock(lastBlock.BlockEnd);
-
-                // d) Pokud poslední blok v evidenci je i poslední blok souboru,
-                //   tak jsme zjevně už skončili s první fází, kdy kopírujeme "čisté bloky" = bezchybné, 
-                //   tedy nyní už vyhledám chybné bloky, od začátku bloku, od nejmenšího počtu chyb:
-                this.ErrorLevelProcess = 1;
-                this.CurrentBlockIndex = null;
-                return GetNextBlock();
-            }
-            /// <summary>
-            /// Vrátí další blok ke zpracování = volá se až poté, kdy byl vydán první blok metodou <see cref="GetFirstBlock()"/>.
-            /// </summary>
-            /// <returns></returns>
-            internal SingleBlockInfo GetNextBlock()
-            {
-                var fileLength = SourceFileLength ?? 0L;
-                if (fileLength <= 0L) return null;
-
-                var count = this.Blocks.Count;
-                var blockLength = this.BlockLength;
-
-                // Vyhledáme nejbližší blok za indexem CurrentBlockIndex (anebo od indexu 0, když CurrentBlockIndex = null),
-                // který má ErrorsCount == this.ErrorLevelProcess:
-                int currentIndex = (this.CurrentBlockIndex.HasValue ? (this.CurrentBlockIndex.Value + 1) : 0);
-                int searchErrorLevel = this.ErrorLevelProcess;
-                while (true)
-                {
-                    searchErrorLevel = this.ErrorLevelProcess;
-                    if (searchErrorLevel > SingleLogInfo.MaxErrorsCount) return null;             // Další ErrorLevelProcess už se nezpracovává...
-
-                    // 1) Pokud na pozici [currentIndex] není přítomen blok:
-                    if (currentIndex >= count)
-                    {   // Tedy currentIndex ukazuje za poslední existující prvek Blocks:
-                        // 1a) Pokud existující blok na poslední existující pozici má (BlockEnd < fileLength), pak se za poslední blok ještě vejde další blok:
-                        var currentBlockEnd = (count > 0 ? this.Blocks[count - 1].BlockEnd : 0L);  // BlockEnd z posledního bloku; nebo 0 pokud dosud není
-                        var nextBlockLength = this.GetValidLength(ref currentBlockEnd);            // Kolik místa je za posledním blokem?
-                        if (nextBlockLength > 0)
-                            return CreateNewBlock(currentBlockEnd);                                // Vytvoří new blok, začínající na dané pozici 'currentBlockEnd', s odpovídající délkou; přidá do Blocks, vepíše jeho index do CurrentBlockIndex, a vrátí jej.
-
-                        // 1b) Za poslední blok se už nevejde žádný další blok (=aktuální poslední blok skutečně končí na konci souboru) = už máme všechny bloky:
-                        // Tak se tedy vrátíme na začátek (currentIndex = 0), a budeme hledat bloky počínaje od indexu 0, ale s ErrorLevelProcess +1 :
-                        this.CurrentBlockIndex = null;
-                        currentIndex = 0;
-
-                        this.ErrorLevelProcess++;
-                        continue;
-                    }
-
-                    // Tady jsme v situaci, kdy currentIndex ukazuje na některý reálný prvek, který máme prověřit.
-                    // Reálný = už jsme jej zkusili kopírovat: zkontrolujeme, v jakém je stavu.
-                    // Pokud prvek není hotov, a jeho ErrorsCount == searchErrorLevel, pak jej vrátíme; jinak hledáme další...
-                    //   Proč rovnost (ErrorsCount == searchErrorLevel) ? Protože po první chybě (ErrorLevel = 1) v prvku 005 nebudeme řešit opakování čtení prvku 005 (to by byla ErrorLevel = 2),
-                    //   ale najdeme prvek 055 s ErrorsCount == 1 a ten zkusíme...
-                    while (currentIndex < count)
-                    {
-                        var currentBlock = this.Blocks[currentIndex];
-                        if (!currentBlock.IsDone)
-                        {
-                            if (currentBlock.ErrorsCount == searchErrorLevel)
-                            {
-                                this.CurrentBlockIndex = currentIndex;
-                                return currentBlock;
-                            }
-                        }
-                        currentIndex++;
-                    }
-
-                    // V hledané ErrorLevel jsme už nic nenašli...
-                    // Jdeme na další ErrorLevel = zkusíme načíst nehotové prvky, které měly chybu:
-                    this.CurrentBlockIndex = null;
-                    currentIndex = 0;
-                    this.ErrorLevelProcess++;
-                }
-            }
-            /// <summary>
-            /// Vrátí new blok, pro danou pozici Start, který přidá na konec soupisu do Listu <see cref="Blocks"/>.
-            /// Pokud pro danou pozici <paramref name="start"/> a délku souboru <see cref="SourceFileLength"/> není třeba žádný blok, vrátí null.
-            /// <para/>
-            /// Pokud vytvoří new blok, pak jej přidá (na konec) do pole <see cref="Blocks"/>, a do <see cref="CurrentBlockIndex"/> vepíše jeho index.
-            /// </summary>
-            /// <param name="start"></param>
-            /// <returns></returns>
-            private SingleBlockInfo CreateNewBlock(long start)
-            {
-                var length = GetValidLength(ref start);                                  // ref Validní pozice Start; vrátí Validní délka pro daný start: reflektuje standardní BlockLength, ošetřuje jej na celkovou délku souboru SourceFileLength
-                if (length <= 0) return null;
-
-                var block = new SingleBlockInfo(start, length);
-                lock (this.Blocks)
-                {
-                    this.CurrentBlockIndex = this.Blocks.Count;                          // Index prvku, který za chvilku přidám, bude == aktuální Count (prvek bude poslední v Listu)
-                    this.Blocks.Add(block);
-                }
-                return block;
-            }
-            /// <summary>
-            /// Vrátí validní délku bloku, pokud bude začínat na dané pozici <paramref name="start"/>. Tuto pozici validuje s ohledem na rozsah 0 ÷ <see cref="SourceFileLength"/>.
-            /// </summary>
-            /// <param name="start"></param>
-            /// <returns></returns>
-            private int GetValidLength(ref long start)
-            {
-                var fileLength = SourceFileLength ?? 0L;
-                start = (start < 0L ? 0L : (start > fileLength ? fileLength : start));   // Validní pozice Start
-
-                if (start >= fileLength) return 0;                                       // Pro danou pozici Start a délku souboru není třeba vytvářet žádný blok
-
-                var blockLength = this.BlockLength;
-                var end = start + blockLength;                                           // Konec bloku = Zadaný Start + standardní délka bloku
-                if (end > fileLength) end = fileLength;                                  // Pokud konec bloku > Konec souboru, pak Konec bloku = Konec souboru
-                long length = end - start;                                               // Reálná validní Délka bloku
-                return (length <= 0L ? 0 : (length > CommonSegmentLengthMax ? CommonSegmentLengthMax : (int)length));
-            }
-            internal void SaveException(Exception ex)
-            {
-                // Zde můžeme uložit informace o výjimce do logu, pokud je to potřeba.
-                // Například můžeme přidat záznam do BlockMap s informací o chybě.
-            }
-            /// <summary>
-            /// Úroveň chyb, které řešíme.
-            /// <para/>
-            /// Po zahájení kopírování nejprve kopírujeme dosud nezkopírované chyby, <see cref="ErrorLevelProcess"/> je null.<br/>
-            /// Pokud při kopírování bloku dojde k chybě, zvýší se počet <see cref="SingleBlockInfo.ErrorsCount"/>
-            /// Jakmile dojdeme s kopírováním do konce (tedy nelze najít blok, který by dosud nebyl kopírován), 
-            /// </summary>
-            internal int ErrorLevelProcess { get; private set; }
-            /// <summary>
-            /// 3 = Nejvyšší počet chyb, po kterých blok odepíšeme jako nečitelný (3x a dost!)
-            /// </summary>
-            public static int MaxErrorsCount { get { return 3; } }
-            /// <summary>
-            /// Setřídí bloky podle pozice <see cref="SingleBlockInfo.BlockStart"/>
-            /// </summary>
-            private void BlocksSort()
-            {
-                BlocksSort(this.Blocks);
-            }
-            /// <summary>
-            /// Setřídí bloky podle pozice <see cref="SingleBlockInfo.BlockStart"/>
-            /// </summary>
-            private static void BlocksSort(List<SingleBlockInfo> blocks)
-            {
-                if (blocks != null && blocks.Count > 1)
-                    blocks.Sort((a, b) => a.BlockStart.CompareTo(b.BlockStart));
-            }
-            /// <summary>
-            /// Přičte si jednu neuloženou změnu do <see cref="UnsavedChangesCount"/>.
-            /// <para/>
-            /// Až ten počet dosáhne nebo překročí <see cref="TresholdSaveOnChanges"/>, pak bude <see cref="NeedSave"/> = true a bude vhodné zavolat <see cref="SaveLogFileAsync"/>.
-            /// </summary>
-            /// <param name="block"></param>
-            /// <param name="result"></param>
-            internal void AddUnsavedChange()
-            {
-                this.UnsavedChangesCount++;
-            }
-            /// <summary>
-            /// Počet změn (nový/změněný blok), které byly zaznamenány od posledního Load nebo Save
-            /// </summary>
-            internal int UnsavedChangesCount { get; private set; }
-            /// <summary>
-            /// Po tolika změnách si vyžádáme uložení logu
-            /// </summary>
-            internal int TresholdSaveOnChanges { get { return 64; } }
-            /// <summary>
-            /// Obsahuje true, pokud Log obsahuje tolik nových dat, že by bylo vhodné jej uložit do souboru...
-            /// </summary>
-            internal bool NeedSave { get { return (UnsavedChangesCount >= TresholdSaveOnChanges); } }
-            #endregion
-            #region Statistika
-            /// <summary>
-            /// Statistická data
-            /// </summary>
-            public StatisticInfo Statistic { get { return GetStatistic(this.SourceFileLength, this.Blocks); } }
-            /// <summary>
-            /// Z dodaných bloků spočítá statistiku
-            /// </summary>
-            /// <param name="blocks"></param>
-            /// <returns></returns>
-            private static StatisticInfo GetStatistic(long? fileLength, IEnumerable<SingleBlockInfo> blocks)
-            {
-                var statistic = new StatisticInfo(fileLength ?? 0L);
-                if (blocks != null)
-                {
-                    foreach (var block in blocks)
-                        statistic.AddBlock(block);
-                }
-                return statistic;
-            }
-            #endregion
-            #region Ukládání a načítání dat logu
-            /// <summary>
-            /// Uloží Log do souboru <see cref="DestinationLog"/>. Pokud soubor existuje, přepíše jej. Asynchronní metoda.
-            /// </summary>
-            public async Task SaveLogFileAsync()
-            {
-                if (SaveLogProcessing) return;
-
-                try
-                {
-                    await Task.Run(() => SaveLogFile(false));
-                }
-                catch (Exception ex)
-                {
-                    try { SaveException(ex); } catch { /* ignore logging failure */ }
-                    throw;
-                }
-            }
-            /// <summary>
-            /// Uloží Log do souboru <see cref="DestinationLog"/>. Pokud soubor existuje, přepíše jej. Synchronní metoda.
-            /// </summary>
-            public void SaveLogFile(bool isFinal)
-            {
-                // Pokud nejsem Final, a aktuálně probíhá zápis, tak tento nový požadavek ignoruji. Finální požadavek ale neignoruji!
-                if (!isFinal && SaveLogProcessing) return;
-
-                // Počkám na dokončení předchozího zápisu (to jen když jsem Final):
-                var end = DateTime.Now.AddSeconds(5);
-                while (SaveLogProcessing && DateTime.Now < end)                // Čekám nejvýše 5 sekund
-                {
-                    Thread.Sleep(150);                                         // Testuji vždy po 150 milisec, tady nebudu řešit semafor = jde jen o jediný poslední zápis logu
-                }
-                if (SaveLogProcessing) return;
-
-
-                // Zápis do logu je označen hodnotou SaveLogProcessing = true:
-                try
-                {
-                    SaveLogProcessing = true;
-                    doSaveLog();
-                }
-                finally
-                {
-                    SaveLogProcessing = false;
-                }
-
-                void doSaveLog()
-                {
-                    // Toto může chvilku trvat...:
-                    List<SingleBlockInfo> blocks = null;
-                    lock (this.Blocks)
-                    {   // Zámek je nutný proto, že do pole Block mohu přidávat prvky v jiném threadu...
-                        blocks = Blocks.ToList();                                            // Oddělený List, a následně pracuji jen s ním
-                        UnsavedChangesCount = 0;                                             // V tuto chvíli jsem převzal data
-                    }
-                    var statistic = GetStatistic(this.SourceFileLength, blocks);
-                    // BlocksSort(blocks);
-                    var badBlocks = blocks.Where(b => b.IsErrorBlock).ToList();
-
-                    // Zápis jen z jednoho threadu:
-                    lock (__LogSaveLock)
-                    {
-                        string delim = DELIMITER_HEADER;
-                        using (var logWriter = new StreamWriter(DestinationLog, false))
-                        {
-                            logWriter.WriteLine("#############################################################################################");
-                            logWriter.WriteLine($"SourceFile:       {delim}{SourceFile}");
-                            logWriter.WriteLine($"DestinationFile:  {delim}{DestinationFile}");
-                            logWriter.WriteLine($"FileLength:       {delim}{statistic.FileSize:N0} B");
-                            logWriter.WriteLine($"ProcessedSize:    {delim}{statistic.TotalBlocksSize:N0} B");
-                            logWriter.WriteLine($"ProcessedPercent: {delim}{statistic.TotalBlocksPercent} %");
-                            logWriter.WriteLine($"BadBlocksCount:   {delim}{statistic.BadBlocksCount:N0}");
-                            logWriter.WriteLine($"BadBlockSize:     {delim}{statistic.BadBlocksSize:N0} B");
-                            if (isFinal)
-                            logWriter.WriteLine($"TotalCopyTime:    {delim}{this.TotalTime} sec");
-
-                            if (badBlocks.Count > 0)
-                            {
-                                logWriter.WriteLine("#############################################################################################");
-                                logWriter.WriteLine($"BadBlocks:");
-                                foreach (var badBlock in badBlocks)
-                                    logWriter.WriteLine(badBlock.GetLineToLog());
-                            }
-
-                            logWriter.WriteLine("#############################################################################################");
-                            logWriter.WriteLine($"Blocks:");
-                            foreach (var block in blocks)
-                                logWriter.WriteLine(block.GetLineToLog());
-
-                            if (isFinal)
-                                logWriter.WriteLine("#############################################################################################");
-
-                            logWriter.Flush();
-                            logWriter.Close();
-                        }
-                    }
-                }
-            }
-            /// <summary>
-            /// Obsahuje true v době, kdy probíhá zápis logu
-            /// </summary>
-            private bool SaveLogProcessing;
-            /// <summary>
-            /// Načte data ze souboru <see cref="DestinationLog"/> a naplní mapu bloků <see cref="Blocks"/> podle obsahu logu. Pokud soubor neexistuje, vytvoří prázdnou mapu bloků.
-            /// </summary>
-            private void LoadLogFile()
-            {
-                this.Clear();
-                if (File.Exists(DestinationLog))
-                {
-                    var blockDict = new Dictionary<long, SingleBlockInfo>();
-                    string delim = DELIMITER_HEADER;
-                    var state = LogFilePartType.None;
-                    using (var logReader = new StreamReader(DestinationLog))
-                    {
-                        string line;
-                        while ((line = logReader.ReadLine()) != null)
-                        {
-                            var text = line.Trim();
-
-                            // Řádek typicky ###################################################################### je oddělovačem odstavců:
-                            if (text.StartsWith("#######"))
-                            {   // Oddělovač částí resetuje stav, následně budeme teprve detekovat, co obsahuje:
-                                state = LogFilePartType.None;
-                                continue;
-                            }
-
-                            // Detekce: Pokud jsme na začátku odstavce a nevíme, co bude obsahovat, tak zkusíme detekovat obsah:
-                            if (state == LogFilePartType.None)
-                            {
-                                if (text.Contains(delim)) state = LogFilePartType.Header;                         // Tento odstavec pokračuje dál a zpracuje i svůj první řádek
-                                if (text == "BadBlocks:") { state = LogFilePartType.BadBlocks; continue; }        // Tento odstavec nezpracovává svůj vlastní řádek titulku
-                                if (text == "Blocks:") { state = LogFilePartType.AllBocks; continue; }            // Tento odstavec nezpracovává svůj vlastní řádek titulku
-                            }
-
-                            // Obsah načítaných bloků:
-                            switch (state)
-                            {
-                                case LogFilePartType.Header:
-                                    // Načítáme záhlaví, které obsahuje řádky typicky: "Jméno      :TAB hodnota
-                                    var headerParts = text.Split(new string[] { delim }, StringSplitOptions.None);
-                                    var headerCount = headerParts.Length;
-                                    var headerName = headerParts[0].Trim();
-
-                                    /* Takto lze načíst data, která uchovává log soubor v hlavičce, a jsou primárně daná Logem, a nikoli Souborem:
-                                    if (headerCount == 2 && headerName == "SourceFile:")
-                                        SourceFile = headerParts[1].Trim();
-                                    else if (headerCount == 2 && headerName == "DestinationFile:")
-                                        DestinationFile = headerParts[1].Trim();
-                                    */
-
-                                    // Header obsahuje i další informace, které jsou primárně určeny pro lidského čtenáře (ProcessedSize, BadBlocksCount, BadBlockSize).
-                                    break;
-
-                                case LogFilePartType.BadBlocks:
-                                    // BadBlocks jsou do Logu vypisovány jen informativně pro uživatele, ale jsou standardně obsaženy v následné sekci AllBlocks:
-                                    break;
-
-                                case LogFilePartType.AllBocks:
-                                    // Načítáme řádek obshaující jednotlivé bloky:
-                                    var blockInfo = SingleBlockInfo.FromLogLine(line);
-                                    if (blockInfo != null)
-                                    {   // Akceptujeme jen první výskyt bloku s daným počátečním offsetem!
-                                        // Pokud by se v logu vyskytl duplicitně, tak ten následující ignorujeme.
-                                        // V Dictionary smí být pouze 1x, takže do záznamu se měl dostat jen jedinkrát.
-                                        var blockStart = blockInfo.BlockStart;
-                                        if (!blockDict.ContainsKey(blockStart))
-                                            blockDict.Add(blockStart, blockInfo);
-                                    }
-                                    break;
-                                    
-                                // Jiné bloky nenačítáme...
-                            }
-                        }
-                    }
-                    this.Blocks = blockDict.Values.ToList();
-                    this.BlocksSort();
-                }
-                this.UnsavedChangesCount = 0;
-            }
-            private void Clear()
-            {
-                this.Blocks = new List<SingleBlockInfo>();
-                this.UnsavedChangesCount = 0;
-            }
-            /// <summary>
-            /// Typ odstavce v načítaném souboru logu, který určuje, co se v něm nachází. Podle toho se rozhodujeme, zda a jak jej načítat.
-            /// </summary>
-            private enum LogFilePartType
-            {
-                None,
-                Header,
-                BadBlocks,
-                AllBocks
-            }
-            /// <summary>
-            /// Oddělovač v hlavičce: název hodnoty od vlastní hodnoty
-            /// </summary>
-            private const string DELIMITER_HEADER = "\t";
-            #endregion
-        }
-        #endregion
-        #region class StatisticInfo : Statistická data o stavu aktuálního souboru
-        /// <summary>
-        /// Statistická data
-        /// </summary>
-        public class StatisticInfo
-        {
-            public StatisticInfo(long fileSize)
-            {
-                this.FileSize = fileSize;
-            }
-            public void AddBlock(SingleBlockInfo block)
-            {
-                TotalBlocks++;
-                TotalBlocksSize += block.BlockLength;
-
-                if (block.IsErrorBlock)
-                {
-                    this.BadBlocksCount++;
-                    this.BadBlocksSize += block.BlockLength;
-                }
-            }
-            /// <summary>
-            /// Délka celého souboru
-            /// </summary>
-            public long FileSize { get; private set; }
-            /// <summary>
-            /// Celkový počet všech bloků, které jsme již zkoušeli (proběhl pokus o čtení)
-            /// </summary>
-            public int TotalBlocks { get; private set; }
-            /// <summary>
-            /// Celková délka všech bloků, které jsme již zkoušeli (proběhl pokus o čtení)
-            /// </summary>
-            public long TotalBlocksSize { get; private set; }
-            /// <summary>
-            /// Procento <see cref="TotalBlocksSize"/> vůči <see cref="FileSize"/> = kolik už jsme nějak zpracovali
-            /// </summary>
-            public double TotalBlocksPercent { get { return _GetPercent(TotalBlocksSize, FileSize); } }
-            /// <summary>
-            /// Celkový počet bloků s chyou, které jsme již zkoušeli (proběhl pokus o čtení a skončil chybou)
-            /// </summary>
-            public int BadBlocksCount { get; private set; }
-            /// <summary>
-            /// Celková délka bloků s chyou, které jsme již zkoušeli (proběhl pokus o čtení a skončil chybou)
-            /// </summary>
-            public long BadBlocksSize { get; private set; }
-            /// <summary>
-            /// Procento <see cref="BadBlocksSize"/> vůči <see cref="FileSize"/> = kolik máme zatím chyb
-            /// </summary>
-            public double BadBlocksPercent { get { return _GetPercent(BadBlocksSize, FileSize); } }
-            /// <summary>
-            /// Vrací procentuální hodnotu <paramref name="value"/> vůči <paramref name="total"/>, v rozsahu 0 - 100%.
-            /// </summary>
-            /// <param name="value"></param>
-            /// <param name="total"></param>
-            /// <returns></returns>
-            private static double _GetPercent(long value, long total)
-            {
-                if (total <= 0L) return 0f;
-                if (value < total) return 0f;
-                if (value >= total) return 100f;
-
-                var ratio = (double)value / (double)total;
-                return Math.Round(100d * ratio, 2);
-            }
-        }
-        #endregion
         #region class SingleBlockInfo : Data o jednom kopírovaném bloku souboru, včetně jeho stavu a počtu pokusů o znovunačtení.
         /// <summary>
         /// Data o jednom kopírovaném bloku souboru, včetně jeho stavu a počtu pokusů o znovunačtení.
@@ -1496,6 +933,582 @@ namespace DjSoft.Tools.SDCardTester.Workers
             }
             private const string DELIMITER_ITEMS = ";";
             #endregion
+        }
+        #endregion
+        #region class SingleLogInfo : Informace o stavu záchrany jednoho souboru, včetně mapy bloků a jejich stavu. Řídící prvek pro řešení toho, co bude kopírováno.
+        /// <summary>
+        /// Informace o stavu záchrany jednoho souboru, včetně mapy bloků a jejich stavu. Řídící prvek pro řešení toho, co bude kopírováno.
+        /// </summary>
+        internal class SingleLogInfo
+        {
+            #region Data celého logu
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            public SingleLogInfo(SingleFileInfo fileInfo)
+            {
+                FileInfo = fileInfo;
+                var segmentStep = CommonSegmentLengthMin;
+                var length = segmentStep * (fileInfo.FastCopyBlockSize / segmentStep);                                                                              // Délka bloku standardní
+                BlockLength = (length < CommonSegmentLengthMin ? CommonSegmentLengthMin : (length > CommonSegmentLengthMax ? CommonSegmentLengthMax : length));     // Do rozmezí Min-Max
+                Blocks = new List<SingleBlockInfo>();
+                this.LoadLogFile();
+            }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                var statistic = this.Statistic;
+                return $"File: {SourceFile}; Length: {SourceFileLength:3} B; Processed: {statistic.TotalBlocksSize:3} B; WithErrors: {statistic.BadBlocksSize:3} B";
+            }
+            /// <summary>
+            /// Zámek, který zajišťuje, že při současném přístupu z více threadů se log soubor ukládá bezpečně a nedojde k poškození dat.
+            /// </summary>
+            private object __LogSaveLock = new object();
+            /// <summary>
+            /// Informace o zdrojovém souboru.
+            /// </summary>
+            public SingleFileInfo FileInfo { get; private set; }
+            /// <summary>
+            /// Vstupní zdrojový soubor k záchraně.
+            /// </summary>
+            public string SourceFile { get { return FileInfo.SourceFile; } }
+            /// <summary>
+            /// Cílový soubor pro uložení toho, co lze uložit
+            /// </summary>
+            public string DestinationFile { get { return FileInfo.DestinationFile; } }
+            /// <summary>
+            /// Cílový soubor pro uložení logu záchrany.
+            /// </summary>
+            public string DestinationLog { get { return FileInfo.DestinationLog; } }
+            /// <summary>
+            /// Cílový soubor pro uložení logu existuje?
+            /// </summary>
+            public bool DestinationLogExists { get; private set; }
+            /// <summary>
+            /// Délka vstupního souboru <see cref="SourceFile"/>
+            /// </summary>
+            public long? SourceFileLength { get { return FileInfo?.SourceFileLength; } }
+            /// <summary>
+            /// Délka standardního bloku pro kopírování, podle které se vytváří mapování bloků v <see cref="Blocks"/>.
+            /// </summary>
+            public int BlockLength { get; private set; }
+            /// <summary>
+            /// Bloky souboru, kde klíčem je počáteční offset bloku a hodnotou je informace o daném bloku <see cref="SingleBlockInfo"/>.
+            /// </summary>
+            public List<SingleBlockInfo> Blocks { get; private set; }
+            /// <summary>
+            /// Index prvku v poli <see cref="Blocks"/>, který se právě zpracovává
+            /// </summary>
+            public int? CurrentBlockIndex { get; private set; }
+            /// <summary>
+            /// Čas počátku, Ticks
+            /// </summary>
+            public long StartTime { get; set; }
+            /// <summary>
+            /// Čas trvání, sekundy
+            /// </summary>
+            public decimal TotalTime { get; set; }
+            #endregion
+            #region Správa bloků - řízení procesu kopírování ve smyslu toho, co se bude kopírovat 
+            /// <summary>
+            /// Vrátí první blok, který se bude kopírovat.
+            /// </summary>
+            /// <returns></returns>
+            internal SingleBlockInfo GetFirstBlock()
+            {
+                // Začínáme číst ty bloky, které nemají chybu = tedy ty, které jsme dosud nečetli:
+                this.ErrorLevelProcess = 0;
+
+                var fileLength = SourceFileLength ?? 0L;
+                if (fileLength <= 0L) return null;
+
+                var count = this.Blocks.Count;
+
+                // Čím začneme:
+                // a) Dosud nemám žádný blok => založím první a vrátím jej:
+                if (count == 0)
+                    return CreateNewBlock(0L);
+
+                // Jakmile už v soupisu bloků máme několik bloků, jde o kontinuální oblast dosud čtených bloků = které jsou buď přečtené a v pořádku, anebo byly čtené a mají chybu.
+                // V této fázi neřeším chybové bloky, ale najdu místo (pozici ve vstupním souboru), kde jsme posledně skončili s procesem kopírování, a pokusíme se pokračovat následující pozicí:
+
+                // b) Najdu poslední blok v evidenci (neřeším stav) a ověřím, zda za ním ještě je prostor v souboru:
+                var lastBlock = this.Blocks[count - 1];
+
+                // c) Pokud za posledním blokem ještě je nějaké místo ke zpracování, tak vytvořím next blok za posledním blokem (hlídám přitom délku souboru):
+                if (lastBlock.BlockEnd < fileLength)
+                    return CreateNewBlock(lastBlock.BlockEnd);
+
+                // d) Pokud poslední blok v evidenci je i poslední blok souboru,
+                //   tak jsme zjevně už skončili s první fází, kdy kopírujeme "čisté bloky" = bezchybné, 
+                //   tedy nyní už vyhledám chybné bloky, od začátku bloku, od nejmenšího počtu chyb:
+                this.ErrorLevelProcess = 1;
+                this.CurrentBlockIndex = null;
+                return GetNextBlock();
+            }
+            /// <summary>
+            /// Vrátí další blok ke zpracování = volá se až poté, kdy byl vydán první blok metodou <see cref="GetFirstBlock()"/>.
+            /// </summary>
+            /// <returns></returns>
+            internal SingleBlockInfo GetNextBlock()
+            {
+                var fileLength = SourceFileLength ?? 0L;
+                if (fileLength <= 0L) return null;
+
+                var count = this.Blocks.Count;
+                var blockLength = this.BlockLength;
+                var initialBlockIndex = this.CurrentBlockIndex;
+
+                // Vyhledáme nejbližší blok za indexem CurrentBlockIndex (anebo od indexu 0, když CurrentBlockIndex = null),
+                // který má ErrorsCount == this.ErrorLevelProcess:
+                int currentIndex = (this.CurrentBlockIndex.HasValue ? (this.CurrentBlockIndex.Value + 1) : 0);
+                int searchErrorLevel = this.ErrorLevelProcess;
+                while (true)
+                {
+                    searchErrorLevel = this.ErrorLevelProcess;
+                    if (searchErrorLevel > SingleLogInfo.MaxErrorsCount) return null;              // Další ErrorLevelProcess už se nezpracovává...
+
+                    // 1) Pokud na pozici [currentIndex] není přítomen blok:
+                    if (currentIndex >= count)
+                    {   // Tedy currentIndex ukazuje za poslední existující prvek Blocks:
+                        // 1a) Pokud existující blok na poslední existující pozici má (BlockEnd < fileLength), pak se za poslední blok ještě vejde další blok:
+                        var currentBlockEnd = (count > 0 ? this.Blocks[count - 1].BlockEnd : 0L);  // BlockEnd z posledního bloku; nebo 0 pokud dosud není
+                        var nextBlockLength = this.GetValidLength(ref currentBlockEnd);            // Kolik místa je za posledním blokem?
+                        if (nextBlockLength > 0)
+                            return CreateNewBlock(currentBlockEnd);                                // Vytvoří new blok, začínající na dané pozici 'currentBlockEnd', s odpovídající délkou; přidá do Blocks, vepíše jeho index do CurrentBlockIndex, a vrátí jej.
+
+                        // 1b) Za poslední blok se už nevejde žádný další blok (=aktuální poslední blok skutečně končí na konci souboru) = už máme všechny bloky:
+                        // Tak se tedy vrátíme na začátek (currentIndex = 0), a budeme hledat bloky počínaje od indexu 0, ale s ErrorLevelProcess +1 :
+                        this.CurrentBlockIndex = null;
+                        currentIndex = 0;
+
+                        this.ErrorLevelProcess++;
+                        continue;
+                    }
+
+                    // Tady jsme v situaci, kdy currentIndex ukazuje na některý reálný prvek, který máme prověřit.
+                    // Reálný = už jsme jej zkusili kopírovat: zkontrolujeme, v jakém je stavu.
+                    // Pokud prvek není hotov, a jeho ErrorsCount == searchErrorLevel, pak jej vrátíme; jinak hledáme další...
+                    //   Proč rovnost (ErrorsCount == searchErrorLevel) ? Protože po první chybě (ErrorLevel = 1) v prvku 005 nebudeme řešit opakování čtení prvku 005 (to by byla ErrorLevel = 2),
+                    //   ale najdeme prvek 055 s ErrorsCount == 1 a ten zkusíme...
+                    bool scanFromZero = (currentIndex == 0);
+                    bool hasNextBlocks = false;
+                    while (currentIndex < count)
+                    {
+                        var currentBlock = this.Blocks[currentIndex];
+                        if (!currentBlock.IsDone)
+                        {
+                            if (currentBlock.ErrorsCount == searchErrorLevel)
+                            {   // Tento blok ještě není hotový (není zkopírován a ještě jsme nevzdali snahu o jeho zkopírování):
+                                // Pokud jeho počet chyb odpovídá tomu počtu, který nyní řešíme, tak jej akceptujeme pro zpracování:
+                                this.CurrentBlockIndex = currentIndex;
+                                return currentBlock;
+                            }
+                            // Prvek není hotov, ale jeho počet chyb neodpovídá aktuální úrovni:
+                            // Pokud nyní scanujeme od 0, tak si poznamenáme, že máme prvky s vyšším ErrorsCount, takže když nyní nic nenajdeme, tak možná najdeme v příštím kole:
+                            if (scanFromZero && !hasNextBlocks)
+                            {
+                                hasNextBlocks = true;
+                            }
+                        }
+                        currentIndex++;
+                    }
+
+                    // V hledané ErrorLevel jsme už nic nenašli...
+                    // A pokud jsme nyní prohledávali vše, a nemáme ani nic ve vyšší úrovni, pak skončíme:
+                    if (scanFromZero && !hasNextBlocks) return null;
+
+                    // Jdeme na další ErrorLevel = zkusíme načíst nehotové prvky, které měly chybu:
+                    this.CurrentBlockIndex = null;
+                    currentIndex = 0;
+                    this.ErrorLevelProcess++;
+                }
+            }
+            /// <summary>
+            /// Vrátí new blok, pro danou pozici Start, který přidá na konec soupisu do Listu <see cref="Blocks"/>.
+            /// Pokud pro danou pozici <paramref name="start"/> a délku souboru <see cref="SourceFileLength"/> není třeba žádný blok, vrátí null.
+            /// <para/>
+            /// Pokud vytvoří new blok, pak jej přidá (na konec) do pole <see cref="Blocks"/>, a do <see cref="CurrentBlockIndex"/> vepíše jeho index.
+            /// </summary>
+            /// <param name="start"></param>
+            /// <returns></returns>
+            private SingleBlockInfo CreateNewBlock(long start)
+            {
+                var length = GetValidLength(ref start);                                  // ref Validní pozice Start; vrátí Validní délka pro daný start: reflektuje standardní BlockLength, ošetřuje jej na celkovou délku souboru SourceFileLength
+                if (length <= 0) return null;
+
+                var block = new SingleBlockInfo(start, length);
+                lock (this.Blocks)
+                {
+                    this.CurrentBlockIndex = this.Blocks.Count;                          // Index prvku, který za chvilku přidám, bude == aktuální Count (prvek bude poslední v Listu)
+                    this.Blocks.Add(block);
+                }
+                return block;
+            }
+            /// <summary>
+            /// Vrátí validní délku bloku, pokud bude začínat na dané pozici <paramref name="start"/>. Tuto pozici validuje s ohledem na rozsah 0 ÷ <see cref="SourceFileLength"/>.
+            /// </summary>
+            /// <param name="start"></param>
+            /// <returns></returns>
+            private int GetValidLength(ref long start)
+            {
+                var fileLength = SourceFileLength ?? 0L;
+                start = (start < 0L ? 0L : (start > fileLength ? fileLength : start));   // Validní pozice Start
+
+                if (start >= fileLength) return 0;                                       // Pro danou pozici Start a délku souboru není třeba vytvářet žádný blok
+
+                var blockLength = this.BlockLength;
+                var end = start + blockLength;                                           // Konec bloku = Zadaný Start + standardní délka bloku
+                if (end > fileLength) end = fileLength;                                  // Pokud konec bloku > Konec souboru, pak Konec bloku = Konec souboru
+                long length = end - start;                                               // Reálná validní Délka bloku
+                return (length <= 0L ? 0 : (length > CommonSegmentLengthMax ? CommonSegmentLengthMax : (int)length));
+            }
+            internal void SaveException(Exception ex)
+            {
+                // Zde můžeme uložit informace o výjimce do logu, pokud je to potřeba.
+                // Například můžeme přidat záznam do BlockMap s informací o chybě.
+            }
+            /// <summary>
+            /// Úroveň chyb, které řešíme.
+            /// <para/>
+            /// Po zahájení kopírování nejprve kopírujeme dosud nezkopírované chyby, <see cref="ErrorLevelProcess"/> je null.<br/>
+            /// Pokud při kopírování bloku dojde k chybě, zvýší se počet <see cref="SingleBlockInfo.ErrorsCount"/>
+            /// Jakmile dojdeme s kopírováním do konce (tedy nelze najít blok, který by dosud nebyl kopírován), 
+            /// </summary>
+            internal int ErrorLevelProcess { get; private set; }
+            /// <summary>
+            /// 3 = Nejvyšší počet chyb, po kterých blok odepíšeme jako nečitelný (3x a dost!)
+            /// </summary>
+            public static int MaxErrorsCount { get { return 3; } }
+            /// <summary>
+            /// Setřídí bloky podle pozice <see cref="SingleBlockInfo.BlockStart"/>
+            /// </summary>
+            private void BlocksSort()
+            {
+                BlocksSort(this.Blocks);
+            }
+            /// <summary>
+            /// Setřídí bloky podle pozice <see cref="SingleBlockInfo.BlockStart"/>
+            /// </summary>
+            private static void BlocksSort(List<SingleBlockInfo> blocks)
+            {
+                if (blocks != null && blocks.Count > 1)
+                    blocks.Sort((a, b) => a.BlockStart.CompareTo(b.BlockStart));
+            }
+            /// <summary>
+            /// Přičte si jednu neuloženou změnu do <see cref="UnsavedChangesCount"/>.
+            /// <para/>
+            /// Až ten počet dosáhne nebo překročí <see cref="TresholdSaveOnChanges"/>, pak bude <see cref="NeedSave"/> = true a bude vhodné zavolat <see cref="SaveLogFileAsync"/>.
+            /// </summary>
+            /// <param name="block"></param>
+            /// <param name="result"></param>
+            internal void AddUnsavedChange()
+            {
+                this.UnsavedChangesCount++;
+            }
+            /// <summary>
+            /// Počet změn (nový/změněný blok), které byly zaznamenány od posledního Load nebo Save
+            /// </summary>
+            internal int UnsavedChangesCount { get; private set; }
+            /// <summary>
+            /// Po tolika změnách si vyžádáme uložení logu
+            /// </summary>
+            internal int TresholdSaveOnChanges { get { return 64; } }
+            /// <summary>
+            /// Obsahuje true, pokud Log obsahuje tolik nových dat, že by bylo vhodné jej uložit do souboru...
+            /// </summary>
+            internal bool NeedSave { get { return (UnsavedChangesCount >= TresholdSaveOnChanges); } }
+            #endregion
+            #region Statistika
+            /// <summary>
+            /// Statistická data
+            /// </summary>
+            public StatisticInfo Statistic { get { return GetStatistic(this.SourceFileLength, this.Blocks); } }
+            /// <summary>
+            /// Z dodaných bloků spočítá statistiku
+            /// </summary>
+            /// <param name="blocks"></param>
+            /// <returns></returns>
+            private static StatisticInfo GetStatistic(long? fileLength, IEnumerable<SingleBlockInfo> blocks)
+            {
+                var statistic = new StatisticInfo(fileLength ?? 0L);
+                if (blocks != null)
+                {
+                    foreach (var block in blocks)
+                        statistic.AddBlock(block);
+                }
+                return statistic;
+            }
+            #endregion
+            #region Ukládání a načítání dat logu
+            /// <summary>
+            /// Uloží Log do souboru <see cref="DestinationLog"/>. Pokud soubor existuje, přepíše jej. Asynchronní metoda.
+            /// </summary>
+            public async Task SaveLogFileAsync()
+            {
+                if (SaveLogProcessing) return;
+
+                try
+                {
+                    await Task.Run(() => SaveLogFile(false));
+                }
+                catch (Exception ex)
+                {
+                    try { SaveException(ex); } catch { /* ignore logging failure */ }
+                    throw;
+                }
+            }
+            /// <summary>
+            /// Uloží Log do souboru <see cref="DestinationLog"/>. Pokud soubor existuje, přepíše jej. Synchronní metoda.
+            /// </summary>
+            public void SaveLogFile(bool isFinal)
+            {
+                // Pokud nejsem Final, a aktuálně probíhá zápis, tak tento nový požadavek ignoruji. Finální požadavek ale neignoruji!
+                if (!isFinal && SaveLogProcessing) return;
+
+                // Počkám na dokončení předchozího zápisu (to jen když jsem Final):
+                var end = DateTime.Now.AddSeconds(5);
+                while (SaveLogProcessing && DateTime.Now < end)                // Čekám nejvýše 5 sekund
+                {
+                    Thread.Sleep(150);                                         // Testuji vždy po 150 milisec, tady nebudu řešit semafor = jde jen o jediný poslední zápis logu
+                }
+                if (SaveLogProcessing) return;
+
+
+                // Zápis do logu je označen hodnotou SaveLogProcessing = true:
+                try
+                {
+                    SaveLogProcessing = true;
+                    doSaveLog();
+                }
+                finally
+                {
+                    SaveLogProcessing = false;
+                }
+
+                void doSaveLog()
+                {
+                    // Toto může chvilku trvat...:
+                    List<SingleBlockInfo> blocks = null;
+                    lock (this.Blocks)
+                    {   // Zámek je nutný proto, že do pole Block mohu přidávat prvky v jiném threadu...
+                        blocks = Blocks.ToList();                                            // Oddělený List, a následně pracuji jen s ním
+                        UnsavedChangesCount = 0;                                             // V tuto chvíli jsem převzal data
+                    }
+                    var statistic = GetStatistic(this.SourceFileLength, blocks);
+                    // BlocksSort(blocks);
+                    var badBlocks = blocks.Where(b => b.IsErrorBlock).ToList();
+
+                    // Zápis jen z jednoho threadu:
+                    lock (__LogSaveLock)
+                    {
+                        string delim = DELIMITER_HEADER;
+                        using (var logWriter = new StreamWriter(DestinationLog, false))
+                        {
+                            logWriter.WriteLine("#############################################################################################");
+                            logWriter.WriteLine($"SourceFile:       {delim}{SourceFile}");
+                            logWriter.WriteLine($"DestinationFile:  {delim}{DestinationFile}");
+                            logWriter.WriteLine($"FileLength:       {delim}{statistic.FileSize:N0} B");
+                            logWriter.WriteLine($"ProcessedSize:    {delim}{statistic.TotalBlocksSize:N0} B");
+                            logWriter.WriteLine($"ProcessedPercent: {delim}{statistic.TotalBlocksPercent} %");
+                            logWriter.WriteLine($"BadBlocksCount:   {delim}{statistic.BadBlocksCount:N0}");
+                            logWriter.WriteLine($"BadBlocksSize:    {delim}{statistic.BadBlocksSize:N0} B");
+                            if (isFinal)
+                                logWriter.WriteLine($"TotalCopyTime:    {delim}{this.TotalTime} sec");
+
+                            if (badBlocks.Count > 0)
+                            {
+                                logWriter.WriteLine("#############################################################################################");
+                                logWriter.WriteLine($"BadBlocks:");
+                                foreach (var badBlock in badBlocks)
+                                    logWriter.WriteLine(badBlock.GetLineToLog());
+                            }
+
+                            logWriter.WriteLine("#############################################################################################");
+                            logWriter.WriteLine($"Blocks:");
+                            foreach (var block in blocks)
+                                logWriter.WriteLine(block.GetLineToLog());
+
+                            if (isFinal)
+                                logWriter.WriteLine("#############################################################################################");
+
+                            logWriter.Flush();
+                            logWriter.Close();
+                        }
+                    }
+                }
+            }
+            /// <summary>
+            /// Obsahuje true v době, kdy probíhá zápis logu
+            /// </summary>
+            private bool SaveLogProcessing;
+            /// <summary>
+            /// Načte data ze souboru <see cref="DestinationLog"/> a naplní mapu bloků <see cref="Blocks"/> podle obsahu logu. Pokud soubor neexistuje, vytvoří prázdnou mapu bloků.
+            /// </summary>
+            private void LoadLogFile()
+            {
+                this.Clear();
+                if (File.Exists(DestinationLog))
+                {
+                    var blockDict = new Dictionary<long, SingleBlockInfo>();
+                    string delim = DELIMITER_HEADER;
+                    var state = LogFilePartType.None;
+                    using (var logReader = new StreamReader(DestinationLog))
+                    {
+                        string line;
+                        while ((line = logReader.ReadLine()) != null)
+                        {
+                            var text = line.Trim();
+
+                            // Řádek typicky ###################################################################### je oddělovačem odstavců:
+                            if (text.StartsWith("#######"))
+                            {   // Oddělovač částí resetuje stav, následně budeme teprve detekovat, co obsahuje:
+                                state = LogFilePartType.None;
+                                continue;
+                            }
+
+                            // Detekce: Pokud jsme na začátku odstavce a nevíme, co bude obsahovat, tak zkusíme detekovat obsah:
+                            if (state == LogFilePartType.None)
+                            {
+                                if (text.Contains(delim)) state = LogFilePartType.Header;                         // Tento odstavec pokračuje dál a zpracuje i svůj první řádek
+                                if (text == "BadBlocks:") { state = LogFilePartType.BadBlocks; continue; }        // Tento odstavec nezpracovává svůj vlastní řádek titulku
+                                if (text == "Blocks:") { state = LogFilePartType.AllBocks; continue; }            // Tento odstavec nezpracovává svůj vlastní řádek titulku
+                            }
+
+                            // Obsah načítaných bloků:
+                            switch (state)
+                            {
+                                case LogFilePartType.Header:
+                                    // Načítáme záhlaví, které obsahuje řádky typicky: "Jméno      :TAB hodnota
+                                    var headerParts = text.Split(new string[] { delim }, StringSplitOptions.None);
+                                    var headerCount = headerParts.Length;
+                                    var headerName = headerParts[0].Trim();
+
+                                    /* Takto lze načíst data, která uchovává log soubor v hlavičce, a jsou primárně daná Logem, a nikoli Souborem:
+                                    if (headerCount == 2 && headerName == "SourceFile:")
+                                        SourceFile = headerParts[1].Trim();
+                                    else if (headerCount == 2 && headerName == "DestinationFile:")
+                                        DestinationFile = headerParts[1].Trim();
+                                    */
+
+                                    // Header obsahuje i další informace, které jsou primárně určeny pro lidského čtenáře (ProcessedSize, BadBlocksCount, BadBlockSize).
+                                    break;
+
+                                case LogFilePartType.BadBlocks:
+                                    // BadBlocks jsou do Logu vypisovány jen informativně pro uživatele, ale jsou standardně obsaženy v následné sekci AllBlocks:
+                                    break;
+
+                                case LogFilePartType.AllBocks:
+                                    // Načítáme řádek obshaující jednotlivé bloky:
+                                    var blockInfo = SingleBlockInfo.FromLogLine(line);
+                                    if (blockInfo != null)
+                                    {   // Akceptujeme jen první výskyt bloku s daným počátečním offsetem!
+                                        // Pokud by se v logu vyskytl duplicitně, tak ten následující ignorujeme.
+                                        // V Dictionary smí být pouze 1x, takže do záznamu se měl dostat jen jedinkrát.
+                                        var blockStart = blockInfo.BlockStart;
+                                        if (!blockDict.ContainsKey(blockStart))
+                                            blockDict.Add(blockStart, blockInfo);
+                                    }
+                                    break;
+
+                                    // Jiné bloky nenačítáme...
+                            }
+                        }
+                    }
+                    this.Blocks = blockDict.Values.ToList();
+                    this.BlocksSort();
+                }
+                this.UnsavedChangesCount = 0;
+            }
+            private void Clear()
+            {
+                this.Blocks = new List<SingleBlockInfo>();
+                this.UnsavedChangesCount = 0;
+            }
+            /// <summary>
+            /// Typ odstavce v načítaném souboru logu, který určuje, co se v něm nachází. Podle toho se rozhodujeme, zda a jak jej načítat.
+            /// </summary>
+            private enum LogFilePartType
+            {
+                None,
+                Header,
+                BadBlocks,
+                AllBocks
+            }
+            /// <summary>
+            /// Oddělovač v hlavičce: název hodnoty od vlastní hodnoty
+            /// </summary>
+            private const string DELIMITER_HEADER = "\t";
+            #endregion
+        }
+        #endregion
+        #region class StatisticInfo : Statistická data o stavu aktuálního souboru
+        /// <summary>
+        /// Statistická data
+        /// </summary>
+        public class StatisticInfo
+        {
+            public StatisticInfo(long fileSize)
+            {
+                this.FileSize = fileSize;
+            }
+            public void AddBlock(SingleBlockInfo block)
+            {
+                TotalBlocks++;
+                TotalBlocksSize += block.BlockLength;
+
+                if (block.IsErrorBlock)
+                {
+                    this.BadBlocksCount++;
+                    this.BadBlocksSize += block.BlockLength;
+                }
+            }
+            /// <summary>
+            /// Délka celého souboru
+            /// </summary>
+            public long FileSize { get; private set; }
+            /// <summary>
+            /// Celkový počet všech bloků, které jsme již zkoušeli (proběhl pokus o čtení)
+            /// </summary>
+            public int TotalBlocks { get; private set; }
+            /// <summary>
+            /// Celková délka všech bloků, které jsme již zkoušeli (proběhl pokus o čtení)
+            /// </summary>
+            public long TotalBlocksSize { get; private set; }
+            /// <summary>
+            /// Procento <see cref="TotalBlocksSize"/> vůči <see cref="FileSize"/> = kolik už jsme nějak zpracovali
+            /// </summary>
+            public double TotalBlocksPercent { get { return _GetPercent(TotalBlocksSize, FileSize); } }
+            /// <summary>
+            /// Celkový počet bloků s chyou, které jsme již zkoušeli (proběhl pokus o čtení a skončil chybou)
+            /// </summary>
+            public int BadBlocksCount { get; private set; }
+            /// <summary>
+            /// Celková délka bloků s chyou, které jsme již zkoušeli (proběhl pokus o čtení a skončil chybou)
+            /// </summary>
+            public long BadBlocksSize { get; private set; }
+            /// <summary>
+            /// Procento <see cref="BadBlocksSize"/> vůči <see cref="FileSize"/> = kolik máme zatím chyb
+            /// </summary>
+            public double BadBlocksPercent { get { return _GetPercent(BadBlocksSize, FileSize); } }
+            /// <summary>
+            /// Vrací procentuální hodnotu <paramref name="value"/> vůči <paramref name="total"/>, v rozsahu 0 - 100%.
+            /// </summary>
+            /// <param name="value"></param>
+            /// <param name="total"></param>
+            /// <returns></returns>
+            private static double _GetPercent(long value, long total)
+            {
+                if (total <= 0L) return 0f;
+                if (value < total) return 0f;
+                if (value >= total) return 100f;
+
+                var ratio = (double)value / (double)total;
+                return Math.Round(100d * ratio, 2);
+            }
         }
         #endregion
         #region Win32 API deklarace + konstanty
