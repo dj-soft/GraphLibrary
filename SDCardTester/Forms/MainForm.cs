@@ -870,6 +870,7 @@ namespace DjSoft.Tools.SDCardTester
             // Akce v GUI threadu
             void action(FileRescue rescuer)
             {
+                var status = rescuer?.CurrentFileStatus;
                 var blocks = rescuer?.CurrentBlocks;
                 if (blocks != null)
                 {

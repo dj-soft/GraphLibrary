@@ -40,6 +40,22 @@ namespace DjSoft.Tools.SDCardTester.Workers
         #endregion
         #region Data pro vnější svět, platná v době práce
         /// <summary>
+        /// Plné jméno vstupního souboru.
+        /// </summary>
+        public string CurrentFileSource { get { return __CurrentFile.SourceFile; } }
+        /// <summary>
+        /// Velikost vstupního souboru. Null když neexistuje.
+        /// </summary>
+        public long? CurrentFileLength { get { return __CurrentFile.SourceFileLength; } }
+        /// <summary>
+        /// Plné jméno vstupního souboru.
+        /// </summary>
+        public string CurrentFileTarget { get { return __CurrentFile.DestinationFile; } }
+        /// <summary>
+        /// Stav práce na souboru.
+        /// </summary>
+        public FileStatus CurrentFileStatus { get { return __CurrentFile.SourceFileStatus; } }
+        /// <summary>
         /// Aktuální bloky zkopírované
         /// </summary>
         public SingleBlockInfo[] CurrentBlocks { get { return __CurrentLog?.CurrentBlocks; } }
@@ -110,17 +126,17 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 {
                     fileInfo.SimulatedErrors = new Tuple<long, int>[]
                     {
-                    new Tuple<long, int>(12345678, 3),
-                    new Tuple<long, int>(123456789, 1),
-                    new Tuple<long, int>(456789123, 2),
-                    new Tuple<long, int>(789456123, 99),
-                    new Tuple<long, int>(654987321, 1)
+                        new Tuple<long, int>(12345678, 3),
+                        new Tuple<long, int>(123456789, 1),
+                        new Tuple<long, int>(456789123, 2),
+                        new Tuple<long, int>(789456123, 99),
+                        new Tuple<long, int>(654987321, 1)
                     };
                 }
 
                 if (info.TestAddSimulatedWaiting)
                 {
-                    fileInfo.SimulatedWaiting = 5;
+                    fileInfo.SimulatedWaiting = 12;
                 }
                 __Files.Add(fileInfo);
             }
@@ -186,6 +202,9 @@ namespace DjSoft.Tools.SDCardTester.Workers
             FileStream sourceStream = null;
             try
             {
+                __CurrentFile.SourceFileStatus = FileStatus.Copying;
+                this.CallWorkingStep();
+
                 sourceStream = System.IO.File.Open(this.__CurrentFile.SourceFile, FileMode.Open, FileAccess.Read, FileShare.Read);
                 _WrittingThreadAddRequest(new WritterRequestInfo(WritterRequestType.OpenWritterStream, this.__CurrentFile.DestinationFile));
              
@@ -210,15 +229,13 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 _WrittingThreadAddRequest(new WritterRequestInfo(WritterRequestType.CloseWritterStream));    // Pokud ve WriteStreamu došlo k chybě, pak tady se WriteThread vyčistí a připraví na nový request OpenStream
                 this.__CurrentLog.TotalTime = this.GetSeconds(this.__CurrentLog.StartTime);
                 this.__CurrentLog.SaveLogFile(true);
+
+                __CurrentFile.SourceFileStatus = FileStatus.Finished;
+                this.CallWorkingStep();
             }
 
 
-
-
             // App.ShowError
-
-
-
 
         }
         /// <summary>
@@ -289,7 +306,9 @@ namespace DjSoft.Tools.SDCardTester.Workers
             }
             void simulateWaiting(SingleBlockInfo block)
             {
-
+                var simWait = this.__CurrentFile.SimulatedWaiting ?? 0;
+                if (simWait < 10) return;
+                System.Threading.Thread.Sleep(simWait - 5);
             }
         }
         /// <summary>
@@ -714,7 +733,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// <summary>
             /// Stav práce na souboru.
             /// </summary>
-            public FileStatus SourceFileStatus { get; private set; }
+            public FileStatus SourceFileStatus { get; set; }
             /// <summary>
             /// Cílový soubor pro uložení toho, co lze uložit
             /// </summary>
