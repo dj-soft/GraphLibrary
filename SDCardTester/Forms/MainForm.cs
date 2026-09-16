@@ -820,18 +820,20 @@ namespace DjSoft.Tools.SDCardTester
         private void RunFileRescue()
         {
             ResultsInfoPanelClear();
-
-            var inputInfo = new FileRescueInputInfo() 
-            {
-                InputFileNames = @"f:\Filmy\Proxima (2019) Eva Green - jen testovací.mkv",
-                OutputFilesPath = @"G:\Cdisk\FileRescueTestTarget",
-            };
             ShowControls(ActionState.FileRescue, true);
-            
+
             var fileRescuer = new FileRescue();
             fileRescuer.WorkingStep += _FileRescuer_WorkingStep;
             fileRescuer.WorkingDone += _FileRescuer_WorkingDone;
             _FileRescuer = fileRescuer;
+
+            var inputInfo = new FileRescueInputInfo()
+            {
+                InputFileNames = @"f:\diskF\SdCards\Koralína a svět za tajemnými dveřmi.ts1",
+                OutputFilesPath = @"G:\Cdisk\FileRescueTestTarget",
+                TestAddBadBlocks = true,
+                TestAddSimulatedWaiting = true
+            };
             fileRescuer.Start(inputInfo);
         }
         /// <summary>
@@ -847,15 +849,34 @@ namespace DjSoft.Tools.SDCardTester
 
         private void _FileRescuer_WorkingStep(object sender, EventArgs e)
         {
-            var fileRescuer = _FileRescuer;
-            if (fileRescuer is null) return;
+            _FileRescuerRefresh();
         }
         private void _FileRescuer_WorkingDone(object sender, EventArgs e)
         {
             _FileRescuer = null;
-            ShowControls(ActionState.Dialog, false);
+            ShowControls(ActionState.Dialog, true);
         }
+        private void _FileRescuerRefresh()
+        {
+            var fileRescuer = _FileRescuer;
+            if (fileRescuer is null) return;
 
+            if (this.InvokeRequired)
+                this.BeginInvoke(new Action(() => action(fileRescuer)));
+            else
+                action(fileRescuer);
+
+
+            // Akce v GUI threadu
+            void action(FileRescue rescuer)
+            {
+                var blocks = rescuer?.CurrentBlocks;
+                if (blocks != null)
+                {
+                    // _VisualMapFillFromItems(fileGroups, totalSize);
+                }
+            }
+        }
         private FileRescue _FileRescuer;
         #endregion
         #region Akce: Zápis a čtení testovacích dat na disk
@@ -874,8 +895,8 @@ namespace DjSoft.Tools.SDCardTester
 
             DriveTester driveTester = new DriveTester();
             TestInfoPanelPrepare(driveTester);
-            driveTester.WorkingStep += DriveTester_TestStep;
-            driveTester.WorkingDone += DriveTester_TestDone;
+            driveTester.WorkingStep += _DriveTester_TestStep;
+            driveTester.WorkingDone += _DriveTester_TestDone;
             _DriveTester = driveTester;
             driveTester.Start(this.SelectedDrive, testAction);
         }
@@ -894,25 +915,25 @@ namespace DjSoft.Tools.SDCardTester
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void DriveTester_TestStep(object sender, EventArgs e)
+        private void _DriveTester_TestStep(object sender, EventArgs e)
         {
-            DriveTesterRefresh();
+            _DriveTesterRefresh();
         }
         /// <summary>
         /// Tester skončil svoji činnost
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void DriveTester_TestDone(object sender, EventArgs e)
+        private void _DriveTester_TestDone(object sender, EventArgs e)
         {
-            DriveTesterRefresh();
+            _DriveTesterRefresh();
             _DriveTester = null;
             ShowControls(ActionState.Dialog, false);
         }
         /// <summary>
         /// Zajistí refresh dat po jednom každém postupném kroku testeru
         /// </summary>
-        private void DriveTesterRefresh()
+        private void _DriveTesterRefresh()
         {
             var driveTester = _DriveTester;
             if (driveTester is null) return;
@@ -1062,6 +1083,9 @@ namespace DjSoft.Tools.SDCardTester
                     case ActionState.TestRead:
                     case ActionState.ContentRead:
                         RunPauseStopDriveTest(runState);
+                        break;
+                    case ActionState.FileRescue:
+                        RunPauseStopFileRescue(runState);
                         break;
                     default:
                         ShowControls(ActionState.Dialog, false);
