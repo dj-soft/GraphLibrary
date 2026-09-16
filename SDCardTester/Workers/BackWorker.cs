@@ -204,6 +204,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
             Stopwatch = new System.Diagnostics.Stopwatch();
             Frequency = (decimal)System.Diagnostics.Stopwatch.Frequency;
             WorkingStepTime = TimeSpan.FromMilliseconds(333);
+            Random = new Random();
         }
         /// <summary>
         /// Nuluje a nastartuje časomíru
@@ -242,6 +243,10 @@ namespace DjSoft.Tools.SDCardTester.Workers
         /// Frekvence časovače = počet ticků / sekunda
         /// </summary>
         protected decimal Frequency;
+        /// <summary>
+        /// Random
+        /// </summary>
+        protected Random Random;
         #endregion
     }
     #region class TextDataInfo

@@ -308,7 +308,10 @@ namespace DjSoft.Tools.SDCardTester.Workers
             {
                 var simWait = this.__CurrentFile.SimulatedWaiting ?? 0;
                 if (simWait < 10) return;
-                System.Threading.Thread.Sleep(simWait - 5);
+                var minWait = 8 * simWait / 10;
+                var maxWait = 15 * simWait / 10;
+                var currWait = this.Random.Next(minWait, maxWait);
+                System.Threading.Thread.Sleep(currWait - 8);
             }
         }
         /// <summary>
