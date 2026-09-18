@@ -450,6 +450,10 @@ namespace DjSoft.Tools.SDCardTester
     public interface ILinearMapControlItem
     {
         /// <summary>
+        /// Počátek dat v tomto prvku; pokud bude null pak počátek = konec předešlého
+        /// </summary>
+        long? Start { get; }
+        /// <summary>
         /// Délka dat v tomto prvku
         /// </summary>
         long Length { get; }

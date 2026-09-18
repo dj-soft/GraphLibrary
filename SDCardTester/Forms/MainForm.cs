@@ -870,11 +870,11 @@ namespace DjSoft.Tools.SDCardTester
             // Akce v GUI threadu
             void action(FileRescue rescuer)
             {
-                var status = rescuer?.CurrentFileStatus;
+                var status = rescuer?.CurrentFileStatus ?? FileRescue.FileStatus.None;
                 var blocks = rescuer?.CurrentBlocks;
                 if (blocks != null)
                 {
-                    // _VisualMapFillFromItems(fileGroups, totalSize);
+                    _VisualMapFillFromItems(blocks, null);
                 }
             }
         }

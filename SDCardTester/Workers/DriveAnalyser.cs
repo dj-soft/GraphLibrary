@@ -469,6 +469,10 @@ namespace DjSoft.Tools.SDCardTester.Workers
             #endregion
             #region ILinearMapControlItem
             /// <summary>
+            /// Počátek dat v tomto prvku; pokud bude null pak počátek = konec předešlého
+            /// </summary>
+            long? ILinearMapControlItem.Start { get { return null; } }
+            /// <summary>
             /// Délka dat v tomto prvku
             /// </summary>
             long ILinearMapControlItem.Length { get { return this.SizeTotal; } }

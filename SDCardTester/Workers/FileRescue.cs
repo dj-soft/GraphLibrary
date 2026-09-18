@@ -1,7 +1,7 @@
-﻿using Microsoft.Win32.SafeHandles;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 using static DjSoft.Tools.SDCardTester.Workers.FileRescue;
 
 namespace DjSoft.Tools.SDCardTester.Workers
@@ -802,7 +803,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
         /// <summary>
         /// Data o jednom kopírovaném bloku souboru, včetně jeho stavu a počtu pokusů o znovunačtení.
         /// </summary>
-        internal class SingleBlockInfo
+        internal class SingleBlockInfo : ILinearMapControlItem
         {
             #region Konstruktor
             /// <summary>
@@ -949,6 +950,25 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 this.WriteTimeSeconds = seconds;
             }
             public decimal? WriteTimeSeconds { get; private set; }
+            #endregion
+            #region ILinearMapControlItem
+            /// <summary>
+            /// Počátek dat v tomto prvku; pokud bude null pak počátek = konec předešlého
+            /// </summary>
+            long? ILinearMapControlItem.Start { get; }
+            /// <summary>
+            /// Délka dat v tomto prvku
+            /// </summary>
+            long ILinearMapControlItem.Length { get; }
+            /// <summary>
+            /// Barva prvku
+            /// </summary>
+            Color? ILinearMapControlItem.Color { get; }
+            /// <summary>
+            /// Text do ToolTipu
+            /// </summary>
+            string ILinearMapControlItem.Text { get; }
+
             #endregion
             #region Serializace a deserializace do logového souboru
             /// <summary>
