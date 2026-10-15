@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using Microsoft.Win32.SafeHandles;
 using static DjSoft.Tools.SDCardTester.Workers.FileRescue;
 
@@ -108,10 +109,26 @@ namespace DjSoft.Tools.SDCardTester.Workers
                     outputPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
                 foreach (var inputFile in inputFiles)
-                    prepareSingleFile(inputFile, inputInfo, outputPath);
+                    prepareSingleLine(inputFile, inputInfo, outputPath);
             }
 
-
+            // Připraví soubor[y] za jeden vstupní řádek
+            void prepareSingleLine(string inputLine, FileRescueInputInfo info, string outputPath)
+            {
+                if (String.IsNullOrEmpty(inputLine)) return;
+                inputLine = inputLine.Trim();
+                if (inputLine.Contains("*") || inputLine.Contains("?"))
+                {   // Wildcards:
+                    var files = System.IO.Directory.GetFiles(System.IO.Path.GetDirectoryName(inputLine), System.IO.Path.GetFileName(inputLine));
+                    foreach (var file in files)
+                        prepareSingleFile(file, info, outputPath);
+                }
+                else
+                {   // Single file:
+                    prepareSingleFile(inputLine, info, outputPath);
+                }
+            }
+            // Připraví jeden soubor
             void prepareSingleFile(string inputFile, FileRescueInputInfo info, string outputPath)
             {
                 var fileName = System.IO.Path.GetFileName(inputFile);                                // Bez adresáře
@@ -955,20 +972,19 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// <summary>
             /// Počátek dat v tomto prvku; pokud bude null pak počátek = konec předešlého
             /// </summary>
-            long? ILinearMapControlItem.Start { get; }
+            long? ILinearMapControlItem.Start { get { return this.BlockStart; } }
             /// <summary>
             /// Délka dat v tomto prvku
             /// </summary>
-            long ILinearMapControlItem.Length { get; }
+            long ILinearMapControlItem.Length { get { return this.BlockLength; } }
             /// <summary>
             /// Barva prvku
             /// </summary>
-            Color? ILinearMapControlItem.Color { get; }
+            Color? ILinearMapControlItem.Color { get { return Color.DarkGreen; } }
             /// <summary>
             /// Text do ToolTipu
             /// </summary>
             string ILinearMapControlItem.Text { get; }
-
             #endregion
             #region Serializace a deserializace do logového souboru
             /// <summary>
@@ -1752,6 +1768,208 @@ namespace DjSoft.Tools.SDCardTester.Workers
 
         public bool TestAddBadBlocks { get; set; }
         public bool TestAddSimulatedWaiting { get; set; }
+    }
+    #endregion
+    #region Okno se zadáním parametrů
+    public class FileRescueInputWindow : Form
+    {
+        #region Konstrukce a tvorba komponent
+        /// <summary>
+        /// Konstruktor, okno bez dat
+        /// </summary>
+        public FileRescueInputWindow()
+        {
+            InitializeComponent();
+        }
+        /// <summary>
+        /// Konstruktor, okno s daty
+        /// </summary>
+        /// <param name="inputInfo"></param>
+        public FileRescueInputWindow(FileRescueInputInfo inputInfo)
+        {
+            InputData = inputInfo;
+            InitializeComponent();
+        }
+        /// <summary>
+        /// Vytvoří komponenty formuláře. Souřadnice prvků určuje <see cref="_DoLayout"/>.
+        /// </summary>
+        private void InitializeComponent()
+        {
+            this.SuspendLayout();
+
+            this.Text = "Záchrana souborů - parametry";
+            this.AutoScaleMode = AutoScaleMode.None;
+            this.FormBorderStyle = FormBorderStyle.Sizable;
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.MinimizeBox = false;
+            this.MaximizeBox = true;
+            this.ShowInTaskbar = false;
+
+            _InputFilesLabel = new Label() { Text = "Vstupní soubory (každý soubor na jednom řádku):", AutoSize = true, TabIndex = 0 };
+            _InputFilesMemo = new TextBox() { Multiline = true, AcceptsReturn = true, WordWrap = false, ScrollBars = ScrollBars.Both, TabIndex = 1 };
+            _OutputPathLabel = new Label() { Text = "Výstupní adresář:", AutoSize = true, TabIndex = 2 };
+            _OutputPathText = new TextBox() { TabIndex = 3 };
+            _OutputPathButton = new Button() { Text = "...", TabIndex = 4 };
+            _OkButton = new Button() { Text = "OK", TabIndex = 5 };
+            _CancelButton = new Button() { Text = "Storno", TabIndex = 6 };
+
+            _OutputPathButton.Click += _OutputPathButton_Click;
+            _OkButton.Click += _OkButton_Click;
+            _CancelButton.Click += _CancelButton_Click;
+
+            this.Controls.AddRange(new Control[] { _InputFilesLabel, _InputFilesMemo, _OutputPathLabel, _OutputPathText, _OutputPathButton, _OkButton, _CancelButton });
+            this.AcceptButton = _OkButton;
+            this.CancelButton = _CancelButton;
+
+            // Výchozí velikost okna odvodím od požadované velikosti MemoEditu (500 x 200):
+            int labelHeight = _InputFilesLabel.PreferredHeight;
+            int textHeight = _OutputPathText.Height;
+            int clientWidth = EdgeMargin + DefaultMemoWidth + ButtonGap + SmallButtonWidth + EdgeMargin;
+            int clientHeight = EdgeMargin + labelHeight + LabelGap + DefaultMemoHeight + RowGap + labelHeight + LabelGap + textHeight + RowGap + ButtonHeight + EdgeMargin;
+            this.ClientSize = new Size(clientWidth, clientHeight);
+            this.MinimumSize = new Size(this.Width - DefaultMemoWidth + 200, this.Height - DefaultMemoHeight + 60);
+
+            this.ResumeLayout(false);
+            _DoLayout();
+        }
+        private Label _InputFilesLabel;
+        private TextBox _InputFilesMemo;
+        private Label _OutputPathLabel;
+        private TextBox _OutputPathText;
+        private Button _OutputPathButton;
+        private Button _OkButton;
+        private Button _CancelButton;
+        #endregion
+        #region Layout: ruční rozmístění prvků v OnResize
+        /// <summary>
+        /// Po změně velikosti okna přepočítáme souřadnice prvků
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+            _DoLayout();
+        }
+        /// <summary>
+        /// Rozmístí prvky podle aktuální velikosti <see cref="Form.ClientSize"/>.
+        /// MemoEdit mění Width i Height; TextBox mění Width a je vázán k dolnímu okraji; Buttony OK a Storno jsou vázány k dolnímu okraji vlevo.
+        /// </summary>
+        private void _DoLayout()
+        {
+            if (_InputFilesMemo is null) return;                               // Ještě neproběhl InitializeComponent()
+
+            var clientSize = this.ClientSize;
+            int labelHeight = _InputFilesLabel.PreferredHeight;
+            int textHeight = _OutputPathText.Height;
+            int contentWidth = clientSize.Width - EdgeMargin - ButtonGap - SmallButtonWidth - EdgeMargin;
+            if (contentWidth < 50) contentWidth = 50;
+
+            // Odspodu: Buttony OK a Storno
+            int buttonTop = clientSize.Height - EdgeMargin - ButtonHeight;
+            _OkButton.Bounds = new Rectangle(EdgeMargin, buttonTop, ButtonWidth, ButtonHeight);
+            _CancelButton.Bounds = new Rectangle(EdgeMargin + ButtonWidth + ButtonGap, buttonTop, ButtonWidth, ButtonHeight);
+
+            // Nad nimi: TextBox s buttonem "..." a nad ním jeho Label
+            int textTop = buttonTop - RowGap - textHeight;
+            _OutputPathText.Bounds = new Rectangle(EdgeMargin, textTop, contentWidth, textHeight);
+            _OutputPathButton.Bounds = new Rectangle(EdgeMargin + contentWidth + ButtonGap, textTop - 1, SmallButtonWidth, textHeight + 2);
+            int outputLabelTop = textTop - LabelGap - labelHeight;
+            _OutputPathLabel.Location = new Point(EdgeMargin, outputLabelTop);
+
+            // Odshora: Label a MemoEdit, který vyplní zbývající výšku
+            _InputFilesLabel.Location = new Point(EdgeMargin, EdgeMargin);
+            int memoTop = EdgeMargin + labelHeight + LabelGap;
+            int memoHeight = outputLabelTop - RowGap - memoTop;
+            if (memoHeight < 30) memoHeight = 30;
+            _InputFilesMemo.Bounds = new Rectangle(EdgeMargin, memoTop, contentWidth, memoHeight);
+        }
+        private const int EdgeMargin = 12;
+        private const int LabelGap = 3;
+        private const int RowGap = 12;
+        private const int ButtonGap = 6;
+        private const int ButtonWidth = 90;
+        private const int ButtonHeight = 28;
+        private const int SmallButtonWidth = 28;
+        private const int DefaultMemoWidth = 500;
+        private const int DefaultMemoHeight = 200;
+        #endregion
+        #region Data
+        /// <summary>
+        /// Data okna. Při zobrazení okna se přenesou do prvků (pokud nejsou null).
+        /// Po stisku OK se sem uloží hodnoty z prvků (pokud je null, vytvoří se nová instance).
+        /// </summary>
+        public FileRescueInputInfo InputData { get; set; }
+        /// <summary>
+        /// Při každém zobrazení okna (Show i ShowDialog) přenese data z <see cref="InputData"/> do prvků
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnVisibleChanged(EventArgs e)
+        {
+            if (this.Visible)
+                _DataToControls();
+            base.OnVisibleChanged(e);
+        }
+        /// <summary>
+        /// Přenese data z <see cref="InputData"/> do prvků. Pokud <see cref="InputData"/> je null, prvky budou prázdné.
+        /// </summary>
+        private void _DataToControls()
+        {
+            var inputData = this.InputData;
+            _InputFilesMemo.Text = inputData?.InputFileNames ?? "";
+            _OutputPathText.Text = inputData?.OutputFilesPath ?? "";
+        }
+        /// <summary>
+        /// Přenese data z prvků do <see cref="InputData"/>, který případně vytvoří.
+        /// </summary>
+        private void _DataFromControls()
+        {
+            if (this.InputData is null)
+                this.InputData = new FileRescueInputInfo();
+            this.InputData.InputFileNames = _InputFilesMemo.Text;
+            this.InputData.OutputFilesPath = _OutputPathText.Text;
+        }
+        #endregion
+        #region Buttony
+        /// <summary>
+        /// Button "..." = výběr výstupního adresáře
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _OutputPathButton_Click(object sender, EventArgs e)
+        {
+            using (var dialog = new FolderBrowserDialog())
+            {
+                dialog.Description = "Výstupní adresář";
+                dialog.ShowNewFolderButton = true;
+                var currentPath = (_OutputPathText.Text ?? "").Trim();
+                if (currentPath.Length > 0 && System.IO.Directory.Exists(currentPath))
+                    dialog.SelectedPath = currentPath;
+                if (dialog.ShowDialog(this) == DialogResult.OK)
+                    _OutputPathText.Text = dialog.SelectedPath;
+            }
+        }
+        /// <summary>
+        /// Button OK = uložit data a zavřít
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _OkButton_Click(object sender, EventArgs e)
+        {
+            _DataFromControls();
+            this.DialogResult = DialogResult.OK;
+            this.Close();
+        }
+        /// <summary>
+        /// Button Storno = zavřít bez uložení dat
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _CancelButton_Click(object sender, EventArgs e)
+        {
+            this.DialogResult = DialogResult.Cancel;
+            this.Close();
+        }
+        #endregion
     }
     #endregion
 }

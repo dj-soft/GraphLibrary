@@ -819,6 +819,12 @@ namespace DjSoft.Tools.SDCardTester
         #region Akce: Záchrana souboru
         private void RunFileRescue()
         {
+            var inputInfo = _GetFileRescueInfo();
+            if (inputInfo is null) return;
+            RunFileRescue(inputInfo);
+        }
+        private void RunFileRescue(FileRescueInputInfo inputInfo)
+        {
             ResultsInfoPanelClear();
             ShowControls(ActionState.FileRescue, true);
 
@@ -827,6 +833,7 @@ namespace DjSoft.Tools.SDCardTester
             fileRescuer.WorkingDone += _FileRescuer_WorkingDone;
             _FileRescuer = fileRescuer;
 
+            /*
             var inputInfo = new FileRescueInputInfo()
             {
                 InputFileNames = @"f:\diskF\SdCards\Koralína a svět za tajemnými dveřmi.ts1",
@@ -834,7 +841,29 @@ namespace DjSoft.Tools.SDCardTester
                 TestAddBadBlocks = true,
                 TestAddSimulatedWaiting = true
             };
+            */
+
+
             fileRescuer.Start(inputInfo);
+        }
+        private FileRescueInputInfo _GetFileRescueInfo()
+        {
+            var rescueInfo = new FileRescueInputInfo();
+            rescueInfo.InputFileNames = App.Settings.LastFileRescueInputFileNames;
+            rescueInfo.OutputFilesPath = App.Settings.LastFileRescueOutputFilesPath;
+            using (var form = new FileRescueInputWindow())
+            {
+                form.InputData = rescueInfo;
+                if (form.ShowDialog() == DialogResult.OK)
+                {
+                    rescueInfo = form.InputData;
+                    App.Settings.LastFileRescueInputFileNames = rescueInfo.InputFileNames;
+                    App.Settings.LastFileRescueOutputFilesPath = rescueInfo.OutputFilesPath;
+                    return rescueInfo;
+                }
+                else
+                    return null;
+            }
         }
         /// <summary>
         /// Požadavek na zastavení běhu
@@ -871,10 +900,15 @@ namespace DjSoft.Tools.SDCardTester
             void action(FileRescue rescuer)
             {
                 var status = rescuer?.CurrentFileStatus ?? FileRescue.FileStatus.None;
-                var blocks = rescuer?.CurrentBlocks;
-                if (blocks != null)
+                switch (status)
                 {
-                    _VisualMapFillFromItems(blocks, null);
+                    case FileRescue.FileStatus.SourceFileExists:
+                        _VisualMapFillFromItems(null, rescuer.CurrentFileLength ?? 0L);
+                        break;
+                    case FileRescue.FileStatus.LogLoaded:
+                    case FileRescue.FileStatus.Copying:
+                        _VisualMapFillFromItems(rescuer?.CurrentBlocks, null);
+                        break;
                 }
             }
         }

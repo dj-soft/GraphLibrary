@@ -208,33 +208,38 @@ namespace DjSoft.Tools.SDCardTester
                 {
                     foreach (var mapItem in mapItems)
                     {
-                        if (startPos >= totalLength) break;                              // Prvek (jeho počátek) se nachází za pozicí konce prostoru => aktuální prvek ani následující prvky už není kam kreslit.
+                        // Pokud prvek sám deklaruje pozici počátku, pak ji převezmu:
+                        if (mapItem.Start.HasValue) 
+                            startPos = mapItem.Start.Value;
 
-                        var itemLength = mapItem.Length;
-                        if (itemLength <= 0L) continue;                                  // Prvek nemá reálnou velikost, nebude vidět
+                        if (startPos >= 0L && startPos < totalLength)
+                        {   // Prvek (jeho počátek) se nachází uvnitř prostoru 0 ÷ totalLength => budeme jej kreslit:
+                            var itemLength = mapItem.Length;
+                            if (itemLength <= 0L) continue;                                  // Prvek nemá reálnou velikost, nebude vidět
 
-                        decimal relativeBegin = getRelativePosition(startPos);           // Relativní pozice počátku v rozsahu 0 - 1
-                        startPos += itemLength;
-                        decimal relativeEnd = getRelativePosition(startPos);             // Relativní pozice konce v rozsahu 0 - 1
+                            decimal relativeBegin = getRelativePosition(startPos);           // Relativní pozice počátku v rozsahu 0 - 1
+                            startPos += itemLength;
+                            decimal relativeEnd = getRelativePosition(startPos);             // Relativní pozice konce v rozsahu 0 - 1
 
-                        if (!mapItem.Color.HasValue) continue;                           // Prvek bez barvy není vidět
+                            if (!mapItem.Color.HasValue) continue;                           // Prvek bez barvy není vidět
 
-                        // Aktuální prvek se může nacházet na jednom, dvou i více grafických řádcích:
-                        //  například: začíná v 30% řádku 2, řádek 2 obsazuje do konce, poté obsazuje celé řádky 3 a 4, a končí na řádku 5 na jeho 80%:
-                        //  anebo začíná na 75% řádku 2 a končí na 10% řádku 3
-                        //  anebo se nachází na řádku 6 v jeho rozmezí 25% - 35%:
-                        LinePointInfo begin = getLinePoint(relativeBegin, true);
-                        LinePointInfo end = getLinePoint(relativeEnd, false);
-                        if (begin is null || end is null) continue;
+                            // Aktuální prvek se může nacházet na jednom, dvou i více grafických řádcích:
+                            //  například: začíná v 30% řádku 2, řádek 2 obsazuje do konce, poté obsazuje celé řádky 3 a 4, a končí na řádku 5 na jeho 80%:
+                            //  anebo začíná na 75% řádku 2 a končí na 10% řádku 3
+                            //  anebo se nachází na řádku 6 v jeho rozmezí 25% - 35%:
+                            LinePointInfo begin = getLinePoint(relativeBegin, true);
+                            LinePointInfo end = getLinePoint(relativeEnd, false);
+                            if (begin is null || end is null) continue;
 
-                        for (int index = begin.LineIndex; index <= end.LineIndex; index++)
-                        {
-                            var lineInfo = lines[index];
-                            Rectangle? bounds = lineInfo.GetInnerBounds(begin, end);
-                            if (bounds.HasValue)
+                            for (int index = begin.LineIndex; index <= end.LineIndex; index++)
                             {
-                                Painter.PaintBar3D(e.Graphics, mapItem.Color.Value, bounds.Value);
-                                lineInfo.AddPart(mapItem, bounds.Value);
+                                var lineInfo = lines[index];
+                                Rectangle? bounds = lineInfo.GetInnerBounds(begin, end);
+                                if (bounds.HasValue)
+                                {
+                                    Painter.PaintBar3D(e.Graphics, mapItem.Color.Value, bounds.Value);
+                                    lineInfo.AddPart(mapItem, bounds.Value);
+                                }
                             }
                         }
                     }
