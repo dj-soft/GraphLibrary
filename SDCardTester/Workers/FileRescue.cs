@@ -131,8 +131,13 @@ namespace DjSoft.Tools.SDCardTester.Workers
             // Připraví jeden soubor
             void prepareSingleFile(string inputFile, FileRescueInputInfo info, string outputPath)
             {
-                var fileName = System.IO.Path.GetFileName(inputFile);                                // Bez adresáře
-                var fileLog = System.IO.Path.GetFileNameWithoutExtension(inputFile) + ".rescuelog";  // Soubor obsahující log
+                // Očistit název na holé jméno souboru, bez uvozovek a mezer na začátku a konci:
+                inputFile = inputFile.Trim();
+                if (inputFile.Length > 2 && inputFile[0] == '"')
+                    inputFile = inputFile.Substring(1, inputFile.Length - 2).Trim();
+
+                var fileName = System.IO.Path.GetFileName(inputFile);                                // Bez adresáře                Anděl Páně.ts1
+                var fileLog = System.IO.Path.GetFileName(inputFile) + ".rescuelog";                  // Soubor obsahující log       Anděl Páně.ts1.rescuelog
                 var fileInfo = new SingleFileInfo()
                 {
                     SourceFile = inputFile,
@@ -247,7 +252,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 _WrittingThreadAddRequest(new WritterRequestInfo(WritterRequestType.CloseWritterStream));    // Pokud ve WriteStreamu došlo k chybě, pak tady se WriteThread vyčistí a připraví na nový request OpenStream
                 this.__CurrentLog.TotalTime = this.GetSeconds(this.__CurrentLog.StartTime);
                 this.__CurrentLog.SaveLogFile(true);
-
+                _CopySingleAttributes();
                 __CurrentFile.SourceFileStatus = FileStatus.Finished;
                 this.CallWorkingStep();
             }
@@ -331,6 +336,23 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 var currWait = this.Random.Next(minWait, maxWait);
                 System.Threading.Thread.Sleep(currWait - 8);
             }
+        }
+        /// <summary>
+        /// Do výstupního souboru vepíše datum a čas z originálního souboru
+        /// </summary>
+        private void _CopySingleAttributes()
+        {
+            try
+            {
+                var sourceInfo = __CurrentFile.SourceFileInfo;
+                var targetInfo = new FileInfo(__CurrentFile.DestinationFile);
+                if (targetInfo.Exists)
+                {
+                    targetInfo.LastWriteTime = sourceInfo.LastWriteTime;
+                    targetInfo.Attributes = sourceInfo.Attributes;
+                }
+            }
+            catch { }
         }
         /// <summary>
         /// Výsledek kopírování jednoho bloku
