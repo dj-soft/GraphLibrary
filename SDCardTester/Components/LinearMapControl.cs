@@ -65,6 +65,20 @@ namespace DjSoft.Tools.SDCardTester
         private void MouseInit()
         {
             this.MouseMove += _MouseMove;
+            __ToolTip = new ToolTip() { InitialDelay = 400, ReshowDelay = 100, AutoPopDelay = 30000, ShowAlways = true };
+        }
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && __ToolTip != null)
+            {
+                __ToolTip.Dispose();
+                __ToolTip = null;
+            }
+            base.Dispose(disposing);
         }
         /// <summary>
         /// Po každém pohybu myši
@@ -104,7 +118,30 @@ namespace DjSoft.Tools.SDCardTester
             }
             if (!Object.ReferenceEquals(item, __ActiveItem))
                 CallActiveItemChanged(item);
+            RefreshToolTip();
         }
+        /// <summary>
+        /// Zobrazí v ToolTipu text aktivního prvku <see cref="ActiveItem"/>.
+        /// Volá se i po každém vykreslení: prvek pod myší se nemusí změnit, ale jeho data (a tedy text) ano.
+        /// ToolTip se aktualizuje jen při změně textu.
+        /// </summary>
+        private void RefreshToolTip()
+        {
+            var toolTip = __ToolTip;
+            if (toolTip is null) return;
+            var text = __ActiveItem?.Text ?? "";
+            if (String.Equals(text, __ToolTipText, StringComparison.Ordinal)) return;
+            __ToolTipText = text;
+            toolTip.SetToolTip(this, (text.Length > 0 ? text : null));
+        }
+        /// <summary>
+        /// ToolTip zobrazující <see cref="ILinearMapControlItem.Text"/> aktivního prvku
+        /// </summary>
+        private ToolTip __ToolTip;
+        /// <summary>
+        /// Text aktuálně vložený do <see cref="__ToolTip"/>
+        /// </summary>
+        private string __ToolTipText;
         /// <summary>
         /// Aktivní prvek = nad tímto prvkem je myš. Při změně je volána událost <see cref="ActiveItemChanged"/>.
         /// </summary>

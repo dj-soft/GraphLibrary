@@ -61,6 +61,164 @@ namespace DjSoft.Tools.SDCardTester.Workers
         /// Aktuální bloky zkopírované
         /// </summary>
         public SingleBlockInfo[] CurrentBlocks { get { return __CurrentLog?.CurrentBlocks; } }
+        /// <summary>
+        /// Vrátí konzistentní data pro zobrazení progresu: délku souboru a jeho bloky, vždy z téhož souboru.
+        /// <para/>
+        /// Volá se z GUI threadu, zatímco thread Work může mezitím přejít na další soubor.
+        /// Proto se <see cref="__CurrentFile"/> čte jen jednou a bloky se berou z logu téhož souboru (ne z <see cref="__CurrentLog"/>, který se nastavuje později).
+        /// Bloky jsou null, dokud pro soubor není načten log.
+        /// </summary>
+        /// <param name="fileLength"></param>
+        /// <param name="blocks"></param>
+        /// <returns></returns>
+        public FileStatus GetCurrentProgress(out long fileLength, out SingleBlockInfo[] blocks)
+        {
+            var currentFile = __CurrentFile;
+            fileLength = currentFile?.SourceFileLength ?? 0L;
+            blocks = currentFile?.CurrentLog?.CurrentBlocks;
+            return currentFile?.SourceFileStatus ?? FileStatus.None;
+        }
+        /// <summary>
+        /// Vrátí konzistentní snímek dat pro Summary blok: postup přes všechny soubory a statistiku aktuálního souboru.
+        /// <para/>
+        /// Volá se z GUI threadu. Seznam <see cref="__Files"/> se po přípravě nemění; <see cref="__CurrentFile"/> se čte jen jednou.
+        /// </summary>
+        /// <returns></returns>
+        public SummaryInfo GetSummary()
+        {
+            var files = __Files;
+            var currentFile = __CurrentFile;
+            var runStartTime = __RunStartTime;
+            var runTotalSeconds = __RunTotalSeconds;
+
+            var summary = new SummaryInfo();
+            summary.IsFinished = runTotalSeconds.HasValue;
+            summary.ElapsedSeconds = (runTotalSeconds.HasValue ? runTotalSeconds.Value : (runStartTime.HasValue ? this.GetSeconds(runStartTime.Value) : 0m));
+
+            if (files != null)
+            {
+                summary.FilesCount = files.Count;
+                for (int i = 0; i < files.Count; i++)
+                {
+                    var file = files[i];
+                    bool isCurrent = Object.ReferenceEquals(file, currentFile);
+                    var statistic = file.FinalStatistic;
+                    if (isCurrent)
+                    {
+                        summary.CurrentFileIndex = i;
+                        if (statistic is null) statistic = file.CurrentLog?.Statistic;
+                        summary.CurrentStatistic = statistic;
+                    }
+
+                    summary.TotalBytes += file.SourceFileLength ?? 0L;
+                    if (statistic != null)
+                        summary.ProcessedBytes += statistic.TotalBlocksSize;
+
+                    summary.AddFileResult(GetFileResult(file));
+                }
+            }
+
+            if (currentFile != null)
+            {
+                summary.CurrentFileName = currentFile.SourceFile;
+                summary.CurrentFileTarget = currentFile.DestinationFile;
+                summary.CurrentFileLength = currentFile.SourceFileLength ?? 0L;
+                summary.CurrentFileStatus = currentFile.SourceFileStatus;
+                summary.CurrentErrorLevel = currentFile.CurrentLog?.ErrorLevelProcess ?? 0;
+            }
+
+            return summary;
+        }
+        /// <summary>
+        /// Vrátí výsledek zpracování daného souboru
+        /// </summary>
+        /// <param name="file"></param>
+        /// <returns></returns>
+        private static FileResult GetFileResult(SingleFileInfo file)
+        {
+            if (!String.IsNullOrEmpty(file.ErrorMessage)) return FileResult.Failed;
+            if (file.SourceFileStatus == FileStatus.NotExists) return FileResult.NotExists;
+            var statistic = file.FinalStatistic;
+            if (statistic is null) return FileResult.Pending;
+            if (statistic.BadBlocksCount > 0) return FileResult.WithErrors;
+            if (statistic.TotalBlocksSize < statistic.FileSize) return FileResult.Interrupted;
+            return FileResult.Ok;
+        }
+        /// <summary>
+        /// Výsledek zpracování jednoho souboru
+        /// </summary>
+        public enum FileResult
+        {
+            /// <summary>Dosud nezpracován (nebo se právě zpracovává)</summary>
+            Pending,
+            /// <summary>Kompletně zachráněn bez chyb</summary>
+            Ok,
+            /// <summary>Zpracován, obsahuje nečitelné bloky</summary>
+            WithErrors,
+            /// <summary>Zpracování bylo přerušeno (Stop), soubor není kompletní</summary>
+            Interrupted,
+            /// <summary>Zdrojový soubor neexistuje</summary>
+            NotExists,
+            /// <summary>Chyba při zpracování (výjimka)</summary>
+            Failed
+        }
+        /// <summary>
+        /// Snímek dat pro Summary blok, viz <see cref="GetSummary"/>
+        /// </summary>
+        public class SummaryInfo
+        {
+            /// <summary>Akce je ukončena</summary>
+            public bool IsFinished { get; set; }
+            /// <summary>Čas práce celé akce v sekundách (bez pauz)</summary>
+            public decimal ElapsedSeconds { get; set; }
+            /// <summary>Počet souborů k záchraně</summary>
+            public int FilesCount { get; set; }
+            /// <summary>Index aktuálního souboru v seznamu; -1 = dosud žádný</summary>
+            public int CurrentFileIndex { get; set; } = -1;
+            /// <summary>Součet délek všech existujících souborů</summary>
+            public long TotalBytes { get; set; }
+            /// <summary>Součet zpracovaných bloků všech souborů (dokončených i aktuálního)</summary>
+            public long ProcessedBytes { get; set; }
+            /// <summary>Podíl <see cref="ProcessedBytes"/> / <see cref="TotalBytes"/> v rozsahu 0 ÷ 1</summary>
+            public double ProcessedRatio { get { return (TotalBytes > 0L ? Math.Min(1d, (double)ProcessedBytes / (double)TotalBytes) : 0d); } }
+            /// <summary>Počet souborů zachráněných bez chyb</summary>
+            public int FilesOk { get; private set; }
+            /// <summary>Počet souborů s nečitelnými bloky</summary>
+            public int FilesWithErrors { get; private set; }
+            /// <summary>Počet souborů, jejichž zpracování bylo přerušeno</summary>
+            public int FilesInterrupted { get; private set; }
+            /// <summary>Počet neexistujících souborů</summary>
+            public int FilesNotExists { get; private set; }
+            /// <summary>Počet souborů, při jejichž zpracování došlo k chybě</summary>
+            public int FilesFailed { get; private set; }
+            /// <summary>
+            /// Započítá výsledek jednoho souboru
+            /// </summary>
+            /// <param name="result"></param>
+            public void AddFileResult(FileResult result)
+            {
+                switch (result)
+                {
+                    case FileResult.Ok: FilesOk++; break;
+                    case FileResult.WithErrors: FilesWithErrors++; break;
+                    case FileResult.Interrupted: FilesInterrupted++; break;
+                    case FileResult.NotExists: FilesNotExists++; break;
+                    case FileResult.Failed: FilesFailed++; break;
+                }
+            }
+            /// <summary>Plné jméno aktuálního zdrojového souboru</summary>
+            public string CurrentFileName { get; set; }
+            /// <summary>Plné jméno aktuálního cílového souboru</summary>
+            public string CurrentFileTarget { get; set; }
+            /// <summary>Délka aktuálního souboru</summary>
+            public long CurrentFileLength { get; set; }
+            /// <summary>Stav práce na aktuálním souboru</summary>
+            public FileStatus CurrentFileStatus { get; set; }
+            /// <summary>Úroveň chyb, které se v aktuálním souboru zpracovávají: 0 = první průchod, 1 a více = opakované čtení</summary>
+            public int CurrentErrorLevel { get; set; }
+            /// <summary>Statistika aktuálního souboru; null když dosud není</summary>
+            public StatisticInfo CurrentStatistic { get; set; }
+        }
         #endregion
         #region Privátní řízení běhu
         /// <summary>
@@ -70,10 +228,13 @@ namespace DjSoft.Tools.SDCardTester.Workers
         {
             if (Stopping) return;
 
+            __RunStartTime = this.CurrentTime;
+            __RunTotalSeconds = null;
             _PrepareWrittingThread();
-            _PrepareFileList();
             try
             {
+                // Příprava seznamu musí být uvnitř try: výjimka mimo něj by ukončila Task bez CallWorkingDone() => GUI by zůstalo ve stavu Working.
+                _PrepareFileList();
                 foreach (var fileInfo in __Files)
                 {
                     try
@@ -88,39 +249,72 @@ namespace DjSoft.Tools.SDCardTester.Workers
                     if (Stopping) break;
                 }
             }
+            catch (Exception exc)
+            {
+                App.ShowError(exc.ToString(), "Chyba při záchraně souborů");
+            }
             finally
             {
+                __RunTotalSeconds = this.GetSeconds(__RunStartTime ?? 0L);         // Zafixuje celkový čas: Stopwatch po skončení dál běží
                 _WrittingThreadAddRequest(new WritterRequestInfo(WritterRequestType.EndThread));
                 CallWorkingDone();
             }
         }
         /// <summary>
+        /// Čas (ticky <see cref="BackWorker{TTarget}.CurrentTime"/>) zahájení celé akce; null = dosud nezačala
+        /// </summary>
+        private long? __RunStartTime;
+        /// <summary>
+        /// Celkový čas akce v sekundách, naplněn po jejím skončení; null = akce dosud běží
+        /// </summary>
+        private decimal? __RunTotalSeconds;
+        /// <summary>
         /// Příprava seznamu souborů k záchraně = pole <see cref="__Files"/>
         /// </summary>
         private void _PrepareFileList()
         {
-            __Files = new List<SingleFileInfo>();
+            // Seznam plníme do lokální proměnné a do __Files jej vložíme až hotový: GetSummary() jej čte z GUI threadu.
+            var files = new List<SingleFileInfo>();
             var inputInfo = this.Target;
-            if (inputInfo != null)
+            if (inputInfo != null && !String.IsNullOrEmpty(inputInfo.InputFileNames))
             {
                 var inputFiles = inputInfo.InputFileNames.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
                 var outputPath = (inputInfo.OutputFilesPath ?? "").Trim();
-                if (String.IsNullOrEmpty( outputPath))
-                    outputPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                if (String.IsNullOrEmpty(outputPath))
+                    outputPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "FildeRescue");
 
                 foreach (var inputFile in inputFiles)
                     prepareSingleLine(inputFile, inputInfo, outputPath);
             }
+            files.Sort(SingleFileInfo.CompareByFullFileName);
+            __Files = files;
+
 
             // Připraví soubor[y] za jeden vstupní řádek
             void prepareSingleLine(string inputLine, FileRescueInputInfo info, string outputPath)
             {
                 if (String.IsNullOrEmpty(inputLine)) return;
+
+                // Očistit název na holé jméno souboru, bez uvozovek a mezer na začátku a konci:
+                inputLine = getInnerText(inputLine);
+
                 inputLine = inputLine.Trim();
                 if (inputLine.Contains("*") || inputLine.Contains("?"))
                 {   // Wildcards:
-                    var files = System.IO.Directory.GetFiles(System.IO.Path.GetDirectoryName(inputLine), System.IO.Path.GetFileName(inputLine));
-                    foreach (var file in files)
+                    //  Chybný řádek (neexistující / nepřístupný adresář, relativní cesta, neplatné znaky) ohlásíme a pokračujeme dalšími řádky.
+                    string[] wildFiles;
+                    try
+                    {
+                        var directory = System.IO.Path.GetDirectoryName(inputLine);
+                        if (String.IsNullOrEmpty(directory)) throw new ArgumentException("Vstup se zástupnými znaky musí obsahovat plnou cestu k adresáři.");
+                        wildFiles = System.IO.Directory.GetFiles(directory, System.IO.Path.GetFileName(inputLine));
+                    }
+                    catch (Exception exc)
+                    {
+                        App.ShowError($"Nelze načíst seznam souborů pro vstup:\r\n{inputLine}\r\n\r\n{exc.Message}", "Chyba vstupních souborů");
+                        return;
+                    }
+                    foreach (var file in wildFiles)
                         prepareSingleFile(file, info, outputPath);
                 }
                 else
@@ -132,9 +326,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
             void prepareSingleFile(string inputFile, FileRescueInputInfo info, string outputPath)
             {
                 // Očistit název na holé jméno souboru, bez uvozovek a mezer na začátku a konci:
-                inputFile = inputFile.Trim();
-                if (inputFile.Length > 2 && inputFile[0] == '"')
-                    inputFile = inputFile.Substring(1, inputFile.Length - 2).Trim();
+                inputFile = getInnerText(inputFile);
 
                 var fileName = System.IO.Path.GetFileName(inputFile);                                // Bez adresáře                Anděl Páně.ts1
                 var fileLog = System.IO.Path.GetFileName(inputFile) + ".rescuelog";                  // Soubor obsahující log       Anděl Páně.ts1.rescuelog
@@ -161,7 +353,16 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 {
                     fileInfo.SimulatedWaiting = 12;
                 }
-                __Files.Add(fileInfo);
+                fileInfo.CheckFile();                                          // Délka souboru je potřeba předem pro celkový progress přes všechny soubory
+                files.Add(fileInfo);
+            }
+            string getInnerText(string input)
+            {
+                if (String.IsNullOrEmpty(input)) return "";
+                input = input.Trim();
+                if (input.Length > 2 && input[0] == '"')
+                    input = input.Substring(1, input.Length - 2).Trim();
+                return input;
             }
         }
         /// <summary>
@@ -180,6 +381,11 @@ namespace DjSoft.Tools.SDCardTester.Workers
             if (!isPrepared) return;
 
             this._CopySingleFile();
+
+            // Konečná statistika pro souhrn přes soubory. _CopySingleFile() ji ukládá sám, ale pokud skončil předčasně
+            // (soubor byl podle logu už celý zpracován, nebo Stop), uložíme ji zde:
+            if (fileInfo.FinalStatistic is null && fileInfo.CurrentLog != null)
+                fileInfo.FinalStatistic = fileInfo.CurrentLog.Statistic;
 
             // Pokud najdeme Output soubor, pak jsme s kopírováním začali už dříve. Zkusíme k němu najít log soubor a podle něj se rozhodneme, zda a odkud a jak pokračovat.
             // Pokud Log soubor obsahuje "Hotovo OK", pak je záchrana dokončena a pro daný soubor nic neděláme.
@@ -246,13 +452,17 @@ namespace DjSoft.Tools.SDCardTester.Workers
             }
             finally
             {
-                sourceStream.Close();
-                sourceStream.Dispose();
-                sourceStream = null;
+                if (sourceStream != null)
+                {   // Pokud File.Open() selhal (např. zamčený soubor), stream neexistuje a zbytek finally musí proběhnout:
+                    sourceStream.Close();
+                    sourceStream.Dispose();
+                    sourceStream = null;
+                }
                 _WrittingThreadAddRequest(new WritterRequestInfo(WritterRequestType.CloseWritterStream));    // Pokud ve WriteStreamu došlo k chybě, pak tady se WriteThread vyčistí a připraví na nový request OpenStream
                 this.__CurrentLog.TotalTime = this.GetSeconds(this.__CurrentLog.StartTime);
                 this.__CurrentLog.SaveLogFile(true);
                 _CopySingleAttributes();
+                __CurrentFile.FinalStatistic = this.__CurrentLog.Statistic;
                 __CurrentFile.SourceFileStatus = FileStatus.Finished;
                 this.CallWorkingStep();
             }
@@ -350,6 +560,18 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 {
                     targetInfo.LastWriteTime = sourceInfo.LastWriteTime;
                     targetInfo.Attributes = sourceInfo.Attributes;
+
+                    var statistic = this.__CurrentLog.Statistic;
+                    if (statistic.BadBlocksCount > 0)
+                    {
+                        Thread.Sleep(150);
+
+                        var targetErrName = System.IO.Path.Combine(
+                            targetInfo.DirectoryName,
+                            System.IO.Path.GetFileNameWithoutExtension(targetInfo.Name) + "~E" + statistic.BadBlocksCount.ToString() + System.IO.Path.GetExtension(targetInfo.Name));
+                        System.IO.File.Move(targetInfo.FullName, targetErrName);
+                        __CurrentFile.DestinationFile = targetErrName;
+                    }
                 }
             }
             catch { }
@@ -821,6 +1043,10 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// </summary>
             public SingleLogInfo CurrentLog { get; private set; }
             /// <summary>
+            /// Konečná statistika souboru, uložená po ukončení jeho zpracování. Null = soubor dosud nebyl zpracován (nebo se zpracovává).
+            /// </summary>
+            public StatisticInfo FinalStatistic { get; set; }
+            /// <summary>
             /// Zkontroluje existenci zdrojového souboru a nastaví <see cref="SourceFileStatus"/> na <see cref="FileStatus.SourceFileExists"/> nebo <see cref="FileStatus.NotExists"/>.
             /// </summary>
             public void CheckFile()
@@ -835,6 +1061,19 @@ namespace DjSoft.Tools.SDCardTester.Workers
             {
                 CurrentLog = new SingleLogInfo(this);
                 SourceFileStatus = CurrentLog.DestinationLogExists ? FileStatus.LogLoaded : FileStatus.LogPrepared;
+            }
+            /// <summary>
+            /// Komparátor pro řazení podle názvu zdrojového souboru, ignoruje velikost písmen.
+            /// </summary>
+            /// <param name="x"></param>
+            /// <param name="y"></param>
+            /// <returns></returns>
+            public static int CompareByFullFileName(SingleFileInfo x, SingleFileInfo y)
+            {
+                if (x is null && y is null) return 0;
+                if (x is null) return -1;
+                if (y is null) return 1;
+                return string.Compare(x.SourceFile, y.SourceFile, StringComparison.OrdinalIgnoreCase);
             }
         }
         #endregion
@@ -914,9 +1153,10 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// </summary>
             public bool IsDone { get { var st = this.Status; return (st == SingleBlockInfo.BlockStatus.OK || st == SingleBlockInfo.BlockStatus.OKAfterErrors || st == SingleBlockInfo.BlockStatus.ErrorAborted); } }
             /// <summary>
-            /// Obsahuje true, pokud <see cref="Status"/> obsahuje nějakou chybu.
+            /// Obsahuje true, pokud blok nemá platná data: <see cref="BlockStatus.WithError"/> nebo <see cref="BlockStatus.ErrorAborted"/>.
+            /// Blok <see cref="BlockStatus.OKAfterErrors"/> se nakonec podařilo přečíst, takže chybový není.
             /// </summary>
-            public bool IsErrorBlock { get { var st = this.Status; return (st == SingleBlockInfo.BlockStatus.WithError || st == SingleBlockInfo.BlockStatus.ErrorAborted || st == SingleBlockInfo.BlockStatus.OKAfterErrors); } }
+            public bool IsErrorBlock { get { var st = this.Status; return (st == SingleBlockInfo.BlockStatus.WithError || st == SingleBlockInfo.BlockStatus.ErrorAborted); } }
             /// <summary>
             /// Uloží do daného bloku výsledný stav po dokončení jeho čtení
             /// </summary>
@@ -1002,11 +1242,124 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// <summary>
             /// Barva prvku
             /// </summary>
-            Color? ILinearMapControlItem.Color { get { return Color.DarkGreen; } }
+            Color? ILinearMapControlItem.Color { get { return GetColor(this.Status, this.ErrorsCount); } }
             /// <summary>
             /// Text do ToolTipu
             /// </summary>
-            string ILinearMapControlItem.Text { get; }
+            string ILinearMapControlItem.Text { get { return GetToolTipText(); } }
+            /// <summary>
+            /// Vrátí kategorii bloku pro zobrazení (barva, souhrn) podle jeho stavu a počtu chyb
+            /// </summary>
+            /// <param name="status"></param>
+            /// <param name="errorsCount"></param>
+            /// <returns></returns>
+            public static BlockCategory GetCategory(BlockStatus status, int errorsCount)
+            {
+                switch (status)
+                {
+                    case BlockStatus.OK: return BlockCategory.Ok;
+                    case BlockStatus.OKAfterErrors: return BlockCategory.OkAfterErrors;
+                    case BlockStatus.WithError: return (errorsCount <= 1 ? BlockCategory.Error1 : BlockCategory.Error2);
+                    case BlockStatus.ErrorAborted: return BlockCategory.Aborted;
+                    default: return BlockCategory.Reading;
+                }
+            }
+            /// <summary>
+            /// Vrátí barvu bloku podle jeho stavu a počtu chyb. Barvy jsou definovány ve <see cref="Skin"/>.
+            /// </summary>
+            /// <param name="status"></param>
+            /// <param name="errorsCount"></param>
+            /// <returns></returns>
+            public static Color GetColor(BlockStatus status, int errorsCount)
+            {
+                return GetColor(GetCategory(status, errorsCount));
+            }
+            /// <summary>
+            /// Vrátí barvu pro danou kategorii bloku. Barvy jsou definovány ve <see cref="Skin"/>.
+            /// </summary>
+            /// <param name="category"></param>
+            /// <returns></returns>
+            public static Color GetColor(BlockCategory category)
+            {
+                switch (category)
+                {
+                    case BlockCategory.Ok: return Skin.RescueBlockOkColor;
+                    case BlockCategory.OkAfterErrors: return Skin.RescueBlockOkAfterErrorsColor;
+                    case BlockCategory.Error1: return Skin.RescueBlockError1Color;
+                    case BlockCategory.Error2: return Skin.RescueBlockError2Color;
+                    case BlockCategory.Aborted: return Skin.RescueBlockAbortedColor;
+                    default: return Skin.RescueBlockReadingColor;
+                }
+            }
+            /// <summary>
+            /// Vrátí uživatelský název kategorie bloku (pro souhrn a legendu)
+            /// </summary>
+            /// <param name="category"></param>
+            /// <returns></returns>
+            public static string GetCategoryText(BlockCategory category)
+            {
+                switch (category)
+                {
+                    case BlockCategory.Ok: return "Přečteno";
+                    case BlockCategory.OkAfterErrors: return "Přečteno po opakování";
+                    case BlockCategory.Error1: return "Chyba (1×)";
+                    case BlockCategory.Error2: return "Chyba (2× a více)";
+                    case BlockCategory.Aborted: return "Nečitelné, vzdáno";
+                    default: return "Čte se";
+                }
+            }
+            /// <summary>
+            /// Kategorie bloku pro zobrazení: odpovídá barvám ve <see cref="Skin"/>
+            /// </summary>
+            public enum BlockCategory
+            {
+                /// <summary>Blok vytvořený, právě se čte</summary>
+                Reading,
+                /// <summary>Přečteno napoprvé</summary>
+                Ok,
+                /// <summary>Přečteno až po opakování</summary>
+                OkAfterErrors,
+                /// <summary>1 chyba, čeká na další pokus</summary>
+                Error1,
+                /// <summary>2 a více chyb, čeká na další pokus</summary>
+                Error2,
+                /// <summary>Vzdáno po maximálním počtu chyb</summary>
+                Aborted
+            }
+            /// <summary>
+            /// Vrátí text do ToolTipu: pozice, délka, stav, počet chyb a časy čtení a zápisu
+            /// </summary>
+            /// <returns></returns>
+            public string GetToolTipText()
+            {
+                var text = new StringBuilder();
+                text.AppendLine($"Pozice: {BlockStart:N0} ÷ {BlockEnd:N0}");
+                text.AppendLine($"Délka: {BlockLength:N0} B");
+                text.AppendLine($"Stav: {GetStatusText(this.Status)}");
+                if (this.ErrorsCount > 0)
+                    text.AppendLine($"Počet chyb: {ErrorsCount} z {SingleLogInfo.MaxErrorsCount}");
+                if (this.ReadTimeSeconds.HasValue)
+                    text.AppendLine($"Čtení: {ReadTimeSeconds.Value:N3} s");
+                if (this.WriteTimeSeconds.HasValue)
+                    text.AppendLine($"Zápis: {WriteTimeSeconds.Value:N3} s");
+                return text.ToString().TrimEnd();
+            }
+            /// <summary>
+            /// Vrátí uživatelský název stavu bloku
+            /// </summary>
+            /// <param name="status"></param>
+            /// <returns></returns>
+            public static string GetStatusText(BlockStatus status)
+            {
+                switch (status)
+                {
+                    case BlockStatus.OK: return "Přečteno";
+                    case BlockStatus.OKAfterErrors: return "Přečteno po opakování";
+                    case BlockStatus.WithError: return "Chyba, čeká na další pokus";
+                    case BlockStatus.ErrorAborted: return "Nečitelný, vzdáno";
+                    default: return "Čte se";
+                }
+            }
             #endregion
             #region Serializace a deserializace do logového souboru
             /// <summary>
@@ -1423,7 +1776,16 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// <summary>
             /// Statistická data
             /// </summary>
-            public StatisticInfo Statistic { get { return GetStatistic(this.SourceFileLength, this.Blocks); } }
+            public StatisticInfo Statistic
+            {
+                get
+                {   // Thread Work do Blocks přidává, statistiku čte i GUI thread => pod zámkem jako CurrentBlocks:
+                    lock (this.Blocks)
+                    {
+                        return GetStatistic(this.SourceFileLength, this.Blocks);
+                    }
+                }
+            }
             /// <summary>
             /// Z dodaných bloků spočítá statistiku
             /// </summary>
@@ -1658,6 +2020,9 @@ namespace DjSoft.Tools.SDCardTester.Workers
             public StatisticInfo(long fileSize)
             {
                 this.FileSize = fileSize;
+                var count = Enum.GetValues(typeof(SingleBlockInfo.BlockCategory)).Length;
+                __CategoryCount = new int[count];
+                __CategorySize = new long[count];
             }
             public void AddBlock(SingleBlockInfo block)
             {
@@ -1669,7 +2034,44 @@ namespace DjSoft.Tools.SDCardTester.Workers
                     this.BadBlocksCount++;
                     this.BadBlocksSize += block.BlockLength;
                 }
+
+                var category = (int)SingleBlockInfo.GetCategory(block.Status, block.ErrorsCount);
+                __CategoryCount[category]++;
+                __CategorySize[category] += block.BlockLength;
+
+                // Rychlost čtení počítáme jen z úspěšně přečtených bloků:
+                if (block.ReadTimeSeconds.HasValue && (block.Status == SingleBlockInfo.BlockStatus.OK || block.Status == SingleBlockInfo.BlockStatus.OKAfterErrors))
+                {
+                    this.ReadBytes += block.BlockLength;
+                    this.ReadSeconds += block.ReadTimeSeconds.Value;
+                }
             }
+            /// <summary>
+            /// Vrátí počet bloků v dané kategorii
+            /// </summary>
+            /// <param name="category"></param>
+            /// <returns></returns>
+            public int GetCategoryCount(SingleBlockInfo.BlockCategory category) { return __CategoryCount[(int)category]; }
+            /// <summary>
+            /// Vrátí celkovou délku bloků v dané kategorii
+            /// </summary>
+            /// <param name="category"></param>
+            /// <returns></returns>
+            public long GetCategorySize(SingleBlockInfo.BlockCategory category) { return __CategorySize[(int)category]; }
+            private int[] __CategoryCount;
+            private long[] __CategorySize;
+            /// <summary>
+            /// Celková délka úspěšně přečtených bloků, které mají změřený čas čtení
+            /// </summary>
+            public long ReadBytes { get; private set; }
+            /// <summary>
+            /// Celkový čas čtení bloků <see cref="ReadBytes"/>, v sekundách
+            /// </summary>
+            public decimal ReadSeconds { get; private set; }
+            /// <summary>
+            /// Průměrná rychlost čtení v Byte/sec; null pokud dosud není změřena
+            /// </summary>
+            public decimal? ReadSpeed { get { return (ReadSeconds > 0m ? (decimal?)(ReadBytes / ReadSeconds) : (decimal?)null); } }
             /// <summary>
             /// Délka celého souboru
             /// </summary>
@@ -1707,7 +2109,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
             private static double _GetPercent(long value, long total)
             {
                 if (total <= 0L) return 0f;
-                if (value < total) return 0f;
+                if (value <= 0L) return 0f;
                 if (value >= total) return 100f;
 
                 var ratio = (double)value / (double)total;
@@ -1992,6 +2394,282 @@ namespace DjSoft.Tools.SDCardTester.Workers
             this.Close();
         }
         #endregion
+    }
+    #endregion
+    #region Summary blok: controly pro levý panel výsledků
+    /// <summary>
+    /// Společný předek controlů Summary bloku FileRescue: rámeček, řádky textu, formátování hodnot, ToolTip.
+    /// Data dostává jako snímek <see cref="FileRescue.SummaryInfo"/> metodou <see cref="StoreInfo"/>.
+    /// </summary>
+    internal abstract class FileRescueSummaryControl : WorkingResultControl
+    {
+        #region Konstrukce, data
+        public FileRescueSummaryControl()
+            : base()
+        {
+            __ToolTip = new ToolTip() { InitialDelay = 400, ReshowDelay = 100, AutoPopDelay = 30000, ShowAlways = true };
+        }
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && __ToolTip != null)
+            {
+                __ToolTip.Dispose();
+                __ToolTip = null;
+            }
+            base.Dispose(disposing);
+        }
+        /// <summary>
+        /// Uloží snímek dat a překreslí control
+        /// </summary>
+        /// <param name="summary"></param>
+        public void StoreInfo(FileRescue.SummaryInfo summary)
+        {
+            this.Summary = summary;
+            SetToolTip(GetToolTipText());
+            this.Refresh();
+        }
+        /// <summary>
+        /// Aktuální snímek dat; může být null
+        /// </summary>
+        protected FileRescue.SummaryInfo Summary { get; private set; }
+        /// <summary>
+        /// Potomek vrátí text do ToolTipu, nebo null
+        /// </summary>
+        /// <returns></returns>
+        protected virtual string GetToolTipText() { return null; }
+        /// <summary>
+        /// Nastaví text ToolTipu, jen při jeho změně
+        /// </summary>
+        /// <param name="text"></param>
+        private void SetToolTip(string text)
+        {
+            if (__ToolTip is null || String.Equals(text, __ToolTipText, StringComparison.Ordinal)) return;
+            __ToolTipText = text;
+            __ToolTip.SetToolTip(this, text);
+        }
+        private ToolTip __ToolTip;
+        private string __ToolTipText;
+        #endregion
+        #region Kreslení
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            Rectangle clientBounds = this.ClientRectangle;
+            Rectangle outerBounds = new Rectangle(clientBounds.X + 1, clientBounds.Y + 1, clientBounds.Width - 3, clientBounds.Height - 3);
+            Rectangle innerBounds = new Rectangle(outerBounds.X + 4, outerBounds.Y + 3, outerBounds.Width - 8, outerBounds.Height - 6);
+            Painter.PaintRectangle(e.Graphics, this.BackColor, clientBounds);
+            Painter.PaintRectangle(e.Graphics, Skin.BackgroundColor, outerBounds);
+            e.Graphics.DrawRectangle(Painter.GetPen(Painter.GetColor(this.BackColor, -48, -48, -48)), outerBounds);
+            PaintContent(e.Graphics, innerBounds);
+        }
+        /// <summary>
+        /// Potomek vykreslí obsah do daného prostoru
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        protected abstract void PaintContent(Graphics graphics, Rectangle bounds);
+        /// <summary>
+        /// Vykreslí jeden řádek: text vlevo, volitelně text vpravo
+        /// </summary>
+        protected void PaintRow(Graphics graphics, Rectangle row, string leftText, string rightText, Font font = null)
+        {
+            font = font ?? this.Font;
+            if (!String.IsNullOrEmpty(rightText))
+                Painter.PaintText(graphics, font, rightText, this.ForeColor, row, ContentAlignment.MiddleRight);
+            if (!String.IsNullOrEmpty(leftText))
+                Painter.PaintText(graphics, font, leftText, this.ForeColor, row, ContentAlignment.MiddleLeft);
+        }
+        /// <summary>
+        /// Vykreslí text zkrácený uprostřed cesty (...), pokud se nevejde
+        /// </summary>
+        protected void PaintPathText(Graphics graphics, Rectangle row, string text)
+        {
+            if (String.IsNullOrEmpty(text)) return;
+            TextRenderer.DrawText(graphics, text, this.Font, row, this.ForeColor, TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.PathEllipsis | TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix);
+        }
+        /// <summary>
+        /// Vrátí řádek na dané pozici Y
+        /// </summary>
+        protected static Rectangle GetRow(Rectangle bounds, int y) { return new Rectangle(bounds.X, y, bounds.Width, LineHeight); }
+        /// <summary>
+        /// Výška jednoho řádku textu
+        /// </summary>
+        protected static int LineHeight { get { return Control.DefaultFont.Height + 3; } }
+        /// <summary>
+        /// Výška okrajů controlu nad a pod obsahem
+        /// </summary>
+        protected static int FrameHeight { get { return 10; } }
+        #endregion
+        #region Formátování hodnot
+        /// <summary>
+        /// Vrátí velikost ve vhodných jednotkách (B, kB, MB, GB, TB)
+        /// </summary>
+        /// <param name="size"></param>
+        /// <returns></returns>
+        public static string FormatSize(decimal size)
+        {
+            if (size < 1024m) return $"{size:N0} B";
+            string[] units = new string[] { "kB", "MB", "GB", "TB" };
+            int index = -1;
+            while (size >= 1024m && index < units.Length - 1)
+            {
+                size = size / 1024m;
+                index++;
+            }
+            return (size < 10m ? $"{size:N2} {units[index]}" : $"{size:N1} {units[index]}");
+        }
+        /// <summary>
+        /// Vrátí čas ve formě h:mm:ss
+        /// </summary>
+        /// <param name="seconds"></param>
+        /// <returns></returns>
+        public static string FormatTime(decimal seconds)
+        {
+            var time = TimeSpan.FromSeconds((double)(seconds < 0m ? 0m : seconds));
+            return $"{(int)time.TotalHours}:{time.Minutes:00}:{time.Seconds:00}";
+        }
+        #endregion
+    }
+    /// <summary>
+    /// Summary blok FileRescue, část A: celkový postup přes všechny soubory
+    /// </summary>
+    internal class FileRescueTotalControl : FileRescueSummaryControl
+    {
+        protected override void PaintContent(Graphics graphics, Rectangle bounds)
+        {
+            var summary = this.Summary;
+            int y = bounds.Y;
+            int lineHeight = LineHeight;
+
+            // 1. Soubor X z N, čas:
+            string filesText = "Záchrana souborů";
+            if (summary != null)
+            {
+                if (summary.IsFinished)
+                    filesText = $"Dokončeno, souborů: {summary.FilesCount}";
+                else if (summary.FilesCount > 0)
+                    filesText = $"Soubor {(summary.CurrentFileIndex >= 0 ? (summary.CurrentFileIndex + 1).ToString() : "-")} z {summary.FilesCount}";
+            }
+            using (var boldFont = new Font(this.Font, FontStyle.Bold))
+                PaintRow(graphics, GetRow(bounds, y), filesText, (summary != null ? FormatTime(summary.ElapsedSeconds) : null), boldFont);
+            y += lineHeight;
+
+            // 2. Aktuální soubor (jen jméno, celá cesta v ToolTipu):
+            if (summary?.CurrentFileName != null)
+                PaintPathText(graphics, GetRow(bounds, y), System.IO.Path.GetFileName(summary.CurrentFileName));
+            y += lineHeight;
+
+            // 3. Progress bar přes všechny soubory podle bajtů:
+            var barBounds = new Rectangle(bounds.X, y + 1, bounds.Width, lineHeight + 2);
+            Painter.PaintRectangle(graphics, Skin.FreeSpaceColor, barBounds);
+            double ratio = summary?.ProcessedRatio ?? 0d;
+            int barWidth = (int)Math.Round(ratio * barBounds.Width, 0);
+            if (barWidth > 0)
+                Painter.PaintBar3D(graphics, Skin.RescueBlockOkColor, new Rectangle(barBounds.X, barBounds.Y, barWidth, barBounds.Height));
+            if (summary != null)
+                Painter.PaintText(graphics, this.Font, $"{(100d * ratio):N1} %   ({FormatSize(summary.ProcessedBytes)} z {FormatSize(summary.TotalBytes)})", this.ForeColor, barBounds, ContentAlignment.MiddleCenter);
+            y += lineHeight + 4;
+
+            // 4. Výsledky souborů:
+            if (summary != null)
+            {
+                string text = $"OK: {summary.FilesOk}   S chybami: {summary.FilesWithErrors}";
+                if (summary.FilesInterrupted > 0) text += $"   Přerušeno: {summary.FilesInterrupted}";
+                if (summary.FilesNotExists > 0) text += $"   Nenalezeno: {summary.FilesNotExists}";
+                if (summary.FilesFailed > 0) text += $"   Chyba: {summary.FilesFailed}";
+                PaintRow(graphics, GetRow(bounds, y), text, null);
+            }
+        }
+        protected override string GetToolTipText()
+        {
+            var summary = this.Summary;
+            if (summary?.CurrentFileName is null) return null;
+            return $"Zdroj: {summary.CurrentFileName}\r\nCíl: {summary.CurrentFileTarget}";
+        }
+        protected override int CurrentOptimalHeight { get { return OptimalHeight; } }
+        /// <summary>
+        /// Optimální výška
+        /// </summary>
+        public static int OptimalHeight { get { return FrameHeight + 4 * LineHeight + 4; } }
+    }
+    /// <summary>
+    /// Summary blok FileRescue, část B: aktuální soubor a jeho bloky podle stavu (zároveň legenda barev mapy)
+    /// </summary>
+    internal class FileRescueFileControl : FileRescueSummaryControl
+    {
+        protected override void PaintContent(Graphics graphics, Rectangle bounds)
+        {
+            var summary = this.Summary;
+            var statistic = summary?.CurrentStatistic;
+            int y = bounds.Y;
+            int lineHeight = LineHeight;
+
+            // 1. Fáze:
+            using (var boldFont = new Font(this.Font, FontStyle.Bold))
+                PaintRow(graphics, GetRow(bounds, y), GetPhaseText(summary), null, boldFont);
+            y += lineHeight;
+
+            // 2. Zpracováno:
+            if (summary != null && statistic != null)
+            {
+                double percent = (summary.CurrentFileLength > 0L ? Math.Min(100d, 100d * statistic.TotalBlocksSize / summary.CurrentFileLength) : 0d);
+                PaintRow(graphics, GetRow(bounds, y), $"Zpracováno: {percent:N1} %", $"{FormatSize(statistic.TotalBlocksSize)} z {FormatSize(summary.CurrentFileLength)}");
+            }
+            y += lineHeight;
+
+            // 3. Rychlost čtení:
+            var readSpeed = statistic?.ReadSpeed;
+            if (readSpeed.HasValue)
+                PaintRow(graphics, GetRow(bounds, y), "Rychlost čtení:", FormatSize(readSpeed.Value) + "/s");
+            y += lineHeight + 4;
+
+            // 4. Bloky podle kategorie = legenda barev mapy:
+            foreach (var category in CategoryOrder)
+            {
+                var row = GetRow(bounds, y);
+                int boxSize = row.Height - 5;
+                Painter.PaintBar3D(graphics, FileRescue.SingleBlockInfo.GetColor(category), new Rectangle(row.X, row.Y + 2, boxSize, boxSize));
+                var textRow = new Rectangle(row.X + boxSize + 5, row.Y, row.Width - boxSize - 5, row.Height);
+                string valueText = (statistic != null ? $"{statistic.GetCategoryCount(category):N0}  ({FormatSize(statistic.GetCategorySize(category))})" : null);
+                PaintRow(graphics, textRow, FileRescue.SingleBlockInfo.GetCategoryText(category), valueText);
+                y += lineHeight;
+            }
+        }
+        /// <summary>
+        /// Vrátí text fáze zpracování aktuálního souboru
+        /// </summary>
+        /// <param name="summary"></param>
+        /// <returns></returns>
+        private static string GetPhaseText(FileRescue.SummaryInfo summary)
+        {
+            if (summary is null || summary.CurrentFileIndex < 0) return (summary?.IsFinished ?? false) ? "Dokončeno" : "Příprava...";
+            if (summary.CurrentFileStatus == FileRescue.FileStatus.NotExists) return "Soubor neexistuje";
+            if (summary.IsFinished || summary.CurrentFileStatus == FileRescue.FileStatus.Finished) return "Soubor dokončen";
+            if (summary.CurrentErrorLevel <= 0) return "1. průchod souborem";
+            return $"Opakované čtení chyb: pokus {summary.CurrentErrorLevel + 1} z {FileRescue.SingleLogInfo.MaxErrorsCount}";
+        }
+        /// <summary>
+        /// Pořadí kategorií v tabulce
+        /// </summary>
+        private static readonly FileRescue.SingleBlockInfo.BlockCategory[] CategoryOrder = new FileRescue.SingleBlockInfo.BlockCategory[]
+        {
+            FileRescue.SingleBlockInfo.BlockCategory.Ok,
+            FileRescue.SingleBlockInfo.BlockCategory.OkAfterErrors,
+            FileRescue.SingleBlockInfo.BlockCategory.Error1,
+            FileRescue.SingleBlockInfo.BlockCategory.Error2,
+            FileRescue.SingleBlockInfo.BlockCategory.Aborted,
+            FileRescue.SingleBlockInfo.BlockCategory.Reading
+        };
+        protected override string GetToolTipText()
+        {
+            var summary = this.Summary;
+            if (summary?.CurrentFileName is null) return null;
+            return $"Zdroj: {summary.CurrentFileName}\r\nCíl: {summary.CurrentFileTarget}";
+        }
+        protected override int CurrentOptimalHeight { get { return OptimalHeight; } }
+        /// <summary>
+        /// Optimální výška
+        /// </summary>
+        public static int OptimalHeight { get { return FrameHeight + 9 * LineHeight + 4; } }
     }
     #endregion
 }

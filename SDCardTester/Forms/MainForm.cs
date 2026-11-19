@@ -288,7 +288,6 @@ namespace DjSoft.Tools.SDCardTester
         private void ToolActionWriteDataButton_Click(object sender, EventArgs e)
         {
             RunDriveTest(ActionState.TestSave);
-            ShowControls(ActionState.TestSave, true);
         }
         /// <summary>
         /// Požadavek na start čtení testovacích dat z disku
@@ -298,7 +297,6 @@ namespace DjSoft.Tools.SDCardTester
         private void ToolActionReadDataButton_Click(object sender, EventArgs e)
         {
             RunDriveTest(ActionState.TestRead);
-            ShowControls(ActionState.TestRead, true);
         }
         /// <summary>
         /// Požadavek na start čtení jakýchkoli dat z disku
@@ -308,7 +306,6 @@ namespace DjSoft.Tools.SDCardTester
         private void ToolActionReadAnyButton_Click(object sender, EventArgs e)
         {
             RunDriveTest(ActionState.ContentRead);
-            ShowControls(ActionState.ContentRead, true);
         }
 
         /// <summary>Image odpovídající typu disku Only Removable</summary>
@@ -416,7 +413,9 @@ namespace DjSoft.Tools.SDCardTester
                 // Pokud nyní ZAČÍNÁ stav Working, pak nastavíme RunState na Run = ikonky v Toolbaru:
                 if (!oldStateWorking && newStateWorking)
                 {
-                    this.RunState = RunState.Run;
+                    //  Jen GUI, bez akcí: setter RunState by volal _SetRunState(withActions: true), a ten podle dosud nezměněného CurrentState (= Dialog)
+                    //  zavolal ShowControls(Dialog) => vnořeně by vrátil Toolbar do stavu Dialog (akční buttony Enabled, FlowControl skryté).
+                    _SetRunState(RunState.Run, true, false);
                     _TaskProgressState = ThumbnailProgressState.Normal;
                 }
 
@@ -442,7 +441,7 @@ namespace DjSoft.Tools.SDCardTester
         protected void ShowFlowButtonsEnabled(RunState runState)
         {
             if (this.InvokeRequired)
-                this.BeginInvoke(new Action(() => action(RunState)));
+                this.BeginInvoke(new Action(() => action(runState)));
             else
                 action(runState);
 
@@ -827,8 +826,10 @@ namespace DjSoft.Tools.SDCardTester
         {
             ResultsInfoPanelClear();
             ShowControls(ActionState.FileRescue, true);
+            _TaskProgressValue = 0;                             // TaskBar nesmí ukazovat hodnotu z předešlé akce
 
             var fileRescuer = new FileRescue();
+            _FileRescueSummaryPanelPrepare();
             fileRescuer.WorkingStep += _FileRescuer_WorkingStep;
             fileRescuer.WorkingDone += _FileRescuer_WorkingDone;
             _FileRescuer = fileRescuer;
@@ -871,7 +872,10 @@ namespace DjSoft.Tools.SDCardTester
         private void RunPauseStopFileRescue(RunState state)
         {
             if (_FileRescuer != null)
+            {
                 _FileRescuer?.ChangeState(state);
+                _FileRescuerRefresh();                          // Promítne Pause / Run do TaskBaru okamžitě; v Pause nechodí WorkingStep
+            }
             else
                 ShowControls(ActionState.Dialog, false);
         }
@@ -882,8 +886,9 @@ namespace DjSoft.Tools.SDCardTester
         }
         private void _FileRescuer_WorkingDone(object sender, EventArgs e)
         {
+            _FileRescuerRefresh();
             _FileRescuer = null;
-            ShowControls(ActionState.Dialog, true);
+            ShowControls(ActionState.Dialog, false);            // false = panel výsledků zůstane zobrazen i po skončení akce (stejně jako u Analýzy a testů)
         }
         private void _FileRescuerRefresh()
         {
@@ -897,22 +902,82 @@ namespace DjSoft.Tools.SDCardTester
 
 
             // Akce v GUI threadu
+            //  Probíhá asynchronně (BeginInvoke): než se provede, thread Work už může být v jiném stavu, i na jiném souboru.
+            //  Proto se celková délka nastavuje vždy, spolu s bloky, a obojí z jednoho konzistentního snímku.
             void action(FileRescue rescuer)
             {
-                var status = rescuer?.CurrentFileStatus ?? FileRescue.FileStatus.None;
-                switch (status)
-                {
-                    case FileRescue.FileStatus.SourceFileExists:
-                        _VisualMapFillFromItems(null, rescuer.CurrentFileLength ?? 0L);
-                        break;
-                    case FileRescue.FileStatus.LogLoaded:
-                    case FileRescue.FileStatus.Copying:
-                        _VisualMapFillFromItems(rescuer?.CurrentBlocks, null);
-                        break;
-                }
+                if (rescuer is null) return;
+                var summary = rescuer.GetSummary();
+                _FileRescueSummaryPanelFill(summary);
+                _FileRescueTaskProgressFill(summary);
+                var status = rescuer.GetCurrentProgress(out long fileLength, out var blocks);
+                if (status == FileRescue.FileStatus.None) return;
+                _VisualMapFillFromItems(blocks, fileLength);
             }
         }
+        /// <summary>
+        /// Do panelu informací <see cref="ResultsInfoPanel"/> vloží controly Summary bloku záchrany souborů
+        /// </summary>
+        private void _FileRescueSummaryPanelPrepare()
+        {
+            int x = 3;
+            int y = 3;
+            int w = ResultsInfoPanel.ClientRectangle.Width - 6;
+
+            var totalControl = new FileRescueTotalControl();
+            totalControl.Bounds = new Rectangle(x, y, w, FileRescueTotalControl.OptimalHeight);
+            ResultsInfoPanel.Controls.Add(totalControl);
+            y += totalControl.Height + 3;
+
+            var fileControl = new FileRescueFileControl();
+            fileControl.Bounds = new Rectangle(x, y, w, FileRescueFileControl.OptimalHeight);
+            ResultsInfoPanel.Controls.Add(fileControl);
+
+            _FileRescueTotalControl = totalControl;
+            _FileRescueFileControl = fileControl;
+        }
+        /// <summary>
+        /// Do controlů Summary bloku záchrany souborů vloží aktuální data
+        /// </summary>
+        /// <param name="summary"></param>
+        private void _FileRescueSummaryPanelFill(FileRescue.SummaryInfo summary)
+        {
+            _FileRescueTotalControl?.StoreInfo(summary);
+            _FileRescueFileControl?.StoreInfo(summary);
+        }
+        /// <summary>
+        /// Celkový postup záchrany promítne do ProgressBaru v TaskBaru Windows a do titulku okna.
+        /// Hodnota = stejný poměr jako celkový progress v Summary bloku (<see cref="FileRescue.SummaryInfo.ProcessedRatio"/>).
+        /// Stav: Paused při pauze, Error pokud nějaký soubor (i aktuální) má nečitelné bloky nebo selhal, jinak Normal.
+        /// Po skončení akce vrací TaskBar do stavu NoProgress a titulek na standardní metoda <see cref="ShowControls(ActionState, bool)"/>.
+        /// </summary>
+        /// <param name="summary"></param>
+        private void _FileRescueTaskProgressFill(FileRescue.SummaryInfo summary)
+        {
+            if (summary is null || summary.IsFinished || CurrentState != ActionState.FileRescue) return;
+
+            double ratio = summary.ProcessedRatio;
+            int value = (int)Math.Round(ratio * (double)_TaskProgressMaximum, 0);
+            if (value == 0 && ratio > 0d) value = 1;
+            _TaskProgressValue = value;
+
+            bool hasError = (summary.FilesWithErrors > 0 || summary.FilesFailed > 0 || (summary.CurrentStatistic?.BadBlocksCount ?? 0) > 0);
+            _TaskProgressState = (this.RunState == RunState.Pause ? ThumbnailProgressState.Paused :
+                                 (hasError ? ThumbnailProgressState.Error : ThumbnailProgressState.Normal));
+
+            // TaskBar: Titulek aplikace = "42% File Rescue"
+            //  Procenta na začátku: Windows při více oknech v TaskBaru text zkracují zprava, procenta tak zůstanou vidět.
+            this.AppTitleTextCurrent = $"{((int)Math.Floor(100d * ratio)).ToString()}% File Rescue";
+        }
         private FileRescue _FileRescuer;
+        /// <summary>
+        /// Summary blok záchrany: celkový postup. Po doběhnutí se nenuluje, zůstává zobrazen.
+        /// </summary>
+        private FileRescueTotalControl _FileRescueTotalControl;
+        /// <summary>
+        /// Summary blok záchrany: aktuální soubor. Po doběhnutí se nenuluje, zůstává zobrazen.
+        /// </summary>
+        private FileRescueFileControl _FileRescueFileControl;
         #endregion
         #region Akce: Zápis a čtení testovacích dat na disk
         /// <summary>
@@ -1043,13 +1108,15 @@ namespace DjSoft.Tools.SDCardTester
                 bool hasError = (driveTester.TimeInfoSaveShort.ErrorBytes > 0 || driveTester.TimeInfoSaveLong.ErrorBytes > 0 || driveTester.TimeInfoReadShort.ErrorBytes > 0 || driveTester.TimeInfoReadLong.ErrorBytes > 0);
                 _TaskProgressState = (!hasError ? ThumbnailProgressState.Normal : ThumbnailProgressState.Error);
 
-                // TaskBar: Titulek aplikace = "SD Card tester H: 58%"
+                // TaskBar: Titulek aplikace = "58% SD Card Write H:"
+                //  Procenta na začátku: Windows při více oknech v TaskBaru text zkracují zprava, procenta tak zůstanou vidět.
+                //  Zaokrouhleno dolů, aby se 100% neukázalo před koncem (stejně jako u FileRescue).
                 string drive = driveTester.Target.Name.Substring(0, 1).ToUpper();
                 string appName = (testPhase == DriveTester.TestPhase.SaveShortFile || testPhase == DriveTester.TestPhase.SaveLongFile ? "SD Card Write" :
                                  (testPhase == DriveTester.TestPhase.ReadShortFile || testPhase == DriveTester.TestPhase.ReadLongFile ? "SD Card Verify" :
                                  (testPhase == DriveTester.TestPhase.ReadAnyContent ? "SD Card Read" : "")));
-                string percent = ((int)Math.Round(100m * progressRatio, 0)).ToString();
-                string title = $"{appName} {drive}: {percent}%";
+                string percent = ((int)Math.Floor(100m * progressRatio)).ToString();
+                string title = $"{percent}% {appName} {drive}:";
 
                 this.AppTitleTextCurrent = title;
             }
