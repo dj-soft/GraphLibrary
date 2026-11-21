@@ -43,6 +43,8 @@ namespace DjSoft.Tools.SDCardTester
         public static Color TestResultCorrectBackColor { get { return Instance._TestResultCorrectBackColor; } set { Instance._TestResultCorrectBackColor = value; } }
         public static Color TestResultErrorBackColor { get { return Instance._TestResultErrorBackColor; } set { Instance._TestResultErrorBackColor = value; } }
         public static Color TestResultMoreErrorsBackColor { get { return Instance._TestResultMoreErrorsBackColor; } set { Instance._TestResultMoreErrorsBackColor = value; } }
+        /// <summary>Test disku: výsledek bez chyb, ale s přechodnými chybami (opakované čtení vrátilo správná data)</summary>
+        public static Color TestResultWarningBackColor { get { return Instance._TestResultWarningBackColor; } set { Instance._TestResultWarningBackColor = value; } }
 
         /// <summary>FileRescue: blok vytvořený, právě se čte</summary>
         public static Color RescueBlockReadingColor { get { return Instance._RescueBlockReadingColor; } set { Instance._RescueBlockReadingColor = value; } }
@@ -56,6 +58,10 @@ namespace DjSoft.Tools.SDCardTester
         public static Color RescueBlockError2Color { get { return Instance._RescueBlockError2Color; } set { Instance._RescueBlockError2Color = value; } }
         /// <summary>FileRescue: blok vzdaný po maximálním počtu chyb</summary>
         public static Color RescueBlockAbortedColor { get { return Instance._RescueBlockAbortedColor; } set { Instance._RescueBlockAbortedColor = value; } }
+        /// <summary>FileRescue: blok přečtený napoprvé, barvení podle rychlosti: nejpomalejší odstín (tmavý)</summary>
+        public static Color RescueBlockOkSlowColor { get { return Instance._RescueBlockOkSlowColor; } set { Instance._RescueBlockOkSlowColor = value; } }
+        /// <summary>FileRescue: blok přečtený napoprvé, barvení podle rychlosti: nejrychlejší odstín (světlý)</summary>
+        public static Color RescueBlockOkFastColor { get { return Instance._RescueBlockOkFastColor; } set { Instance._RescueBlockOkFastColor = value; } }
 
         /// <summary>
         /// Typ palety
@@ -113,12 +119,15 @@ namespace DjSoft.Tools.SDCardTester
         private Color _TestResultCorrectBackColor;
         private Color _TestResultErrorBackColor;
         private Color _TestResultMoreErrorsBackColor;
+        private Color _TestResultWarningBackColor;
         private Color _RescueBlockReadingColor;
         private Color _RescueBlockOkColor;
         private Color _RescueBlockOkAfterErrorsColor;
         private Color _RescueBlockError1Color;
         private Color _RescueBlockError2Color;
         private Color _RescueBlockAbortedColor;
+        private Color _RescueBlockOkSlowColor;
+        private Color _RescueBlockOkFastColor;
 
         #endregion
         #region Přednastavené palety
@@ -160,12 +169,15 @@ namespace DjSoft.Tools.SDCardTester
                     _TestResultCorrectBackColor = Color.FromArgb(192, 255, 192);
                     _TestResultErrorBackColor = Color.FromArgb(255, 216, 216);
                     _TestResultMoreErrorsBackColor = Color.FromArgb(255, 160, 160);
+                    _TestResultWarningBackColor = Color.FromArgb(255, 236, 150);
                     _RescueBlockReadingColor = Color.FromArgb(176, 176, 176);
                     _RescueBlockOkColor = Color.FromArgb(83, 188, 83);
                     _RescueBlockOkAfterErrorsColor = Color.FromArgb(170, 210, 60);
                     _RescueBlockError1Color = Color.FromArgb(240, 210, 60);
                     _RescueBlockError2Color = Color.FromArgb(245, 150, 50);
                     _RescueBlockAbortedColor = Color.FromArgb(210, 50, 50);
+                    _RescueBlockOkSlowColor = Color.FromArgb(25, 90, 35);
+                    _RescueBlockOkFastColor = Color.FromArgb(120, 230, 125);
                     _Palette = palette;
                     break;
                 case PaletteType.Pastel:
@@ -193,12 +205,15 @@ namespace DjSoft.Tools.SDCardTester
                     _TestResultCorrectBackColor = Color.FromArgb(192, 255, 192);
                     _TestResultErrorBackColor = Color.FromArgb(255, 216, 216);
                     _TestResultMoreErrorsBackColor = Color.FromArgb(255, 160, 160);
+                    _TestResultWarningBackColor = Color.FromArgb(255, 236, 150);
                     _RescueBlockReadingColor = Color.FromArgb(216, 216, 216);
                     _RescueBlockOkColor = Color.FromArgb(168, 224, 168);
                     _RescueBlockOkAfterErrorsColor = Color.FromArgb(214, 236, 150);
                     _RescueBlockError1Color = Color.FromArgb(255, 236, 150);
                     _RescueBlockError2Color = Color.FromArgb(255, 200, 150);
                     _RescueBlockAbortedColor = Color.FromArgb(240, 140, 140);
+                    _RescueBlockOkSlowColor = Color.FromArgb(70, 135, 80);
+                    _RescueBlockOkFastColor = Color.FromArgb(190, 242, 195);
                     _Palette = palette;
                     break;
                 case PaletteType.Dark:
@@ -226,12 +241,15 @@ namespace DjSoft.Tools.SDCardTester
                     _TestResultCorrectBackColor = Color.FromArgb(192, 255, 192);
                     _TestResultErrorBackColor = Color.FromArgb(255, 216, 216);
                     _TestResultMoreErrorsBackColor = Color.FromArgb(255, 160, 160);
+                    _TestResultWarningBackColor = Color.FromArgb(255, 236, 150);
                     _RescueBlockReadingColor = Color.FromArgb(160, 160, 160);
                     _RescueBlockOkColor = Color.FromArgb(70, 170, 70);
                     _RescueBlockOkAfterErrorsColor = Color.FromArgb(160, 200, 50);
                     _RescueBlockError1Color = Color.FromArgb(230, 200, 50);
                     _RescueBlockError2Color = Color.FromArgb(235, 140, 40);
                     _RescueBlockAbortedColor = Color.FromArgb(200, 40, 40);
+                    _RescueBlockOkSlowColor = Color.FromArgb(20, 75, 30);
+                    _RescueBlockOkFastColor = Color.FromArgb(105, 215, 110);
                     _Palette = palette;
                     break;
             }

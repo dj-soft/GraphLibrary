@@ -114,6 +114,18 @@ namespace DjSoft.Tools.SDCardTester
         {
             RunInGui(() => System.Windows.Forms.MessageBox.Show(MainForm, message, caption, MessageBoxButtons.OK, MessageBoxIcon.Error) );
         }
+        /// <summary>
+        /// Zobrazí dotaz Ano / Ne v MessageBoxu a vrátí true = Ano. Automaticky se spustí v GUI vlákně, pokud je potřeba.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="caption"></param>
+        /// <returns></returns>
+        public static bool ShowQuestion(string message, string caption = "Question")
+        {
+            var result = DialogResult.None;
+            RunInGui(() => result = System.Windows.Forms.MessageBox.Show(MainForm, message, caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question));
+            return (result == DialogResult.Yes);
+        }
         #endregion
     }
     #region class AppSettings : konfigurace aplikace, ukládaná do XML souboru
@@ -159,6 +171,10 @@ namespace DjSoft.Tools.SDCardTester
         /// Posledně zadaný výstupní adresář pro FileRescue
         /// </summary>
         public string LastFileRescueOutputFilesPath { get { return _GetValue(); } set { _SetValue(value); } }
+        /// <summary>
+        /// FileRescue: barvit OK bloky v mapě odstíny podle rychlosti čtení. Výchozí = true (uloženo "1" / "0").
+        /// </summary>
+        public bool FileRescueSpeedShading { get { return (_GetValue() != "0"); } set { _SetValue(value ? "1" : "0"); } }
         #endregion
         #region Úložiště hodnot
         /// <summary>

@@ -908,9 +908,11 @@ namespace DjSoft.Tools.SDCardTester
             {
                 if (rescuer is null) return;
                 var summary = rescuer.GetSummary();
+                var status = rescuer.GetCurrentProgress(out long fileLength, out var blocks);
+                var speedRange = FileRescue.SpeedShading.Apply(blocks, App.Settings.FileRescueSpeedShading);   // Rychlost a odstíny do bloků, rozsah pro legendu
+                if (_FileRescueFileControl != null) _FileRescueFileControl.SpeedRange = speedRange;
                 _FileRescueSummaryPanelFill(summary);
                 _FileRescueTaskProgressFill(summary);
-                var status = rescuer.GetCurrentProgress(out long fileLength, out var blocks);
                 if (status == FileRescue.FileStatus.None) return;
                 _VisualMapFillFromItems(blocks, fileLength);
             }
@@ -931,10 +933,38 @@ namespace DjSoft.Tools.SDCardTester
 
             var fileControl = new FileRescueFileControl();
             fileControl.Bounds = new Rectangle(x, y, w, FileRescueFileControl.OptimalHeight);
+            fileControl.SpeedShadingToggled += _FileRescueSpeedShadingToggled;
             ResultsInfoPanel.Controls.Add(fileControl);
+            y += fileControl.Height + 3;
+
+            var healthControl = new MediaHealthControl();
+            healthControl.Bounds = new Rectangle(x, y, w, MediaHealthControl.OptimalHeight);
+            ResultsInfoPanel.Controls.Add(healthControl);
 
             _FileRescueTotalControl = totalControl;
             _FileRescueFileControl = fileControl;
+            _FileRescueHealthControl = healthControl;
+        }
+        /// <summary>
+        /// Uživatel přepnul "Barvit podle rychlosti": uloží volbu do nastavení a ihned přebarví bloky aktuálně zobrazené v mapě.
+        /// Funguje i po skončení záchrany (mapa i Summary zůstávají zobrazeny).
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _FileRescueSpeedShadingToggled(object sender, EventArgs e)
+        {
+            bool enabled = !App.Settings.FileRescueSpeedShading;
+            App.Settings.FileRescueSpeedShading = enabled;
+
+            var blocks = this.LinearMapControl.MapItems?.OfType<FileRescue.SingleBlockInfo>().ToArray();
+            var speedRange = FileRescue.SpeedShading.Apply(blocks, enabled);
+            var fileControl = sender as FileRescueFileControl ?? _FileRescueFileControl;
+            if (fileControl != null)
+            {
+                fileControl.SpeedRange = speedRange;
+                fileControl.Refresh();
+            }
+            this.LinearMapControl.Refresh();
         }
         /// <summary>
         /// Do controlů Summary bloku záchrany souborů vloží aktuální data
@@ -944,6 +974,7 @@ namespace DjSoft.Tools.SDCardTester
         {
             _FileRescueTotalControl?.StoreInfo(summary);
             _FileRescueFileControl?.StoreInfo(summary);
+            _FileRescueHealthControl?.StoreInfo(summary);
         }
         /// <summary>
         /// Celkový postup záchrany promítne do ProgressBaru v TaskBaru Windows a do titulku okna.
@@ -961,7 +992,7 @@ namespace DjSoft.Tools.SDCardTester
             if (value == 0 && ratio > 0d) value = 1;
             _TaskProgressValue = value;
 
-            bool hasError = (summary.FilesWithErrors > 0 || summary.FilesFailed > 0 || (summary.CurrentStatistic?.BadBlocksCount ?? 0) > 0);
+            bool hasError = (summary.FilesWithErrors > 0 || summary.FilesFailed > 0 || summary.FilesDeferred > 0 || summary.SourceNotRespondingSeconds.HasValue || (summary.CurrentStatistic?.BadBlocksCount ?? 0) > 0);
             _TaskProgressState = (this.RunState == RunState.Pause ? ThumbnailProgressState.Paused :
                                  (hasError ? ThumbnailProgressState.Error : ThumbnailProgressState.Normal));
 
@@ -978,6 +1009,10 @@ namespace DjSoft.Tools.SDCardTester
         /// Summary blok záchrany: aktuální soubor. Po doběhnutí se nenuluje, zůstává zobrazen.
         /// </summary>
         private FileRescueFileControl _FileRescueFileControl;
+        /// <summary>
+        /// Summary blok záchrany: Teploměr zdraví zdrojového média. Po doběhnutí se nenuluje, zůstává zobrazen.
+        /// </summary>
+        private MediaHealthControl _FileRescueHealthControl;
         #endregion
         #region Akce: Zápis a čtení testovacích dat na disk
         /// <summary>

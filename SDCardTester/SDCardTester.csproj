@@ -74,6 +74,7 @@
     </Compile>
     <Compile Include="Components\TaskProgress.cs" />
     <Compile Include="Workers\FileRescue.cs" />
+    <Compile Include="Workers\MediaHealth.cs" />
     <EmbeddedResource Include="Forms\MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>

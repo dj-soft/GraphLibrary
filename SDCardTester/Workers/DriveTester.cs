@@ -47,15 +47,27 @@ namespace DjSoft.Tools.SDCardTester.Workers
         /// </summary>
         protected override void Run()
         {
-            LastStepTime = null;
-            string testDir = null;
-            RunInfoClear();
-            PrepareFileGroups();
-            this.RestartStopwatch();
-            if (DoTestSave) RunTestSave(ref testDir);
-            if (DoTestRead) RunTestRead(ref testDir);
-            if (DoContentRead) RunContentRead();
-            CallWorkingDone();
+            // Vše v try-finally: výjimka mimo vnitřní ošetření (např. vyjmutá karta při zjišťování volného místa) by jinak ukončila Task
+            //  bez CallWorkingDone() => GUI by zůstalo ve stavu "běží" se zašedlými tlačítky.
+            try
+            {
+                LastStepTime = null;
+                string testDir = null;
+                RunInfoClear();
+                PrepareFileGroups();
+                this.RestartStopwatch();
+                if (DoTestSave) RunTestSave(ref testDir);
+                if (DoTestRead) RunTestRead(ref testDir);
+                if (DoContentRead) RunContentRead();
+            }
+            catch (Exception exc)
+            {
+                App.ShowError(exc.ToString(), "Chyba při testu disku");
+            }
+            finally
+            {
+                CallWorkingDone();
+            }
         }
         /// <summary>
         /// Vyvolá událost <see cref="TestStep"/>, pokud je odpovídající čas
@@ -65,7 +77,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
         /// <param name="startTime"></param>
         /// <param name="currentTime"></param>
         /// <param name="errorBytes"></param>
-        protected void CallTestStep(bool force, long? currentLength = null, long? startTime = null, long? currentTime = null, int? errorBytes = null, bool? addSizeProcessed = false)
+        protected void CallTestStep(bool force, long? currentLength = null, long? startTime = null, long? currentTime = null, long? errorBytes = null, bool? addSizeProcessed = false)
         {
             if (!CanCallWorkingStep(force)) return;
 
@@ -81,7 +93,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 TestPhase workingPhase = this.CurrentWorkingPhase;
                 decimal elapsedTime = this.GetSeconds(startTime.Value, currentTime.Value);
                 // Do odpovídající public property vložím součet hodnoty Done + rozpracované hodnoty daného režimu:
-                int errorFiles = (errorBytes <= 0 ? 0 : 1);
+                int errorFiles = (errorBytes.Value <= 0L ? 0 : 1);
                 switch (workingPhase)
                 {
                     case TestPhase.SaveShortFile:
@@ -220,35 +232,74 @@ namespace DjSoft.Tools.SDCardTester.Workers
             CurrentWorkingPhase = (IsShortFile(fileNumber) ? TestPhase.SaveShortFile : TestPhase.SaveLongFile);
             CurrentTestPhase = CurrentWorkingPhase;
             CallTestStep(true);
+            string abortMessage = null;
+            int consecutiveFailedFiles = 0;
+            while (!Stopping)
+            {
+                // Chyba zápisu nebo čtení jednoho souboru se započítá do výsledků a test pokračuje dalším souborem.
+                //  Disk, který přestal být dostupný, nebo opakovaně selhávající zápis ale test ukončí (s oznámením):
+                if (!IsTargetReady())
+                {
+                    abortMessage = "Testovaný disk přestal být dostupný (odpojen nebo neodpovídá).";
+                    break;
+                }
+
+                bool isShort = IsShortFile(fileNumber);
+                long targetLength = ShortFilesLength;
+                if (!isShort)
+                {
+                    if (!CanWriteFile(longFilesLength, out long acceptedLength)) break;    // Disk je plný = řádný konec testu
+                    targetLength = acceptedLength;
+                }
+                var savePhase = (isShort ? TestPhase.SaveShortFile : TestPhase.SaveLongFile);
+                var readPhase = (isShort ? TestPhase.ReadShortFile : TestPhase.ReadLongFile);
+
+                var timeInfoSave = RunTestSaveOneFile(testDir, fileNumber, out string fileName, targetLength, savePhase, savePhase);
+                if (timeInfoSave is null) break;                                         // Stop
+                (isShort ? TimeInfoSaveShortDone : TimeInfoSaveLongDone).Add(timeInfoSave);
+                TestSizeProcessedDone += timeInfoSave.SizeTotal + timeInfoSave.ErrorBytes;    // Zapsaná + nezapsaná (chybná) část; po Stop jen zapsaná část
+
+                if (timeInfoSave.ErrorFiles > 0)
+                {   // Zápis selhal: soubor označíme jako chybný a nečteme jej (jeho obsah je neúplný):
+                    RenameFileOnError(ref fileName);
+                    consecutiveFailedFiles++;
+                    if (consecutiveFailedFiles >= SaveMaxConsecutiveFailedFiles)
+                    {
+                        abortMessage = $"Zápis selhal u {consecutiveFailedFiles} souborů po sobě, test byl ukončen.\r\nPoslední chyba: {timeInfoSave.ErrorMessage}";
+                        break;
+                    }
+                }
+                else
+                {
+                    consecutiveFailedFiles = 0;
+                    var timeInfoRead = RunTestReadOneFile(fileName, fileNumber, readPhase, savePhase, true);
+                    (isShort ? TimeInfoReadShortDone : TimeInfoReadLongDone).Add(timeInfoRead);
+                }
+                fileNumber++;
+            }
+            CurrentWorkingPhase = TestPhase.None;
+            CallTestStep(true);
+            if (abortMessage != null)
+                App.ShowWarning(abortMessage, "Test zápisu ukončen");
+        }
+        /// <summary>
+        /// Po tolika souborech po sobě, jejichž zápis selhal, se test zápisu ukončí (disk je zjevně nepoužitelný)
+        /// </summary>
+        protected const int SaveMaxConsecutiveFailedFiles = 3;
+        /// <summary>
+        /// Vrátí true, pokud je testovaný disk dostupný (Ready). Nevyhazuje chybu.
+        /// </summary>
+        /// <returns></returns>
+        protected bool IsTargetReady()
+        {
             try
             {
-                while (!Stopping)
-                {
-                    if (IsShortFile(fileNumber))
-                    {
-                        var timeInfoSaveShort = RunTestSaveOneFile(testDir, fileNumber, out string fileName, ShortFilesLength, TestPhase.SaveShortFile, TestPhase.SaveShortFile);
-                        TimeInfoSaveShortDone.Add(timeInfoSaveShort);
-                        TestSizeProcessedDone += timeInfoSaveShort.SizeTotal;
-
-                        var timeInfoReadShort = RunTestReadOneFile(fileName, fileNumber, TestPhase.ReadShortFile, TestPhase.SaveShortFile, true);
-                        TimeInfoReadShortDone.Add(timeInfoReadShort);
-                    }
-                    else
-                    {
-                        if (!CanWriteFile(longFilesLength, out long acceptedLength)) break;
-                        var timeInfoSaveLong = RunTestSaveOneFile(testDir, fileNumber, out string fileName, acceptedLength, TestPhase.SaveLongFile, TestPhase.SaveLongFile);
-                        TimeInfoSaveLongDone.Add(timeInfoSaveLong);
-                        TestSizeProcessedDone += timeInfoSaveLong.SizeTotal;
-
-                        var timeInfoReadLong = RunTestReadOneFile(fileName, fileNumber, TestPhase.ReadLongFile, TestPhase.SaveLongFile, true);
-                        TimeInfoReadLongDone.Add(timeInfoReadLong);
-                    }
-                    fileNumber++;
-                }
-                CurrentWorkingPhase = TestPhase.None;
+                return new System.IO.DriveInfo(Target.Name).IsReady;
             }
-            catch (Exception) { }
-            CallTestStep(true);
+            catch
+            {
+                return false;
+            }
         }
         /// <summary>
         /// Zapíše jeden soubor daného čísla, dané délky a změří čas a vrátí časovou položku.
@@ -272,53 +323,70 @@ namespace DjSoft.Tools.SDCardTester.Workers
             CurrentTestPhase = testPhase;
             return RunTestSaveOneFileWriteAsync(testDir, fileNumber, fileName, targetLength, workingPhase);
         }
+        /// <summary>
+        /// Zapíše jeden testovací soubor. Chybu zápisu nevyhazuje: vrátí výsledek s chybou, kde chybné bajty = nezapsaná část souboru.
+        /// </summary>
+        /// <param name="testDir"></param>
+        /// <param name="fileNumber"></param>
+        /// <param name="fileName"></param>
+        /// <param name="targetLength"></param>
+        /// <param name="workingPhase"></param>
+        /// <returns></returns>
         protected FileTimeInfo RunTestSaveOneFileWriteAsync(string testDir, int fileNumber, string fileName, long targetLength, TestPhase workingPhase)
         {
             long startTime = this.CurrentTime;
-            long currentLength = 0L;
-            int bufferIndex = 0;
-            using (System.IO.FileStream fst = new System.IO.FileStream(fileName, System.IO.FileMode.Create, System.IO.FileAccess.Write))
+            long currentLength = 0L;                       // Délka předaná k zápisu (včetně právě zapisovaného bufferu)
+            long writtenLength = 0L;                       // Délka úspěšně zapsaná
+            string errorMessage = null;
+            try
             {
-                // Save: buffer s daty je "v předstihu" před fyzickou prací se souborem (na rozdíl od metody pro Read)
-                int bufferLength = GetBufferLength(workingPhase, currentLength, targetLength);
-                var nextData = CreateTestData(fileNumber, bufferIndex, bufferLength);
-                bool doWrite = true;
-                while (doWrite && !Stopping)
+                using (System.IO.FileStream fst = new System.IO.FileStream(fileName, System.IO.FileMode.Create, System.IO.FileAccess.Write))
                 {
-                    var currentData = nextData;            // Nezbytnost!!! : protože 'buffer' odchází do FileStreamu k zápisu, a současně (protože .WriteAsync) se do jiné proměnné 'data' připravuje nový obsah pro další cyklus
-                    int oneLength = currentData.Length;
-                    using (var task = fst.WriteAsync(currentData, 0, oneLength))    // Zde asynchronně začíná zápis dat do souboru
+                    // Save: buffer s daty je "v předstihu" před fyzickou prací se souborem (na rozdíl od metody pro Read)
+                    int bufferLength = GetBufferLength(workingPhase, currentLength, targetLength);
+                    var nextData = CreateTestData(fileNumber, currentLength, bufferLength);
+                    bool doWrite = true;
+                    while (doWrite && !Stopping)
                     {
+                        var currentData = nextData;            // Nezbytnost!!! : protože 'buffer' odchází do FileStreamu k zápisu, a současně (protože .WriteAsync) se do jiné proměnné 'data' připravuje nový obsah pro další cyklus
+                        int oneLength = currentData.Length;
+                        var task = fst.WriteAsync(currentData, 0, oneLength);       // Zde asynchronně začíná zápis dat do souboru
                         currentLength += (long)oneLength;
                         doWrite = currentLength < targetLength;                     // Ještě budeme připravovat další data?
                         if (doWrite)
                         {
                             bufferLength = GetBufferLength(workingPhase, currentLength, targetLength);
-                            nextData = CreateTestData(fileNumber, ++bufferIndex, bufferLength);         // A zatímco se do souboru v jiném threadu zapisuje, my si zde připravujeme data do dalšího kola zápisu.
+                            nextData = CreateTestData(fileNumber, currentLength, bufferLength);         // A zatímco se do souboru v jiném threadu zapisuje, my si zde připravujeme data do dalšího kola zápisu.
                         }
-                        if (!task.IsCompleted)
-                            task.Wait();                   // Počkáme na dokončení zápisu bufferu do souboru...
-                    }
+                        task.GetAwaiter().GetResult();                              // Počkáme na dokončení zápisu bufferu do souboru; chyba zápisu => výjimka (ne AggregateException)
+                        writtenLength = currentLength;
 
-                    var currentTime = this.CurrentTime;
-                    CallTestStep(false, currentLength, startTime, currentTime, 0, true);
+                        var currentTime = this.CurrentTime;
+                        CallTestStep(false, currentLength, startTime, currentTime, 0L, true);
+                    }
+                    fst.Flush();
+                    fst.Close();
                 }
-                fst.Flush();
-                fst.Close();
+            }
+            catch (Exception exc)
+            {   // Chyba zápisu (vadná karta, odpojení): zbytek souboru je chybný
+                errorMessage = exc.Message;
             }
 
             decimal elapsedTime = this.GetSeconds(startTime);
-            return new FileTimeInfo(workingPhase, 1, currentLength, elapsedTime, 0, 0);
+            if (errorMessage is null)
+                return new FileTimeInfo(workingPhase, 1, currentLength, elapsedTime, 0, 0);
+            long errorBytes = Math.Max(targetLength - writtenLength, 1L);
+            return new FileTimeInfo(workingPhase, 1, writtenLength, elapsedTime, errorBytes, 1) { ErrorMessage = errorMessage };
         }
         protected FileTimeInfo RunTestSaveOneFileBeginWrite(string testDir, int fileNumber, string fileName, long targetLength, TestPhase phase)
         {
             long startTime = this.CurrentTime;
             long currentLength = 0L;
-            int bufferIndex = 0;
             using (System.IO.FileStream fst = new System.IO.FileStream(fileName, System.IO.FileMode.Create, System.IO.FileAccess.Write))
             {
                 int bufferLength = GetBufferLength(phase, currentLength, targetLength);
-                var nextData = CreateTestData(fileNumber, bufferIndex, bufferLength);
+                var nextData = CreateTestData(fileNumber, currentLength, bufferLength);
                 bool doWrite = true;
                 while (doWrite && !Stopping)
                 {
@@ -331,7 +399,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
                     if (doWrite)
                     {
                         bufferLength = GetBufferLength(phase, currentLength, targetLength);
-                        nextData = CreateTestData(fileNumber, ++bufferIndex, bufferLength);         // A zatímco se do souboru v jiném threadu zapisuje, my si zde připravujeme data do dalšího kola zápisu.
+                        nextData = CreateTestData(fileNumber, currentLength, bufferLength);         // A zatímco se do souboru v jiném threadu zapisuje, my si zde připravujeme data do dalšího kola zápisu.
                     }
 
                     if (!iAsync.IsCompleted)
@@ -350,11 +418,10 @@ namespace DjSoft.Tools.SDCardTester.Workers
         protected FileTimeInfo RunTestSaveOneFileBinaryStream(string testDir, int fileNumber, string fileName, long targetLength, TestPhase phase)
         {
             long startTime = this.CurrentTime;
-            int bufferIndex = 0;
             long currentLength = 0L;
-            
+
             int bufferLength = GetBufferLength(phase, currentLength, targetLength);
-            var data = CreateTestData(fileNumber, bufferIndex, bufferLength);
+            var data = CreateTestData(fileNumber, currentLength, bufferLength);
             
             using (var memoryStream = new System.IO.MemoryStream(data))
             using (var fileStream = new System.IO.FileStream(fileName, System.IO.FileMode.CreateNew, System.IO.FileAccess.Write))
@@ -426,39 +493,45 @@ namespace DjSoft.Tools.SDCardTester.Workers
             if (testDir is null) testDir = GetTestDirectory(false);
             if (testDir is null) return;
 
-            try
+            var testFiles = GetTestFiles(this.Target, null);
+            if (testFiles.Length == 0) return;
+
+            this.TestSizeTotal = testFiles.Select(fi => fi.Length).Sum();
+            this.TestSizeProcessed = 0L;
+            this.TestSizeProcessedDone = 0L;
+
+            // Chyba čtení jednoho souboru se započítá do výsledků (RunTestReadOneFile nevyhazuje) a test pokračuje dalším souborem.
+            //  Disk, který přestal být dostupný, test ukončí (s oznámením):
+            string abortMessage = null;
+            foreach (var testFile in testFiles)
             {
-                var testFiles = GetTestFiles(this.Target, null);
-                if (testFiles.Length == 0) return;
-
-                this.TestSizeTotal = testFiles.Select(fi => fi.Length).Sum();
-                this.TestSizeProcessed = 0L;
-                this.TestSizeProcessedDone = 0L;
-
-                foreach (var testFile in testFiles)
+                if (Stopping) break;
+                if (!IsTargetReady())
                 {
-                    if (Stopping) break;
+                    abortMessage = "Testovaný disk přestal být dostupný (odpojen nebo neodpovídá).";
+                    break;
+                }
 
-                    var fileName = testFile.FullName;
-                    int fileNumber = GetFileNumber(fileName);
-                    if (fileNumber > 0)
+                var fileName = testFile.FullName;
+                int fileNumber = GetFileNumber(fileName);
+                if (fileNumber > 0)
+                {
+                    if (IsShortFile(fileNumber))
                     {
-                        if (IsShortFile(fileNumber))
-                        {
-                            var timeInfoReadShort = RunTestReadOneFile(fileName, fileNumber, TestPhase.ReadShortFile, TestPhase.ReadShortFile, true);
-                            TimeInfoReadShortDone.Add(timeInfoReadShort);
-                        }
-                        else
-                        {
-                            var timeInfoReadLong = RunTestReadOneFile(fileName, fileNumber, TestPhase.ReadLongFile, TestPhase.ReadLongFile, true);
-                            TimeInfoReadLongDone.Add(timeInfoReadLong);
-                        }
-                        TestSizeProcessedDone += testFile.Length;
+                        var timeInfoReadShort = RunTestReadOneFile(fileName, fileNumber, TestPhase.ReadShortFile, TestPhase.ReadShortFile, true);
+                        TimeInfoReadShortDone.Add(timeInfoReadShort);
                     }
+                    else
+                    {
+                        var timeInfoReadLong = RunTestReadOneFile(fileName, fileNumber, TestPhase.ReadLongFile, TestPhase.ReadLongFile, true);
+                        TimeInfoReadLongDone.Add(timeInfoReadLong);
+                    }
+                    TestSizeProcessedDone += testFile.Length;
                 }
             }
-            catch { }
             CallTestStep(true);
+            if (abortMessage != null)
+                App.ShowWarning(abortMessage, "Test čtení ukončen");
         }
         /// <summary>
         /// Provést test čtení?
@@ -479,12 +552,22 @@ namespace DjSoft.Tools.SDCardTester.Workers
             CurrentWorkingPhase = workingPhase;
             CurrentTestPhase = testPhase;
 
-            var fileInfo = RunTestReadOneFileAsync(fileName, workingPhase, fileNumber);       // První čtení
-            if (fileInfo.ErrorBytes > 0)
-                fileInfo = RunTestReadOneFileAsync(fileName, workingPhase, fileNumber);       // Po chybě dáme druhé čtení
-            if (fileInfo.ErrorBytes > 0 && renameOnError)
+            var firstInfo = RunTestReadOneFileAsync(fileName, workingPhase, fileNumber);      // První čtení
+            if (firstInfo is null) return null;                                               // Soubor mezitím zmizel
+            if (firstInfo.ErrorBytes <= 0L || Stopping) return firstInfo;
+
+            // Po chybě dáme druhé čtení. Jeho výsledek ale chybu prvního čtení nesmí zamaskovat:
+            //  - druhé čtení bez chyby = přechodná chyba: data jsou v pořádku, ale karta jednou vrátila jiná data => varování;
+            //  - druhé čtení s chybou = trvalá chyba: počet chybných bajtů = větší z obou čtení, soubor se přejmenuje na chybový.
+            var secondInfo = RunTestReadOneFileAsync(fileName, workingPhase, fileNumber);
+            if (secondInfo is null) return firstInfo;
+            if (secondInfo.ErrorBytes <= 0L)
+                return new FileTimeInfo(secondInfo.Phase, secondInfo.FileCount, secondInfo.SizeTotal, secondInfo.TimeTotalSec, 0L, 0) { WarningBytes = firstInfo.ErrorBytes, WarningFiles = 1 };
+
+            var resultInfo = new FileTimeInfo(secondInfo.Phase, secondInfo.FileCount, secondInfo.SizeTotal, secondInfo.TimeTotalSec, Math.Max(firstInfo.ErrorBytes, secondInfo.ErrorBytes), 1);
+            if (renameOnError)
                 RenameFileOnError(ref fileName);
-            return fileInfo;
+            return resultInfo;
         }
         /// <summary>
         /// Provede test čtení jednoho daného souboru
@@ -501,52 +584,156 @@ namespace DjSoft.Tools.SDCardTester.Workers
 
             long startTime = this.CurrentTime;
             long currentLength = 0L;
-            int bufferIndex = -1;
-            int errorBytes = 0;
+            long errorBytes = 0L;
             bool addSizeProcessed = (workingPhase == CurrentTestPhase);
-            using (System.IO.FileStream fst = new System.IO.FileStream(fileName, System.IO.FileMode.Open, System.IO.FileAccess.Read))
+            // Krátké soubory se čtou mimo cache systému: jinak by se kontrola hned po zápisu provedla jen proti RAM (data jsou ještě v cache).
+            //  Nebufferované čtení vyžaduje délku i adresu bufferu zarovnanou na sektor => jen pro délky násobku UnbufferedAlign.
+            bool unbuffered = ((workingPhase == TestPhase.ReadShortFile) && totalLength > 0L && (totalLength % UnbufferedAlign) == 0L);
+            var dataFormat = TestDataFormat.Unknown;
+            System.IO.FileStream fst = null;
+            try
             {
+                fst = OpenTestFileForRead(fileName, ref unbuffered);
+
                 // Read: buffer s daty je "pozadu" za fyzickou prací se souborem (na rozdíl od metody pro Save)
                 byte[] prevData = null;
-                bool doRead = true;
-                while (doRead && !Stopping)
+                int prevCount = 0;
+                long prevOffset = 0L;
+                int prevIndex = -1;
+                int bufferIndex = 0;
+                int consecutiveErrors = 0;
+                while (!Stopping && currentLength < totalLength)
                 {
-                    doRead = (fst.Position < totalLength);
-                    if (!doRead) break;
-
                     int bufferLength = GetBufferLength(workingPhase, currentLength, totalLength);
-                    if (bufferLength == 0) break;
+                    if (bufferLength <= 0) break;
 
                     var readData = new byte[bufferLength];
-                    using (var task = fst.ReadAsync(readData, 0, bufferLength))
-                    {   // Začalo načítání dat (readData) ze souboru;
-                        // a než doběhne, tak v tomto threadu mám chvilku čas:
-                        // provedu porovnání předchozích načtených dat (prevData) s očekávanými daty pro daný soubor a index:
-                        errorBytes += VerifyTestData(prevData, fileNumber, bufferIndex);
-
-                        // Až teď (po verifikaci předešlých dat) počkáme na doběhnutí načtení aktuálních dat (readData):
-                        // Právě tady řešíme výsledek - kdo je rychlejší? Načtení nových dat anebo verifikace předchozích dat?
-                        if (!task.IsCompleted)
-                            task.Wait();
-
-                        // Nyní načtená data (readData) přesuneme do prevData, ale právě teď v tomto threadu je nebudeme ověřovat,
-                        // protože chci co nejdříve zahájit čtení nového bloku s daty...
-                        currentLength += task.Result;
-                        prevData = readData;
-                        bufferIndex++;
+                    long readOffset = currentLength;
+                    int readCount = 0;
+                    bool readError = false;
+                    Task<int> task = null;
+                    if (!unbuffered)
+                    {   // Začne načítání dat (readData) ze souboru; chyba může přijít hned, nebo až z task:
+                        try { task = fst.ReadAsync(readData, 0, bufferLength); }
+                        catch { readError = true; }
                     }
+
+                    // A než čtení doběhne, tak v tomto threadu mám chvilku čas:
+                    // provedu porovnání předchozích načtených dat (prevData) s očekávanými daty pro daný soubor a pozici:
+                    errorBytes += VerifyTestData(prevData, prevCount, fileNumber, prevOffset, prevIndex, ref dataFormat);
+                    prevData = null;
+
+                    // Až teď (po verifikaci předešlých dat) počkáme na doběhnutí načtení aktuálních dat (readData):
+                    try
+                    {
+                        if (unbuffered)
+                            readCount = ReadUnbuffered(fst, readData, bufferLength);
+                        else if (task != null)
+                            readCount = task.GetAwaiter().GetResult();
+                    }
+                    catch { readError = true; }
+
+                    if (readError || readCount <= 0)
+                    {   // Chyba čtení (vadný sektor): celý buffer je chybný, pokračujeme za ním. Po sérii chyb ověříme, zda disk vůbec existuje:
+                        errorBytes += bufferLength;
+                        currentLength += bufferLength;
+                        consecutiveErrors++;
+                        if (consecutiveErrors >= ReadConsecutiveErrorsCheck && !IsTargetReady()) break;
+                        try { fst.Seek(currentLength, System.IO.SeekOrigin.Begin); }
+                        catch { break; }
+                    }
+                    else
+                    {   // Načtená data (readData) přesuneme do prevData, ale právě teď v tomto threadu je nebudeme ověřovat,
+                        // protože chci co nejdříve zahájit čtení nového bloku s daty...
+                        consecutiveErrors = 0;
+                        prevData = readData;
+                        prevCount = readCount;
+                        prevOffset = readOffset;
+                        prevIndex = bufferIndex;
+                        currentLength += readCount;
+                    }
+                    bufferIndex++;
 
                     var currentTime = this.CurrentTime;
                     CallTestStep(false, currentLength, startTime, currentTime, errorBytes, addSizeProcessed);
                 }
                 // Prověříme poslední načtený buffer:
-                errorBytes += VerifyTestData(prevData, fileNumber, bufferIndex);
-                fst.Close();
+                errorBytes += VerifyTestData(prevData, prevCount, fileNumber, prevOffset, prevIndex, ref dataFormat);
             }
+            catch
+            {   // Soubor nejde otevřít, nebo jiná chyba: nepřečtená část souboru je chybná
+            }
+            finally
+            {
+                fst?.Dispose();
+            }
+            // Nepřečtená část souboru (chyba otevření, ukončení po ztrátě disku) je chybná; po Stop ne:
+            if (!IsStoped && currentLength < totalLength)
+                errorBytes += (totalLength - currentLength);
 
             decimal elapsedTime = this.GetSeconds(startTime);
-            int errorFiles = (errorBytes <= 0 ? 0 : 1);
-            return new FileTimeInfo(workingPhase, 1, currentLength, elapsedTime, errorBytes, errorFiles);
+            int errorFiles = (errorBytes <= 0L ? 0 : 1);
+            return new FileTimeInfo(workingPhase, 1, Math.Min(currentLength, totalLength), elapsedTime, errorBytes, errorFiles);
+        }
+        /// <summary>
+        /// Po tolika chybách čtení po sobě v jednom souboru se ověří, zda testovaný disk ještě existuje
+        /// </summary>
+        protected const int ReadConsecutiveErrorsCheck = 8;
+        /// <summary>
+        /// Zarovnání (adresa bufferu, délka, pozice v souboru) pro nebufferované čtení mimo cache systému
+        /// </summary>
+        protected const int UnbufferedAlign = 4096;
+        /// <summary>
+        /// Win32 FILE_FLAG_NO_BUFFERING: čtení přímo ze zařízení, mimo cache systému. .NET Framework tuto hodnotu ve <see cref="System.IO.FileOptions"/> akceptuje.
+        /// </summary>
+        protected const System.IO.FileOptions FileOptionNoBuffering = (System.IO.FileOptions)0x20000000;
+        /// <summary>
+        /// Otevře testovací soubor pro čtení. Pokud je <paramref name="unbuffered"/>, zkusí jej otevřít mimo cache systému;
+        /// pokud to nejde, otevře jej standardně a <paramref name="unbuffered"/> nastaví na false.
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="unbuffered"></param>
+        /// <returns></returns>
+        private static System.IO.FileStream OpenTestFileForRead(string fileName, ref bool unbuffered)
+        {
+            if (unbuffered)
+            {
+                try
+                {   // bufferSize = 1: FileStream nepoužije vlastní buffer a čte přímo do dodaného (zarovnaného) pole
+                    return new System.IO.FileStream(fileName, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.Read, 1, FileOptionNoBuffering);
+                }
+                catch
+                {
+                    unbuffered = false;
+                }
+            }
+            return new System.IO.FileStream(fileName, System.IO.FileMode.Open, System.IO.FileAccess.Read);
+        }
+        /// <summary>
+        /// Přečte <paramref name="count"/> bajtů ze streamu otevřeného mimo cache (<see cref="FileOptionNoBuffering"/>) do <paramref name="target"/>.
+        /// Nebufferované čtení vyžaduje adresu bufferu zarovnanou na sektor: čte se do připnutého pomocného pole na zarovnanou pozici.
+        /// </summary>
+        /// <param name="fst"></param>
+        /// <param name="target"></param>
+        /// <param name="count">Násobek <see cref="UnbufferedAlign"/></param>
+        /// <returns></returns>
+        private static int ReadUnbuffered(System.IO.FileStream fst, byte[] target, int count)
+        {
+            var scratch = new byte[count + UnbufferedAlign];
+            var handle = System.Runtime.InteropServices.GCHandle.Alloc(scratch, System.Runtime.InteropServices.GCHandleType.Pinned);
+            try
+            {
+                long address = handle.AddrOfPinnedObject().ToInt64();
+                int offset = (int)((UnbufferedAlign - (address % UnbufferedAlign)) % UnbufferedAlign);
+                int readCount = fst.Read(scratch, offset, count);
+                if (readCount > 0)
+                    Buffer.BlockCopy(scratch, offset, target, 0, readCount);
+                return readCount;
+            }
+            finally
+            {
+                handle.Free();
+            }
         }
         /// <summary>
         /// Přejmenuje daný soubor - změní mu příponu na chybovou <see cref="FileNameErrorExtension"/>
@@ -906,54 +1093,171 @@ namespace DjSoft.Tools.SDCardTester.Workers
             return optimalLength;
         }
         /// <summary>
-        /// Vygeneruje blok dat do daného čísla souboru (počínaje 1) do daného bloku (počínaje 0), v délce <see cref="ShortBufferLength"/>.
+        /// Vygeneruje blok testovacích dat pro daný soubor (číslo počínaje 1) od dané pozice v souboru, v dané délce.
+        /// Formát viz <see cref="_ProcessTestData(byte[], int, int, long, bool)"/>.
         /// </summary>
         /// <param name="fileNumber"></param>
-        /// <param name="bufferIndex"></param>
+        /// <param name="fileOffset">Pozice začátku bufferu v souboru (násobek <see cref="TestSectorLength"/>)</param>
+        /// <param name="bufferLength"></param>
         /// <returns></returns>
-        protected byte[] CreateTestData(int fileNumber, int bufferIndex, int bufferLength)
+        protected byte[] CreateTestData(int fileNumber, long fileOffset, int bufferLength)
         {
             byte[] buffer = new byte[bufferLength];
-            _ProcessTestData(buffer, fileNumber, bufferIndex, true, out var _);
+            _ProcessTestData(buffer, bufferLength, fileNumber, fileOffset, true);
             return buffer;
         }
         /// <summary>
-        /// Prověří, zda data dodaná v bufferu <paramref name="buffer"/> jsou korektní pro daný soubor (číslo <paramref name="fileNumber"/> a pro blok bufferu <paramref name="bufferIndex"/>).
+        /// Prověří, zda data v bufferu <paramref name="buffer"/> (prvních <paramref name="count"/> bajtů) jsou korektní pro daný soubor a pozici. Vrátí počet chybných bajtů.
+        /// <para/>
+        /// Formát dat se určí podle prvního bufferu souboru (<paramref name="format"/>): nový formát má v každém sektoru hlavičku s pozicí a značkou <see cref="TestDataMagic"/>;
+        /// soubory zapsané dřívější verzí (bez značky) se ověřují původním vzorem podle indexu bufferu <paramref name="bufferIndex"/>.
         /// </summary>
         /// <param name="buffer"></param>
+        /// <param name="count"></param>
         /// <param name="fileNumber"></param>
+        /// <param name="fileOffset"></param>
         /// <param name="bufferIndex"></param>
+        /// <param name="format"></param>
         /// <returns></returns>
-        protected int VerifyTestData(byte[] buffer, int fileNumber, int bufferIndex)
+        protected long VerifyTestData(byte[] buffer, int count, int fileNumber, long fileOffset, int bufferIndex, ref TestDataFormat format)
         {
-            if (buffer is null || bufferIndex < 0) return 0;
-            _ProcessTestData(buffer, fileNumber, bufferIndex, false, out int errorCount);
+            if (buffer is null || count <= 0 || bufferIndex < 0) return 0L;
+            if (format == TestDataFormat.Unknown)
+                format = ((fileOffset == 0L && !HasTestDataMagic(buffer, count)) ? TestDataFormat.Legacy : TestDataFormat.Sector);
+            if (format == TestDataFormat.Legacy)
+                return _ProcessTestDataLegacy(buffer, count, fileNumber, bufferIndex);
+            return _ProcessTestData(buffer, count, fileNumber, fileOffset, false);
+        }
+        /// <summary>
+        /// Vrátí true, pokud buffer začíná sektorem nového formátu (značka <see cref="TestDataMagic"/> na své pozici v hlavičce)
+        /// </summary>
+        /// <param name="buffer"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        private static bool HasTestDataMagic(byte[] buffer, int count)
+        {
+            if (count < TestSectorHeaderLength) return false;
+            return (BitConverter.ToUInt32(buffer, 12) == TestDataMagic);
+        }
+        /// <summary>
+        /// Zpracuje data jednoho bufferu: buď je vygeneruje do bufferu (<paramref name="isWrite"/>), anebo je porovná s obsahem bufferu a vrátí počet chybných bajtů.
+        /// <para/>
+        /// Formát: každý sektor (<see cref="TestSectorLength"/> = 512 B) má jedinečný obsah:
+        /// bajty 0-7 = pozice sektoru v souboru (long), 8-11 = číslo souboru (int), 12-15 = značka <see cref="TestDataMagic"/>,
+        /// zbytek = pseudonáhodná data (xorshift64) odvozená z čísla souboru a pozice.
+        /// Odhalí tak i sektory přehozené, zdvojené nebo zapsané na jinou adresu (falešná kapacita), a nezávisí na velikosti bufferů.
+        /// </summary>
+        /// <param name="buffer"></param>
+        /// <param name="count"></param>
+        /// <param name="fileNumber"></param>
+        /// <param name="fileOffset">Pozice začátku bufferu v souboru (násobek <see cref="TestSectorLength"/>)</param>
+        /// <param name="isWrite"></param>
+        /// <returns></returns>
+        private static long _ProcessTestData(byte[] buffer, int count, int fileNumber, long fileOffset, bool isWrite)
+        {
+            long errorCount = 0L;
+            var sector = new byte[TestSectorLength];
+            for (int sectorStart = 0; sectorStart < count; sectorStart += TestSectorLength)
+            {
+                long sectorOffset = fileOffset + sectorStart;
+                _FillTestSector(sector, fileNumber, sectorOffset);
+                int length = Math.Min(TestSectorLength, count - sectorStart);
+                if (isWrite)
+                {
+                    Buffer.BlockCopy(sector, 0, buffer, sectorStart, length);
+                }
+                else
+                {
+                    for (int i = 0; i < length; i++)
+                    {
+                        if (buffer[sectorStart + i] != sector[i])
+                            errorCount++;
+                    }
+                }
+            }
             return errorCount;
         }
         /// <summary>
-        /// Zpracuje data jednoho bufferu: buď je vypočítá a naplní do dodaného bufferu; anebo je vypočítá a porovná s obsahem bufferu a určí počet neshod do <paramref name="errorCount"/>.
+        /// Vygeneruje obsah jednoho sektoru testovacích dat, viz <see cref="_ProcessTestData(byte[], int, int, long, bool)"/>
+        /// </summary>
+        /// <param name="sector"></param>
+        /// <param name="fileNumber"></param>
+        /// <param name="sectorOffset"></param>
+        private static void _FillTestSector(byte[] sector, int fileNumber, long sectorOffset)
+        {
+            // Hlavička:
+            writeUInt64(0, (ulong)sectorOffset);
+            writeUInt32(8, (uint)fileNumber);
+            writeUInt32(12, TestDataMagic);
+
+            // Pseudonáhodná data, semínko z čísla souboru a pozice (nesmí být 0):
+            ulong state = ((ulong)(uint)fileNumber * 0x9E3779B97F4A7C15UL) ^ ((ulong)sectorOffset * 0xBF58476D1CE4E5B9UL) ^ 0x94D049BB133111EBUL;
+            if (state == 0UL) state = 0x2545F4914F6CDD1DUL;
+            for (int i = TestSectorHeaderLength; i < TestSectorLength; i += 8)
+            {
+                state ^= state << 13;
+                state ^= state >> 7;
+                state ^= state << 17;
+                writeUInt64(i, state);
+            }
+
+            void writeUInt64(int position, ulong value)
+            {
+                for (int b = 0; b < 8; b++)
+                    sector[position + b] = (byte)(value >> (8 * b));
+            }
+            void writeUInt32(int position, uint value)
+            {
+                for (int b = 0; b < 4; b++)
+                    sector[position + b] = (byte)(value >> (8 * b));
+            }
+        }
+        /// <summary>
+        /// Původní vzor testovacích dat (verze před 2026-11-21), jen pro ověření dříve zapsaných souborů. Vrátí počet chybných bajtů.
+        /// Slabina: vzor se opakuje po 512 B, všechny sektory jednoho bufferu jsou shodné.
         /// </summary>
         /// <param name="buffer"></param>
+        /// <param name="count"></param>
         /// <param name="fileNumber"></param>
         /// <param name="bufferIndex"></param>
-        /// <param name="isWrite"></param>
-        /// <param name="errorCount"></param>
-        private void _ProcessTestData(byte[] buffer, int fileNumber, int bufferIndex, bool isWrite, out int errorCount)
+        /// <returns></returns>
+        private static long _ProcessTestDataLegacy(byte[] buffer, int count, int fileNumber, int bufferIndex)
         {
-            errorCount = 0;
-            int bufferLength = buffer.Length;
+            long errorCount = 0L;
             int sample = (15 * fileNumber + 7 * bufferIndex) % 256;
             int step = ((fileNumber % 5) + 1) * ((bufferIndex % 3) + 1);
-            for (int i = 0; i < bufferLength; i++)
+            for (int i = 0; i < count; i++)
             {
-                byte value = (byte)sample;
-                if (isWrite)
-                    buffer[i] = value;
-                else if (buffer[i] != value)
+                if (buffer[i] != (byte)sample)
                     errorCount++;
                 sample = (sample + step) % 256;
             }
+            return errorCount;
         }
+        /// <summary>
+        /// Formát testovacích dat v souboru
+        /// </summary>
+        protected enum TestDataFormat
+        {
+            /// <summary>Dosud neurčen (určí se podle prvního bufferu)</summary>
+            Unknown,
+            /// <summary>Nový formát: hlavička s pozicí v každém sektoru</summary>
+            Sector,
+            /// <summary>Původní vzor podle indexu bufferu</summary>
+            Legacy
+        }
+        /// <summary>
+        /// Délka sektoru testovacích dat
+        /// </summary>
+        protected const int TestSectorLength = 512;
+        /// <summary>
+        /// Délka hlavičky sektoru testovacích dat (pozice, číslo souboru, značka)
+        /// </summary>
+        protected const int TestSectorHeaderLength = 16;
+        /// <summary>
+        /// Značka nového formátu testovacích dat (bajty "DjST")
+        /// </summary>
+        protected const uint TestDataMagic = 0x54536A44u;
         /// <summary>
         /// Vrátí název testovacího adresáře
         /// </summary>
@@ -1143,6 +1447,8 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 TimeTotalSec = a.TimeTotalSec + b.TimeTotalSec;
                 ErrorBytes = a.ErrorBytes + b.ErrorBytes;
                 ErrorFiles = a.ErrorFiles + b.ErrorFiles;
+                WarningBytes = a.WarningBytes + b.WarningBytes;
+                WarningFiles = a.WarningFiles + b.WarningFiles;
             }
             public FileTimeInfo(FileTimeInfo a, int fileCount, long totalLength, decimal timeTotalSec, long errorBytes, int errorFiles)
             {
@@ -1152,6 +1458,8 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 TimeTotalSec = a.TimeTotalSec + timeTotalSec;
                 ErrorBytes = a.ErrorBytes + errorBytes;
                 ErrorFiles = a.ErrorFiles + errorFiles;
+                WarningBytes = a.WarningBytes;
+                WarningFiles = a.WarningFiles;
             }
             public override string ToString()
             {
@@ -1182,6 +1490,19 @@ namespace DjSoft.Tools.SDCardTester.Workers
             /// </summary>
             public int ErrorFiles { get; private set; }
             /// <summary>
+            /// Počet chybných bajtů z přechodných chyb: první čtení souboru vrátilo chybná data, opakované čtení správná.
+            /// Data jsou v pořádku, ale karta je nespolehlivá.
+            /// </summary>
+            public long WarningBytes { get; set; }
+            /// <summary>
+            /// Počet souborů s přechodnou chybou, viz <see cref="WarningBytes"/>
+            /// </summary>
+            public int WarningFiles { get; set; }
+            /// <summary>
+            /// Text poslední chyby (např. chyba zápisu), nebo null
+            /// </summary>
+            public string ErrorMessage { get; set; }
+            /// <summary>
             /// Do this instance přidá data z dodané instance
             /// </summary>
             /// <param name="add"></param>
@@ -1194,6 +1515,9 @@ namespace DjSoft.Tools.SDCardTester.Workers
                     this.TimeTotalSec += add.TimeTotalSec;
                     this.ErrorBytes += add.ErrorBytes;
                     this.ErrorFiles += add.ErrorFiles;
+                    this.WarningBytes += add.WarningBytes;
+                    this.WarningFiles += add.WarningFiles;
+                    if (add.ErrorMessage != null) this.ErrorMessage = add.ErrorMessage;
                 }
             }
             /// <summary>
@@ -1203,26 +1527,31 @@ namespace DjSoft.Tools.SDCardTester.Workers
             {
                 get
                 {
-                    if (this.ErrorFiles <= 0 && this.ErrorBytes <= 0L) return "O.K.";
-
-                    var errorBytes = this.ErrorBytes;
-                    var errorFiles = this.ErrorFiles;
-                    string errorInfo = "";
-                    if (errorBytes > 0)
+                    if (this.ErrorFiles <= 0 && this.ErrorBytes <= 0L)
                     {
-                        if (errorBytes < 50000L)
-                            errorInfo = errorBytes.ToString("### ##0").Trim() + " B";
-                        else if (errorBytes < 50000000L)
-                            errorInfo = (errorBytes / KB).ToString("### ##0").Trim() + " KB";
-                        else if (errorBytes < 50000000000L)
-                            errorInfo = (errorBytes / MB).ToString("### ##0").Trim() + " MB";
-                        else
-                            errorInfo = (errorBytes / GB).ToString("### ##0").Trim() + " GB";
+                        if (this.WarningFiles <= 0) return "O.K.";
+                        return (this.WarningFiles == 1 ? $"O.K., přechodná chyba ({FormatBytes(this.WarningBytes)}) !" : $"O.K., přechodné chyby: {this.WarningFiles} ({FormatBytes(this.WarningBytes)}) !");
                     }
-                    if (errorFiles == 1) return $"Chyba ({errorInfo}) !";
-                    if (errorFiles < 5) return $"{errorFiles} chyby ({errorInfo}) !!";
-                    return $"{errorFiles} chyb ({errorInfo}) !!!";
+
+                    var errorFiles = this.ErrorFiles;
+                    string errorInfo = (this.ErrorBytes > 0L ? FormatBytes(this.ErrorBytes) : "");
+                    string warningInfo = (this.WarningFiles > 0 ? $" + přechodné: {this.WarningFiles}" : "");
+                    if (errorFiles == 1) return $"Chyba ({errorInfo}){warningInfo} !";
+                    if (errorFiles < 5) return $"{errorFiles} chyby ({errorInfo}){warningInfo} !!";
+                    return $"{errorFiles} chyb ({errorInfo}){warningInfo} !!!";
                 }
+            }
+            /// <summary>
+            /// Vrátí počet bajtů ve vhodných jednotkách
+            /// </summary>
+            /// <param name="bytes"></param>
+            /// <returns></returns>
+            private static string FormatBytes(long bytes)
+            {
+                if (bytes < 50000L) return bytes.ToString("### ##0").Trim() + " B";
+                if (bytes < 50000000L) return (bytes / KB).ToString("### ##0").Trim() + " KB";
+                if (bytes < 50000000000L) return (bytes / MB).ToString("### ##0").Trim() + " MB";
+                return (bytes / GB).ToString("### ##0").Trim() + " GB";
             }
             /// <summary>
             /// Barva pozadí informace
@@ -1233,7 +1562,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 {
                     int errorFiles = this.ErrorFiles;
                     if (errorFiles < 0) return Skin.TestResultUndefinedBackColor;
-                    if (errorFiles == 0) return Skin.TestResultCorrectBackColor;
+                    if (errorFiles == 0) return (this.WarningFiles > 0 ? Skin.TestResultWarningBackColor : Skin.TestResultCorrectBackColor);
                     if (errorFiles == 1) return Skin.TestResultErrorBackColor;
                     return Skin.TestResultMoreErrorsBackColor;
                 }
