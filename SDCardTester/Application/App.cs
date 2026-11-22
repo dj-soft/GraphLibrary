@@ -88,12 +88,20 @@ namespace DjSoft.Tools.SDCardTester
         #endregion
         #region MessageBoxy
         /// <summary>
+        /// Aplikace se ukončuje (uživatel zavřel okno během běhu akce a čeká se na její zastavení, nebo se okno zavírá).
+        /// V tomto stavu metody Show* nic nezobrazují: <see cref="ShowInfo"/>, <see cref="ShowWarning"/> a <see cref="ShowError"/> nic nedělají,
+        /// <see cref="ShowQuestion"/> vrací false (= Ne, typicky „nepokračovat“).
+        /// </summary>
+        public static bool IsClosing { get { return __IsClosing; } set { __IsClosing = value; } }
+        private static volatile bool __IsClosing;
+        /// <summary>
         /// Zobrazí informaci v MessageBoxu. Automaticky se spustí v GUI vlákně, pokud je potřeba.
         /// </summary>
         /// <param name="message"></param>
         /// <param name="caption"></param>
         public static void ShowInfo(string message, string caption = "Information")
         {
+            if (IsClosing) return;
             RunInGui(() => System.Windows.Forms.MessageBox.Show(MainForm, message, caption, MessageBoxButtons.OK, MessageBoxIcon.Information) );
         }
         /// <summary>
@@ -103,6 +111,7 @@ namespace DjSoft.Tools.SDCardTester
         /// <param name="caption"></param>
         public static void ShowWarning(string message, string caption = "Warning")
         {
+            if (IsClosing) return;
             RunInGui(() => System.Windows.Forms.MessageBox.Show(MainForm, message, caption, MessageBoxButtons.OK, MessageBoxIcon.Warning) );
         }
         /// <summary>
@@ -112,6 +121,7 @@ namespace DjSoft.Tools.SDCardTester
         /// <param name="caption"></param>
         public static void ShowError(string message, string caption = "Error")
         {
+            if (IsClosing) return;
             RunInGui(() => System.Windows.Forms.MessageBox.Show(MainForm, message, caption, MessageBoxButtons.OK, MessageBoxIcon.Error) );
         }
         /// <summary>
@@ -122,6 +132,7 @@ namespace DjSoft.Tools.SDCardTester
         /// <returns></returns>
         public static bool ShowQuestion(string message, string caption = "Question")
         {
+            if (IsClosing) return false;
             var result = DialogResult.None;
             RunInGui(() => result = System.Windows.Forms.MessageBox.Show(MainForm, message, caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question));
             return (result == DialogResult.Yes);

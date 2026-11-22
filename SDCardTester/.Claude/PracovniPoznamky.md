@@ -202,6 +202,19 @@ Dokument pro navázání práce v další session. Popisuje **aktuální stav** 
 2. **Čtení obsahu (`ContentRead`)**: levý panel zobrazuje 4 fáze testovacích souborů, akce ale běží ve fázi `ReadAnyContent`, pro kterou control není → panel se možná nemění. Zjistit, zda je to záměr.
 3. Varování kompilátoru v `FileRescue.cs`: CS4014 (`SaveLogFileAsync()` bez `await`), CS0168 (nepoužité proměnné výjimek); CS0168 i v `LinearMapControl.cs`. Neškodné.
 
+## Zavření okna během běhu akce – PŘIDÁNO 2026-11-22, ověřeno autorem v aplikaci (dotaz, po Ano rychlé dokončení a zavření)
+- Dříve: proces skončil okamžitě (všechna vlákna jsou background). Data v cíli a protokol zůstaly konzistentní, protože blok je OK až po Write; chyběla ale finální uložení (log, ZdraviMedia, přejmenování `~E`).
+- Nyní (`MainForm`, region „Zavření okna během běhu akce“), platí pro všechny pracovní stavy (`_IsWorkingState`):
+  - UserClosing: dotaz „Zastavit a ukončit aplikaci?“ (výchozí Ne). Po Ano `_CloseStopStart` nastaví `__CloseAfterStop`, `App.IsClosing`, text ve StatusBaru (`StatusInfoLabel`) a `RunState = Stop`. Zavření se zruší a `ShowControls` při přechodu Working → Dialog zavolá `BeginInvoke(Close)`.
+  - Opakované kliknutí na křížek během čekání: „Ukončit okamžitě bez dokončení?“ (výchozí Ne).
+  - Jiný CloseReason (vypnutí Windows, Správce úloh): Stop a synchronní čekání nejvýš 5 s (`_CloseWaitForStop`, čeká na vynulování `_FileRescuer`/`_DriveAnalyser`/`_DriveTester`), pak zavřít.
+- `App.IsClosing`: `ShowInfo`/`ShowWarning`/`ShowError` nic nezobrazí, `ShowQuestion` vrací false. Nastavuje se při Stopu kvůli zavření i při každém skutečném zavření okna.
+- Test `test_close.ps1` (skutečné FileRescue 400 MB, konfigurace zálohovaná a vrácená):
+  - Stop při zavření: okno zavřeno za ~95 ms, log 2541 bloků OK = 333 053 952 B = délka cíle, ZdraviMedia uložen;
+  - WindowsShutDown: Cancel=false za 250 ms, log a cíl konzistentní;
+  - bez běhu: zavře se hned.
+  - Dialogy (MessageBox) automaticky testovány nebyly.
+
 ## Umístění hlavního okna – PŘIDÁNO 2026-11-22 (v aplikaci zatím neověřeno)
 - Konfigurace: `AppSettings.MainFormPlacement` = "Normal|Maximized;X;Y;Šířka;Výška"; souřadnice jsou vždy Bounds stavu Normal.
 - Rozhodnutí autora:

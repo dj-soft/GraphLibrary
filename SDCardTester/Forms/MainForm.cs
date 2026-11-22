@@ -350,9 +350,9 @@ namespace DjSoft.Tools.SDCardTester
                 ShowItemToolTips = true
             };
 
-            // Prázdný pružný label vlevo odsune informaci o buildu doprava:
-            var springLabel = new ToolStripStatusLabel() { Spring = true, Text = "" };
-            this.StatusBar.Items.Add(springLabel);
+            // Pružný label vlevo (informační text, např. o ukončování aplikace) odsune informaci o buildu doprava:
+            this.StatusInfoLabel = new ToolStripStatusLabel() { Name = "StatusInfoLabel", Spring = true, Text = "", TextAlign = ContentAlignment.MiddleLeft };
+            this.StatusBar.Items.Add(this.StatusInfoLabel);
 
             DateTime? buildDate = _GetBuildDate();
             string version = typeof(MainForm).Assembly.GetName().Version.ToString();
@@ -387,6 +387,7 @@ namespace DjSoft.Tools.SDCardTester
             return null;
         }
         private System.Windows.Forms.StatusStrip StatusBar;
+        private System.Windows.Forms.ToolStripStatusLabel StatusInfoLabel;
         private System.Windows.Forms.ToolStripStatusLabel StatusBuildLabel;
         #endregion
         #region Umístění okna: uložení při zavření, obnovení při otevření, přizpůsobení aktuálním monitorům
@@ -410,14 +411,20 @@ namespace DjSoft.Tools.SDCardTester
                 __LastNonMinimizedState = this.WindowState;
         }
         /// <summary>
-        /// Při zavírání okna (pokud zavírání nikdo nezrušil) uloží jeho umístění do konfigurace
+        /// Při zavírání okna: pokud běží akce, nejprve ji zastaví a okno zavře až po jejím doběhnutí (viz <see cref="_CloseCheckWorking"/>).
+        /// Pokud zavírání nikdo nezrušil, uloží umístění okna do konfigurace.
         /// </summary>
         /// <param name="e"></param>
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
+            if (!_CloseCheckWorking(e.CloseReason))
+                e.Cancel = true;
             base.OnFormClosing(e);
             if (!e.Cancel)
+            {
+                App.IsClosing = true;                          // Případné dialogy z doznívajících vláken na pozadí se již nezobrazí
                 _PlacementSave();
+            }
         }
         /// <summary>
         /// Uloží umístění okna do <see cref="AppSettings.MainFormPlacement"/>.
@@ -589,6 +596,82 @@ namespace DjSoft.Tools.SDCardTester
         private const string PlacementNormal = "Normal";
         private const string PlacementMaximized = "Maximized";
         #endregion
+        #region Zavření okna během běhu akce: Stop, počkat na doběhnutí, pak zavřít
+        /// <summary>
+        /// Rozhodne, zda se okno smí zavřít nyní. Pokud běží akce (FileRescue, analýza, zápis / čtení testovacích dat):
+        /// <list type="bullet">
+        /// <item>Zavření uživatelem: dotaz „Zastavit a ukončit?“; po Ano vyvolá Stop a vrátí false (okno se zavře samo po doběhnutí akce, viz <see cref="ShowControls"/>).</item>
+        /// <item>Opakované zavření uživatelem během čekání na Stop: dotaz „Ukončit okamžitě bez dokončení?“.</item>
+        /// <item>Zavření systémem (vypnutí Windows, Správce úloh, ...): Stop a čekání nejvýše <see cref="CloseWaitSeconds"/>, pak zavřít.</item>
+        /// </list>
+        /// </summary>
+        /// <param name="closeReason"></param>
+        /// <returns>true = okno se smí zavřít nyní</returns>
+        private bool _CloseCheckWorking(CloseReason closeReason)
+        {
+            if (!_IsWorkingState(CurrentState)) return true;               // Neběží žádná akce
+            bool isUser = (closeReason == CloseReason.UserClosing);
+
+            if (__CloseAfterStop)
+            {   // Stop už byl vyžádán a čekáme na doběhnutí akce:
+                if (!isUser) return true;
+                var text = "Aplikace čeká na dokončení rozpracovaného bloku a uložení protokolu, a pak se zavře sama." + Environment.NewLine + Environment.NewLine +
+                           "Ukončit okamžitě bez dokončení?" + Environment.NewLine +
+                           "Data dosud zapsaná do cílových souborů zůstanou zachována, protokol ale nemusí obsahovat poslední zpracované bloky; ty se při navázání přečtou znovu.";
+                return (MessageBox.Show(this, text, "Ukončení aplikace", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) == DialogResult.Yes);
+            }
+
+            if (isUser)
+            {
+                var actionText = (CurrentState == ActionState.FileRescue ? "Probíhá záchrana souborů." : "Probíhá práce s diskem.");
+                var text = actionText + Environment.NewLine + Environment.NewLine +
+                           "Zastavit a ukončit aplikaci?" + Environment.NewLine +
+                           "Aplikace se zavře, jakmile dokončí rozpracovaný blok a uloží protokol.";
+                if (MessageBox.Show(this, text, "Ukončení aplikace", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) != DialogResult.Yes)
+                    return false;                                          // Uživatel si to rozmyslel: akce běží dál
+                _CloseStopStart();
+                return false;                                              // Zavře se samo po doběhnutí akce
+            }
+
+            // Zavírá systém: nemůžeme čekat dlouho ani se ptát
+            _CloseStopStart();
+            _CloseWaitForStop(CloseWaitSeconds);
+            return true;
+        }
+        /// <summary>
+        /// Zahájí zastavení akce kvůli zavření okna: nastaví příznaky, zobrazí informaci ve StatusBaru a vyvolá Stop (stejně jako tlačítko Stop, funguje i z Pauzy).
+        /// </summary>
+        private void _CloseStopStart()
+        {
+            __CloseAfterStop = true;
+            App.IsClosing = true;                                          // Dialogy z akce (chyby, dotazy, odpojení zdroje) se již nezobrazí, dotazy vrací Ne
+            if (this.StatusInfoLabel != null)
+                this.StatusInfoLabel.Text = "Ukončuji: čekám na dokončení rozpracovaného bloku a uložení protokolu…";
+            this.RunState = RunState.Stop;
+        }
+        /// <summary>
+        /// Synchronně počká (nejvýše daný počet sekund), až akce na pozadí skončí = handler WorkingDone vynuluje referenci na svůj worker.
+        /// Volá se jen při zavírání systémem. GUI thread přitom nezpracovává zprávy: pokud by worker čekal na synchronní Invoke do GUI, doběhne čekání timeoutem.
+        /// </summary>
+        /// <param name="seconds"></param>
+        private void _CloseWaitForStop(double seconds)
+        {
+            var end = DateTime.UtcNow.AddSeconds(seconds);
+            while (DateTime.UtcNow < end)
+            {
+                if (_FileRescuer is null && _DriveAnalyser is null && _DriveTester is null) return;
+                System.Threading.Thread.Sleep(100);
+            }
+        }
+        /// <summary>
+        /// Nejdelší čekání na zastavení akce při zavírání okna systémem (vypnutí Windows, Správce úloh)
+        /// </summary>
+        private const double CloseWaitSeconds = 5d;
+        /// <summary>
+        /// true = uživatel zavřel okno během běhu akce, byl vyvolán Stop a po doběhnutí akce se okno zavře
+        /// </summary>
+        private bool __CloseAfterStop;
+        #endregion
         #region Layout
         /// <summary>
         /// Změna velikosti upraví Layout
@@ -679,6 +762,10 @@ namespace DjSoft.Tools.SDCardTester
                 {
                     this.AppTitleTextCurrent = this.__AppTitleTextStandard;
                     _TaskProgressState = ThumbnailProgressState.NoProgress;
+
+                    // Akce skončila po Stop vyvolaném zavřením okna: okno nyní zavřeme (asynchronně, až po dokončení této metody = po nastavení CurrentState):
+                    if (__CloseAfterStop)
+                        this.BeginInvoke(new Action(this.Close));
                 }
 
                 CurrentState = state;
@@ -686,8 +773,17 @@ namespace DjSoft.Tools.SDCardTester
             // Vrací true, pokud daný stav je nějaký pracovní
             bool isWorkingState(ActionState state)
             {
-                return (state == ActionState.AnalyseContent || state == ActionState.TestSave || state == ActionState.TestRead || state == ActionState.ContentRead || state == ActionState.FileRescue);
+                return _IsWorkingState(state);
             }
+        }
+        /// <summary>
+        /// Vrací true, pokud daný stav je nějaký pracovní (běží akce na pozadí)
+        /// </summary>
+        /// <param name="state"></param>
+        /// <returns></returns>
+        private static bool _IsWorkingState(ActionState state)
+        {
+            return (state == ActionState.AnalyseContent || state == ActionState.TestSave || state == ActionState.TestRead || state == ActionState.ContentRead || state == ActionState.FileRescue);
         }
         /// <summary>
         /// Zobrazí správně Enabled pro buttony skupiny FlowControl pro zadaný stav.
