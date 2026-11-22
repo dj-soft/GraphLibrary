@@ -202,6 +202,27 @@ Dokument pro navázání práce v další session. Popisuje **aktuální stav** 
 2. **Čtení obsahu (`ContentRead`)**: levý panel zobrazuje 4 fáze testovacích souborů, akce ale běží ve fázi `ReadAnyContent`, pro kterou control není → panel se možná nemění. Zjistit, zda je to záměr.
 3. Varování kompilátoru v `FileRescue.cs`: CS4014 (`SaveLogFileAsync()` bez `await`), CS0168 (nepoužité proměnné výjimek); CS0168 i v `LinearMapControl.cs`. Neškodné.
 
+## Umístění hlavního okna – PŘIDÁNO 2026-11-22 (v aplikaci zatím neověřeno)
+- Konfigurace: `AppSettings.MainFormPlacement` = "Normal|Maximized;X;Y;Šířka;Výška"; souřadnice jsou vždy Bounds stavu Normal.
+- Rozhodnutí autora:
+  - (A) při zavření Maximized/Minimized se ukládá `Form.RestoreBounds`, tedy poslední Normal pozice včetně přesunů v aktuálním běhu;
+  - (B) při otevření musí být celé okno na pracovní ploše jednoho monitoru, vybírá se monitor s největším průnikem, jinak nejbližší; okno se případně zmenší (nejvýš na MinimumSize) a posune dovnitř. Kontroluje se vždy, i pro Maximized.
+- `MainForm`, region „Umístění okna“:
+  - `_PlacementRestore` se volá na konci konstruktoru (Manual, Bounds, případně Maximized). Původně se volal v `OnLoad`, kde okno při Maximized nejdřív probliklo v Normal pozici. `RestoreBounds` setovat nelze, je jen get. V konstruktoru je handle už vytvořený, okno je ale neviditelné: test ukázal, že při prvním VisibleChanged je okno už Maximized a RestoreBounds = uložené Bounds;
+  - `OnLoad` (po base) volá pojistku `_PlacementCheckAfterLoad`: pokud AutoScale (font/DPI) změnil obnovené Normal Bounds, vrátí je. U Maximized to jde jen přepnutím Normal → Maximized, takže může probliknout, ale jen ve výjimečném případě;
+  - `OnFormClosing` (není-li Cancel) volá `_PlacementSave`;
+  - `OnResize` si pamatuje poslední stav jiný než Minimized (zavření z minimalizovaného okna uloží stav před minimalizací).
+- Čisté statické funkce `_PlacementFormat`, `_PlacementParse`, `_PlacementFitToScreens(bounds, minSize, workingAreas[])`.
+- Test `test_placement.ps1` (reflexe, okna se zavírají přes Dispose, aby se nepřepsala uživatelova konfigurace): parse/format, 9 scénářů monitorů, RestoreBounds při Maximized/Minimized a obnova z Maximized na původní Normal Bounds – vše OK.
+- Pozn.: Windows 10/11 počítají do Bounds neviditelný okraj (~7 px), okno přisazené k levému okraji má X ≈ -7. Při otevření se proto posune o těch pár px dovnitř, nekumuluje se to.
+
+## StatusBar s datem buildu – PŘIDÁNO 2026-11-22
+- `SDCardTester.csproj`: target `GenerateBuildDateInfo` (BeforeTargets=CoreCompile) zapíše přes `WriteCodeFragment` soubor `obj\<Config>\BuildDateInfo.g.cs` s `[assembly: AssemblyMetadata("BuildDate", "yyyy-MM-ddTHH:mm:ss")]` a přidá ho do Compile. Datum se mění při každém skutečném buildu. Pokud VS vyhodnotí projekt jako aktuální, nepřekládá se a datum zůstane.
+- Datum se nebere z PE hlavičky, protože `Deterministic=true` tam místo času dává hash.
+- `MainForm.StatusBarInitialize()` (region „StatusBar“): `StatusStrip` dole, pružný prázdný label + `StatusBuildLabel` vpravo „Build: dd.MM.yyyy HH:mm“, tooltip s verzí. Do `Controls` se přidává až po InitializeComponent, takže se dokuje první a zabírá celou šířku okna.
+- `_GetBuildDate()` čte atribut; když chybí, zobrazí „Build: neznámý“.
+- Ověřeno reflexním testem (`test_statusbar.ps1`): datum přečteno, StatusBar 1015×22 dole, levý panel zkrácen nad něj, render v pořádku.
+
 ## FileRescue a spánek Windows – OPRAVENO 2026-11-22 (v aplikaci zatím neověřeno)
 ### Nález (log `Sirotčinec slečny Peregrinové pro podivné děti.ts.rescuelog`, 2026-11-22)
 - Systémový log: spánek S3 „System Idle“ 13:14:11 – probuzení 13:27:52 (818 s). Blok na pozici 1 559 363 584 měl čtení **824 s** (spánek + ~6 s probuzení USB), další blok zápis 10,8 s (roztočení disku G:). Všech 15 793 bloků OK, data v pořádku; `TotalCopyTime` 941 s, skutečné kopírování ~120 s.

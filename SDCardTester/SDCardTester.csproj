@@ -152,6 +152,23 @@
     <Folder Include="pic\48px\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- Datum a čas buildu: vkládá se do assembly jako AssemblyMetadata("BuildDate"), zobrazuje se ve StatusBaru MainForm -->
+  <Target Name="GenerateBuildDateInfo" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <BuildDateInfoFile>$(IntermediateOutputPath)BuildDateInfo.g.cs</BuildDateInfoFile>
+    </PropertyGroup>
+    <ItemGroup>
+      <BuildDateAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+        <_Parameter1>BuildDate</_Parameter1>
+        <_Parameter2>$([System.DateTime]::Now.ToString("yyyy-MM-ddTHH:mm:ss"))</_Parameter2>
+      </BuildDateAttribute>
+    </ItemGroup>
+    <WriteCodeFragment Language="C#" AssemblyAttributes="@(BuildDateAttribute)" OutputFile="$(BuildDateInfoFile)" />
+    <ItemGroup>
+      <Compile Include="$(BuildDateInfoFile)" />
+      <FileWrites Include="$(BuildDateInfoFile)" />
+    </ItemGroup>
+  </Target>
   <PropertyGroup>
     <PostBuildEvent>"c:\Program Files (x86)\Microsoft SDKs\ClickOnce\SignTool\signtool.exe" sign /f "$(ProjectDir)Properties\DjSoftCzCertificate.pfx" /p "DjSoftCzPassword" /fd SHA256 "$(TargetPath)"
 

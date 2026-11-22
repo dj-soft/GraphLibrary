@@ -21,6 +21,7 @@ namespace DjSoft.Tools.SDCardTester
         {
             InitializeComponent();
             ToolbarInitialize();
+            StatusBarInitialize();
             InitializeProgress();
             InitContent();
             _VisualMapInitialize();
@@ -28,6 +29,7 @@ namespace DjSoft.Tools.SDCardTester
             InitEvents();
             ResumeLayouts();
             ShowControls(ActionState.Dialog, true);
+            _PlacementRestore();
         }
         private void ResumeLayouts()
         {
@@ -333,6 +335,259 @@ namespace DjSoft.Tools.SDCardTester
         private System.Windows.Forms.ToolStripButton ToolFlowControlStopButton;
 
         #endregion
+        #endregion
+        #region StatusBar: vytvoření, datum buildu
+        /// <summary>
+        /// Vytvoří StatusBar dole na okně, obsahuje informaci o datu buildu aplikace
+        /// </summary>
+        protected void StatusBarInitialize()
+        {
+            this.StatusBar = new System.Windows.Forms.StatusStrip()
+            {
+                Name = "StatusBar",
+                Dock = DockStyle.Bottom,
+                SizingGrip = true,
+                ShowItemToolTips = true
+            };
+
+            // Prázdný pružný label vlevo odsune informaci o buildu doprava:
+            var springLabel = new ToolStripStatusLabel() { Spring = true, Text = "" };
+            this.StatusBar.Items.Add(springLabel);
+
+            DateTime? buildDate = _GetBuildDate();
+            string version = typeof(MainForm).Assembly.GetName().Version.ToString();
+            this.StatusBuildLabel = new ToolStripStatusLabel()
+            {
+                Name = "StatusBuildLabel",
+                Text = (buildDate.HasValue ? $"Build: {buildDate.Value:dd.MM.yyyy HH:mm}" : "Build: neznámý"),
+                ToolTipText = $"Datum a čas sestavení aplikace{Environment.NewLine}Verze: {version}"
+            };
+            this.StatusBar.Items.Add(this.StatusBuildLabel);
+
+            // Přidání na konec kolekce Controls: dokuje se jako první, proto zabere celou šířku okna pod levým panelem i mapou
+            this.Controls.Add(this.StatusBar);
+        }
+        /// <summary>
+        /// Vrátí datum a čas buildu, vložený při sestavení do atributu <see cref="System.Reflection.AssemblyMetadataAttribute"/> s klíčem "BuildDate".
+        /// Pokud atribut chybí nebo nejde přečíst, vrací null.
+        /// </summary>
+        /// <returns></returns>
+        private static DateTime? _GetBuildDate()
+        {
+            try
+            {
+                var attributes = typeof(MainForm).Assembly.GetCustomAttributes(typeof(System.Reflection.AssemblyMetadataAttribute), false);
+                foreach (System.Reflection.AssemblyMetadataAttribute attribute in attributes)
+                {
+                    if (attribute.Key == "BuildDate" && DateTime.TryParseExact(attribute.Value, "yyyy-MM-ddTHH:mm:ss", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var buildDate))
+                        return buildDate;
+                }
+            }
+            catch { }
+            return null;
+        }
+        private System.Windows.Forms.StatusStrip StatusBar;
+        private System.Windows.Forms.ToolStripStatusLabel StatusBuildLabel;
+        #endregion
+        #region Umístění okna: uložení při zavření, obnovení při otevření, přizpůsobení aktuálním monitorům
+        /// <summary>
+        /// Po standardním Load (včetně AutoScale) ověří, že obnovené Normal Bounds nebyly změněny přeškálováním, a případně je vrátí
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+            _PlacementCheckAfterLoad();
+        }
+        /// <summary>
+        /// Při změně velikosti si pamatujeme poslední stav okna jiný než Minimized
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+            if (this.WindowState != FormWindowState.Minimized)
+                __LastNonMinimizedState = this.WindowState;
+        }
+        /// <summary>
+        /// Při zavírání okna (pokud zavírání nikdo nezrušil) uloží jeho umístění do konfigurace
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            base.OnFormClosing(e);
+            if (!e.Cancel)
+                _PlacementSave();
+        }
+        /// <summary>
+        /// Uloží umístění okna do <see cref="AppSettings.MainFormPlacement"/>.
+        /// Souřadnice jsou vždy Bounds stavu Normal: ve stavu Maximized i Minimized jde o <see cref="Form.RestoreBounds"/>.
+        /// Pro zavření ve stavu Minimized se ukládá stav, který okno mělo před minimalizací.
+        /// </summary>
+        private void _PlacementSave()
+        {
+            try
+            {
+                var windowState = this.WindowState;
+                var state = (windowState == FormWindowState.Minimized ? __LastNonMinimizedState : windowState);
+                var bounds = (windowState == FormWindowState.Normal ? this.Bounds : this.RestoreBounds);
+                if (bounds.Width <= 0 || bounds.Height <= 0) return;
+                App.Settings.MainFormPlacement = _PlacementFormat(state == FormWindowState.Maximized, bounds);
+            }
+            catch { }
+        }
+        /// <summary>
+        /// Obnoví umístění okna z <see cref="AppSettings.MainFormPlacement"/>: nastaví Bounds stavu Normal přizpůsobené aktuálním monitorům,
+        /// a pokud bylo okno zavřeno jako Maximized, nastaví stav Maximized (Windows si přitom pamatují Normal Bounds pro „Obnovit“).
+        /// Volá se na konci konstruktoru, tedy před prvním zobrazením okna: okno se pak rovnou zobrazí ve výsledném stavu bez probliknutí.
+        /// Pokud konfigurace dosud neexistuje, ponechá výchozí umístění.
+        /// </summary>
+        private void _PlacementRestore()
+        {
+            __PlacementRestoredBounds = null;
+            try
+            {
+                if (!_PlacementParse(App.Settings.MainFormPlacement, out bool isMaximized, out Rectangle bounds)) return;
+                var workingAreas = Screen.AllScreens.Select(s => s.WorkingArea).ToArray();
+                bounds = _PlacementFitToScreens(bounds, this.MinimumSize, workingAreas);
+                this.StartPosition = FormStartPosition.Manual;
+                this.WindowState = FormWindowState.Normal;
+                this.Bounds = bounds;
+                if (isMaximized)
+                    this.WindowState = FormWindowState.Maximized;
+                __PlacementRestoredBounds = bounds;
+            }
+            catch { }
+        }
+        /// <summary>
+        /// Pojistka po <see cref="Form.OnLoad(EventArgs)"/>: pokud AutoScale (font, DPI) změnil obnovené Normal Bounds, vrátí je.
+        /// Pro stav Normal jde o prosté nastavení Bounds. Pro stav Maximized nelze <see cref="Form.RestoreBounds"/> setovat,
+        /// proto se v tom (výjimečném) případě okno krátce přepne do Normal a zpět, což může způsobit probliknutí.
+        /// </summary>
+        private void _PlacementCheckAfterLoad()
+        {
+            try
+            {
+                if (!__PlacementRestoredBounds.HasValue) return;
+                var bounds = __PlacementRestoredBounds.Value;
+                __PlacementRestoredBounds = null;
+                switch (this.WindowState)
+                {
+                    case FormWindowState.Normal:
+                        if (this.Bounds != bounds)
+                            this.Bounds = bounds;
+                        break;
+                    case FormWindowState.Maximized:
+                        if (this.RestoreBounds.Size != bounds.Size)
+                        {
+                            this.WindowState = FormWindowState.Normal;
+                            this.Bounds = bounds;
+                            this.WindowState = FormWindowState.Maximized;
+                        }
+                        break;
+                }
+            }
+            catch { }
+        }
+        /// <summary>
+        /// Normal Bounds obnovené z konfigurace v konstruktoru, pro kontrolu po Load. Po kontrole null.
+        /// </summary>
+        private Rectangle? __PlacementRestoredBounds;
+        /// <summary>
+        /// Vrátí text umístění okna pro konfiguraci: "Stav;X;Y;Šířka;Výška"
+        /// </summary>
+        /// <param name="isMaximized"></param>
+        /// <param name="bounds"></param>
+        /// <returns></returns>
+        private static string _PlacementFormat(bool isMaximized, Rectangle bounds)
+        {
+            var ci = System.Globalization.CultureInfo.InvariantCulture;
+            return String.Join(";", (isMaximized ? PlacementMaximized : PlacementNormal),
+                bounds.X.ToString(ci), bounds.Y.ToString(ci), bounds.Width.ToString(ci), bounds.Height.ToString(ci));
+        }
+        /// <summary>
+        /// Rozloží text umístění okna z konfigurace. Vrací false, pokud text chybí nebo je neplatný.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="isMaximized"></param>
+        /// <param name="bounds"></param>
+        /// <returns></returns>
+        private static bool _PlacementParse(string text, out bool isMaximized, out Rectangle bounds)
+        {
+            isMaximized = false;
+            bounds = Rectangle.Empty;
+            if (String.IsNullOrWhiteSpace(text)) return false;
+
+            var parts = text.Split(';');
+            if (parts.Length != 5) return false;
+            if (parts[0] == PlacementMaximized) isMaximized = true;
+            else if (parts[0] != PlacementNormal) return false;
+
+            var values = new int[4];
+            for (int i = 0; i < 4; i++)
+            {
+                if (!Int32.TryParse(parts[i + 1], System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out values[i])) return false;
+            }
+            if (values[2] <= 0 || values[3] <= 0) return false;
+
+            bounds = new Rectangle(values[0], values[1], values[2], values[3]);
+            return true;
+        }
+        /// <summary>
+        /// Přizpůsobí Bounds okna aktuálním monitorům tak, aby bylo celé okno vidět na jednom monitoru.
+        /// Monitor se vybere jako ten, s jehož pracovní plochou má okno největší průnik; pokud s žádnou nemá průnik, pak nejbližší.
+        /// Okno větší než pracovní plocha se zmenší (nejvýše na <paramref name="minimumSize"/>), pak se posune dovnitř pracovní plochy.
+        /// Okno, které již celé leží na pracovní ploše jednoho monitoru, zůstane beze změny.
+        /// </summary>
+        /// <param name="bounds">Bounds okna ve stavu Normal</param>
+        /// <param name="minimumSize">Minimální velikost okna</param>
+        /// <param name="workingAreas">Pracovní plochy aktuálních monitorů (bez hlavního panelu)</param>
+        /// <returns></returns>
+        private static Rectangle _PlacementFitToScreens(Rectangle bounds, Size minimumSize, Rectangle[] workingAreas)
+        {
+            if (workingAreas is null || workingAreas.Length == 0) return bounds;
+
+            // Výběr monitoru: největší průnik, jinak nejmenší vzdálenost:
+            Rectangle area = workingAreas[0];
+            long bestIntersect = -1L;
+            long bestDistance = Int64.MaxValue;
+            foreach (var workingArea in workingAreas)
+            {
+                var intersect = Rectangle.Intersect(bounds, workingArea);
+                long intersectSize = (intersect.Width > 0 && intersect.Height > 0 ? (long)intersect.Width * (long)intersect.Height : 0L);
+                long distance = getDistance(bounds, workingArea);
+                if (intersectSize > bestIntersect || (intersectSize == 0L && bestIntersect == 0L && distance < bestDistance))
+                {
+                    area = workingArea;
+                    bestIntersect = intersectSize;
+                    bestDistance = distance;
+                }
+            }
+
+            // Velikost: nejvýše pracovní plocha, nejméně MinimumSize:
+            int width = Math.Max(Math.Min(bounds.Width, area.Width), minimumSize.Width);
+            int height = Math.Max(Math.Min(bounds.Height, area.Height), minimumSize.Height);
+
+            // Pozice: celé okno uvnitř pracovní plochy (když se nevejde ani v MinimumSize, pak od levého horního rohu):
+            int x = Math.Max(Math.Min(bounds.X, area.Right - width), area.Left);
+            int y = Math.Max(Math.Min(bounds.Y, area.Bottom - height), area.Top);
+
+            return new Rectangle(x, y, width, height);
+
+            // Druhá mocnina vzdálenosti dvou obdélníků (0 = dotýkají se nebo se překrývají)
+            long getDistance(Rectangle a, Rectangle b)
+            {
+                long dx = Math.Max(0, Math.Max(b.Left - a.Right, a.Left - b.Right));
+                long dy = Math.Max(0, Math.Max(b.Top - a.Bottom, a.Top - b.Bottom));
+                return dx * dx + dy * dy;
+            }
+        }
+        /// <summary>
+        /// Poslední stav okna jiný než Minimized, pro uložení při zavření z minimalizovaného okna
+        /// </summary>
+        private FormWindowState __LastNonMinimizedState = FormWindowState.Normal;
+        private const string PlacementNormal = "Normal";
+        private const string PlacementMaximized = "Maximized";
         #endregion
         #region Layout
         /// <summary>

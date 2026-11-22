@@ -175,6 +175,12 @@ namespace DjSoft.Tools.SDCardTester
         /// FileRescue: barvit OK bloky v mapě odstíny podle rychlosti čtení. Výchozí = true (uloženo "1" / "0").
         /// </summary>
         public bool FileRescueSpeedShading { get { return (_GetValue() != "0"); } set { _SetValue(value ? "1" : "0"); } }
+        /// <summary>
+        /// Umístění hlavního okna při posledním zavření: "Stav;X;Y;Šířka;Výška", kde Stav je Normal nebo Maximized
+        /// a souřadnice jsou vždy Bounds okna ve stavu Normal (pro Maximized = RestoreBounds). Null = dosud neuloženo.
+        /// Skládání a rozklad textu řeší MainForm.
+        /// </summary>
+        public string MainFormPlacement { get { return _GetValue(); } set { _SetValue(value); } }
         #endregion
         #region Úložiště hodnot
         /// <summary>
