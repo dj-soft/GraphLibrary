@@ -202,6 +202,20 @@ Dokument pro navázání práce v další session. Popisuje **aktuální stav** 
 2. **Čtení obsahu (`ContentRead`)**: levý panel zobrazuje 4 fáze testovacích souborů, akce ale běží ve fázi `ReadAnyContent`, pro kterou control není → panel se možná nemění. Zjistit, zda je to záměr.
 3. Varování kompilátoru v `FileRescue.cs`: CS4014 (`SaveLogFileAsync()` bez `await`), CS0168 (nepoužité proměnné výjimek); CS0168 i v `LinearMapControl.cs`. Neškodné.
 
+## FileRescue a spánek Windows – OPRAVENO 2026-11-22 (v aplikaci zatím neověřeno)
+### Nález (log `Sirotčinec slečny Peregrinové pro podivné děti.ts.rescuelog`, 2026-11-22)
+- Systémový log: spánek S3 „System Idle“ 13:14:11 – probuzení 13:27:52 (818 s). Blok na pozici 1 559 363 584 měl čtení **824 s** (spánek + ~6 s probuzení USB), další blok zápis 10,8 s (roztočení disku G:). Všech 15 793 bloků OK, data v pořádku; `TotalCopyTime` 941 s, skutečné kopírování ~120 s.
+- Čtení během spánku stálo, po probuzení doběhlo; čtečka i karta spánek přežily. **Obsah ověřen** (2026-11-22): 8 bloků kolem místa uspání (pozice 1 558 970 368 – 1 560 018 944, 1 MB, včetně bloku čteného přes spánek a bloku se zápisem 10,8 s) zdroj H: = cíl, 0 rozdílných bajtů. **Stopwatch (QPC) i DateTime dobu spánku započítávají.**
+- Důsledky před opravou: zkreslené časy (blok, celkový čas, barvení rychlosti); hlídání zamrzlé karty po probuzení vidělo operaci > 800 s → krátce „Zdroj neodpovídá – vyjměte kartu“, TaskBar červený; Teploměr zdraví by započetl 1× zamrznutí (→ „S rizikem“) a 1 výpadek > 0,5 s. Kdyby Windows při spánku vypnuly USB, karta by zmizela → běh skončí jako odpojení (data neohrožena).
+### Oprava (schválil autor: A i B)
+- **A – zákaz automatického spánku během záchrany:** `_PreventSystemSleep(true/false)` = `SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED)` na začátku `Run()`, vrácení `ES_CONTINUOUS` na začátku `finally` (stejné vlákno – nastavení platí pro vlákno). Monitor se vypnout smí; ruční uspání / zavření víka to nezablokuje.
+- **B – doba spánku se nepočítá jako problém karty:** `_GetAwakeTicks()` = `QueryUnbiasedInterruptTime` (čas bez spánku, 100 ns, rozlišení ~15,6 ms). `_SourceIo` (limit, opuštění po Stop, počítání zamrznutí) a `_GetSourceNotRespondingSeconds` (`__SourceIoStartTicks`) měří čas bez spánku. Doba čtení bloku (`_CopySingleBlock.getReadSeconds`) = Stopwatch − doba spánku (`_GetSleptSeconds` = QPC − čas bez spánku, pod 1 s = šum → 0) → správně v logu, barvení i Teploměru. Celkový čas běhu dobu spánku dál obsahuje (kosmetika, ponecháno).
+- Vedlejší oprava: chyba bloku před začátkem měření (simulovaná chyba, `timeBegin = 0`) ukládala jako dobu čtení čas od startu Stopwatch → nyní 0.
+### Ověřeno
+- `scratchpad\test_sleep.ps1`: po zákazu stav vlákna 0x80000001, po povolení 0x80000000; bez spánku čas bez spánku = přesný čas (2,509 s), spánek 0. (`powercfg /requests` vyžaduje administrátora – nepoužito.)
+- `test_hang.ps1`: hlídání zamrzlé karty beze změny (varování po 26 s, Stop do 3,1 s, data OK). `test_health_run.ps1`: beze změny, chybné bloky se simulovanou chybou mají dobu 0.
+- Skutečný spánek netestován (počítač se neuspával).
+
 ## „Teploměr zdraví“ zdrojového média – REALIZOVÁNO 2026-11-21, zobrazení v aplikaci ověřeno autorem
 ### Realizace
 - Nový soubor `Workers\MediaHealth.cs` (v csproj): třída `MediaHealth` (sběr dat, výpočet), `HealthResult`, `HealthIndicator`, `HealthLevel` (Discard / Risk / Ok / Excellent) a control `MediaHealthControl : FileRescueSummaryControl`.

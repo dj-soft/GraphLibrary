@@ -263,6 +263,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
             __DeferEnabled = true;
             __AbortedByUser = false;
             __Health.Reset();
+            _PreventSystemSleep(true);
             _PrepareWrittingThread();
             try
             {
@@ -303,6 +304,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
             }
             finally
             {
+                _PreventSystemSleep(false);                                        // Ve stejném vlákně jako zákaz (nastavení platí pro vlákno); před případnými dialogy níže
                 __RunTotalSeconds = this.GetSeconds(__RunStartTime ?? 0L);         // Zafixuje celkový čas: Stopwatch po skončení dál běží
                 _SaveHealthReport();
                 _WrittingThreadAddRequest(new WritterRequestInfo(WritterRequestType.EndThread));
@@ -371,6 +373,20 @@ namespace DjSoft.Tools.SDCardTester.Workers
         /// Uživatel po chybě souboru odmítl pokračovat: běh končí (bez 2. vlny)
         /// </summary>
         private bool __AbortedByUser;
+        /// <summary>
+        /// Zakáže (<paramref name="prevent"/> = true) nebo opět povolí automatický přechod Windows do spánku po dobu záchrany.
+        /// Spánek uprostřed čtení zkresluje časy a může odpojit USB čtečku. Monitor se vypnout smí; ruční uspání (nebo zavření víka) to nezablokuje.
+        /// Nastavení platí pro volající vlákno: musí se volat v threadu Work na začátku i na konci <see cref="Run"/>.
+        /// </summary>
+        /// <param name="prevent"></param>
+        private static void _PreventSystemSleep(bool prevent)
+        {
+            try
+            {
+                SetThreadExecutionState(prevent ? (ES_CONTINUOUS | ES_SYSTEM_REQUIRED) : ES_CONTINUOUS);
+            }
+            catch { }
+        }
         /// <summary>
         /// Teploměr zdraví zdrojového média: sbírá data z čtení bloků v tomto běhu
         /// </summary>
@@ -689,9 +705,47 @@ namespace DjSoft.Tools.SDCardTester.Workers
         /// </summary>
         private bool __SourceHung;
         /// <summary>
-        /// Čas zahájení právě probíhající operace se zdrojem (DateTime.UtcNow.Ticks), 0 = žádná neprobíhá. Čte GUI thread v <see cref="GetSummary"/>.
+        /// Čas zahájení právě probíhající operace se zdrojem (<see cref="_GetAwakeTicks"/> = bez doby spánku), 0 = žádná neprobíhá. Čte GUI thread v <see cref="GetSummary"/>.
         /// </summary>
         private long __SourceIoStartTicks;
+        /// <summary>
+        /// Vrátí čas od startu systému BEZ doby spánku a hibernace, v jednotkách 100 ns (rozlišení cca 15,6 ms).
+        /// <para/>
+        /// Operace se zdrojem, která přečká spánek Windows (vlákna stojí, po probuzení doběhne), se tak nehodnotí jako zamrzlá karta:
+        /// DateTime ani Stopwatch dobu spánku nevylučují (ověřeno 2026-11-22: blok čtený přes spánek měl v logu 824 s).
+        /// </summary>
+        /// <returns></returns>
+        private static long _GetAwakeTicks()
+        {
+            QueryUnbiasedInterruptTime(out ulong ticks);
+            return (long)ticks;
+        }
+        /// <summary>
+        /// Vrátí počet sekund bez doby spánku od daného času <see cref="_GetAwakeTicks"/>
+        /// </summary>
+        /// <param name="startAwakeTicks"></param>
+        /// <returns></returns>
+        private static double _GetAwakeSeconds(long startAwakeTicks)
+        {
+            return (double)(_GetAwakeTicks() - startAwakeTicks) / 10000000d;
+        }
+        /// <summary>
+        /// Vrátí dobu spánku systému (sekundy) od daného okamžiku: rozdíl přesného času (<see cref="System.Diagnostics.Stopwatch.GetTimestamp"/>, počítá i spánek)
+        /// a času bez spánku (<see cref="_GetAwakeTicks"/>). Rozdíly pod <see cref="SleepDetectSeconds"/> jsou šum hrubšího rozlišení => 0.
+        /// </summary>
+        /// <param name="startTimestamp">Počátek: <see cref="System.Diagnostics.Stopwatch.GetTimestamp"/></param>
+        /// <param name="startAwakeTicks">Počátek: <see cref="_GetAwakeTicks"/></param>
+        /// <returns></returns>
+        private static double _GetSleptSeconds(long startTimestamp, long startAwakeTicks)
+        {
+            double totalSeconds = (double)(System.Diagnostics.Stopwatch.GetTimestamp() - startTimestamp) / (double)System.Diagnostics.Stopwatch.Frequency;
+            double slept = totalSeconds - _GetAwakeSeconds(startAwakeTicks);
+            return (slept >= SleepDetectSeconds ? slept : 0d);
+        }
+        /// <summary>
+        /// Minimální rozdíl času se spánkem a bez spánku (sekundy), který se považuje za spánek systému
+        /// </summary>
+        private const double SleepDetectSeconds = 1d;
         /// <summary>
         /// Opuštěná (visící) operace se zdrojem; po jejím případném dokončení se uvolní zdrojový stream.
         /// </summary>
@@ -704,7 +758,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
         {
             long startTicks = Interlocked.Read(ref __SourceIoStartTicks);
             if (startTicks == 0L) return null;
-            double seconds = TimeSpan.FromTicks(DateTime.UtcNow.Ticks - startTicks).TotalSeconds;
+            double seconds = _GetAwakeSeconds(startTicks);                     // Bez doby spánku systému
             return (seconds >= SourceHangWarningSeconds ? seconds : (double?)null);
         }
         /// <summary>
@@ -725,22 +779,22 @@ namespace DjSoft.Tools.SDCardTester.Workers
         private T _SourceIo<T>(Func<T> io, bool disposeLateResult = false, int timeoutSeconds = 0)
         {
             var task = Task.Factory.StartNew(io, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
-            var startUtc = DateTime.UtcNow;
-            bool isOuter = (Interlocked.CompareExchange(ref __SourceIoStartTicks, startUtc.Ticks, 0L) == 0L);   // Vnořené volání (test dostupnosti uvnitř) čas nepřepisuje
+            // Časy bez doby spánku systému: operace, která přečká spánek Windows, není zamrzlá karta (ani pro limit, ani pro zobrazení, ani pro Teploměr zdraví):
+            long startTicks = _GetAwakeTicks();
+            bool isOuter = (Interlocked.CompareExchange(ref __SourceIoStartTicks, startTicks, 0L) == 0L);   // Vnořené volání (test dostupnosti uvnitř) čas nepřepisuje
             try
             {
-                DateTime? stopUtc = null;
+                long? stopTicks = null;
                 while (!task.Wait(SourceIoCheckMilisecs))
                 {
                     this.CallWorkingStepWhenTime();                            // GUI se obnovuje i během čekání => zobrazí "Zdroj neodpovídá N s"
-                    var nowUtc = DateTime.UtcNow;
                     bool abandon = false;
                     if (IsStoped)
                     {
-                        if (!stopUtc.HasValue) stopUtc = nowUtc;
-                        abandon = ((nowUtc - stopUtc.Value).TotalSeconds >= SourceStopAbandonSeconds);
+                        if (!stopTicks.HasValue) stopTicks = _GetAwakeTicks();
+                        abandon = (_GetAwakeSeconds(stopTicks.Value) >= SourceStopAbandonSeconds);
                     }
-                    if (timeoutSeconds > 0 && (nowUtc - startUtc).TotalSeconds >= timeoutSeconds)
+                    if (timeoutSeconds > 0 && _GetAwakeSeconds(startTicks) >= timeoutSeconds)
                         abandon = true;
                     if (abandon)
                     {
@@ -749,12 +803,12 @@ namespace DjSoft.Tools.SDCardTester.Workers
                         __AbandonedSourceIo = task;
                         if (disposeLateResult)
                             task.ContinueWith(t => { if (t.Status == TaskStatus.RanToCompletion) (t.Result as IDisposable)?.Dispose(); });
-                        throw new SourceHungException($"Operace se zdrojovým zařízením neodpověděla do {(nowUtc - startUtc).TotalSeconds:N0} s a byla opuštěna.");
+                        throw new SourceHungException($"Operace se zdrojovým zařízením neodpověděla do {_GetAwakeSeconds(startTicks):N0} s a byla opuštěna.");
                     }
                 }
                 // Teploměr zdraví: operace doběhla, ale visela déle než práh varování = zamrznutí (karta se vzpamatovala).
                 //  Jen vnější volání a ne opuštěné vnořené (to je už započteno):
-                if (isOuter && (DateTime.UtcNow - startUtc).TotalSeconds >= SourceHangWarningSeconds && !(task.Exception?.InnerException is SourceHungException))
+                if (isOuter && _GetAwakeSeconds(startTicks) >= SourceHangWarningSeconds && !(task.Exception?.InnerException is SourceHungException))
                     __Health.AddHang();
                 return task.GetAwaiter().GetResult();                      // Výsledek, nebo původní výjimka (ne AggregateException)
             }
@@ -1110,12 +1164,16 @@ namespace DjSoft.Tools.SDCardTester.Workers
         {
             var buffer = new byte[currentBlock.BlockLength];                   // BlockLength je skutečně platná délka i u posledního bloku, protože je určená mj. délkou vstupního souboru.
             long timeBegin = 0L;
+            long sleepCheckTimestamp = 0L;                                     // Pro odečtení doby spánku systému z doby čtení bloku
+            long sleepCheckAwakeTicks = 0L;
             bool hadPreviousErrors = (currentBlock.ErrorsCount > 0);            // Pro Teploměr zdraví: opakované čtení dříve chybného bloku
             try
             {
                 simulateError(currentBlock);
 
                 timeBegin = this.CurrentTime;
+                sleepCheckTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
+                sleepCheckAwakeTicks = _GetAwakeTicks();
                 simulateWaiting(currentBlock);
 
                 // Tady probíhá čtení vstupního souboru; s hlídáním zamrzlé karty (čtení může viset neomezeně dlouho a Stop by nefungoval):
@@ -1131,7 +1189,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 //  Dříve se ukládal výsledek Empty = OK bez zápisu => díra v cíli vedená jako OK.
                 if (currentBlock.ContentLength <= 0)
                     throw new IOException($"Čtení bloku na pozici {currentBlock.BlockStart:N0} vrátilo 0 bajtů.");
-                decimal readSeconds = this.GetSeconds(timeBegin);
+                decimal readSeconds = getReadSeconds();
                 currentBlock.StoreReadTime(readSeconds, false);
                 __Health.AddBlockRead(blockStart, currentBlock.ContentLength, (double)readSeconds, false, hadPreviousErrors);
                 __ConsecutiveReadErrors = 0;
@@ -1156,9 +1214,10 @@ namespace DjSoft.Tools.SDCardTester.Workers
 
                 // Toto je chyba při čtení bloku ze zdroje => tuto chybu zaznamenám do bloku, ale nezrušíme celé kopírování
                 //   = toto je smysl celého tohoto procesu !!!!
-                currentBlock.StoreReadTime(this.GetSeconds(timeBegin), true);
+                decimal errorSeconds = getReadSeconds();
+                currentBlock.StoreReadTime(errorSeconds, true);
                 // Teploměr zdraví: doba jen pokud čtení skutečně začalo (simulovaná chyba nastává před měřením => timeBegin = 0):
-                __Health.AddBlockRead(currentBlock.BlockStart, 0, (timeBegin > 0L ? (double?)(double)this.GetSeconds(timeBegin) : null), true, hadPreviousErrors);
+                __Health.AddBlockRead(currentBlock.BlockStart, 0, (timeBegin > 0L ? (double?)(double)errorSeconds : null), true, hadPreviousErrors);
                 Array.Clear(buffer, 0, buffer.Length);
                 currentBlock.Content = buffer;
                 currentBlock.ContentLength = currentBlock.Content.Length;
@@ -1188,6 +1247,14 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 this.__CurrentLog.SaveLogFileAsync();
 
 
+            // Doba čtení bloku bez doby spánku systému (čtení, které přečká spánek Windows, by jinak trvalo celou dobu spánku);
+            //  pokud čtení nezačalo (simulovaná chyba před měřením), pak 0 (dříve se ukládal čas od startu Stopwatch):
+            decimal getReadSeconds()
+            {
+                if (timeBegin <= 0L) return 0m;
+                decimal seconds = this.GetSeconds(timeBegin) - (decimal)_GetSleptSeconds(sleepCheckTimestamp, sleepCheckAwakeTicks);
+                return (seconds < 0m ? 0m : seconds);
+            }
             void simulateError(SingleBlockInfo block)
             {
                 var simErrors = this.__CurrentFile.SimulatedErrors;
@@ -1778,7 +1845,7 @@ namespace DjSoft.Tools.SDCardTester.Workers
                 if (x is null && y is null) return 0;
                 if (x is null) return -1;
                 if (y is null) return 1;
-                return string.Compare(x.SourceFile, y.SourceFile, StringComparison.OrdinalIgnoreCase);
+                return string.Compare(x.SourceFile, y.SourceFile, StringComparison.CurrentCultureIgnoreCase);          // Ignoruje velikost písmen, akceptuje aktuální jazyk systému (čeština)
             }
         }
         #endregion
@@ -3189,6 +3256,22 @@ namespace DjSoft.Tools.SDCardTester.Workers
         private static extern long GetFileSize(
             SafeFileHandle hFile,
             IntPtr lpFileSizeHigh);
+
+        /// <summary>
+        /// Oznámí Windows, že vlákno vyžaduje běh systému (zákaz automatického spánku). Platí pro volající vlákno.
+        /// </summary>
+        [DllImport("kernel32.dll")]
+        private static extern uint SetThreadExecutionState(uint esFlags);
+        /// <summary>SetThreadExecutionState: nastavení platí trvale, dokud se nezmění dalším voláním s ES_CONTINUOUS</summary>
+        private const uint ES_CONTINUOUS = 0x80000000;
+        /// <summary>SetThreadExecutionState: systém nesmí automaticky přejít do spánku (monitor se vypnout smí)</summary>
+        private const uint ES_SYSTEM_REQUIRED = 0x00000001;
+
+        /// <summary>
+        /// Vrátí "unbiased interrupt time" v jednotkách 100 ns = čas od startu systému BEZ doby spánku a hibernace. Rozlišení cca 15,6 ms.
+        /// </summary>
+        [DllImport("kernel32.dll")]
+        private static extern bool QueryUnbiasedInterruptTime(out ulong unbiasedTime);
 
         // Konstanty - Přístup
         private const uint GENERIC_READ = 0x80000000;
