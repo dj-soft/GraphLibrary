@@ -79,6 +79,8 @@ Dokument pro navázání práce v další session. Popisuje **aktuální stav** 
 - Zaokrouhlení procent v titulku dolů.
 - Opakované chybové hlášky při selhání ukládání Settings a ztráta Settings při pádu mezi Delete a Move – akceptováno.
 - Double-checked locking singletonu `App` (teoretický souběh během `Initialize()`) – akceptováno.
+- Automatický refresh disků po připojení výměnného disku nastaví Toolbar jako při startu (`InitDrives()`, včetně přepnutí na „jen výměnné“). Ruční volbu uživatele záměrně neodlišujeme od výchozího stavu.
+- Vestavěná čtečka karet (výměna karty bez `WM_DEVICECHANGE`) se automaticky neobnovuje – cíleně neřešeno, viz „Reakce na změnu disků v systému“.
 
 ## Otevřené body
 **UZAVŘENO (2026-11-20) – příčina: nestabilní MicroSD karta, viz VÝSLEDEK níže.** Kontrola 2. Stop u `Dobrodružství rabína Jákoba, Luis de Funes.ts` (zdroj `h:\Records\...`).
@@ -201,6 +203,31 @@ Dokument pro navázání práce v další session. Popisuje **aktuální stav** 
    - chybný wildcard (oprava 2026-11-19: hláška a pokračování dalšími řádky, akce řádně skončí).
 2. **Čtení obsahu (`ContentRead`)**: levý panel zobrazuje 4 fáze testovacích souborů, akce ale běží ve fázi `ReadAnyContent`, pro kterou control není → panel se možná nemění. Zjistit, zda je to záměr.
 3. Varování kompilátoru v `FileRescue.cs`: CS4014 (`SaveLogFileAsync()` bez `await`), CS0168 (nepoužité proměnné výjimek); CS0168 i v `LinearMapControl.cs`. Neškodné.
+
+## Reakce na změnu disků v systému – PŘIDÁNO 2026-11-24, ověřeno autorem v aplikaci pro USB čtečku (odpojení i připojení jednotky)
+- Cíl: po připojení nebo odpojení výměnného disku (USB čtečka, flash disk) se Toolbar sám nastaví tak, jako by aplikace startovala s aktuální sadou disků.
+- `MainForm.WndProc` (region Windows Taskbar Progress, už existoval kvůli TaskProgress) volá `_DrivesDeviceChange` pro `WM_DEVICECHANGE` (0x0219).
+  - Bere jen `DBT_DEVICEARRIVAL` (0x8000) a `DBT_DEVICEREMOVECOMPLETE` (0x8004) s `DBT_DEVTYP_VOLUME` (2). Písmena se čtou z `dbcv_unitmask`.
+  - Kdyby jednotka poslala zprávu s příznakem média (`dbcv_flags & DBTF_MEDIA`), zpracuje se stejně. Příznak slouží jen pro text ve StatusBaru. Vestavěný slot ji ale neposílá (viz cíleně neřešený bod níže).
+- Region „Změna disků v systému“:
+  - `_DrivesChangedNotify`: text ve `StatusInfoLabel` („Připojen disk H:“, „Odpojen disk H:“…) + `WatchTimer.CallMeAfter(_DrivesChangedRefresh, delay, true, __DrivesChangedTimerId)`.
+    - Prodleva: připojení `DrivesArrivalDelayMiliseconds` = 2500 ms (nový disk potřebuje čas, než je `IsReady`), odpojení `DrivesRemovalDelayMiliseconds` = 1000 ms (návrh autora 2026-11-24).
+    - Budík je jeden společný (debounce přes Guid): každá další zpráva ho posune a platí prodleva podle poslední zprávy. Vrácené Guid se ukládá, protože jednorázový budík se po proběhnutí odebere.
+  - `_DrivesChangedRefresh` (GUI): běží-li akce, nastaví jen `__DeviceWasChanged` (refresh proběhne v `ShowControls` při přechodu Working → Dialog, pokud se nezavírá okno). Jinak `InitDrives()` = stav jako při startu, záměrně včetně přepnutí na „jen výměnné“ (autor: výběr uživatele se od výchozího stavu neodlišuje).
+  - Ochrana výsledků: při `__DrivesAutoRefresh` a zobrazeném panelu výsledků (`CurrentDataPanelState` pracovní) `ToolDriveCombo_SelectedIndexChanged` nic nedělá, takže panel výsledků i mapa zůstanou a obnoví se jen combo.
+- Test `test_devchange.ps1` (simulované zprávy přes WndProc):
+  - 3 zprávy během 300 ms, poslední připojení → po 2,1 s nic, po 2,9 s jeden refresh (stejné timer Guid);
+  - poslední zpráva odpojení → po 0,7 s nic, po 1,4 s jeden refresh;
+  - jiný typ zařízení nebo jiná událost → nic;
+  - panel výsledků zůstal;
+  - během akce jen příznak, refresh po skončení akce.
+- **CÍLENĚ NEŘEŠENO (rozhodnutí autora 2026-11-24): vestavěná čtečka karet (slot v notebooku).**
+  - Písmeno jednotky je v systému trvale, mění se jen připravenost média. Windows při vložení nebo vyjmutí karty nepošlou `WM_DEVICECHANGE` (ověřeno autorem breakpointem ve `WndProc`, přestože Windows vložení zaznamenaly: notifikace „S jednotkou M jsou problémy“ = nečistý souborový systém na kartě).
+  - Broadcast s `DBTF_MEDIA` posílají spolehlivě jen CD/DVD mechaniky. Čtečky karet posílají jen `GUID_IO_MEDIA_ARRIVAL` / `GUID_IO_VOLUME_MOUNT`, a to oknům registrovaným přes `RegisterDeviceNotification` na otevřený handle jednotky.
+  - Zvažované varianty:
+    - (A) registrace na handle jednotky: držený handle blokuje „Bezpečně odebrat“, hodně Win32 kódu, nejisté u konkrétního ovladače;
+    - (B) periodické sledování `IsReady` výměnných jednotek přes `WatchTimer.CallMeEvery` na pozadí, mimo běh akcí.
+  - Obojí zamítnuto jako zbytečně mnoho práce pro malý efekt. U vestavěného slotu stačí po výměně karty ručně kliknout na tlačítko Obnovit disky.
 
 ## Zavření okna během běhu akce – PŘIDÁNO 2026-11-22, ověřeno autorem v aplikaci (dotaz, po Ano rychlé dokončení a zavření)
 - Dříve: proces skončil okamžitě (všechna vlákna jsou background). Data v cíli a protokol zůstaly konzistentní, protože blok je OK až po Write; chyběla ale finální uložení (log, ZdraviMedia, přejmenování `~E`).

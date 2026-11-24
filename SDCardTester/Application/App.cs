@@ -92,8 +92,34 @@ namespace DjSoft.Tools.SDCardTester
         /// V tomto stavu metody Show* nic nezobrazují: <see cref="ShowInfo"/>, <see cref="ShowWarning"/> a <see cref="ShowError"/> nic nedělají,
         /// <see cref="ShowQuestion"/> vrací false (= Ne, typicky „nepokračovat“).
         /// </summary>
-        public static bool IsClosing { get { return __IsClosing; } set { __IsClosing = value; } }
+        public static bool IsClosing
+        {
+            get { return Instance._IsClosing; } 
+            set { Instance._IsClosing = value;  } 
+        }
+        /// <summary>
+        /// Aplikace se ukončuje (uživatel zavřel okno během běhu akce a čeká se na její zastavení, nebo se okno zavírá).
+        /// </summary>
+        private bool _IsClosing
+        {
+            get { return __IsClosing; }
+            set
+            {
+                bool isChanged = (__IsClosing != value);
+                __IsClosing = value;
+                if (isChanged)
+                    __IsClosingChanged?.Invoke(null, EventArgs.Empty);
+            }
+        }
+        /// <summary>
+        /// Aplikace se ukončuje
+        /// </summary>
         private static volatile bool __IsClosing;
+        /// <summary>
+        /// Událost vyvolaná po změně stavu <see cref="IsClosing"/>. Eventhandler tedy již čte aktuální stav.
+        /// </summary>
+        public static event EventHandler IsClosingChanged { add { Instance.__IsClosingChanged += value; } remove { Instance.__IsClosingChanged -= value; } }
+        private event EventHandler __IsClosingChanged;
         /// <summary>
         /// Zobrazí informaci v MessageBoxu. Automaticky se spustí v GUI vlákně, pokud je potřeba.
         /// </summary>

@@ -231,6 +231,9 @@ namespace DjSoft.Tools.SDCardTester
         /// <param name="e"></param>
         private void ToolDriveCombo_SelectedIndexChanged(object sender, EventArgs e)
         {
+            // Automatické obnovení seznamu disků (po připojení / odpojení disku) nesmí schovat zobrazené výsledky doběhnuté akce ani přepsat jejich mapu:
+            if (__DrivesAutoRefresh && _IsWorkingState(CurrentDataPanelState)) return;
+
             ShowControls(ActionState.Dialog, true);
             ShowProperties();
         }
@@ -672,6 +675,126 @@ namespace DjSoft.Tools.SDCardTester
         /// </summary>
         private bool __CloseAfterStop;
         #endregion
+        #region Změna disků v systému (připojení / odpojení disku, vložení / vyjmutí karty): WM_DEVICECHANGE, odložený refresh seznamu disků
+        /// <summary>
+        /// Zpracuje zprávu <see cref="WM_DEVICECHANGE"/> (volá se z <see cref="WndProc(ref Message)"/>, region Windows Taskbar Progress): reaguje jen na připojení / odpojení svazku (<see cref="DBT_DEVTYP_VOLUME"/>).
+        /// Stejnou zprávu posílá USB čtečka (písmeno disku vznikne / zmizí) i vestavěný slot (písmeno zůstává, mění se médium: příznak <see cref="DBTF_MEDIA"/>).
+        /// Zobrazí informaci ve StatusBaru a naplánuje odložený refresh seznamu disků <see cref="_DrivesChangedRefresh"/>.
+        /// </summary>
+        /// <param name="wParam">Typ události</param>
+        /// <param name="lParam">Ukazatel na DEV_BROADCAST_HDR / DEV_BROADCAST_VOLUME</param>
+        private void _DrivesDeviceChange(IntPtr wParam, IntPtr lParam)
+        {
+            try
+            {
+                int eventType = (int)wParam.ToInt64();
+                bool isArrival = (eventType == DBT_DEVICEARRIVAL);
+                if (!isArrival && eventType != DBT_DEVICEREMOVECOMPLETE) return;
+                if (lParam == IntPtr.Zero) return;
+
+                // DEV_BROADCAST_VOLUME: dbcv_size (4), dbcv_devicetype (4), dbcv_reserved (4), dbcv_unitmask (4), dbcv_flags (2):
+                int deviceType = System.Runtime.InteropServices.Marshal.ReadInt32(lParam, 4);
+                if (deviceType != DBT_DEVTYP_VOLUME) return;
+                int unitMask = System.Runtime.InteropServices.Marshal.ReadInt32(lParam, 12);
+                int flags = System.Runtime.InteropServices.Marshal.ReadInt16(lParam, 16);
+
+                _DrivesChangedNotify(isArrival, ((flags & DBTF_MEDIA) != 0), unitMask);
+            }
+            catch { }
+        }
+        /// <summary>
+        /// Zobrazí informaci o změně disku ve StatusBaru a naplánuje odložený refresh seznamu disků:
+        /// <see cref="WatchTimer"/> zavolá <see cref="_DrivesChangedRefresh"/> v GUI threadu až po uplynutí <see cref="DrivesArrivalDelayMiliseconds"/> (připojení) nebo <see cref="DrivesRemovalDelayMiliseconds"/> (odpojení) od poslední zprávy
+        /// (jedno zařízení typicky pošle více zpráv rychle za sebou).
+        /// </summary>
+        /// <param name="isArrival">true = připojení / vložení, false = odpojení / vyjmutí</param>
+        /// <param name="isMedia">true = změna média v trvale připojené jednotce (vestavěný slot), false = připojení / odpojení celé jednotky</param>
+        /// <param name="unitMask">Bitová maska písmen jednotek: bit 0 = A:, bit 1 = B:, ...</param>
+        private void _DrivesChangedNotify(bool isArrival, bool isMedia, int unitMask)
+        {
+            if (App.IsClosing) return;
+
+            if (!__CloseAfterStop && this.StatusInfoLabel != null)
+            {
+                string drives = _GetDriveLetters(unitMask);
+                this.StatusInfoLabel.Text = (isMedia ?
+                    (isArrival ? $"Vložena karta do jednotky {drives}" : $"Vyjmuta karta z jednotky {drives}") :
+                    (isArrival ? $"Připojen disk {drives}" : $"Odpojen disk {drives}"));
+            }
+
+            // Po připojení potřebuje nový disk chvíli, než bude připraven (IsReady); po odpojení stačí kratší prodleva.
+            //  Budík je jeden společný: platí prodleva podle poslední zprávy.
+            int delay = (isArrival ? DrivesArrivalDelayMiliseconds : DrivesRemovalDelayMiliseconds);
+            __DrivesChangedTimerId = WatchTimer.CallMeAfter(_DrivesChangedRefresh, delay, true, __DrivesChangedTimerId);
+        }
+        /// <summary>
+        /// Odložený refresh seznamu disků po změně disků v systému. Volá se v GUI threadu.
+        /// Pokud běží akce, jen si poznamená <see cref="__DeviceWasChanged"/> a refresh proběhne po doběhnutí akce (viz <see cref="ShowControls"/>).
+        /// Jinak provede <see cref="InitDrives"/> = stav jako při startu aplikace (detekce výměnných disků, nastavení <see cref="IsOnlyRemovable"/>, naplnění Combo).
+        /// Pokud je zobrazen panel výsledků doběhnuté akce, zůstane zobrazen i s mapou (viz <see cref="ToolDriveCombo_SelectedIndexChanged"/>).
+        /// </summary>
+        private void _DrivesChangedRefresh()
+        {
+            if (App.IsClosing || this.IsDisposed) return;
+            if (_IsWorkingState(CurrentState))
+            {
+                __DeviceWasChanged = true;
+                return;
+            }
+
+            __DeviceWasChanged = false;
+            bool oldAutoRefresh = __DrivesAutoRefresh;
+            try
+            {
+                __DrivesAutoRefresh = true;
+                InitDrives();
+            }
+            finally
+            {
+                __DrivesAutoRefresh = oldAutoRefresh;
+            }
+        }
+        /// <summary>
+        /// Vrátí text písmen jednotek z bitové masky, např. "H:" nebo "E:, H:"
+        /// </summary>
+        /// <param name="unitMask"></param>
+        /// <returns></returns>
+        private static string _GetDriveLetters(int unitMask)
+        {
+            var letters = new List<string>();
+            for (int i = 0; i < 26; i++)
+            {
+                if ((unitMask & (1 << i)) != 0)
+                    letters.Add(((char)('A' + i)).ToString() + ":");
+            }
+            return (letters.Count > 0 ? String.Join(", ", letters) : "?");
+        }
+        /// <summary>
+        /// ID budíku <see cref="WatchTimer"/> pro odložený refresh seznamu disků. Opakovaná zpráva o změně tento budík posune.
+        /// </summary>
+        private Guid? __DrivesChangedTimerId;
+        /// <summary>
+        /// true = během běhu akce se změnily disky v systému, po doběhnutí akce se má obnovit seznam disků
+        /// </summary>
+        private bool __DeviceWasChanged;
+        /// <summary>
+        /// true = právě probíhá automatické obnovení seznamu disků (ne akce uživatele)
+        /// </summary>
+        private bool __DrivesAutoRefresh;
+        /// <summary>
+        /// Prodleva odloženého refreshe seznamu disků od poslední zprávy o připojení disku / vložení karty
+        /// </summary>
+        private const int DrivesArrivalDelayMiliseconds = 2500;
+        /// <summary>
+        /// Prodleva odloženého refreshe seznamu disků od poslední zprávy o odpojení disku / vyjmutí karty
+        /// </summary>
+        private const int DrivesRemovalDelayMiliseconds = 1000;
+        private const int WM_DEVICECHANGE = 0x0219;
+        private const int DBT_DEVICEARRIVAL = 0x8000;
+        private const int DBT_DEVICEREMOVECOMPLETE = 0x8004;
+        private const int DBT_DEVTYP_VOLUME = 0x00000002;
+        private const int DBTF_MEDIA = 0x0001;
+        #endregion
         #region Layout
         /// <summary>
         /// Změna velikosti upraví Layout
@@ -766,6 +889,9 @@ namespace DjSoft.Tools.SDCardTester
                     // Akce skončila po Stop vyvolaném zavřením okna: okno nyní zavřeme (asynchronně, až po dokončení této metody = po nastavení CurrentState):
                     if (__CloseAfterStop)
                         this.BeginInvoke(new Action(this.Close));
+                    // Během akce se změnily disky v systému: nyní obnovíme jejich seznam (asynchronně, až po nastavení CurrentState):
+                    else if (__DeviceWasChanged)
+                        this.BeginInvoke(new Action(_DrivesChangedRefresh));
                 }
 
                 CurrentState = state;
@@ -1612,10 +1738,16 @@ namespace DjSoft.Tools.SDCardTester
             this.__AppTitleTextStandard = this.Text;
             this.__AppTitleTextCurrent = null;
         }
+        /// <summary>
+        /// Zpracování zpráv okna: progres v Taskbaru, změna disků v systému (<see cref="WM_DEVICECHANGE"/>)
+        /// </summary>
+        /// <param name="m"></param>
         protected override void WndProc(ref Message m)
         {
             __TaskProgress.FormWndProc(ref m);
             base.WndProc(ref m);
+            if (m.Msg == WM_DEVICECHANGE)
+                _DrivesDeviceChange(m.WParam, m.LParam);
         }
         /// <summary>
         /// Hodnota progresu.
